@@ -70,100 +70,101 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            GestureDetector(
-              onLongPress: onLongPress != null
-                  ? () {
-                      // E3：长按触发触觉反馈，让"长按可删"交互可感知
-                      HapticFeedback.mediumImpact();
-                      onLongPress!(message);
-                    }
-                  : null,
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.80,
-                ),
-                margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: AppSpacing.smx,
-                ),
-                decoration: BoxDecoration(
-                  color: isFailed
-                      ? context.palette.dangerBg
-                      : context.palette.primary,
-                  border: isFailed
-                      ? Border.all(color: context.palette.dangerBorder)
-                      : null,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(AppRadius.md),
-                    topRight: Radius.circular(AppRadius.md),
-                    bottomLeft: Radius.circular(AppRadius.md),
-                    bottomRight: Radius.circular(AppRadius.xs),
-                  ),
-                ),
-                child: Text(
-                  message.content,
-                  style: TextStyle(
-                    fontSize: 15,
-                    height: 1.4,
-                    color: isFailed
-                        ? context.palette.danger
-                        : context.palette.onPrimary,
-                  ),
-                ),
-              ),
-            ),
+            _buildUserBubbleBody(context),
             // 批次71：@ 引用徽章（气泡底部，点击跳转）
             _ReferencesBadges(
               references: _parseReferences(message),
               onMentionTap: onMentionTap,
             ),
             // 失败时显示重试按钮
-            if (isFailed && onRetry != null) ...[
-              GestureDetector(
-                onTap: () => onRetry!(message.id),
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    top: AppSpacing.xxs,
-                    bottom: AppSpacing.xs,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.warning,
-                        size: 14,
-                        color: context.palette.danger,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        '发送失败，点击重试',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.palette.danger,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            if (isFailed && onRetry != null) _buildUserRetryRow(context),
             // 非 streaming 且非 failed 时显示时间戳
-            if (!isStreaming && !isFailed) ...[
-              const SizedBox(height: 4),
-              Text(
-                _formatTime(message.timestamp),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: context.palette.onPrimary.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
+            if (!isStreaming && !isFailed) ..._buildUserTimestamp(context),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildUserBubbleBody(BuildContext context) {
+    return GestureDetector(
+      onLongPress: onLongPress != null
+          ? () {
+              // E3：长按触发触觉反馈，让"长按可删"交互可感知
+              HapticFeedback.mediumImpact();
+              onLongPress!(message);
+            }
+          : null,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.80,
+        ),
+        margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: AppSpacing.smx,
+        ),
+        decoration: BoxDecoration(
+          color: isFailed ? context.palette.dangerBg : context.palette.primary,
+          border: isFailed
+              ? Border.all(color: context.palette.dangerBorder)
+              : null,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(AppRadius.md),
+            topRight: Radius.circular(AppRadius.md),
+            bottomLeft: Radius.circular(AppRadius.md),
+            bottomRight: Radius.circular(AppRadius.xs),
+          ),
+        ),
+        child: Text(
+          message.content,
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.4,
+            color: isFailed
+                ? context.palette.danger
+                : context.palette.onPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserRetryRow(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onRetry!(message.id),
+      child: Padding(
+        padding: EdgeInsets.only(top: AppSpacing.xxs, bottom: AppSpacing.xs),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.warning, size: 14, color: context.palette.danger),
+            SizedBox(width: 4),
+            Text(
+              '发送失败，点击重试',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.danger,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildUserTimestamp(BuildContext context) {
+    return [
+      const SizedBox(height: 4),
+      Text(
+        _formatTime(message.timestamp),
+        style: TextStyle(
+          fontSize: 11,
+          color: context.palette.onPrimary.withValues(alpha: 0.6),
+        ),
+      ),
+    ];
   }
 
   /// AI 消息气泡：左对齐 + 头像 + 灰白底 + 左下尖角 + 外部时间戳
@@ -173,115 +174,123 @@ class MessageBubble extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 头像
-          Container(
-            width: 32,
-            height: 32,
-            margin: const EdgeInsets.only(
-              right: AppSpacing.sm,
-              top: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: context.palette.primary,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              '月',
-              style: TextStyle(
-                color: context.palette.onPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+          _buildAssistantAvatar(context),
           // 气泡 + 时间戳
           Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onLongPress: onLongPress != null
-                      ? () {
-                          // E3：长按触发触觉反馈，让"长按可删"交互可感知
-                          HapticFeedback.mediumImpact();
-                          onLongPress!(message);
-                        }
-                      : null,
-                  child: Opacity(
-                    opacity: isStreaming ? 0.6 : 1.0,
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.80,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: AppSpacing.smx,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.palette.surface,
-                        border: Border.all(color: context.palette.borderSoft),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(AppRadius.md),
-                          topRight: Radius.circular(AppRadius.md),
-                          bottomLeft: Radius.circular(AppRadius.xs),
-                          bottomRight: Radius.circular(AppRadius.md),
-                        ),
-                      ),
-                      child: GptMarkdown(
-                        message.content,
-                        style: TextStyle(
-                          fontSize: 15,
-                          height: 1.4,
-                          color: context.palette.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                if (!isStreaming) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _formatTime(message.timestamp),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: context.palette.textSecondary,
-                        ),
-                      ),
-                      // 操作区：保存到文件（对齐 RN messageMetaRow.actionBtnGroup）
-                      if (onSaveToFile != null) ...[
-                        const SizedBox(width: 12),
-                        InkWell(
-                          onTap: () => onSaveToFile!(message),
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.save_alt,
-                                size: 12,
-                                color: context.palette.primary,
-                              ),
-                              SizedBox(width: 2),
-                              Text(
-                                '保存到文件',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: context.palette.primary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
+                _buildAssistantBubbleBody(context),
+                if (!isStreaming) ..._buildAssistantMetaRow(context),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssistantAvatar(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      margin: const EdgeInsets.only(right: AppSpacing.sm, top: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: context.palette.primary,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '月',
+        style: TextStyle(
+          color: context.palette.onPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssistantBubbleBody(BuildContext context) {
+    return GestureDetector(
+      onLongPress: onLongPress != null
+          ? () {
+              // E3：长按触发触觉反馈，让"长按可删"交互可感知
+              HapticFeedback.mediumImpact();
+              onLongPress!(message);
+            }
+          : null,
+      child: Opacity(
+        opacity: isStreaming ? 0.6 : 1.0,
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.80,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: AppSpacing.smx,
+          ),
+          decoration: BoxDecoration(
+            color: context.palette.surface,
+            border: Border.all(color: context.palette.borderSoft),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(AppRadius.md),
+              topRight: Radius.circular(AppRadius.md),
+              bottomLeft: Radius.circular(AppRadius.xs),
+              bottomRight: Radius.circular(AppRadius.md),
+            ),
+          ),
+          child: GptMarkdown(
+            message.content,
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.4,
+              color: context.palette.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildAssistantMetaRow(BuildContext context) {
+    return [
+      const SizedBox(height: 4),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _formatTime(message.timestamp),
+            style: TextStyle(
+              fontSize: 11,
+              color: context.palette.textSecondary,
+            ),
+          ),
+          // 操作区：保存到文件（对齐 RN messageMetaRow.actionBtnGroup）
+          if (onSaveToFile != null) ...[
+            const SizedBox(width: 12),
+            _buildSaveToFileBtn(context),
+          ],
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildSaveToFileBtn(BuildContext context) {
+    return InkWell(
+      onTap: () => onSaveToFile!(message),
+      borderRadius: BorderRadius.circular(AppRadius.xs),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.save_alt, size: 12, color: context.palette.primary),
+          SizedBox(width: 2),
+          Text(
+            '保存到文件',
+            style: TextStyle(
+              fontSize: 12,
+              color: context.palette.primary,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

@@ -283,65 +283,69 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
           style: context.text.subCaption,
         ),
         const SizedBox(height: 12),
-        // 选择文件按钮（虚线边框，对齐 RN fileBtn）
-        InkWell(
-          onTap: _picking ? null : _handlePickFile,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              color: context.palette.primarySoft,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: context.palette.primary, width: 2),
-            ),
-            child: _picking
-                ? Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // 批次66：📁 emoji → Material 图标（taste 审核：UI 图标走图标库）
-                      Icon(
-                        Icons.folder_open,
-                        size: 20,
-                        color: context.palette.primary,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        '选择文件',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: context.palette.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-        if (_error != null) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: context.palette.dangerBg,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              _error!,
-              style: TextStyle(fontSize: 13, color: context.palette.danger),
-            ),
-          ),
-        ],
+        _buildPickFileButton(),
+        if (_error != null) ...[const SizedBox(height: 12), _buildErrorBox()],
       ],
+    );
+  }
+
+  /// 选择文件按钮（虚线边框，对齐 RN fileBtn）
+  Widget _buildPickFileButton() {
+    return InkWell(
+      onTap: _picking ? null : _handlePickFile,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        height: 64,
+        decoration: BoxDecoration(
+          color: context.palette.primarySoft,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: context.palette.primary, width: 2),
+        ),
+        child: _picking
+            ? Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: context.palette.primary,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.folder_open,
+                    size: 20,
+                    color: context.palette.primary,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    '选择文件',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: context.palette.primary,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBox() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.palette.dangerBg,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        _error!,
+        style: TextStyle(fontSize: 13, color: context.palette.danger),
+      ),
     );
   }
 
@@ -409,42 +413,44 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
                 color: context.palette.textTertiary,
               ),
             ),
-            FilledButton(
-              onPressed: (_selected.isEmpty || _importing)
-                  ? null
-                  : _handleConfirm,
-              style: FilledButton.styleFrom(
-                backgroundColor: context.palette.primary,
-                disabledBackgroundColor: context.palette.disabled,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xxl,
-                  vertical: AppSpacing.md,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              ),
-              child: _importing
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: context.palette.onPrimary,
-                      ),
-                    )
-                  : Text(
-                      '确认导入',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.onPrimary,
-                      ),
-                    ),
-            ),
+            _buildImportButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImportButton() {
+    return FilledButton(
+      onPressed: (_selected.isEmpty || _importing) ? null : _handleConfirm,
+      style: FilledButton.styleFrom(
+        backgroundColor: context.palette.primary,
+        disabledBackgroundColor: context.palette.disabled,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xxl,
+          vertical: AppSpacing.md,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+      ),
+      child: _importing
+          ? SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: context.palette.onPrimary,
+              ),
+            )
+          : Text(
+              '确认导入',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: context.palette.onPrimary,
+              ),
+            ),
     );
   }
 }
@@ -507,75 +513,75 @@ class _ChapterRow extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // checkbox（对齐 RN checkbox）
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? context.palette.primary
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                  border: Border.all(
-                    color: isSelected
-                        ? context.palette.primary
-                        : isDisabled
-                        ? context.palette.disabled
-                        : context.palette.border,
-                    width: 2,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: isSelected
-                    ? Icon(
-                        Icons.check,
-                        size: 14,
-                        color: context.palette.onPrimary,
-                      )
-                    : null,
-              ),
+              _buildCheckbox(context),
               const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title.isEmpty ? '未命名章节' : item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${item.content.length} 字',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.disabledText,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isDisabled)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xxs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.palette.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.xs),
-                  ),
-                  child: Text('已存在', style: context.text.microCaption),
-                ),
+              Expanded(child: _buildTitleColumn(context)),
+              if (isDisabled) _buildExistsBadge(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// checkbox（对齐 RN checkbox）
+  Widget _buildCheckbox(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: isSelected ? context.palette.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+        border: Border.all(
+          color: isSelected
+              ? context.palette.primary
+              : isDisabled
+              ? context.palette.disabled
+              : context.palette.border,
+          width: 2,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: isSelected
+          ? Icon(Icons.check, size: 14, color: context.palette.onPrimary)
+          : null,
+    );
+  }
+
+  Widget _buildTitleColumn(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item.title.isEmpty ? '未命名章节' : item.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '${item.content.length} 字',
+          style: TextStyle(fontSize: 12, color: context.palette.disabledText),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExistsBadge(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Text('已存在', style: context.text.microCaption),
     );
   }
 }

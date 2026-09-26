@@ -85,52 +85,9 @@ class EditorSettingsSheet extends ConsumerWidget {
                 color: context.palette.textPrimary,
               ),
             ),
-            const SizedBox(height: 16),
-            _buildSliderRow(
-              context: context,
-              label: '字号',
-              value: state.fontSize,
-              min: 14,
-              max: 24,
-              divisions: 10,
-              display: '${state.fontSize.round()}',
-              onChanged: store.setFontSize,
-              onChangeEnd: (_) => store.persistEditorSettings(),
-            ),
-            const SizedBox(height: 6),
-            _buildSliderRow(
-              context: context,
-              label: '行距',
-              value: state.lineSpacing,
-              min: 1.2,
-              max: 2.0,
-              divisions: 8,
-              display: state.lineSpacing.toStringAsFixed(1),
-              onChanged: store.setLineSpacing,
-              onChangeEnd: (_) => store.persistEditorSettings(),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              '背景',
-              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                for (final preset in editorBackgroundPresets) ...[
-                  _BackgroundOption(
-                    preset: preset,
-                    selected: state.editorBackground == preset.key,
-                    onTap: () {
-                      store.setEditorBackground(preset.key);
-                      store.persistEditorSettings();
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                ],
-              ],
-            ),
-            const SizedBox(height: 14),
+            ..._buildFontSizeSlider(context, store, state),
+            ..._buildLineSpacingSlider(context, store, state),
+            ..._buildBackgroundSection(context, store, state),
             // 批次88-4：段落格式——自动首行缩进 / 段间空行（开关即时生效 + 全文批量应用）
             _buildParagraphSection(context, store, state),
             const SizedBox(height: 14),
@@ -146,6 +103,79 @@ class EditorSettingsSheet extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildFontSizeSlider(
+    BuildContext context,
+    WritingStore store,
+    WritingState state,
+  ) {
+    return [
+      const SizedBox(height: 16),
+      _buildSliderRow(
+        context: context,
+        label: '字号',
+        value: state.fontSize,
+        min: 14,
+        max: 24,
+        divisions: 10,
+        display: '${state.fontSize.round()}',
+        onChanged: store.setFontSize,
+        onChangeEnd: (_) => store.persistEditorSettings(),
+      ),
+    ];
+  }
+
+  List<Widget> _buildLineSpacingSlider(
+    BuildContext context,
+    WritingStore store,
+    WritingState state,
+  ) {
+    return [
+      const SizedBox(height: 6),
+      _buildSliderRow(
+        context: context,
+        label: '行距',
+        value: state.lineSpacing,
+        min: 1.2,
+        max: 2.0,
+        divisions: 8,
+        display: state.lineSpacing.toStringAsFixed(1),
+        onChanged: store.setLineSpacing,
+        onChangeEnd: (_) => store.persistEditorSettings(),
+      ),
+    ];
+  }
+
+  List<Widget> _buildBackgroundSection(
+    BuildContext context,
+    WritingStore store,
+    WritingState state,
+  ) {
+    return [
+      const SizedBox(height: 14),
+      Text(
+        '背景',
+        style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 10),
+      Row(
+        children: [
+          for (final preset in editorBackgroundPresets) ...[
+            _BackgroundOption(
+              preset: preset,
+              selected: state.editorBackground == preset.key,
+              onTap: () {
+                store.setEditorBackground(preset.key);
+                store.persistEditorSettings();
+              },
+            ),
+            const SizedBox(width: 12),
+          ],
+        ],
+      ),
+      const SizedBox(height: 14),
+    ];
   }
 
   /// 批次96-9：三个开关从 ⋮ 菜单移入排版设置——行段聚焦 / 智能标点
@@ -254,29 +284,7 @@ class EditorSettingsSheet extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              '段落',
-              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: onApplyParagraphFormat == null
-                  ? null
-                  : () => onApplyParagraphFormat!(
-                      state.indentParagraph,
-                      state.blankLineBetween,
-                    ),
-              style: TextButton.styleFrom(
-                foregroundColor: context.palette.primary,
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              ),
-              child: const Text('应用到全文', style: TextStyle(fontSize: 12)),
-            ),
-          ],
-        ),
+        _buildParagraphHeader(context, state),
         SwitchListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
@@ -306,6 +314,32 @@ class EditorSettingsSheet extends ConsumerWidget {
             store.setBlankLineBetween(v);
             store.persistEditorSettings();
           },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildParagraphHeader(BuildContext context, WritingState state) {
+    return Row(
+      children: [
+        Text(
+          '段落',
+          style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: onApplyParagraphFormat == null
+              ? null
+              : () => onApplyParagraphFormat!(
+                  state.indentParagraph,
+                  state.blankLineBetween,
+                ),
+          style: TextButton.styleFrom(
+            foregroundColor: context.palette.primary,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          ),
+          child: const Text('应用到全文', style: TextStyle(fontSize: 12)),
         ),
       ],
     );
@@ -516,28 +550,7 @@ class _PunctuationBarConfigSectionState
     final controller = TextEditingController();
     final input = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('添加常用标点'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 8,
-          decoration: const InputDecoration(hintText: '输入标点或短语，如 「」、『』'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.palette.primary,
-            ),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('添加'),
-          ),
-        ],
-      ),
+      builder: (ctx) => _buildAddPunctuationDialog(controller, ctx),
     );
     if (input == null) return;
     final trimmed = input.trim();
@@ -549,14 +562,7 @@ class _PunctuationBarConfigSectionState
         _customItems.any((it) => it.display == trimmed);
     if (exists) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('这个标点已经在工具栏里了'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+      _showDuplicateSnackBar();
       return;
     }
 
@@ -568,6 +574,45 @@ class _PunctuationBarConfigSectionState
     ]);
     final visible = _visibleIds ?? defaultPunctuationIds;
     await _save([...visible, nextId]);
+  }
+
+  Widget _buildAddPunctuationDialog(
+    TextEditingController controller,
+    BuildContext ctx,
+  ) {
+    return AlertDialog(
+      title: const Text('添加常用标点'),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        maxLength: 8,
+        decoration: const InputDecoration(hintText: '输入标点或短语，如 「」、『』'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.primary,
+          ),
+          onPressed: () => Navigator.pop(ctx, controller.text),
+          child: const Text('添加'),
+        ),
+      ],
+    );
+  }
+
+  void _showDuplicateSnackBar() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('这个标点已经在工具栏里了'),
+          duration: Duration(seconds: 2),
+        ),
+      );
   }
 
   /// 批次88-5：删除自定义标点（同时从可见列表移除）
@@ -597,69 +642,86 @@ class _PunctuationBarConfigSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              '标点栏',
-              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const Spacer(),
-            // 批次88-5：添加自定义标点（主操作）
-            TextButton.icon(
-              onPressed: _promptAdd,
-              style: TextButton.styleFrom(
-                foregroundColor: context.palette.primary,
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              ),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('添加标点', style: TextStyle(fontSize: 12)),
-            ),
-            TextButton(
-              onPressed: _resetToDefault,
-              style: TextButton.styleFrom(
-                foregroundColor: context.palette.textSecondary,
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              ),
-              child: const Text('恢复默认', style: TextStyle(fontSize: 12)),
-            ),
-          ],
-        ),
+        _buildPunctuationHeader(),
         const SizedBox(height: 4),
         Text('隐藏不常用的，把常用的排在前面；也可以添加自己的常用标点', style: context.text.caption),
         const SizedBox(height: 6),
-        for (var i = 0; i < visible.length; i++)
-          _ConfigRow(
-            item: byId[visible[i]]!,
-            visible: true,
-            canMoveUp: i > 0,
-            canMoveDown: i < visible.length - 1,
-            // 批次88-5：自定义项可删除，内置项只可隐藏
-            isCustom: _customItems.any((it) => it.id == visible[i]),
-            onHide: () => _hide(visible[i]),
-            onDelete: () => _deleteCustom(visible[i]),
-            onMoveUp: () => _move(visible[i], -1),
-            onMoveDown: () => _move(visible[i], 1),
-          ),
-        if (hidden.isNotEmpty) ...[
-          const Divider(height: 16),
-          Text('已隐藏', style: context.text.caption),
-          for (final it in hidden)
-            _ConfigRow(
-              item: it,
-              visible: false,
-              canMoveUp: false,
-              canMoveDown: false,
-              onHide: () {},
-              onDelete: () {},
-              onMoveUp: () {},
-              onMoveDown: () {},
-              onRestore: () => _restore(it.id),
-            ),
-        ],
+        ..._buildVisibleConfigList(visible, byId),
+        if (hidden.isNotEmpty) ..._buildHiddenConfigList(hidden),
       ],
     );
+  }
+
+  Widget _buildPunctuationHeader() {
+    return Row(
+      children: [
+        Text(
+          '标点栏',
+          style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const Spacer(),
+        // 批次88-5：添加自定义标点（主操作）
+        TextButton.icon(
+          onPressed: _promptAdd,
+          style: TextButton.styleFrom(
+            foregroundColor: context.palette.primary,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          ),
+          icon: const Icon(Icons.add, size: 16),
+          label: const Text('添加标点', style: TextStyle(fontSize: 12)),
+        ),
+        TextButton(
+          onPressed: _resetToDefault,
+          style: TextButton.styleFrom(
+            foregroundColor: context.palette.textSecondary,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          ),
+          child: const Text('恢复默认', style: TextStyle(fontSize: 12)),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildVisibleConfigList(
+    List<String> visible,
+    Map<String, PunctuationItem> byId,
+  ) {
+    return [
+      for (var i = 0; i < visible.length; i++)
+        _ConfigRow(
+          item: byId[visible[i]]!,
+          visible: true,
+          canMoveUp: i > 0,
+          canMoveDown: i < visible.length - 1,
+          // 批次88-5：自定义项可删除，内置项只可隐藏
+          isCustom: _customItems.any((it) => it.id == visible[i]),
+          onHide: () => _hide(visible[i]),
+          onDelete: () => _deleteCustom(visible[i]),
+          onMoveUp: () => _move(visible[i], -1),
+          onMoveDown: () => _move(visible[i], 1),
+        ),
+    ];
+  }
+
+  List<Widget> _buildHiddenConfigList(List<PunctuationItem> hidden) {
+    return [
+      const Divider(height: 16),
+      Text('已隐藏', style: context.text.caption),
+      for (final it in hidden)
+        _ConfigRow(
+          item: it,
+          visible: false,
+          canMoveUp: false,
+          canMoveDown: false,
+          onHide: () {},
+          onDelete: () {},
+          onMoveUp: () {},
+          onMoveDown: () {},
+          onRestore: () => _restore(it.id),
+        ),
+    ];
   }
 }
 
@@ -703,52 +765,64 @@ class _ConfigRow extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        if (visible) ...[
-          IconButton(
-            icon: const Icon(Icons.arrow_upward, size: 16),
-            color: canMoveUp
-                ? context.palette.textSecondary
-                : context.palette.disabledText,
-            visualDensity: VisualDensity.compact,
-            onPressed: canMoveUp ? onMoveUp : null,
-          ),
-          IconButton(
-            icon: const Icon(Icons.arrow_downward, size: 16),
-            color: canMoveDown
-                ? context.palette.textSecondary
-                : context.palette.disabledText,
-            visualDensity: VisualDensity.compact,
-            onPressed: canMoveDown ? onMoveDown : null,
-          ),
-          if (isCustom)
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 16),
-              color: context.palette.warning,
-              visualDensity: VisualDensity.compact,
-              tooltip: '删除',
-              onPressed: onDelete,
-            )
-          else
-            TextButton(
-              onPressed: onHide,
-              style: TextButton.styleFrom(
-                foregroundColor: context.palette.textTertiary,
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              ),
-              child: const Text('隐藏', style: TextStyle(fontSize: 12)),
-            ),
-        ] else
-          TextButton(
-            onPressed: onRestore,
-            style: TextButton.styleFrom(
-              foregroundColor: context.palette.primary,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            ),
-            child: const Text('恢复', style: TextStyle(fontSize: 12)),
-          ),
+        if (visible)
+          ..._buildVisibleActions(context)
+        else
+          ..._buildHiddenAction(context),
       ],
     );
+  }
+
+  List<Widget> _buildVisibleActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.arrow_upward, size: 16),
+        color: canMoveUp
+            ? context.palette.textSecondary
+            : context.palette.disabledText,
+        visualDensity: VisualDensity.compact,
+        onPressed: canMoveUp ? onMoveUp : null,
+      ),
+      IconButton(
+        icon: const Icon(Icons.arrow_downward, size: 16),
+        color: canMoveDown
+            ? context.palette.textSecondary
+            : context.palette.disabledText,
+        visualDensity: VisualDensity.compact,
+        onPressed: canMoveDown ? onMoveDown : null,
+      ),
+      if (isCustom)
+        IconButton(
+          icon: const Icon(Icons.delete_outline, size: 16),
+          color: context.palette.warning,
+          visualDensity: VisualDensity.compact,
+          tooltip: '删除',
+          onPressed: onDelete,
+        )
+      else
+        TextButton(
+          onPressed: onHide,
+          style: TextButton.styleFrom(
+            foregroundColor: context.palette.textTertiary,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+          ),
+          child: const Text('隐藏', style: TextStyle(fontSize: 12)),
+        ),
+    ];
+  }
+
+  List<Widget> _buildHiddenAction(BuildContext context) {
+    return [
+      TextButton(
+        onPressed: onRestore,
+        style: TextButton.styleFrom(
+          foregroundColor: context.palette.primary,
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        ),
+        child: const Text('恢复', style: TextStyle(fontSize: 12)),
+      ),
+    ];
   }
 }

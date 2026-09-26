@@ -160,72 +160,89 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
             ),
           ),
           const SizedBox(height: 6),
-          ...options.asMap().entries.map((o) {
-            final optIdx = o.key;
-            final optText = o.value;
-            final isChosen = chosen == optIdx;
-            Color? tileColor;
-            Color? textColor;
-            if (_submitted) {
-              if (isChosen && isCorrect) {
-                tileColor = context.palette.successBg;
-                textColor = context.palette.success;
-              } else if (isChosen && !isCorrect) {
-                tileColor = context.palette.dangerBg;
-                textColor = context.palette.danger;
-              }
-            }
-            return GestureDetector(
-              onTap: _submitted
-                  ? null
-                  : () => setState(() => _selected[itemIdx] = optIdx),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: AppSpacing.xs),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.smx,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      tileColor ??
-                      (isChosen
-                          ? context.palette.primarySoft
-                          : context.palette.surfaceWhite),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isChosen
-                        ? context.palette.primary
-                        : context.palette.border,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        optText,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: textColor ?? context.palette.textBody,
-                        ),
-                      ),
-                    ),
-                    if (_submitted && isChosen)
-                      Icon(
-                        isCorrect ? Icons.check_circle : Icons.cancel,
-                        size: 16,
-                        color: textColor,
-                      ),
-                  ],
-                ),
-              ),
-            );
-          }),
+          ...options.asMap().entries.map(
+            (o) => _buildOptionTile(itemIdx, o.key, o.value, chosen, isCorrect),
+          ),
           if (_submitted && explanation != null && explanation.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text('解析：$explanation', style: context.text.noteCaption),
           ],
         ],
       ),
+    );
+  }
+
+  (Color?, Color?) _optionColors(int? chosen, int optIdx, bool isCorrect) {
+    final isChosen = chosen == optIdx;
+    if (!_submitted) return (null, null);
+    if (isChosen && isCorrect) {
+      return (context.palette.successBg, context.palette.success);
+    }
+    if (isChosen && !isCorrect) {
+      return (context.palette.dangerBg, context.palette.danger);
+    }
+    return (null, null);
+  }
+
+  Widget _buildOptionTile(
+    int itemIdx,
+    int optIdx,
+    String optText,
+    int? chosen,
+    bool isCorrect,
+  ) {
+    final isChosen = chosen == optIdx;
+    final (tileColor, textColor) = _optionColors(chosen, optIdx, isCorrect);
+    return GestureDetector(
+      onTap: _submitted
+          ? null
+          : () => setState(() => _selected[itemIdx] = optIdx),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.smx,
+          vertical: 7,
+        ),
+        decoration: BoxDecoration(
+          color:
+              tileColor ??
+              (isChosen
+                  ? context.palette.primarySoft
+                  : context.palette.surfaceWhite),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isChosen ? context.palette.primary : context.palette.border,
+          ),
+        ),
+        child: _buildOptionRow(isChosen, optText, textColor, isCorrect),
+      ),
+    );
+  }
+
+  Widget _buildOptionRow(
+    bool isChosen,
+    String optText,
+    Color? textColor,
+    bool isCorrect,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            optText,
+            style: TextStyle(
+              fontSize: 13,
+              color: textColor ?? context.palette.textBody,
+            ),
+          ),
+        ),
+        if (_submitted && isChosen)
+          Icon(
+            isCorrect ? Icons.check_circle : Icons.cancel,
+            size: 16,
+            color: textColor,
+          ),
+      ],
     );
   }
 

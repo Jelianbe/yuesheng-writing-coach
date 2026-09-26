@@ -269,53 +269,55 @@ class _MessageListState extends ConsumerState<MessageList> {
       context: context,
       barrierDismissible: true,
       barrierColor: context.palette.overlay,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text('确认删除', style: context.text.titleLg),
-          content: Text(
-            '确定要删除这条消息吗？此操作不可撤销。',
-            textAlign: TextAlign.center,
-            style: context.text.body,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              style: AppButtonStyles.secondary,
-              child: Text(
-                '取消',
-                style: TextStyle(
-                  color: context.palette.textPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.palette.danger,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.md,
-                ),
-              ),
-              child: Text(
-                '删除',
-                style: TextStyle(
-                  color: context.palette.onPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => _buildDeleteDialog(ctx),
     );
     if (confirmed == true && widget.onDelete != null) {
       widget.onDelete!(message.id);
     }
+  }
+
+  Widget _buildDeleteDialog(BuildContext ctx) {
+    return AlertDialog(
+      title: Text('确认删除', style: context.text.titleLg),
+      content: Text(
+        '确定要删除这条消息吗？此操作不可撤销。',
+        textAlign: TextAlign.center,
+        style: context.text.body,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          style: AppButtonStyles.secondary,
+          child: Text(
+            '取消',
+            style: TextStyle(
+              color: context.palette.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.danger,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+          ),
+          child: Text(
+            '删除',
+            style: TextStyle(
+              color: context.palette.onPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -372,21 +374,42 @@ class _MessageListState extends ConsumerState<MessageList> {
 
   @override
   Widget build(BuildContext context) {
-    // 构造渲染列表：真实消息 + 可选的流式虚拟消息
-    final renderItems = <Map<String, dynamic>>[];
+    final renderItems = _buildRenderItems();
+    final hasThinkingIndicator =
+        widget.isStreaming &&
+        (widget.streamingContent.isEmpty || _isDiagnosisStage());
+    final isEmpty = widget.messages.isEmpty && !widget.isStreaming;
+    final practiceWidgets = _buildPracticeWidgets();
 
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            children: [
+              if (isEmpty)
+                _buildEmptyState()
+              else
+                _buildMessageListView(
+                  renderItems,
+                  hasThinkingIndicator,
+                  practiceWidgets,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  bool _isDiagnosisStage() =>
+      widget.streamStageLabel?.startsWith('正在诊断') ?? false;
+
+  List<Map<String, dynamic>> _buildRenderItems() {
+    final renderItems = <Map<String, dynamic>>[];
     for (final msg in widget.messages) {
       renderItems.add({'type': 'message', 'data': msg});
     }
-
-    // 批次51：诊断阶段（阶段标签以「正在诊断」开头）流式中隐藏前导文本——
-    // 诊断最终交付物是 DiagnosisCard，流式期间的说明文本（含协议块拦截后的
-    // 冻结态）不直接展示，统一走 ThinkingIndicator（spinner + 阶段文案），
-    // 避免「先长文本后变卡片」跳变；评估/快速观察等阶段保留流式文本。
-    final isDiagnosisStage =
-        widget.streamStageLabel?.startsWith('正在诊断') ?? false;
-
-    // 流式中：streamingContent 非空 → 追加虚拟消息（role=assistant, isStreaming=true 渲染半透明）
+    final isDiagnosisStage = _isDiagnosisStage();
     if (widget.isStreaming &&
         widget.streamingContent.isNotEmpty &&
         !isDiagnosisStage) {
@@ -402,16 +425,10 @@ class _MessageListState extends ConsumerState<MessageList> {
         ),
       });
     }
+    return renderItems;
+  }
 
-    // 末尾 ThinkingIndicator 的额外 item（streaming 但内容为空，或诊断阶段收拢文本）
-    final hasThinkingIndicator =
-        widget.isStreaming &&
-        (widget.streamingContent.isEmpty || isDiagnosisStage);
-
-    // P2-2 修复：消息列表为空且不在流式中时，显示引导文案
-    final isEmpty = widget.messages.isEmpty && !widget.isStreaming;
-
-    // T3 训练系统：练习任务卡 + 结果指示器（渲染在列表底部，对齐 WritingCoachPanel）
+  List<Widget> _buildPracticeWidgets() {
     final practiceWidgets = <Widget>[];
     if (widget.activePracticeTask != null) {
       practiceWidgets.add(
@@ -432,170 +449,173 @@ class _MessageListState extends ConsumerState<MessageList> {
         ),
       );
     }
+    return practiceWidgets;
+  }
 
-    return Column(
-      children: [
-        Expanded(
-          child: Stack(
-            children: [
-              if (isEmpty)
-                widget.emptyWidget ??
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: AppSpacing.xxl,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 40,
-                              color: context.palette.textTertiary,
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              '有问题尽管问教练',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: context.palette.textSecondary,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              '写作遇到卡壳、不知道怎么改，直接问就行',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: context.palette.textTertiary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-              else
-                ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.sm,
-                  ),
-                  itemCount:
-                      renderItems.length +
-                      (hasThinkingIndicator ? 1 : 0) +
-                      practiceWidgets.length,
-                  itemBuilder: (context, index) {
-                    // 流式中 + streamingContent 空 → 末尾显示 ThinkingIndicator
-                    if (hasThinkingIndicator && index == renderItems.length) {
-                      return RepaintBoundary(
-                        key: const ValueKey('msg-item-thinking'),
-                        child: ThinkingIndicator(
-                          label: widget.streamStageLabel,
-                        ),
-                      );
-                    }
-
-                    // 练习任务卡 / 结果指示器：列表底部渲染（对齐 RN 训练卡片在列表内）
-                    final practiceIndex =
-                        index -
-                        renderItems.length -
-                        (hasThinkingIndicator ? 1 : 0);
-                    if (practiceIndex >= 0) {
-                      return RepaintBoundary(
-                        key: ValueKey('msg-item-practice-$practiceIndex'),
-                        child: practiceWidgets[practiceIndex],
-                      );
-                    }
-
-                    final item = renderItems[index];
-                    final msg = item['data'] as Message;
-                    final isStreamingBubble = item['type'] == 'streaming';
-                    final isFailed = widget.failedMessageIds.contains(msg.id);
-
-                    // 批次5（5.1）：卡片分派统一走 MessageCardDispatcher
-                    //（diagnosis_result/teacher_suggestion/outline_confirmation/
-                    //  reference_change/phase_upgrade/partial_agreement/phase_summary/
-                    //  diagnosis_failed/评估报告 均由其处理；不命中回退 MessageBubble）
-                    final card = dispatchMessageCard(
-                      context: context,
-                      msg: msg,
-                      isStreamingBubble: isStreamingBubble,
-                      evaluationReport: widget.evaluationReports[msg.id],
-                      onTeachPrinciple: widget.onTeachPrinciple,
-                      onDismissEvaluationReport:
-                          widget.onDismissEvaluationReport != null
-                          ? () => widget.onDismissEvaluationReport!(msg.id)
-                          : null,
-                      onOpenGrowth: widget.onOpenGrowth,
-                      // 批次81：三卡回调透传（H1-H3）
-                      onContinueTraining: widget.onContinueTraining,
-                      onViewProfile: widget.onViewProfile,
-                      onBackToChat: widget.onBackToChat,
-                      onAddContent: widget.onAddContent,
-                      onContinueChat: widget.onContinueChat,
-                      onPartialAgreementSubmit: widget.onPartialAgreementSubmit,
-                      onPartialAgreementSkip: widget.onPartialAgreementSkip,
-                    );
-                    if (card != null) {
-                      // 批次53：RepaintBoundary 隔离——流式期间全列表 rebuild 时
-                      // 每消息绘制/动画独立，不扩散到兄弟 item，降低每 token 重绘开销
-                      return RepaintBoundary(
-                        key: ValueKey('msg-item-${msg.id}'),
-                        // 批次74：卡片消息同样支持长按删除（对齐普通气泡心智）
-                        child: _withFactBatchCard(
-                          GestureDetector(
-                            onLongPress: () => _showMessageActions(msg),
-                            child: card,
-                          ),
-                          msg,
-                        ),
-                      );
-                    }
-
-                    final streamBubble = MessageBubble(
-                      message: msg,
-                      isStreaming: isStreamingBubble,
-                      isFailed: isFailed,
-                      onRetry: isFailed ? widget.onRetry : null,
-                      onLongPress: _showMessageActions,
-                      onSaveToFile: widget.onSaveToFile,
-                      // 批次71：引用徽章点击跳转
-                      onMentionTap: _handleMentionTap,
-                    );
-                    // 批次49：流式气泡顶部加阶段角标（诊断/评估等，让等待可感知）
-                    if (isStreamingBubble && widget.streamStageLabel != null) {
-                      return RepaintBoundary(
-                        key: ValueKey('msg-item-${msg.id}'),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: AppSpacing.md,
-                                bottom: AppSpacing.xxs,
-                              ),
-                              child: Text(
-                                widget.streamStageLabel!,
-                                style: context.text.microCaption,
-                              ),
-                            ),
-                            streamBubble,
-                          ],
-                        ),
-                      );
-                    }
-                    return RepaintBoundary(
-                      key: ValueKey('msg-item-${msg.id}'),
-                      child: _withFactBatchCard(streamBubble, msg),
-                    );
-                  },
+  Widget _buildEmptyState() {
+    return widget.emptyWidget ??
+        Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 40,
+                  color: context.palette.textTertiary,
                 ),
-            ],
+                SizedBox(height: 12),
+                Text(
+                  '有问题尽管问教练',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: context.palette.textSecondary,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '写作遇到卡壳、不知道怎么改，直接问就行',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: context.palette.textTertiary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
+        );
+  }
+
+  Widget _buildMessageListView(
+    List<Map<String, dynamic>> renderItems,
+    bool hasThinkingIndicator,
+    List<Widget> practiceWidgets,
+  ) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      itemCount:
+          renderItems.length +
+          (hasThinkingIndicator ? 1 : 0) +
+          practiceWidgets.length,
+      itemBuilder: (context, index) => _buildMessageItem(
+        index,
+        renderItems,
+        hasThinkingIndicator,
+        practiceWidgets,
+      ),
+    );
+  }
+
+  Widget _buildMessageItem(
+    int index,
+    List<Map<String, dynamic>> renderItems,
+    bool hasThinkingIndicator,
+    List<Widget> practiceWidgets,
+  ) {
+    if (hasThinkingIndicator && index == renderItems.length) {
+      return _buildThinkingIndicatorItem();
+    }
+    final practiceIndex =
+        index - renderItems.length - (hasThinkingIndicator ? 1 : 0);
+    if (practiceIndex >= 0) {
+      return _buildPracticeItem(practiceIndex, practiceWidgets);
+    }
+    final item = renderItems[index];
+    final msg = item['data'] as Message;
+    final isStreamingBubble = item['type'] == 'streaming';
+    final isFailed = widget.failedMessageIds.contains(msg.id);
+    final cardItem = _buildCardItem(msg, isStreamingBubble, isFailed);
+    if (cardItem != null) return cardItem;
+    return _buildBubbleItem(msg, isStreamingBubble, isFailed);
+  }
+
+  Widget _buildThinkingIndicatorItem() {
+    return RepaintBoundary(
+      key: const ValueKey('msg-item-thinking'),
+      child: ThinkingIndicator(label: widget.streamStageLabel),
+    );
+  }
+
+  Widget _buildPracticeItem(int practiceIndex, List<Widget> practiceWidgets) {
+    return RepaintBoundary(
+      key: ValueKey('msg-item-practice-$practiceIndex'),
+      child: practiceWidgets[practiceIndex],
+    );
+  }
+
+  Widget? _buildCardItem(Message msg, bool isStreamingBubble, bool isFailed) {
+    final card = dispatchMessageCard(
+      context: context,
+      msg: msg,
+      isStreamingBubble: isStreamingBubble,
+      evaluationReport: widget.evaluationReports[msg.id],
+      onTeachPrinciple: widget.onTeachPrinciple,
+      onDismissEvaluationReport: widget.onDismissEvaluationReport != null
+          ? () => widget.onDismissEvaluationReport!(msg.id)
+          : null,
+      onOpenGrowth: widget.onOpenGrowth,
+      onContinueTraining: widget.onContinueTraining,
+      onViewProfile: widget.onViewProfile,
+      onBackToChat: widget.onBackToChat,
+      onAddContent: widget.onAddContent,
+      onContinueChat: widget.onContinueChat,
+      onPartialAgreementSubmit: widget.onPartialAgreementSubmit,
+      onPartialAgreementSkip: widget.onPartialAgreementSkip,
+    );
+    if (card == null) return null;
+    return RepaintBoundary(
+      key: ValueKey('msg-item-${msg.id}'),
+      child: _withFactBatchCard(
+        GestureDetector(
+          onLongPress: () => _showMessageActions(msg),
+          child: card,
         ),
-      ],
+        msg,
+      ),
+    );
+  }
+
+  Widget _buildBubbleItem(Message msg, bool isStreamingBubble, bool isFailed) {
+    final streamBubble = MessageBubble(
+      message: msg,
+      isStreaming: isStreamingBubble,
+      isFailed: isFailed,
+      onRetry: isFailed ? widget.onRetry : null,
+      onLongPress: _showMessageActions,
+      onSaveToFile: widget.onSaveToFile,
+      onMentionTap: _handleMentionTap,
+    );
+    if (isStreamingBubble && widget.streamStageLabel != null) {
+      return RepaintBoundary(
+        key: ValueKey('msg-item-${msg.id}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                left: AppSpacing.md,
+                bottom: AppSpacing.xxs,
+              ),
+              child: Text(
+                widget.streamStageLabel!,
+                style: context.text.microCaption,
+              ),
+            ),
+            streamBubble,
+          ],
+        ),
+      );
+    }
+    return RepaintBoundary(
+      key: ValueKey('msg-item-${msg.id}'),
+      child: _withFactBatchCard(streamBubble, msg),
     );
   }
 }

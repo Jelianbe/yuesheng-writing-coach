@@ -121,201 +121,220 @@ class _FileSectionState extends ConsumerState<FileSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Section Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '素材文件',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: context.palette.textPrimary,
-              ),
-            ),
-            InkWell(
-              onTap: _openUpload,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.smx,
-                  vertical: AppSpacing.xsm,
-                ),
-                decoration: BoxDecoration(
-                  color: context.palette.surfaceWhite,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(color: context.palette.borderSoft),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.attach_file,
-                      size: 14,
-                      color: context.palette.primary,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      '添加素材',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+        _buildHeader(),
         const SizedBox(height: 12),
+        if (_files.isEmpty) _buildEmptyState() else ..._buildFileList(),
+      ],
+    );
+  }
 
-        if (_files.isEmpty)
-          Container(
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          '素材文件',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        InkWell(
+          onTap: _openUpload,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Container(
             padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.xxl,
-              horizontal: AppSpacing.lg,
+              horizontal: AppSpacing.smx,
+              vertical: AppSpacing.xsm,
             ),
             decoration: BoxDecoration(
-              color: context.palette.surface,
-              borderRadius: BorderRadius.circular(AppRadius.md),
+              color: context.palette.surfaceWhite,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: context.palette.borderSoft),
             ),
-            child: Column(
+            child: Row(
               children: [
                 Icon(
-                  Icons.folder_open,
-                  size: 36,
-                  color: context.palette.disabledText,
+                  Icons.attach_file,
+                  size: 14,
+                  color: context.palette.primary,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(width: 4),
                 Text(
-                  '还没有素材文件',
+                  '添加素材',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: context.palette.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '上传大纲、人物表、世界观等参考文档\n在对话中引用后 AI 可以读取这些内容',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    color: context.palette.textTertiary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: _openUpload,
-                  icon: const Icon(Icons.upload_file, size: 16),
-                  label: const Text('上传素材'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.primary,
-                    side: BorderSide(color: context.palette.primary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
+                    color: context.palette.primary,
                   ),
                 ),
               ],
             ),
-          )
-        else
-          for (final file in _files)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: GestureDetector(
-                onTap: () => _openViewer(file),
-                onLongPress: () => _delete(file),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: context.palette.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: context.palette.borderSoft),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 26,
-                        color: context.palette.textTertiary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    file.fileName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.palette.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.sm,
-                                    vertical: AppSpacing.xxs,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: context.palette.primarySoft,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.sm,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    _roleLabels[file.fileRole] ?? file.fileRole,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.palette.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _formatSize(file.byteSize),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: context.palette.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // 批次75：删除按钮可见化——行尾提供删除入口（长按仍可用）
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          size: 20,
-                          color: context.palette.danger,
-                        ),
-                        tooltip: '删除文件',
-                        onPressed: () => _delete(file),
-                      ),
-                      Icon(
-                        Icons.chevron_right,
-                        color: context.palette.disabledText,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.xxl,
+        horizontal: AppSpacing.lg,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        children: [
+          ..._buildEmptyPlaceholder(),
+          const SizedBox(height: 12),
+          _buildEmptyUploadButton(),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildEmptyPlaceholder() {
+    return [
+      Icon(Icons.folder_open, size: 36, color: context.palette.disabledText),
+      const SizedBox(height: 8),
+      Text(
+        '还没有素材文件',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        '上传大纲、人物表、世界观等参考文档\n在对话中引用后 AI 可以读取这些内容',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.5,
+          color: context.palette.textTertiary,
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildEmptyUploadButton() {
+    return OutlinedButton.icon(
+      onPressed: _openUpload,
+      icon: const Icon(Icons.upload_file, size: 16),
+      label: const Text('上传素材'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: context.palette.primary,
+        side: BorderSide(color: context.palette.primary),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFileList() {
+    return [for (final file in _files) _buildFileRow(file)];
+  }
+
+  Widget _buildFileRow(AttachedFileRow file) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: GestureDetector(
+        onTap: () => _openViewer(file),
+        onLongPress: () => _delete(file),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: context.palette.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: context.palette.borderSoft),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 26,
+                color: context.palette.textTertiary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: _buildFileMeta(file)),
+              _buildDeleteButton(file),
+              Icon(Icons.chevron_right, color: context.palette.disabledText),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileMeta(AttachedFileRow file) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: _buildFileName(file)),
+            const SizedBox(width: 8),
+            _buildRoleBadge(file),
+          ],
+        ),
+        const SizedBox(height: 4),
+        _buildFileSize(file),
+      ],
+    );
+  }
+
+  Widget _buildFileName(AttachedFileRow file) {
+    return Text(
+      file.fileName,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: context.palette.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildRoleBadge(AttachedFileRow file) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        _roleLabels[file.fileRole] ?? file.fileRole,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: context.palette.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileSize(AttachedFileRow file) {
+    return Text(
+      _formatSize(file.byteSize),
+      style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+    );
+  }
+
+  Widget _buildDeleteButton(AttachedFileRow file) {
+    return IconButton(
+      icon: Icon(Icons.delete_outline, size: 20, color: context.palette.danger),
+      tooltip: '删除文件',
+      onPressed: () => _delete(file),
     );
   }
 }

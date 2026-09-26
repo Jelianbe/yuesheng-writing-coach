@@ -153,135 +153,151 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.palette.background,
-      appBar: AppBar(
-        backgroundColor: context.palette.background,
-        foregroundColor: context.palette.textPrimary,
-        toolbarHeight: 48,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, size: 22),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: '关闭',
-        ),
-        title: Text(
-          _file?.fileName ?? '素材内容',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      appBar: _buildAppBar(),
+      body: _loading
+          ? _buildLoading()
+          : _file == null
+          ? _buildNotFound()
+          : _buildBody(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: context.palette.background,
+      foregroundColor: context.palette.textPrimary,
+      toolbarHeight: 48,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.close, size: 22),
+        onPressed: () => Navigator.of(context).pop(),
+        tooltip: '关闭',
+      ),
+      title: Text(
+        _file?.fileName ?? '素材内容',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _buildLoading() {
+    return Center(
+      child: CircularProgressIndicator(color: context.palette.primary),
+    );
+  }
+
+  Widget _buildNotFound() {
+    return Center(
+      child: Text(
+        '文件不存在或已被删除',
+        style: TextStyle(color: context.palette.textTertiary),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    return Column(
+      children: [_buildHeader(), _buildContent(), _buildFooterActions()],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.smx,
+              vertical: 3,
+            ),
+            decoration: BoxDecoration(
+              color: context.palette.primarySoft,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Text(
+              _roleLabels[_file!.fileRole] ?? _file!.fileRole,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: context.palette.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            _formatSize(_file!.byteSize),
+            style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Expanded(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: SelectableText(
+          _file!.content,
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.6,
+            color: context.palette.textPrimary,
+          ),
         ),
       ),
-      body: _loading
-          ? Center(
-              child: CircularProgressIndicator(color: context.palette.primary),
-            )
-          : _file == null
-          ? Center(
-              child: Text(
-                '文件不存在或已被删除',
-                style: TextStyle(color: context.palette.textTertiary),
+    );
+  }
+
+  Widget _buildFooterActions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _handleChangeRole,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                side: BorderSide(color: context.palette.borderSoft),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
               ),
-            )
-          : Column(
-              children: [
-                // 头部
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.smx,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.palette.primarySoft,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Text(
-                          _roleLabels[_file!.fileRole] ?? _file!.fileRole,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: context.palette.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        _formatSize(_file!.byteSize),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.palette.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // 内容
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: SelectableText(
-                      _file!.content,
-                      style: TextStyle(
-                        fontSize: 15,
-                        height: 1.6,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-                // 底部操作
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.sm,
-                    AppSpacing.lg,
-                    AppSpacing.lg,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _handleChangeRole,
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(44),
-                            side: BorderSide(color: context.palette.borderSoft),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
-                          child: Text(
-                            '更改角色',
-                            style: TextStyle(
-                              color: context.palette.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _handleDelete,
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(44),
-                            backgroundColor: context.palette.dangerBg,
-                            foregroundColor: context.palette.danger,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
-                          child: const Text('删除文件'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              child: Text(
+                '更改角色',
+                style: TextStyle(color: context.palette.textSecondary),
+              ),
             ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton(
+              onPressed: _handleDelete,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                backgroundColor: context.palette.dangerBg,
+                foregroundColor: context.palette.danger,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+              child: const Text('删除文件'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

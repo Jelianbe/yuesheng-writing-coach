@@ -188,184 +188,212 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 顶部把手
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: context.palette.borderSoft,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              alignment: Alignment.center,
-            ),
-            Text(
-              '添加素材到《${widget.bookTitle}》',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: context.palette.textPrimary,
-              ),
-            ),
+            _buildHandle(),
+            _buildTitle(),
             const SizedBox(height: 16),
-
             if (_uploading)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _progressText,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.palette.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              )
+              _buildUploading()
             else ...[
-              // 选项
-              _OptionCard(
-                icon: Icons.attach_file,
-                title: '选择文件',
-                description: '从手机选择 .txt .md 素材文件',
-                onTap: _handlePickFile,
-              ),
-              const SizedBox(height: 8),
-              _OptionCard(
-                icon: Icons.edit_note,
-                title: '粘贴文本',
-                description: '直接粘贴或输入素材内容',
-                onTap: _showPasteDialog,
-              ),
-
-              // 表单（有内容后显示）
+              ..._buildSourceOptions(),
               if (_pendingContent != null) ...[
                 const SizedBox(height: 16),
-                Text(
-                  '素材类型：',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: context.palette.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    for (final role in _fileRoles) ...[
-                      _RoleChip(
-                        label: role.label,
-                        active: _fileRole == role.key,
-                        onTap: () => setState(() => _fileRole = role.key),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '素材名称：',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: context.palette.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    hintText: '请输入文件名',
-                    isDense: true,
-                    filled: true,
-                    fillColor: context.palette.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.md,
-                    ),
-                  ),
-                ),
+                ..._buildForm(),
               ],
-
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: context.palette.dangerBg,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.palette.danger,
-                    ),
-                  ),
-                ),
-              ],
+              ..._buildError(),
             ],
-
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                      side: BorderSide(color: context.palette.borderSoft),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                    child: Text(
-                      '取消',
-                      style: TextStyle(color: context.palette.textSecondary),
-                    ),
-                  ),
-                ),
-                if (_pendingContent != null && !_uploading) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _handleSave,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(44),
-                        backgroundColor: context.palette.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      child: Text(
-                        '保存',
-                        style: TextStyle(color: context.palette.onPrimary),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            _buildActions(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHandle() {
+    return Container(
+      width: 36,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: context.palette.borderSoft,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
+  Widget _buildTitle() {
+    return Text(
+      '添加素材到《${widget.bookTitle}》',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        color: context.palette.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildUploading() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      child: Column(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: context.palette.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _progressText,
+            style: TextStyle(fontSize: 14, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildSourceOptions() {
+    return [
+      _OptionCard(
+        icon: Icons.attach_file,
+        title: '选择文件',
+        description: '从手机选择 .txt .md 素材文件',
+        onTap: _handlePickFile,
+      ),
+      const SizedBox(height: 8),
+      _OptionCard(
+        icon: Icons.edit_note,
+        title: '粘贴文本',
+        description: '直接粘贴或输入素材内容',
+        onTap: _showPasteDialog,
+      ),
+    ];
+  }
+
+  List<Widget> _buildForm() {
+    return [
+      Text(
+        '素材类型：',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: context.palette.textSecondary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      _buildRoleSelector(),
+      const SizedBox(height: 12),
+      Text(
+        '素材名称：',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: context.palette.textSecondary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      _buildNameField(),
+    ];
+  }
+
+  Widget _buildRoleSelector() {
+    return Row(
+      children: [
+        for (final role in _fileRoles) ...[
+          _RoleChip(
+            label: role.label,
+            active: _fileRole == role.key,
+            onTap: () => setState(() => _fileRole = role.key),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildNameField() {
+    return TextField(
+      controller: _nameController,
+      decoration: InputDecoration(
+        hintText: '请输入文件名',
+        isDense: true,
+        filled: true,
+        fillColor: context.palette.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildError() {
+    if (_error == null) return const [];
+    return [
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: context.palette.dangerBg,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          _error!,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: context.palette.danger),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(44),
+              side: BorderSide(color: context.palette.borderSoft),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+            child: Text(
+              '取消',
+              style: TextStyle(color: context.palette.textSecondary),
+            ),
+          ),
+        ),
+        if (_pendingContent != null && !_uploading) ...[
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton(
+              onPressed: _handleSave,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+                backgroundColor: context.palette.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+              child: Text(
+                '保存',
+                style: TextStyle(color: context.palette.onPrimary),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

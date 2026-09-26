@@ -88,83 +88,93 @@ class PhaseUpgradeCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
-              // 庆祝图标（对齐 RN resultBg.partial 圆底）
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: context.palette.primarySoft,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.celebration_outlined,
-                  size: 28,
-                  color: context.palette.primary,
-                ),
-              ),
+              _buildCelebrationIcon(context),
               const SizedBox(height: 12),
-              Text(
-                '进入新阶段！',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.textPrimary,
-                ),
-              ),
+              _buildTitle(context),
               const SizedBox(height: 10),
-              // 阶段名（对齐 RN phaseContainer）
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.section,
-                  vertical: AppSpacing.sm,
-                ),
-                decoration: BoxDecoration(
-                  color: context.palette.primarySoft,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Text(
-                  _phaseLabel,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: context.palette.primary,
-                  ),
-                ),
-              ),
+              _buildPhaseNameBadge(context),
               const SizedBox(height: 10),
-              Text(
-                _unlockText,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: context.palette.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _encourageText,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: context.palette.textTertiary,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              if (reason != null && reason!.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  reason!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.palette.disabledText,
-                  ),
-                ),
-              ],
+              ..._buildDescriptions(context),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildCelebrationIcon(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.celebration_outlined,
+        size: 28,
+        color: context.palette.primary,
+      ),
+    );
+  }
+
+  Widget _buildTitle(BuildContext context) {
+    return Text(
+      '进入新阶段！',
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: context.palette.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildPhaseNameBadge(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.section,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Text(
+        _phaseLabel,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: context.palette.primary,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDescriptions(BuildContext context) {
+    return [
+      Text(
+        _unlockText,
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 14, color: context.palette.textSecondary),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        _encourageText,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 13,
+          color: context.palette.textTertiary,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+      if (reason != null && reason!.isNotEmpty) ...[
+        const SizedBox(height: 6),
+        Text(
+          reason!,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: context.palette.disabledText),
+        ),
+      ],
+    ];
   }
 }

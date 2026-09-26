@@ -59,94 +59,115 @@ class AbandonPracticeDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 警示图标圆底（对齐 RN iconContainer 56x56 dangerBg）
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: context.palette.dangerBg,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Icon(
-                Icons.warning_amber_rounded,
-                size: 28,
-                color: context.palette.danger,
-              ),
-            ),
+            _buildWarningIcon(context),
             const SizedBox(height: 16),
-            Text(
-              '确定跳过本次练习？',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: context.palette.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '已输入的内容将丢失，练习进度不会保存。',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.45,
-                color: context.palette.textTertiary,
-              ),
-            ),
+            ..._buildTitleBlock(context),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      onContinue();
-                    },
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(46),
-                      backgroundColor: context.palette.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                    child: Text(
-                      '继续练习',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.onPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      onConfirmSkip();
-                    },
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(46),
-                      side: BorderSide(color: context.palette.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                    child: Text(
-                      '确认跳过',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildActionsRow(context),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWarningIcon(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: context.palette.dangerBg,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.warning_amber_rounded,
+        size: 28,
+        color: context.palette.danger,
+      ),
+    );
+  }
+
+  List<Widget> _buildTitleBlock(BuildContext context) {
+    return [
+      Text(
+        '确定跳过本次练习？',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        '已输入的内容将丢失，练习进度不会保存。',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 14,
+          height: 1.45,
+          color: context.palette.textTertiary,
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildActionsRow(BuildContext context) {
+    return Row(
+      children: [
+        _buildContinueButton(context),
+        const SizedBox(width: 12),
+        _buildSkipButton(context),
+      ],
+    );
+  }
+
+  Widget _buildContinueButton(BuildContext context) {
+    return Expanded(
+      child: FilledButton(
+        onPressed: () {
+          Navigator.of(context).pop();
+          onContinue();
+        },
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(46),
+          backgroundColor: context.palette.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+        child: Text(
+          '继续练习',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: context.palette.onPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkipButton(BuildContext context) {
+    return Expanded(
+      child: OutlinedButton(
+        onPressed: () {
+          Navigator.of(context).pop();
+          onConfirmSkip();
+        },
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(46),
+          side: BorderSide(color: context.palette.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+        child: Text(
+          '确认跳过',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textSecondary,
+          ),
         ),
       ),
     );

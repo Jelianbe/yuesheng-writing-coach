@@ -115,29 +115,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       body: SafeArea(
         child: Column(
           children: [
-            // 右上「跳过」（对齐 RN skipBtn）
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  0,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  0,
-                ),
-                child: TextButton(
-                  onPressed: widget.onComplete,
-                  child: Text(
-                    '跳过',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: context.palette.textTertiary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // 3 页横滑
+            _buildSkipButton(),
             Expanded(
               child: PageView.builder(
                 controller: _controller,
@@ -146,70 +124,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 itemBuilder: (context, index) => _buildPage(_pages[index]),
               ),
             ),
-            // 进度指示点
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_pages.length, (i) {
-                final active = i == _page;
-                return AnimatedContainer(
-                  // 批次69：动效节奏统一——进度点时长收敛到 AppMotion 令牌
-                  duration: AppMotion.durationStandard,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: active ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: active
-                        ? context.palette.primary
-                        : context.palette.border,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                );
-              }),
-            ),
+            _buildProgressDots(),
             const SizedBox(height: AppSpacing.xl),
-            // 底部按钮：非末页「下一步」/ 末页「开始使用」
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.xl,
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: isLast
-                      ? widget.onComplete
-                      : () => _goToPage(_page + 1),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.palette.primary,
-                    foregroundColor: context.palette.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isLast ? '开始使用' : '下一步',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (!isLast) ...[
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 18,
-                          color: context.palette.onPrimary,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            _buildBottomButton(isLast),
           ],
         ),
       ),
@@ -222,16 +139,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 88,
-            height: 88,
-            decoration: BoxDecoration(
-              color: context.palette.l1,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Icon(page.icon, size: 44, color: context.palette.primary),
-          ),
+          _buildPageIcon(page.icon),
           const SizedBox(height: AppSpacing.xl),
           Text(
             page.title,
@@ -253,46 +161,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           const SizedBox(height: AppSpacing.lg),
           if (page.features != null)
             Column(
-              children: [
-                for (final f in page.features!)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.palette.surfaceWhite,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(f.icon, size: 18, color: context.palette.primary),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          f.text,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: context.palette.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            f.desc,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: context.palette.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
+              children: [for (final f in page.features!) _buildFeatureCard(f)],
             )
           else
             Text(
@@ -304,6 +173,137 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 color: context.palette.textSecondary,
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkipButton() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(0, AppSpacing.md, AppSpacing.lg, 0),
+        child: TextButton(
+          onPressed: widget.onComplete,
+          child: Text(
+            '跳过',
+            style: TextStyle(fontSize: 14, color: context.palette.textTertiary),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_pages.length, (i) {
+        final active = i == _page;
+        return AnimatedContainer(
+          duration: AppMotion.durationStandard,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: active ? 24 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: active ? context.palette.primary : context.palette.border,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildBottomButton(bool isLast) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: isLast ? widget.onComplete : () => _goToPage(_page + 1),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.primary,
+            foregroundColor: context.palette.onPrimary,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                isLast ? '开始使用' : '下一步',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (!isLast) ...[
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.arrow_forward,
+                  size: 18,
+                  color: context.palette.onPrimary,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageIcon(IconData icon) {
+    return Container(
+      width: 88,
+      height: 88,
+      decoration: BoxDecoration(
+        color: context.palette.l1,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 44, color: context.palette.primary),
+    );
+  }
+
+  Widget _buildFeatureCard(({String text, String desc, IconData icon}) f) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 12,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Icon(f.icon, size: 18, color: context.palette.primary),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            f.text,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textPrimary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              f.desc,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 14,
+                color: context.palette.textSecondary,
+              ),
+            ),
+          ),
         ],
       ),
     );

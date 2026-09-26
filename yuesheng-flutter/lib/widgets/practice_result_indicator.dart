@@ -80,22 +80,7 @@ class PracticeResultIndicator extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(cfg.icon, size: 20, color: cfg.color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  cfg.text,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: cfg.color,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          _buildHeaderRow(cfg),
           if (details != null && details!.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
@@ -108,44 +93,69 @@ class PracticeResultIndicator extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              if (result == TrainingResult.failed && onRetry != null) ...[
-                TextButton(
-                  onPressed: onRetry,
-                  style: TextButton.styleFrom(
-                    foregroundColor: context.palette.l3Text,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xsm,
-                    ),
-                  ),
-                  child: const Text(
-                    '再试一次',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(width: 4),
-              ],
-              TextButton(
-                onPressed: onDismiss,
-                style: TextButton.styleFrom(
-                  foregroundColor: context.palette.textTertiary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xsm,
-                  ),
-                ),
-                child: const Text(
-                  '关闭',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
+          _buildActionsRow(context),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeaderRow(
+    ({String text, IconData icon, Color color, Color bg}) cfg,
+  ) {
+    return Row(
+      children: [
+        Icon(cfg.icon, size: 20, color: cfg.color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            cfg.text,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: cfg.color,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionsRow(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        if (result == TrainingResult.failed && onRetry != null) ...[
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.l3Text,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xsm,
+              ),
+            ),
+            child: const Text(
+              '再试一次',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
+        TextButton(
+          onPressed: onDismiss,
+          style: TextButton.styleFrom(
+            foregroundColor: context.palette.textTertiary,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xsm,
+            ),
+          ),
+          child: const Text(
+            '关闭',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ),
+      ],
     );
   }
 }

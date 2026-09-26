@@ -115,68 +115,9 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
         ),
         child: Row(
           children: [
-            // 月字头像
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: context.palette.surface,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '月',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.textTertiary,
-                ),
-              ),
-            ),
+            _buildSessionAvatar(),
             const SizedBox(width: 12),
-            // 内容区
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.session.title.isEmpty
-                              ? '新建会话'
-                              : item.session.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: context.palette.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        formatRelativeTime(item.session.updatedAt),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.palette.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (item.session.preview.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      item.session.preview,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.subBody,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+            Expanded(child: _buildSessionContent(item)),
             const SizedBox(width: 8),
             Icon(
               Icons.chevron_right,
@@ -186,6 +127,67 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSessionAvatar() {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '月',
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textTertiary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionContent(SessionWithPhase item) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                item.session.title.isEmpty ? '新建会话' : item.session.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              formatRelativeTime(item.session.updatedAt),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.textTertiary,
+              ),
+            ),
+          ],
+        ),
+        if (item.session.preview.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            item.session.preview,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.text.subBody,
+          ),
+        ],
+      ],
     );
   }
 }

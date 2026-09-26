@@ -115,49 +115,60 @@ class _AbilityRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '$score',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    glyph,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: glyphColor,
-                    ),
-                  ),
-                ],
-              ),
+              _buildScoreHeader(color, glyph, glyphColor),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          // 分数进度条
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: SizedBox(
-              height: 8,
-              child: Stack(
-                children: [
-                  Container(color: context.palette.surface),
-                  FractionallySizedBox(
-                    widthFactor: fillWidth / 100,
-                    child: Container(color: color),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildProgressBar(context, color, fillWidth),
         ],
+      ),
+    );
+  }
+
+  Widget _buildScoreHeader(Color color, String glyph, Color glyphColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          '$score',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          glyph,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: glyphColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgressBar(
+    BuildContext context,
+    Color color,
+    double fillWidth,
+  ) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: SizedBox(
+        height: 8,
+        child: Stack(
+          children: [
+            Container(color: context.palette.surface),
+            FractionallySizedBox(
+              widthFactor: fillWidth / 100,
+              child: Container(color: color),
+            ),
+          ],
+        ),
       ),
     );
   }

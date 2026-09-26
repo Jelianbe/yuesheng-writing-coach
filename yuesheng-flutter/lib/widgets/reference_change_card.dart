@@ -96,62 +96,10 @@ class ReferenceChangeCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: context.palette.primarySoft,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          icon,
-                          size: 18,
-                          color: context.palette.primary,
-                        ),
-                      ),
+                      _buildIconBadge(context, icon),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  title,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.palette.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: context.palette.borderSoft,
-                                    borderRadius: BorderRadius.circular(
-                                      AppRadius.xs,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    _typeLabel,
-                                    style: context.text.microCaption,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.text.noteCaption,
-                            ),
-                          ],
-                        ),
+                        child: _buildTextColumn(context, title, subtitle),
                       ),
                     ],
                   ),
@@ -161,6 +109,58 @@ class ReferenceChangeCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildIconBadge(BuildContext context, IconData icon) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 18, color: context.palette.primary),
+    );
+  }
+
+  Widget _buildTextColumn(BuildContext context, String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTitleRow(context, title),
+        const SizedBox(height: 3),
+        Text(
+          subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.text.noteCaption,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTitleRow(BuildContext context, String title) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(
+            color: context.palette.borderSoft,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+          ),
+          child: Text(_typeLabel, style: context.text.microCaption),
+        ),
+      ],
     );
   }
 }

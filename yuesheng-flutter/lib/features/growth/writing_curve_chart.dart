@@ -47,82 +47,100 @@ class WritingCurveChart extends StatelessWidget {
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '写作成长曲线',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '每日字数与诊断次数趋势',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.textTertiary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    if (points.isEmpty)
-                      const _EmptyState(
-                        icon: Icons.trending_up,
-                        title: '暂无写作记录',
-                        description: '持续写作，这里会展示你的成长轨迹',
-                      )
-                    else ...[
-                      // 摘要行
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.sm,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.palette.background,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: Row(
-                          children: [
-                            _SummaryItem(
-                              value: formatWordCount(totalWords),
-                              label: '字数',
-                            ),
-                            const _SummaryDivider(),
-                            _SummaryItem(value: '$totalDiag', label: '诊断'),
-                            const _SummaryDivider(),
-                            _SummaryItem(value: '$activeDays', label: '活跃天数'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      // 图例
-                      Row(
-                        children: [
-                          _LegendItem(
-                            color: context.palette.primary,
-                            label: '字数',
-                          ),
-                          SizedBox(width: AppSpacing.lg),
-                          _LegendItem(
-                            color: context.palette.warning,
-                            label: '诊断',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      // 柱状图（横向滚动）
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: _ChartBody(points: points, maxWords: maxWords),
-                      ),
-                    ],
-                  ],
+                  children: _buildCardChildren(
+                    context,
+                    maxWords,
+                    totalWords,
+                    totalDiag,
+                    activeDays,
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  List<Widget> _buildCardChildren(
+    BuildContext context,
+    int maxWords,
+    int totalWords,
+    int totalDiag,
+    int activeDays,
+  ) {
+    return [
+      ..._buildTitleBlock(context),
+      const SizedBox(height: AppSpacing.md),
+      if (points.isEmpty)
+        const _EmptyState(
+          icon: Icons.trending_up,
+          title: '暂无写作记录',
+          description: '持续写作，这里会展示你的成长轨迹',
+        )
+      else ...[
+        _buildSummaryRow(context, totalWords, totalDiag, activeDays),
+        const SizedBox(height: AppSpacing.md),
+        _buildLegend(context),
+        const SizedBox(height: AppSpacing.sm),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _ChartBody(points: points, maxWords: maxWords),
+        ),
+      ],
+    ];
+  }
+
+  List<Widget> _buildTitleBlock(BuildContext context) {
+    return [
+      Text(
+        '写作成长曲线',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text(
+        '每日字数与诊断次数趋势',
+        style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+      ),
+    ];
+  }
+
+  Widget _buildSummaryRow(
+    BuildContext context,
+    int totalWords,
+    int totalDiag,
+    int activeDays,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: context.palette.background,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          _SummaryItem(value: formatWordCount(totalWords), label: '字数'),
+          const _SummaryDivider(),
+          _SummaryItem(value: '$totalDiag', label: '诊断'),
+          const _SummaryDivider(),
+          _SummaryItem(value: '$activeDays', label: '活跃天数'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegend(BuildContext context) {
+    return Row(
+      children: [
+        _LegendItem(color: context.palette.primary, label: '字数'),
+        SizedBox(width: AppSpacing.lg),
+        _LegendItem(color: context.palette.warning, label: '诊断'),
+      ],
     );
   }
 }
@@ -153,96 +171,9 @@ class _ChartBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 字数柱状图
-        SizedBox(
-          height: _chartHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (var i = 0; i < points.length; i++)
-                SizedBox(
-                  width: _cellWidth,
-                  child: Center(
-                    child: Container(
-                      width: _barWidth,
-                      height: _barHeight(points[i]),
-                      decoration: BoxDecoration(
-                        color: i == points.length - 1
-                            ? context.palette.primaryDeep
-                            : context.palette.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        // 诊断次数点
-        SizedBox(
-          height: 24,
-          child: Row(
-            children: [
-              for (final p in points)
-                SizedBox(
-                  width: _cellWidth,
-                  child: p.diagnosisCount > 0
-                      ? Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: context.palette.warning,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            if (p.diagnosisCount > 1)
-                              Text(
-                                '${p.diagnosisCount}',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.palette.warning,
-                                ),
-                              ),
-                          ],
-                        )
-                      : const SizedBox.shrink(),
-                ),
-            ],
-          ),
-        ),
-        // X 轴日期标签
-        SizedBox(
-          height: 18,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < points.length; i++)
-                SizedBox(
-                  width: _cellWidth,
-                  child: i % 2 == 0 || i == points.length - 1
-                      ? Text(
-                          i == points.length - 1
-                              ? '今天'
-                              : _dayLabel(points[i].date),
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: i == points.length - 1
-                                ? context.palette.primary
-                                : context.palette.textTertiary,
-                            fontWeight: i == points.length - 1
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                ),
-            ],
-          ),
-        ),
+        _buildWordsBars(context),
+        _buildDiagnosisDots(context),
+        _buildDateLabels(context),
       ],
     );
   }
@@ -252,6 +183,100 @@ class _ChartBody extends StatelessWidget {
     final ratio = p.wordCount / maxWords;
     final h = _chartHeight * ratio * _maxRatio;
     return h < 2 ? 2 : h;
+  }
+
+  Widget _buildWordsBars(BuildContext context) {
+    return SizedBox(
+      height: _chartHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var i = 0; i < points.length; i++)
+            SizedBox(
+              width: _cellWidth,
+              child: Center(
+                child: Container(
+                  width: _barWidth,
+                  height: _barHeight(points[i]),
+                  decoration: BoxDecoration(
+                    color: i == points.length - 1
+                        ? context.palette.primaryDeep
+                        : context.palette.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDiagnosisDots(BuildContext context) {
+    return SizedBox(
+      height: 24,
+      child: Row(
+        children: [
+          for (final p in points)
+            SizedBox(
+              width: _cellWidth,
+              child: p.diagnosisCount > 0
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: context.palette.warning,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        if (p.diagnosisCount > 1)
+                          Text(
+                            '${p.diagnosisCount}',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: context.palette.warning,
+                            ),
+                          ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateLabels(BuildContext context) {
+    return SizedBox(
+      height: 18,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < points.length; i++)
+            SizedBox(
+              width: _cellWidth,
+              child: i % 2 == 0 || i == points.length - 1
+                  ? Text(
+                      i == points.length - 1 ? '今天' : _dayLabel(points[i].date),
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: i == points.length - 1
+                            ? context.palette.primary
+                            : context.palette.textTertiary,
+                        fontWeight: i == points.length - 1
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+        ],
+      ),
+    );
   }
 }
 

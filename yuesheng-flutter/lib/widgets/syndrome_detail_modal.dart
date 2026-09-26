@@ -73,46 +73,8 @@ class SyndromeDetailModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 顶部拖拽把手（对齐 RN handle）
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(
-                top: AppSpacing.md,
-                bottom: AppSpacing.smx,
-              ),
-              decoration: BoxDecoration(
-                color: context.palette.borderLight,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              alignment: Alignment.center,
-            ),
-            // 头部：症候 chip + 关闭
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.xs,
-              ),
-              child: Row(
-                children: [
-                  _buildSyndromeTag(sev),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: IconButton.styleFrom(
-                      backgroundColor: context.palette.surface,
-                    ),
-                    icon: Icon(
-                      Icons.close,
-                      size: 18,
-                      color: context.palette.textTertiary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildHandle(context),
+            _buildHeader(context, sev),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(
@@ -135,6 +97,49 @@ class SyndromeDetailModal extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 顶部拖拽把手（对齐 RN handle）
+  Widget _buildHandle(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 4,
+      margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.smx),
+      decoration: BoxDecoration(
+        color: context.palette.borderLight,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
+  /// 头部：症候 chip + 关闭
+  Widget _buildHeader(BuildContext context, _SeverityTheme sev) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          _buildSyndromeTag(sev),
+          const Spacer(),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: IconButton.styleFrom(
+              backgroundColor: context.palette.surface,
+            ),
+            icon: Icon(
+              Icons.close,
+              size: 18,
+              color: context.palette.textTertiary,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -256,45 +261,52 @@ class SyndromeDetailModal extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.section),
-          decoration: BoxDecoration(
-            color: context.palette.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: points.isEmpty
-              ? Center(
-                  child: Text(
-                    '暂无趋势数据',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.palette.disabledText,
-                    ),
-                  ),
-                )
-              : Column(
-                  children: [
-                    SizedBox(
-                      height: 64,
-                      width: double.infinity,
-                      child: CustomPaint(
-                        painter: _TrendChartPainter(points, context.palette),
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '最近 ${points.length} 次诊断',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.disabledText,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
+        _buildTrendChartBox(context, points),
       ],
+    );
+  }
+
+  Widget _buildTrendChartBox(
+    BuildContext context,
+    List<SyndromeTrendPoint> points,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.section),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: points.isEmpty
+          ? Center(
+              child: Text(
+                '暂无趋势数据',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.palette.disabledText,
+                ),
+              ),
+            )
+          : Column(
+              children: [
+                SizedBox(
+                  height: 64,
+                  width: double.infinity,
+                  child: CustomPaint(
+                    painter: _TrendChartPainter(points, context.palette),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '最近 ${points.length} 次诊断',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.palette.disabledText,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -414,22 +426,40 @@ class _TrendChartPainter extends CustomPainter {
     const topPadding = 4.0;
     const bottomPadding = 4.0;
     final chartHeight = size.height - topPadding - bottomPadding;
+    final xs = _computeXs(size);
+    _drawGrid(canvas, size, chartHeight, bottomPadding);
+    _drawTrendLine(canvas, size, xs, chartHeight, bottomPadding);
+    _drawPoints(canvas, xs, size, chartHeight, bottomPadding);
+  }
 
-    double yFor(String severity) {
-      final score = _severityScore[severity] ?? 2;
-      // L1=1 → 底部，L3=3 → 顶部
-      final t = (score - 1) / 2; // 0..1
-      return size.height - bottomPadding - t * chartHeight;
-    }
+  /// L1=1 → 底部，L3=3 → 顶部
+  double _yFor(
+    String severity,
+    Size size,
+    double chartHeight,
+    double bottomPadding,
+  ) {
+    final score = _severityScore[severity] ?? 2;
+    final t = (score - 1) / 2; // 0..1
+    return size.height - bottomPadding - t * chartHeight;
+  }
 
-    final xs = <double>[];
+  List<double> _computeXs(Size size) {
     final n = points.length;
+    final xs = <double>[];
     for (var i = 0; i < n; i++) {
       xs.add(n == 1 ? size.width / 2 : size.width * i / (n - 1));
     }
+    return xs;
+  }
 
-    // P1-6：paint 无 BuildContext ⇒ 色取自构造注入的 [palette]，随主题翻。
-    // 网格参考线（L1/L2/L3 三档）
+  /// 网格参考线（L1/L2/L3 三档）
+  void _drawGrid(
+    Canvas canvas,
+    Size size,
+    double chartHeight,
+    double bottomPadding,
+  ) {
     final gridPaint = Paint()
       ..color = palette.borderSoft
       ..strokeWidth = 1;
@@ -437,25 +467,50 @@ class _TrendChartPainter extends CustomPainter {
       final y = size.height - bottomPadding - chartHeight * (s - 1) / 2;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
+  }
 
-    // 折线
+  void _drawTrendLine(
+    Canvas canvas,
+    Size size,
+    List<double> xs,
+    double chartHeight,
+    double bottomPadding,
+  ) {
+    final n = points.length;
+    if (n <= 1) return;
     final linePaint = Paint()
       ..color = palette.primary.withValues(alpha: 0.6)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    if (n > 1) {
-      final path = Path()..moveTo(xs[0], yFor(points[0].severity));
-      for (var i = 1; i < n; i++) {
-        path.lineTo(xs[i], yFor(points[i].severity));
-      }
-      canvas.drawPath(path, linePaint);
+    final path = Path()
+      ..moveTo(
+        xs[0],
+        _yFor(points[0].severity, size, chartHeight, bottomPadding),
+      );
+    for (var i = 1; i < n; i++) {
+      path.lineTo(
+        xs[i],
+        _yFor(points[i].severity, size, chartHeight, bottomPadding),
+      );
     }
+    canvas.drawPath(path, linePaint);
+  }
 
-    // 数据点（严重度配色）
-    for (var i = 0; i < n; i++) {
+  /// 数据点（严重度配色）
+  void _drawPoints(
+    Canvas canvas,
+    List<double> xs,
+    Size size,
+    double chartHeight,
+    double bottomPadding,
+  ) {
+    for (var i = 0; i < points.length; i++) {
       final sev = _severityThemeFor(palette, points[i].severity);
-      final center = Offset(xs[i], yFor(points[i].severity));
+      final center = Offset(
+        xs[i],
+        _yFor(points[i].severity, size, chartHeight, bottomPadding),
+      );
       canvas.drawCircle(center, 5, Paint()..color = sev.fg);
       canvas.drawCircle(
         center,

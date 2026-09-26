@@ -110,96 +110,102 @@ class ChatHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _menuSection(
-                context,
-                label: '态度档位',
-                child: Row(
-                  children: [
-                    for (final (attitude, label, color) in _attitudeOptionsFor(
-                      context.palette,
-                    )) ...[
-                      _AttitudeChip(
-                        label: label,
-                        color: color,
-                        active: attitude == currentAttitude,
-                        onTap: () {
-                          Navigator.pop(sheetCtx);
-                          onAttitudeChange(attitude);
-                        },
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                    ],
-                  ],
-                ),
-              ),
-              // 思考档位（批次 TH 三）：与设置页「模型行为」同源同值，
-              // 输入框上方开关是二值快捷入口，此处是完整四档
-              _menuSection(
-                context,
-                label: '思考档位',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.xs,
-                      children: [
-                        for (final preset in reasoningTierPresets)
-                          _TierChip(
-                            label: preset.label,
-                            active: preset.key == reasoningTier,
-                            onTap: () {
-                              Navigator.pop(sheetCtx);
-                              onReasoningTierChange(preset.key);
-                            },
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      reasoningTierOf(reasoningTier).hint,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // 画像入口（对齐 RN menuAction）
-              InkWell(
-                onTap: () {
-                  Navigator.pop(sheetCtx);
-                  onOpenProfile();
-                },
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs,
-                    vertical: AppSpacing.md,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 22,
-                        color: context.palette.textPrimary,
-                      ),
-                      SizedBox(width: AppSpacing.md),
-                      Text(
-                        '画像',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: context.palette.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildAttitudeSection(context, sheetCtx),
+              _buildTierSection(context, sheetCtx),
+              _buildProfileEntry(context, sheetCtx),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttitudeSection(BuildContext context, BuildContext sheetCtx) {
+    return _menuSection(
+      context,
+      label: '态度档位',
+      child: Row(
+        children: [
+          for (final (attitude, label, color) in _attitudeOptionsFor(
+            context.palette,
+          )) ...[
+            _AttitudeChip(
+              label: label,
+              color: color,
+              active: attitude == currentAttitude,
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                onAttitudeChange(attitude);
+              },
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTierSection(BuildContext context, BuildContext sheetCtx) {
+    return _menuSection(
+      context,
+      label: '思考档位',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final preset in reasoningTierPresets)
+                _TierChip(
+                  label: preset.label,
+                  active: preset.key == reasoningTier,
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    onReasoningTierChange(preset.key);
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            reasoningTierOf(reasoningTier).hint,
+            style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileEntry(BuildContext context, BuildContext sheetCtx) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(sheetCtx);
+        onOpenProfile();
+      },
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.person_outline,
+              size: 22,
+              color: context.palette.textPrimary,
+            ),
+            SizedBox(width: AppSpacing.md),
+            Text(
+              '画像',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: context.palette.textPrimary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -260,122 +266,140 @@ class ChatHeader extends StatelessWidget {
             return Stack(
               alignment: Alignment.center,
               children: [
-                // ① 居中主体（诊断模式徽章 / 会话 + 主引用小字），限宽
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: titleMaxW),
-                  child: _isManuscriptEntry
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '会话',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: context.palette.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.sm,
-                                vertical: AppSpacing.xxs,
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.palette.l2,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.sm,
-                                ),
-                                border: Border.all(
-                                  color: context.palette.l2Text,
-                                ),
-                              ),
-                              child: Text(
-                                '诊断模式',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: context.palette.l2Text,
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '会话',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: context.palette.textPrimary,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: onTapPrimaryRef,
-                              behavior: HitTestBehavior.opaque,
-                              child: Text(
-                                primaryRefTitle != null &&
-                                        primaryRefTitle!.isNotEmpty
-                                    ? primaryRefTitle!
-                                    : '未关联书籍 · 点此管理',
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: context.palette.textTertiary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-                // ② 左：会话列表按钮（贴左，对齐 RN sessionList 按钮）
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    icon: Icon(Icons.menu, color: context.palette.textPrimary),
-                    tooltip: '会话列表',
-                    onPressed: onOpenSessionDrawer,
-                  ),
-                ),
-                // ③ 右：新建对话 + 更多（贴右）
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 批次 29：新建对话快捷入口（⋯ 左侧，避免进抽屉才能新建）
-                      IconButton(
-                        icon: Icon(
-                          Icons.add_comment_outlined,
-                          color: context.palette.textPrimary,
-                        ),
-                        tooltip: '新建对话',
-                        onPressed: onNewSession,
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.more_horiz,
-                          color: context.palette.textPrimary,
-                        ),
-                        tooltip: '更多',
-                        onPressed: () => _showMoreMenu(context),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildCenterSubject(context, titleMaxW),
+                _buildLeadingButton(context),
+                _buildTrailingButtons(context),
               ],
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildCenterSubject(BuildContext context, double titleMaxW) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: titleMaxW),
+      child: _isManuscriptEntry
+          ? _buildDiagnosisBadgeRow(context)
+          : _buildPrimaryRefRow(context),
+    );
+  }
+
+  Widget _buildDiagnosisBadgeRow(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          '会话',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        _buildDiagnosisBadge(context),
+      ],
+    );
+  }
+
+  Widget _buildDiagnosisBadge(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.l2,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: context.palette.l2Text),
+      ),
+      child: Text(
+        '诊断模式',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: context.palette.l2Text,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryRefRow(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '会话',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        _buildPrimaryRefText(context),
+      ],
+    );
+  }
+
+  Widget _buildPrimaryRefText(BuildContext context) {
+    final label = primaryRefTitle != null && primaryRefTitle!.isNotEmpty
+        ? primaryRefTitle!
+        : '未关联书籍 · 点此管理';
+    return GestureDetector(
+      onTap: onTapPrimaryRef,
+      behavior: HitTestBehavior.opaque,
+      child: Text(
+        label,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: context.palette.textTertiary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLeadingButton(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: IconButton(
+        icon: Icon(Icons.menu, color: context.palette.textPrimary),
+        tooltip: '会话列表',
+        onPressed: onOpenSessionDrawer,
+      ),
+    );
+  }
+
+  Widget _buildTrailingButtons(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 批次 29：新建对话快捷入口（⋯ 左侧，避免进抽屉才能新建）
+          IconButton(
+            icon: Icon(
+              Icons.add_comment_outlined,
+              color: context.palette.textPrimary,
+            ),
+            tooltip: '新建对话',
+            onPressed: onNewSession,
+          ),
+          IconButton(
+            icon: Icon(Icons.more_horiz, color: context.palette.textPrimary),
+            tooltip: '更多',
+            onPressed: () => _showMoreMenu(context),
+          ),
+        ],
       ),
     );
   }

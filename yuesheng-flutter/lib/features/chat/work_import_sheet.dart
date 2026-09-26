@@ -144,113 +144,122 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 顶部把手
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: context.palette.borderSoft,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              alignment: Alignment.center,
-            ),
-            Text(
-              '导入作品',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: context.palette.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '从文件导入小说，自动按章节拆分',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: context.palette.textTertiary,
-              ),
-            ),
+            _buildHandleBar(),
+            ..._buildTitleBlock(),
             const SizedBox(height: 16),
-
-            if (_uploading)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _progressText,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.palette.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else ...[
-              _OptionCard(
-                icon: Icons.description_outlined,
-                title: '选择文件',
-                description: '支持 .txt .md 格式，自动识别章节',
-                onTap: _handlePickFile,
-              ),
-              const SizedBox(height: 8),
-              _OptionCard(
-                icon: Icons.content_paste,
-                title: '粘贴文本',
-                description: '直接粘贴小说内容',
-                onTap: _showPasteDialog,
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: context.palette.dangerBg,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Text(
-                    _error!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.palette.danger,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-
+            if (_uploading) _buildUploadingView() else ..._buildOptionsView(),
             const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
-                side: BorderSide(color: context.palette.borderSoft),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
-              child: Text(
-                '取消',
-                style: TextStyle(color: context.palette.textSecondary),
-              ),
-            ),
+            _buildCancelButton(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHandleBar() {
+    return Container(
+      width: 36,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: context.palette.borderSoft,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
+  List<Widget> _buildTitleBlock() {
+    return [
+      Text(
+        '导入作品',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        '从文件导入小说，自动按章节拆分',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 14, color: context.palette.textTertiary),
+      ),
+    ];
+  }
+
+  Widget _buildUploadingView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      child: Column(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: context.palette.primary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _progressText,
+            style: TextStyle(fontSize: 14, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildOptionsView() {
+    return [
+      _OptionCard(
+        icon: Icons.description_outlined,
+        title: '选择文件',
+        description: '支持 .txt .md 格式，自动识别章节',
+        onTap: _handlePickFile,
+      ),
+      const SizedBox(height: 8),
+      _OptionCard(
+        icon: Icons.content_paste,
+        title: '粘贴文本',
+        description: '直接粘贴小说内容',
+        onTap: _showPasteDialog,
+      ),
+      if (_error != null) ..._buildErrorBanner(),
+    ];
+  }
+
+  List<Widget> _buildErrorBanner() {
+    return [
+      const SizedBox(height: 12),
+      Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: context.palette.dangerBg,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          _error!,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: context.palette.danger),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildCancelButton() {
+    return OutlinedButton(
+      onPressed: () => Navigator.of(context).pop(),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(44),
+        side: BorderSide(color: context.palette.borderSoft),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+      ),
+      child: Text('取消', style: TextStyle(color: context.palette.textSecondary)),
     );
   }
 }

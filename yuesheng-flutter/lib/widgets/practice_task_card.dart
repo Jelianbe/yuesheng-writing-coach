@@ -221,195 +221,225 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header：练习任务 ──
-          Row(
-            children: [
-              Icon(
-                Icons.edit_note,
-                size: 18,
-                color: context.palette.textPrimary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '练习任务',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.textPrimary,
-                ),
-              ),
-            ],
-          ),
+          _buildHeader(),
           const SizedBox(height: 12),
-          // ── 症候名 chip ──
-          if (widget.task.syndromeName != null &&
-              widget.task.syndromeName!.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.smx,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: context.palette.l1,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-              child: Text(
-                widget.task.syndromeName!,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.l1Text,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          // ── 任务描述 ──
-          if (widget.task.taskDescription.isNotEmpty) ...[
-            Text(
-              '任务描述',
-              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              widget.task.taskDescription,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.5,
-                color: context.palette.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          // ── 练习目标 ──
-          if (widget.task.taskGoal.isNotEmpty) ...[
-            Text(
-              '练习目标',
-              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.smx),
-              decoration: BoxDecoration(
-                color: context.palette.l1,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.emoji_events_outlined,
-                    size: 16,
-                    color: context.palette.l2Text,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      widget.task.taskGoal,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: context.palette.l2Text,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          // ── 作答输入 ──
-          TextField(
-            controller: _answerController,
-            enabled: !widget.submitting,
-            maxLines: 4,
-            minLines: 3,
-            textAlignVertical: TextAlignVertical.top,
-            decoration: InputDecoration(
-              hintText: '在这里写下你的练习答案...',
-              hintStyle: TextStyle(color: context.palette.textTertiary),
-              filled: true,
-              fillColor: context.palette.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: BorderSide(color: context.palette.border),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: BorderSide(color: context.palette.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: BorderSide(color: context.palette.primary),
-              ),
-              contentPadding: const EdgeInsets.all(AppSpacing.md),
-            ),
-            style: TextStyle(fontSize: 14, color: context.palette.textPrimary),
-          ),
+          ..._buildSyndromeChip(),
+          ..._buildTaskDescription(),
+          ..._buildTaskGoal(),
+          _buildAnswerField(),
           _buildSelfAssessmentSection(),
           const SizedBox(height: 12),
-          // ── 操作：跳过 | 提交 ──
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: widget.submitting ? null : widget.onSkip,
-                style: TextButton.styleFrom(
-                  backgroundColor: context.palette.surface,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: 9,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                ),
-                child: Text(
-                  '跳过',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: context.palette.textTertiary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton(
-                onPressed: _handleSubmit,
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.palette.primary,
-                  disabledBackgroundColor: context.palette.disabled,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.section,
-                    vertical: 9,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                ),
-                child: widget.submitting
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: context.palette.onPrimary,
-                        ),
-                      )
-                    : Text(
-                        '提交作答',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.palette.onPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-              ),
-            ],
-          ),
+          _buildActions(),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Icon(Icons.edit_note, size: 18, color: context.palette.textPrimary),
+        const SizedBox(width: 8),
+        Text(
+          '练习任务',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildSyndromeChip() {
+    if (widget.task.syndromeName == null || widget.task.syndromeName!.isEmpty) {
+      return [];
+    }
+    return [
+      Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.smx,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: context.palette.l1,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: Text(
+          widget.task.syndromeName!,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.palette.l1Text,
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+    ];
+  }
+
+  List<Widget> _buildTaskDescription() {
+    if (widget.task.taskDescription.isEmpty) {
+      return [];
+    }
+    return [
+      Text(
+        '任务描述',
+        style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        widget.task.taskDescription,
+        style: TextStyle(
+          fontSize: 14,
+          height: 1.5,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 12),
+    ];
+  }
+
+  List<Widget> _buildTaskGoal() {
+    if (widget.task.taskGoal.isEmpty) {
+      return [];
+    }
+    return [
+      Text(
+        '练习目标',
+        style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
+      ),
+      const SizedBox(height: 4),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.smx),
+        decoration: BoxDecoration(
+          color: context.palette.l1,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 16,
+              color: context.palette.l2Text,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                widget.task.taskGoal,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: context.palette.l2Text,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 12),
+    ];
+  }
+
+  Widget _buildAnswerField() {
+    return TextField(
+      controller: _answerController,
+      enabled: !widget.submitting,
+      maxLines: 4,
+      minLines: 3,
+      textAlignVertical: TextAlignVertical.top,
+      decoration: InputDecoration(
+        hintText: '在这里写下你的练习答案...',
+        hintStyle: TextStyle(color: context.palette.textTertiary),
+        filled: true,
+        fillColor: context.palette.surface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: context.palette.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: context.palette.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: context.palette.primary),
+        ),
+        contentPadding: const EdgeInsets.all(AppSpacing.md),
+      ),
+      style: TextStyle(fontSize: 14, color: context.palette.textPrimary),
+    );
+  }
+
+  Widget _buildActions() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        _buildSkipButton(),
+        const SizedBox(width: 12),
+        _buildSubmitButton(),
+      ],
+    );
+  }
+
+  Widget _buildSkipButton() {
+    return TextButton(
+      onPressed: widget.submitting ? null : widget.onSkip,
+      style: TextButton.styleFrom(
+        backgroundColor: context.palette.surface,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: 9,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+      child: Text(
+        '跳过',
+        style: TextStyle(
+          fontSize: 14,
+          color: context.palette.textTertiary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return FilledButton(
+      onPressed: _handleSubmit,
+      style: FilledButton.styleFrom(
+        backgroundColor: context.palette.primary,
+        disabledBackgroundColor: context.palette.disabled,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.section,
+          vertical: 9,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+      child: widget.submitting
+          ? SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: context.palette.onPrimary,
+              ),
+            )
+          : Text(
+              '提交作答',
+              style: TextStyle(
+                fontSize: 14,
+                color: context.palette.onPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
     );
   }
 }

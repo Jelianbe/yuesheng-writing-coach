@@ -174,43 +174,51 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
     }
     return ListView(
       children: [
-        // 一句话风格
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: context.palette.primarySoft,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: Text(
-            p.summary,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: context.palette.primaryDeep,
-            ),
-          ),
-        ),
+        _buildSummaryCard(p),
         const SizedBox(height: 12),
         Text('你的文风五维', style: context.text.noteCaption),
         const SizedBox(height: 6),
-        _dimensionRow('感官偏好', _sensoryLabel(p.sensory)),
-        _dimensionRow('句子节奏', _rhythmLabel(p.rhythm)),
-        _dimensionRow('叙事距离', _distanceLabel(p.narrativeDistance)),
-        _dimensionRow('语气质地', _toneLabel(p.toneTexture)),
-        _dimensionRow('结构本能', _structureLabel(p.structure)),
-        if (p.confidence != null || p.updatedAt != null) ...[
-          const SizedBox(height: 10),
-          Text(
-            [
-              if (p.confidence != null)
-                '识别置信度 ${(p.confidence! * 100).round()}%',
-              if (p.updatedAt != null) '更新于 ${_formatTime(p.updatedAt!)}',
-            ].join(' · '),
-            style: context.text.microCaption,
-          ),
-        ],
+        ..._buildDimensionList(p),
       ],
     );
+  }
+
+  Widget _buildSummaryCard(WritingStyleProfile p) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        p.summary,
+        style: TextStyle(
+          fontSize: 14,
+          height: 1.5,
+          color: context.palette.primaryDeep,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDimensionList(WritingStyleProfile p) {
+    return [
+      _dimensionRow('感官偏好', _sensoryLabel(p.sensory)),
+      _dimensionRow('句子节奏', _rhythmLabel(p.rhythm)),
+      _dimensionRow('叙事距离', _distanceLabel(p.narrativeDistance)),
+      _dimensionRow('语气质地', _toneLabel(p.toneTexture)),
+      _dimensionRow('结构本能', _structureLabel(p.structure)),
+      if (p.confidence != null || p.updatedAt != null) ...[
+        const SizedBox(height: 10),
+        Text(
+          [
+            if (p.confidence != null) '识别置信度 ${(p.confidence! * 100).round()}%',
+            if (p.updatedAt != null) '更新于 ${_formatTime(p.updatedAt!)}',
+          ].join(' · '),
+          style: context.text.microCaption,
+        ),
+      ],
+    ];
   }
 
   Widget _dimensionRow(String name, String label) {

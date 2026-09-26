@@ -121,49 +121,9 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Text(
-                '回收板',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.textInk,
-                ),
-              ),
-              const Spacer(),
-              if (items != null && items.isNotEmpty)
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_sweep_outlined,
-                    size: 20,
-                    color: context.palette.textTertiary,
-                  ),
-                  tooltip: '清空回收板',
-                  onPressed: _clearAll,
-                ),
-              IconButton(
-                icon: Icon(
-                  Icons.close,
-                  size: 20,
-                  color: context.palette.textTertiary,
-                ),
-                tooltip: '关闭',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
+          _buildHeaderRow(items),
           const SizedBox(height: 4),
-          Text('删掉或剪切的长文本会留在这里，点一下就能找回', style: context.text.caption),
-          // 批次87-2：恢复后自动移除开关
-          SwitchListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            title: Text('恢复后自动移除该条', style: context.text.subBody),
-            value: _removeOnRestore,
-            activeTrackColor: context.palette.primary,
-            onChanged: _toggleRemoveOnRestore,
-          ),
+          ..._buildHintAndSwitch(),
           const SizedBox(height: 8),
           SizedBox(height: 300, child: _buildList()),
         ],
@@ -171,83 +131,142 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
     );
   }
 
+  Widget _buildHeaderRow(List<RecycleBinItem>? items) {
+    return Row(
+      children: [
+        Text(
+          '回收板',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textInk,
+          ),
+        ),
+        const Spacer(),
+        if (items != null && items.isNotEmpty)
+          IconButton(
+            icon: Icon(
+              Icons.delete_sweep_outlined,
+              size: 20,
+              color: context.palette.textTertiary,
+            ),
+            tooltip: '清空回收板',
+            onPressed: _clearAll,
+          ),
+        IconButton(
+          icon: Icon(
+            Icons.close,
+            size: 20,
+            color: context.palette.textTertiary,
+          ),
+          tooltip: '关闭',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildHintAndSwitch() {
+    return [
+      Text('删掉或剪切的长文本会留在这里，点一下就能找回', style: context.text.caption),
+      // 批次87-2：恢复后自动移除开关
+      SwitchListTile(
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        title: Text('恢复后自动移除该条', style: context.text.subBody),
+        value: _removeOnRestore,
+        activeTrackColor: context.palette.primary,
+        onChanged: _toggleRemoveOnRestore,
+      ),
+    ];
+  }
+
   Widget _buildList() {
     final items = _items;
     if (items == null) {
-      return Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: context.palette.primary,
-        ),
-      );
+      return _buildListLoading();
     }
     if (items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.delete_outline,
-              size: 36,
-              color: context.palette.placeholder,
-            ),
-            SizedBox(height: 8),
-            Text(
-              '回收板是空的\n删掉的长文本会自动留在这里',
-              textAlign: TextAlign.center,
-              style: context.text.subCaption,
-            ),
-          ],
-        ),
-      );
+      return _buildListEmpty();
     }
     return ListView.separated(
       itemCount: items.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return InkWell(
-          onTap: () => _restore(index),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.content,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.palette.textInk,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${item.content.length} 字 · ${_formatTime(item.deletedAt)}',
-                        style: context.text.microCaption,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(
-                    Icons.delete_outline,
-                    size: 18,
-                    color: context.palette.textTertiary,
-                  ),
-                  tooltip: '移除',
-                  onPressed: () => _removeAt(index),
-                ),
-              ],
-            ),
+      itemBuilder: (context, index) => _buildListItem(items[index], index),
+    );
+  }
+
+  Widget _buildListLoading() {
+    return Center(
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: context.palette.primary,
+      ),
+    );
+  }
+
+  Widget _buildListEmpty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.delete_outline,
+            size: 36,
+            color: context.palette.placeholder,
           ),
-        );
-      },
+          SizedBox(height: 8),
+          Text(
+            '回收板是空的\n删掉的长文本会自动留在这里',
+            textAlign: TextAlign.center,
+            style: context.text.subCaption,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListItem(RecycleBinItem item, int index) {
+    return InkWell(
+      onTap: () => _restore(index),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.content,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.palette.textInk,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${item.content.length} 字 · ${_formatTime(item.deletedAt)}',
+                    style: context.text.microCaption,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                size: 18,
+                color: context.palette.textTertiary,
+              ),
+              tooltip: '移除',
+              onPressed: () => _removeAt(index),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

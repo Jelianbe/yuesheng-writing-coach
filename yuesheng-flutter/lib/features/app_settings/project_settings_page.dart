@@ -234,32 +234,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.palette.background,
-      appBar: AppBar(
-        title: const Text('项目设置'),
-        backgroundColor: context.palette.background,
-        foregroundColor: context.palette.textPrimary,
-        toolbarHeight: 48,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 22),
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go('/bookshelf'),
-          tooltip: '返回',
-        ),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _handleSave,
-            child: Text(
-              '保存',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: context.palette.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(),
       body: _loading
           ? Center(
               child: CircularProgressIndicator(color: context.palette.primary),
@@ -308,52 +283,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           decoration: _inputDecoration('作品名称'),
         ),
         const SizedBox(height: 14),
-        Text(
-          '体裁',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: context.palette.textBody,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final g in _genres)
-              InkWell(
-                onTap: _saving ? null : () => setState(() => _genre = g),
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _genre == g
-                        ? context.palette.primarySoft
-                        : context.palette.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(
-                      color: _genre == g
-                          ? context.palette.primary
-                          : context.palette.divider,
-                    ),
-                  ),
-                  child: Text(
-                    g,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: _genre == g
-                          ? context.palette.primary
-                          : context.palette.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+        ..._buildGenreSelector(),
         const SizedBox(height: 14),
         Text(
           '简介',
@@ -381,51 +311,80 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionTitle('标签'),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (var i = 0; i < _tags.length; i++)
-              Container(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.md,
-                  right: AppSpacing.xs,
-                  top: AppSpacing.xs,
-                  bottom: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: context.palette.primarySoft,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _tags[i],
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: _saving ? null : () => _handleRemoveTag(i),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.xsm),
-                        child: Icon(
-                          Icons.close,
-                          size: 13,
-                          color: context.palette.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            // 添加标签（虚线框，对齐 RN addTagBtn）
+        _buildCurrentTagsWrap(),
+        // 批次94-5：热门标签预设（点击即加入，已含不再显示）
+        const SizedBox(height: 14),
+        Text('热门标签', style: context.text.subCaption),
+        const SizedBox(height: 8),
+        _buildTagPresetsWrap(),
+      ],
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: const Text('项目设置'),
+      backgroundColor: context.palette.background,
+      foregroundColor: context.palette.textPrimary,
+      toolbarHeight: 48,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, size: 22),
+        onPressed: () =>
+            context.canPop() ? context.pop() : context.go('/bookshelf'),
+        tooltip: '返回',
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : _handleSave,
+          child: Text(
+            '保存',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: context.palette.primary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildGenreSelector() {
+    return [
+      Text(
+        '体裁',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: context.palette.textBody,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Wrap(spacing: 8, children: [for (final g in _genres) _buildGenreChip(g)]),
+    ];
+  }
+
+  Widget _buildCurrentTagsWrap() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (var i = 0; i < _tags.length; i++) _buildTagChip(i),
+        _buildAddTagChip(),
+      ],
+    );
+  }
+
+  Widget _buildTagPresetsWrap() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final preset in _tagPresets)
+          if (!_tags.contains(preset))
             InkWell(
-              onTap: _saving ? null : _handleAddTag,
+              onTap: _saving ? null : () => setState(() => _tags.add(preset)),
               borderRadius: BorderRadius.circular(AppRadius.pill),
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -433,48 +392,109 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                   vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
+                  color: context.palette.surface,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(
-                    color: context.palette.border,
-                    style: BorderStyle.solid,
-                  ),
+                  border: Border.all(color: context.palette.divider),
                 ),
-                child: Text('+ 添加标签', style: context.text.subCaption),
+                child: Text('+ $preset', style: context.text.subBody),
               ),
             ),
-          ],
-        ),
-        // 批次94-5：热门标签预设（点击即加入，已含不再显示）
-        const SizedBox(height: 14),
-        Text('热门标签', style: context.text.subCaption),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final preset in _tagPresets)
-              if (!_tags.contains(preset))
-                InkWell(
-                  onTap: _saving
-                      ? null
-                      : () => setState(() => _tags.add(preset)),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.xsm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.palette.surface,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(color: context.palette.divider),
-                    ),
-                    child: Text('+ $preset', style: context.text.subBody),
-                  ),
-                ),
-          ],
-        ),
       ],
+    );
+  }
+
+  Widget _buildGenreChip(String g) {
+    return InkWell(
+      onTap: _saving ? null : () => setState(() => _genre = g),
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: _genre == g
+              ? context.palette.primarySoft
+              : context.palette.surface,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: _genre == g
+                ? context.palette.primary
+                : context.palette.divider,
+          ),
+        ),
+        child: Text(
+          g,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: _genre == g
+                ? context.palette.primary
+                : context.palette.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagChip(int i) {
+    return Container(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.md,
+        right: AppSpacing.xs,
+        top: AppSpacing.xs,
+        bottom: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _tags[i],
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: context.palette.primary,
+            ),
+          ),
+          InkWell(
+            onTap: _saving ? null : () => _handleRemoveTag(i),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.xsm),
+              child: Icon(
+                Icons.close,
+                size: 13,
+                color: context.palette.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddTagChip() {
+    return InkWell(
+      onTap: _saving ? null : _handleAddTag,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xsm,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: context.palette.border,
+            style: BorderStyle.solid,
+          ),
+        ),
+        child: Text('+ 添加标签', style: context.text.subCaption),
+      ),
     );
   }
 

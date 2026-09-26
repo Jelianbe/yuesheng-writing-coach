@@ -113,62 +113,11 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 标题行：左标题 + 右时间窗切换
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '训练通过率',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: context.palette.textSecondary,
-                            ),
-                          ),
-                        ),
-                        _buildWindowSelector(),
-                      ],
-                    ),
+                    _buildHeaderRow(context),
                     const SizedBox(height: 4),
-                    Text(
-                      '${_stats.length} 个症候 · 共 $totalPractices 次练习 · '
-                      '整体通过率 ${(overallRate * 100).round()}%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.textTertiary,
-                      ),
-                    ),
+                    _buildSummaryLine(context, totalPractices, overallRate),
                     const SizedBox(height: 12),
-                    if (_loading)
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(
-                          child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: context.palette.primary,
-                            ),
-                          ),
-                        ),
-                      )
-                    else if (_stats.isEmpty)
-                      Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          '该时段暂无训练记录',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.palette.textTertiary,
-                          ),
-                        ),
-                      )
-                    else
-                      for (int i = 0; i < _stats.length; i++) ...[
-                        _StatsRow(stat: _stats[i]),
-                        if (i < _stats.length - 1) const SizedBox(height: 10),
-                      ],
+                    ..._buildContent(context),
                   ],
                 ),
               ),
@@ -177,6 +126,76 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
         ),
       ),
     );
+  }
+
+  /// 标题行：左标题 + 右时间窗切换
+  Widget _buildHeaderRow(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            '训练通过率',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textSecondary,
+            ),
+          ),
+        ),
+        _buildWindowSelector(),
+      ],
+    );
+  }
+
+  /// 摘要行：症候数 · 练习次数 · 整体通过率
+  Widget _buildSummaryLine(
+    BuildContext context,
+    int totalPractices,
+    double overallRate,
+  ) {
+    return Text(
+      '${_stats.length} 个症候 · 共 $totalPractices 次练习 · '
+      '整体通过率 ${(overallRate * 100).round()}%',
+      style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+    );
+  }
+
+  /// 内容区：加载中 / 空态 / 各症候统计行
+  List<Widget> _buildContent(BuildContext context) {
+    if (_loading) {
+      return [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: context.palette.primary,
+              ),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (_stats.isEmpty) {
+      return [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Text(
+            '该时段暂无训练记录',
+            style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+          ),
+        ),
+      ];
+    }
+    return [
+      for (int i = 0; i < _stats.length; i++) ...[
+        _StatsRow(stat: _stats[i]),
+        if (i < _stats.length - 1) const SizedBox(height: 10),
+      ],
+    ];
   }
 
   /// 时间窗切换器：7 天 / 30 天 / 全部
@@ -217,50 +236,60 @@ class _StatsRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: context.palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '通过 ${stat.passed} · 部分通过 ${stat.partial} · '
-                    '未过 ${stat.failed}',
-                    style: context.text.microCaption,
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              '$ratePercent%',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: _rateColor(context, stat.passRate),
-              ),
-            ),
-          ],
-        ),
+        _buildStatHeader(context, name, ratePercent),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.xs),
-          child: LinearProgressIndicator(
-            value: stat.passRate,
-            minHeight: 4,
-            backgroundColor: context.palette.border,
+        _buildRateBar(context, stat),
+      ],
+    );
+  }
+
+  /// 头部：症候名 + 通过/部分/未过 + 通过率百分比
+  Widget _buildStatHeader(BuildContext context, String name, int ratePercent) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '通过 ${stat.passed} · 部分通过 ${stat.partial} · '
+                '未过 ${stat.failed}',
+                style: context.text.microCaption,
+              ),
+            ],
+          ),
+        ),
+        Text(
+          '$ratePercent%',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
             color: _rateColor(context, stat.passRate),
           ),
         ),
       ],
+    );
+  }
+
+  /// 通过率进度条
+  Widget _buildRateBar(BuildContext context, SyndromeTrainingStats stat) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.xs),
+      child: LinearProgressIndicator(
+        value: stat.passRate,
+        minHeight: 4,
+        backgroundColor: context.palette.border,
+        color: _rateColor(context, stat.passRate),
+      ),
     );
   }
 

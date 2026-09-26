@@ -155,36 +155,7 @@ class PhaseSummaryCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
-              // 结果图标圆底（对齐 RN iconContainer）
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: config.bgColor,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(config.icon, size: 28, color: config.color),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                config.title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                config.encourage,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: context.palette.textTertiary,
-                ),
-              ),
+              ..._buildResultHeader(context, config),
               const SizedBox(height: 14),
               _buildStatsRow(context, config.color),
               if (syndromeChanges.isNotEmpty) ...[
@@ -198,6 +169,50 @@ class PhaseSummaryCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildResultHeader(
+    BuildContext context,
+    ({
+      IconData icon,
+      String title,
+      Color color,
+      Color bgColor,
+      String encourage,
+    })
+    config,
+  ) {
+    return [
+      Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: config.bgColor,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(config.icon, size: 28, color: config.color),
+      ),
+      const SizedBox(height: 12),
+      Text(
+        config.title,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        config.encourage,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 14,
+          height: 1.4,
+          color: context.palette.textTertiary,
+        ),
+      ),
+    ];
   }
 
   /// 统计行：解决症候数 / 练习次数 / 进步趋势
@@ -259,40 +274,46 @@ class PhaseSummaryCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        for (final change in changes) ...[
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: context.palette.divider, width: 0.5),
+        for (final change in changes) _buildChangeRow(context, change, color),
+      ],
+    );
+  }
+
+  Widget _buildChangeRow(
+    BuildContext context,
+    SyndromeChangeItem change,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.palette.divider, width: 0.5),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              change.syndromeName,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: context.palette.textPrimary,
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    change.syndromeName,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: context.palette.textPrimary,
-                    ),
-                  ),
-                ),
-                Text(
-                  _trendLabel(change.trend),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-              ],
+          ),
+          Text(
+            _trendLabel(change.trend),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 
@@ -300,63 +321,68 @@ class PhaseSummaryCard extends StatelessWidget {
   Widget _buildButtons(BuildContext context, Color color) {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          height: 40,
-          child: FilledButton(
-            onPressed: onContinueTraining ?? () {},
-            style: FilledButton.styleFrom(
-              backgroundColor: color,
-              padding: EdgeInsets.zero,
-              textStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
+        _buildContinueButton(context, color),
+        const SizedBox(height: 8),
+        _buildSecondaryButtons(context),
+      ],
+    );
+  }
+
+  Widget _buildContinueButton(BuildContext context, Color color) {
+    return SizedBox(
+      width: double.infinity,
+      height: 40,
+      child: FilledButton(
+        onPressed: onContinueTraining ?? () {},
+        style: FilledButton.styleFrom(
+          backgroundColor: color,
+          padding: EdgeInsets.zero,
+          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        child: const Text('继续训练'),
+      ),
+    );
+  }
+
+  Widget _buildSecondaryButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 36,
+            child: OutlinedButton(
+              onPressed: onViewProfile ?? () {},
+              style: OutlinedButton.styleFrom(
+                foregroundColor: context.palette.textTertiary,
+                side: BorderSide(color: context.palette.border),
+                padding: EdgeInsets.zero,
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
+              child: const Text('查看学员画像'),
             ),
-            child: const Text('继续训练'),
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 36,
-                child: OutlinedButton(
-                  onPressed: onViewProfile ?? () {},
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.textTertiary,
-                    side: BorderSide(color: context.palette.border),
-                    padding: EdgeInsets.zero,
-                    textStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  child: const Text('查看学员画像'),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SizedBox(
+            height: 36,
+            child: OutlinedButton(
+              onPressed: onBackToChat ?? () {},
+              style: OutlinedButton.styleFrom(
+                foregroundColor: context.palette.textTertiary,
+                side: BorderSide(color: context.palette.border),
+                padding: EdgeInsets.zero,
+                textStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+              child: const Text('返回对话'),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: SizedBox(
-                height: 36,
-                child: OutlinedButton(
-                  onPressed: onBackToChat ?? () {},
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.textTertiary,
-                    side: BorderSide(color: context.palette.border),
-                    padding: EdgeInsets.zero,
-                    textStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  child: const Text('返回对话'),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

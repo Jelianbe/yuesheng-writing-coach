@@ -79,12 +79,50 @@ class ParagraphFormatFormatter extends TextInputFormatter {
 
     final oldText = oldValue.text;
     final newText = newValue.text;
-
-    // 编辑器性能（2026-09-21 · D3-b）：O(1) 早退，省掉下方两趟 O(全文) 扫描。
-    // 判据与取舍见文件头注释与 [_insertedRegionCannotMatter]。
     if (_insertedRegionCannotMatter(oldText, newText)) return newValue;
 
-    // 找出插入片段（共同前缀/后缀之差）
+    final region = _findInsertedRegion(oldText, newText);
+    if (!region.inserted.contains('\n')) return newValue;
+
+    final expanded = _expandInserted(
+      region.inserted,
+      newText,
+      region.newEnd,
+      indentOn: indentOn,
+      blankLineOn: blankLineOn,
+    );
+    final finalText =
+        newText.substring(0, region.start) +
+        expanded.text +
+        newText.substring(region.newEnd);
+    if (finalText == newText) return newValue;
+
+    final selection = newValue.selection;
+    if (!selection.isValid) {
+      return TextEditingValue(
+        text: finalText,
+        selection: TextSelection.collapsed(
+          offset: region.start + expanded.text.length,
+        ),
+      );
+    }
+    // 光标在插入片段末尾/其后 → 平移扩增量；在片段前 → 不动
+    int adjust(int offset) => offset >= region.start + region.inserted.length
+        ? offset + expanded.shift
+        : offset;
+    return TextEditingValue(
+      text: finalText,
+      selection: TextSelection(
+        baseOffset: adjust(selection.baseOffset),
+        extentOffset: adjust(selection.extentOffset),
+      ),
+    );
+  }
+
+  ({int start, int oldEnd, int newEnd, String inserted}) _findInsertedRegion(
+    String oldText,
+    String newText,
+  ) {
     var start = 0;
     while (start < oldText.length &&
         start < newText.length &&
@@ -99,13 +137,23 @@ class ParagraphFormatFormatter extends TextInputFormatter {
       oldEnd--;
       newEnd--;
     }
-    final inserted = newText.substring(start, newEnd);
-    if (!inserted.contains('\n')) return newValue;
+    return (
+      start: start,
+      oldEnd: oldEnd,
+      newEnd: newEnd,
+      inserted: newText.substring(start, newEnd),
+    );
+  }
 
-    // 展开插入片段中的换行：
-    //   '\n' → (空行开关) '\n\n' → (缩进开关) 补 '\u3000\u3000'（段首非空白时）
+  ({String text, int shift}) _expandInserted(
+    String inserted,
+    String newText,
+    int newEnd, {
+    required bool indentOn,
+    required bool blankLineOn,
+  }) {
     final sb = StringBuffer();
-    var shift = 0; // 相对原插入片段扩增的字符数
+    var shift = 0;
     for (var i = 0; i < inserted.length; i++) {
       final ch = inserted[i];
       sb.write(ch);
@@ -115,7 +163,6 @@ class ParagraphFormatFormatter extends TextInputFormatter {
         shift++;
       }
       if (indentOn) {
-        // 新段首字符（插入片段内下一个，或插入片段外紧跟的字符）
         final charAfter = i + 1 < inserted.length
             ? inserted[i + 1]
             : (newEnd < newText.length ? newText[newEnd] : null);
@@ -127,27 +174,6 @@ class ParagraphFormatFormatter extends TextInputFormatter {
         }
       }
     }
-
-    final finalText =
-        newText.substring(0, start) + sb.toString() + newText.substring(newEnd);
-    if (finalText == newText) return newValue;
-
-    final selection = newValue.selection;
-    if (!selection.isValid) {
-      return TextEditingValue(
-        text: finalText,
-        selection: TextSelection.collapsed(offset: start + sb.length),
-      );
-    }
-    // 光标在插入片段末尾/其后 → 平移扩增量；在片段前 → 不动
-    int adjust(int offset) =>
-        offset >= start + inserted.length ? offset + shift : offset;
-    return TextEditingValue(
-      text: finalText,
-      selection: TextSelection(
-        baseOffset: adjust(selection.baseOffset),
-        extentOffset: adjust(selection.extentOffset),
-      ),
-    );
+    return (text: sb.toString(), shift: shift);
   }
 }

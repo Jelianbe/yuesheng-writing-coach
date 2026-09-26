@@ -79,86 +79,101 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                Text(
-                  '写作统计',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: context.palette.textInk,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 20),
-                  color: context.palette.textTertiary,
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
+            _buildHeader(),
             const SizedBox(height: 4),
-            // 批次87-3：统计窗口切换（近 7/14/30 天）
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (final d in const [7, 14, 30]) ...[
-                  ChoiceChip(
-                    label: Text(
-                      '近$d天',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _days == d
-                            ? context.palette.primary
-                            : context.palette.textSecondary,
-                      ),
-                    ),
-                    selected: _days == d,
-                    showCheckmark: false,
-                    visualDensity: VisualDensity.compact,
-                    backgroundColor: context.palette.surface,
-                    selectedColor: context.palette.primarySoft,
-                    side: BorderSide(
-                      color: _days == d
-                          ? context.palette.primary
-                          : context.palette.border,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    onSelected: (_) => _switchDays(d),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ],
-            ),
+            _buildDaysSwitcher(),
             const SizedBox(height: 8),
-            if (!_loaded)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              )
-            else if (_points.isEmpty)
-              const _StatsEmpty()
-            else ...[
-              WritingCurveChart(points: _points),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                '每天进步一点点，成长看得见。',
-                textAlign: TextAlign.center,
-                style: context.text.caption,
-              ),
-            ],
+            ..._buildContent(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Text(
+          '写作统计',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textInk,
+          ),
+        ),
+        const Spacer(),
+        IconButton(
+          icon: const Icon(Icons.close, size: 20),
+          color: context.palette.textTertiary,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDaysSwitcher() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (final d in const [7, 14, 30]) ...[
+          ChoiceChip(
+            label: Text(
+              '近$d天',
+              style: TextStyle(
+                fontSize: 12,
+                color: _days == d
+                    ? context.palette.primary
+                    : context.palette.textSecondary,
+              ),
+            ),
+            selected: _days == d,
+            showCheckmark: false,
+            visualDensity: VisualDensity.compact,
+            backgroundColor: context.palette.surface,
+            selectedColor: context.palette.primarySoft,
+            side: BorderSide(
+              color: _days == d
+                  ? context.palette.primary
+                  : context.palette.border,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            onSelected: (_) => _switchDays(d),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildContent() {
+    if (!_loaded) {
+      return const [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      ];
+    }
+    if (_points.isEmpty) {
+      return const [_StatsEmpty()];
+    }
+    return [
+      WritingCurveChart(points: _points),
+      const SizedBox(height: AppSpacing.md),
+      Text(
+        '每天进步一点点，成长看得见。',
+        textAlign: TextAlign.center,
+        style: context.text.caption,
+      ),
+    ];
   }
 }
 

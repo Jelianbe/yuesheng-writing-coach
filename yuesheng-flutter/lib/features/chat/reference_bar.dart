@@ -236,183 +236,193 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
         border: Border(bottom: BorderSide(color: context.palette.borderSoft)),
       ),
       child: Column(
-        // 批次76：mainAxisSize.min —— 弹层内容自适应高度，不再撑满全屏
-        // （isScrollControlled bottom sheet 中 max 会把弹层顶到屏幕顶端侵占状态栏）
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 批次76：标题 + 引用数徽章（弹层可发现性——入口意义一目了然）
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.xs,
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '引用管理',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: context.palette.textPrimary,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xxs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.palette.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(color: context.palette.borderSoft),
-                  ),
-                  child: Text(
-                    '${_references.length} 个引用',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: context.palette.textTertiary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // ── 主引用行 ──
-          InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.smx,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.menu_book_outlined,
-                    size: 20,
-                    color: context.palette.textPrimary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: primaryRef != null
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _mainLabel(primaryRef.refType),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: context.palette.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 1),
-                              Text(
-                                primaryRef.title.isEmpty
-                                    ? '未命名'
-                                    : primaryRef.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: context.palette.textPrimary,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            // 批次76：空态文案明确引导——点下方「+ 添加引用」按钮
-                            '还没有引用作品，点下方按钮添加',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: context.palette.disabledText,
-                            ),
-                          ),
-                  ),
-                  if (otherCount > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xxs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: context.palette.primarySoft,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                      ),
-                      child: Text(
-                        '+$otherCount',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: context.palette.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: 8),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    size: 20,
-                    color: context.palette.disabledText,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── 展开列表 ──
-          if (_expanded) ...[
-            Divider(height: 1, color: context.palette.borderSoft),
-            Container(
-              color: context.palette.surface,
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (isSelectMode) _buildActionBar(),
-                  if (isSelectMode) const SizedBox(height: 4),
-                  // 批次76：引用行区域限高可滚动——引用多时弹层不至于溢出屏幕
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final ref in _references)
-                            _buildRefRow(ref, isSelectMode),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (!isSelectMode && _references.length > 1)
-                    _buildSelectAll(),
-                  const SizedBox(height: 8),
-                  _buildAddRefBtn(),
-                ],
-              ),
-            ),
-          ],
+          _buildHeader(),
+          _buildMainRefRow(primaryRef, otherCount),
+          if (_expanded) ..._buildExpandedList(isSelectMode),
         ],
       ),
     );
+  }
+
+  // ── 标题栏 + 引用数徽章 ──
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.xs,
+      ),
+      child: Row(
+        children: [
+          Text(
+            '引用管理',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textPrimary,
+            ),
+          ),
+          const Spacer(),
+          _buildRefCountBadge(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRefCountBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: context.palette.borderSoft),
+      ),
+      child: Text(
+        '${_references.length} 个引用',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: context.palette.textTertiary,
+        ),
+      ),
+    );
+  }
+
+  // ── 主引用行 ──
+  Widget _buildMainRefRow(ReferencedItem? primaryRef, int otherCount) {
+    return InkWell(
+      onTap: () => setState(() => _expanded = !_expanded),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.smx,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.menu_book_outlined,
+              size: 20,
+              color: context.palette.textPrimary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: _buildMainRefContent(primaryRef)),
+            if (otherCount > 0) ...[
+              const SizedBox(width: 8),
+              _buildOtherCountBadge(otherCount),
+            ],
+            const SizedBox(width: 8),
+            Icon(
+              _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              size: 20,
+              color: context.palette.disabledText,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainRefContent(ReferencedItem? primaryRef) {
+    if (primaryRef == null) {
+      return Text(
+        '还没有引用作品，点下方按钮添加',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 14, color: context.palette.disabledText),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _mainLabel(primaryRef.refType),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: context.palette.primary,
+          ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          primaryRef.title.isEmpty ? '未命名' : primaryRef.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: context.palette.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOtherCountBadge(int otherCount) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Text(
+        '+$otherCount',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: context.palette.primary,
+        ),
+      ),
+    );
+  }
+
+  // ── 展开列表 ──
+  List<Widget> _buildExpandedList(bool isSelectMode) {
+    return [
+      Divider(height: 1, color: context.palette.borderSoft),
+      Container(
+        color: context.palette.surface,
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (isSelectMode) _buildActionBar(),
+            if (isSelectMode) const SizedBox(height: 4),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final ref in _references)
+                      _buildRefRow(ref, isSelectMode),
+                  ],
+                ),
+              ),
+            ),
+            if (!isSelectMode && _references.length > 1) _buildSelectAll(),
+            const SizedBox(height: 8),
+            _buildAddRefBtn(),
+          ],
+        ),
+      ),
+    ];
   }
 
   // ── 多选操作条（对齐 RN actionBar）──
@@ -429,54 +439,66 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       ),
       child: Row(
         children: [
-          InkWell(
-            onTap: _handleDeselectAll,
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.xsm),
-              child: Text(
-                '取消',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: context.palette.textSecondary,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Center(
-              child: Text(
-                '已选 ${_selectedRefs.length} 项',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.textPrimary,
-                ),
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: _handleDeleteSelected,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.xsm,
-              ),
-              decoration: BoxDecoration(
-                color: context.palette.dangerBg,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Text(
-                '删除选中',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: context.palette.danger,
-                ),
-              ),
-            ),
-          ),
+          _buildActionCancel(),
+          _buildActionCount(),
+          _buildActionDelete(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionCancel() {
+    return InkWell(
+      onTap: _handleDeselectAll,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+        child: Text(
+          '取消',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: context.palette.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCount() {
+    return Expanded(
+      child: Center(
+        child: Text(
+          '已选 ${_selectedRefs.length} 项',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionDelete() {
+    return InkWell(
+      onTap: _handleDeleteSelected,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xsm,
+        ),
+        decoration: BoxDecoration(
+          color: context.palette.dangerBg,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          '删除选中',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: context.palette.danger,
+          ),
+        ),
       ),
     );
   }
@@ -492,92 +514,88 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       ),
       child: Row(
         children: [
-          // 多选框
-          InkWell(
-            onTap: () => _toggleSelect(key),
-            child: Container(
-              width: 22,
-              height: 22,
-              margin: const EdgeInsets.only(right: AppSpacing.smx),
-              decoration: BoxDecoration(
-                color: isSelected ? context.palette.primary : null,
-                border: Border.all(
-                  color: isSelected
-                      ? context.palette.primary
-                      : context.palette.border,
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: isSelected
-                  ? Icon(
-                      Icons.check,
-                      size: 16,
-                      color: context.palette.onPrimary,
-                    )
-                  : null,
-            ),
-          ),
-          // 引用信息（非多选点击设主引用；多选点击切换选中）
-          Expanded(
-            child: InkWell(
-              onTap: isSelectMode
-                  ? () => _toggleSelect(key)
-                  : () => _handleSetPrimary(ref),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Row(
-                  children: [
-                    _refTypeTag(ref.refType),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        ref.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.palette.textSecondary,
-                        ),
-                      ),
-                    ),
-                    if (ref.isPrimary == 1) ...[
-                      const SizedBox(width: 8),
-                      _primaryBadge(),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // 选段按钮（A-3 方案 Y：仅主引用章节显示；多选模式下隐藏）
-          if (!isSelectMode &&
-              ref.refType == 'chapter' &&
-              ref.isPrimary == 1) ...[
-            IconButton(
-              onPressed: () => _handlePickExcerpt(ref),
-              tooltip: '选段',
-              visualDensity: VisualDensity.compact,
-              icon: Icon(
-                Icons.content_cut,
-                size: 18,
-                color: context.palette.primary,
-              ),
-            ),
-          ],
-          // 移除按钮（多选模式下隐藏）
-          if (!isSelectMode)
-            IconButton(
-              onPressed: () => _handleRemove(ref),
-              visualDensity: VisualDensity.compact,
-              icon: Icon(
-                Icons.close,
-                size: 18,
-                color: context.palette.disabledText,
-              ),
-            ),
+          _buildRefCheckbox(key, isSelected),
+          _buildRefInfo(ref, isSelectMode, key),
+          if (!isSelectMode && ref.refType == 'chapter' && ref.isPrimary == 1)
+            _buildRefExcerptBtn(ref),
+          if (!isSelectMode) _buildRefRemoveBtn(ref),
         ],
       ),
+    );
+  }
+
+  Widget _buildRefCheckbox(String key, bool isSelected) {
+    return InkWell(
+      onTap: () => _toggleSelect(key),
+      child: Container(
+        width: 22,
+        height: 22,
+        margin: const EdgeInsets.only(right: AppSpacing.smx),
+        decoration: BoxDecoration(
+          color: isSelected ? context.palette.primary : null,
+          border: Border.all(
+            color: isSelected
+                ? context.palette.primary
+                : context.palette.border,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: isSelected
+            ? Icon(Icons.check, size: 16, color: context.palette.onPrimary)
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildRefInfo(ReferencedItem ref, bool isSelectMode, String key) {
+    return Expanded(
+      child: InkWell(
+        onTap: isSelectMode
+            ? () => _toggleSelect(key)
+            : () => _handleSetPrimary(ref),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              _refTypeTag(ref.refType),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  ref.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.palette.textSecondary,
+                  ),
+                ),
+              ),
+              if (ref.isPrimary == 1) ...[
+                const SizedBox(width: 8),
+                _primaryBadge(),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRefExcerptBtn(ReferencedItem ref) {
+    return IconButton(
+      onPressed: () => _handlePickExcerpt(ref),
+      tooltip: '选段',
+      visualDensity: VisualDensity.compact,
+      icon: Icon(Icons.content_cut, size: 18, color: context.palette.primary),
+    );
+  }
+
+  Widget _buildRefRemoveBtn(ReferencedItem ref) {
+    return IconButton(
+      onPressed: () => _handleRemove(ref),
+      visualDensity: VisualDensity.compact,
+      icon: Icon(Icons.close, size: 18, color: context.palette.disabledText),
     );
   }
 

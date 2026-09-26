@@ -45,16 +45,7 @@ class SyndromeHistoryList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '症候追踪历史',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text('问题发现与解决的时间线', style: context.text.caption),
+                    ..._buildHeader(context),
                     const SizedBox(height: AppSpacing.md),
                     if (displayed.isEmpty)
                       const _EmptyState(
@@ -62,24 +53,8 @@ class SyndromeHistoryList extends StatelessWidget {
                         title: '暂无症候记录',
                         description: '完成诊断后，这里会显示问题发现与解决的时间线',
                       )
-                    else ...[
-                      for (var i = 0; i < displayed.length; i++) ...[
-                        _TimelineItem(
-                          event: displayed[i],
-                          isLast: i == displayed.length - 1,
-                        ),
-                      ],
-                      if (limit != null && events.length > limit!)
-                        Padding(
-                          padding: const EdgeInsets.only(top: AppSpacing.sm),
-                          child: Center(
-                            child: Text(
-                              '共 ${events.length} 条记录',
-                              style: context.text.caption,
-                            ),
-                          ),
-                        ),
-                    ],
+                    else
+                      ..._buildTimeline(context, displayed),
                   ],
                 ),
               ),
@@ -88,6 +63,41 @@ class SyndromeHistoryList extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 标题 + 副标题
+  List<Widget> _buildHeader(BuildContext context) {
+    return [
+      Text(
+        '症候追踪历史',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 2),
+      Text('问题发现与解决的时间线', style: context.text.caption),
+    ];
+  }
+
+  /// 时间线条目 + 「共 N 条记录」页脚
+  List<Widget> _buildTimeline(
+    BuildContext context,
+    List<SyndromeHistoryEvent> displayed,
+  ) {
+    return [
+      for (var i = 0; i < displayed.length; i++) ...[
+        _TimelineItem(event: displayed[i], isLast: i == displayed.length - 1),
+      ],
+      if (limit != null && events.length > limit!)
+        Padding(
+          padding: const EdgeInsets.only(top: AppSpacing.sm),
+          child: Center(
+            child: Text('共 ${events.length} 条记录', style: context.text.caption),
+          ),
+        ),
+    ];
   }
 }
 
@@ -133,100 +143,115 @@ class _TimelineItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 时间线左侧：圆点 + 竖线
-          SizedBox(
-            width: 20,
-            child: Column(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  margin: const EdgeInsets.only(top: 3),
-                  decoration: BoxDecoration(
-                    color: accentColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 1,
-                      margin: const EdgeInsets.only(top: AppSpacing.xxs),
-                      color: context.palette.border,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          _buildTimelineRail(context, isResolved, accentColor),
           const SizedBox(width: AppSpacing.sm),
-          // 内容
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          event.syndromeName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: context.palette.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isResolved
-                              ? context.palette.success
-                              : context.palette.danger,
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
-                        ),
-                        child: Text(
-                          isResolved ? '解决' : '发现',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: context.palette.onPrimary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildContentHeader(context, event, isResolved),
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        _severityLabels[event.severity.value] ?? '',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: _severityColor(context, event.severity),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Text(
-                        _formatTime(event.timestamp),
-                        style: context.text.caption,
-                      ),
-                    ],
-                  ),
+                  _buildContentMeta(context, event),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// 时间线左侧：圆点 + 竖线
+  Widget _buildTimelineRail(
+    BuildContext context,
+    bool isResolved,
+    Color accentColor,
+  ) {
+    return SizedBox(
+      width: 20,
+      child: Column(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(top: 3),
+            decoration: BoxDecoration(
+              color: accentColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          if (!isLast)
+            Expanded(
+              child: Container(
+                width: 1,
+                margin: const EdgeInsets.only(top: AppSpacing.xxs),
+                color: context.palette.border,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 内容头部：症候名 + 解决/发现徽章
+  Widget _buildContentHeader(
+    BuildContext context,
+    SyndromeHistoryEvent event,
+    bool isResolved,
+  ) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            event.syndromeName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: isResolved
+                ? context.palette.success
+                : context.palette.danger,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+          ),
+          child: Text(
+            isResolved ? '解决' : '发现',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: context.palette.onPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 内容元信息：严重度标签 + 相对时间
+  Widget _buildContentMeta(BuildContext context, SyndromeHistoryEvent event) {
+    return Row(
+      children: [
+        Text(
+          _severityLabels[event.severity.value] ?? '',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: _severityColor(context, event.severity),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Text(_formatTime(event.timestamp), style: context.text.caption),
+      ],
     );
   }
 }

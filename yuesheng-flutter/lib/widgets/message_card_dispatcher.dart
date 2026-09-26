@@ -61,141 +61,158 @@ Widget? dispatchMessageCard({
   void Function(String feedback, String? quickOption)? onPartialAgreementSubmit,
   VoidCallback? onPartialAgreementSkip,
 }) {
-  const verticalPadding = EdgeInsets.symmetric(vertical: AppSpacing.xxs);
-
-  // D3：diagnosis_result → DiagnosisCard（结构化卡片，不包裹进气泡）
-  if (!isStreamingBubble && msg.messageType == 'diagnosis_result') {
-    return Padding(
-      padding: verticalPadding,
-      child: DiagnosisCard.fromMessageContent(
-        msg.content,
-        sessionId: msg.sessionId,
+  if (isStreamingBubble) return null;
+  final card = _cardForMessageType(
+    msg,
+    onTeachPrinciple: onTeachPrinciple,
+    onPartialAgreementSubmit: onPartialAgreementSubmit,
+    onPartialAgreementSkip: onPartialAgreementSkip,
+    onContinueTraining: onContinueTraining,
+    onViewProfile: onViewProfile,
+    onBackToChat: onBackToChat,
+    onAddContent: onAddContent,
+    onContinueChat: onContinueChat,
+  );
+  if (card != null) return _wrapWithVerticalPadding(card);
+  if (msg.role == 'assistant' && evaluationReport != null) {
+    return _wrapWithVerticalPadding(
+      _buildEvaluationReportPanel(
+        evaluationReport,
+        onDismissEvaluationReport,
+        onOpenGrowth,
       ),
     );
   }
-
-  // D6：teacher_suggestion → TeacherSuggestionCard（三按钮建议卡片）
-  if (!isStreamingBubble && msg.messageType == 'teacher_suggestion') {
-    return Padding(
-      padding: verticalPadding,
-      child: TeacherSuggestionCard.fromMessageContent(
-        msg.content,
-        onTeachPrinciple: onTeachPrinciple,
-      ),
-    );
-  }
-
-  // 批次73：outline_confirmation → 大纲记忆确认卡片
-  if (!isStreamingBubble && msg.messageType == 'outline_confirmation') {
-    return Padding(
-      padding: verticalPadding,
-      child: OutlineConfirmationCard.fromMessageContent(msg.content),
-    );
-  }
-
-  // 批次9：引用变更卡片（展示型 system 卡片）
-  if (!isStreamingBubble && msg.messageType == 'reference_change') {
-    return Padding(
-      padding: verticalPadding,
-      child: ReferenceChangeCard.fromMessageContent(msg.content),
-    );
-  }
-
-  // 批次9：阶段升级卡片（展示型 system 卡片）
-  if (!isStreamingBubble && msg.messageType == 'phase_upgrade') {
-    return Padding(
-      padding: verticalPadding,
-      child: PhaseUpgradeCard.fromMessageContent(msg.content),
-    );
-  }
-
-  // 批次17：部分认同 / 阶段总结 / 诊断失败 三卡
-  // 批次81：三卡回调接线（H1-H3）——由调用方传入真实回调，不再 `?? () {}` 兜底
-  if (!isStreamingBubble && msg.messageType == 'partial_agreement') {
-    return Padding(
-      padding: verticalPadding,
-      child: PartialAgreementCard.fromMessageContent(
-        msg.content,
-        onSubmit: onPartialAgreementSubmit,
-        onSkip: onPartialAgreementSkip,
-      ),
-    );
-  }
-
-  if (!isStreamingBubble && msg.messageType == 'phase_summary') {
-    return Padding(
-      padding: verticalPadding,
-      child: PhaseSummaryCard.fromMessageContent(
-        msg.content,
-        onContinueTraining: onContinueTraining,
-        onViewProfile: onViewProfile,
-        onBackToChat: onBackToChat,
-      ),
-    );
-  }
-
-  if (!isStreamingBubble && msg.messageType == 'diagnosis_failed') {
-    return Padding(
-      padding: verticalPadding,
-      child: DiagnosisFailedCard.fromMessageContent(
-        msg.content,
-        onAddContent: onAddContent,
-        onContinueChat: onContinueChat,
-      ),
-    );
-  }
-
-  // B-1：genui → GenUICard（GenUI 协议块渲染，diff/quiz 等教学交互组件）
-  if (!isStreamingBubble && msg.messageType == 'genui') {
-    return Padding(
-      padding: verticalPadding,
-      child: GenUICard.fromMessageContent(msg.content, messageId: msg.id),
-    );
-  }
-
-  // T4：评估报告（assistant 消息 + reports 命中 → 渲染评估报告面板）
-  if (!isStreamingBubble &&
-      msg.role == 'assistant' &&
-      evaluationReport != null) {
-    return Padding(
-      padding: verticalPadding,
-      child: EvaluationReportPanel(
-        evaluation: evaluationReport,
-        onDismiss: onDismissEvaluationReport,
-        onOpenGrowth: onOpenGrowth,
-      ),
-    );
-  }
-
-  // P1-3：仅 suggestion 类型 assistant 消息显示采纳按钮。
-  // 收敛：采纳动作统一由调用方接 suggestion_adoption_service，
-  // 本处只负责渲染入口，不直接操作章节数据。
-  if (!isStreamingBubble &&
-      msg.role == 'assistant' &&
+  if (msg.role == 'assistant' &&
       msg.messageType == 'suggestion' &&
       onAdoptSuggestion != null) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        MessageBubble(message: msg),
-        Padding(
-          padding: const EdgeInsets.only(left: 40, bottom: AppSpacing.sm),
-          child: TextButton(
-            onPressed: onAdoptSuggestion,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              minimumSize: const Size(0, 28),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              '采纳',
-              style: TextStyle(fontSize: 12, color: context.palette.primary),
-            ),
+    return _buildSuggestionAdoptCard(msg, context, onAdoptSuggestion);
+  }
+  return null;
+}
+
+Widget? _cardForMessageType(
+  Message msg, {
+  ValueChanged<String>? onTeachPrinciple,
+  void Function(String feedback, String? quickOption)? onPartialAgreementSubmit,
+  VoidCallback? onPartialAgreementSkip,
+  VoidCallback? onContinueTraining,
+  VoidCallback? onViewProfile,
+  VoidCallback? onBackToChat,
+  VoidCallback? onAddContent,
+  VoidCallback? onContinueChat,
+}) {
+  return switch (msg.messageType) {
+    'diagnosis_result' => DiagnosisCard.fromMessageContent(
+      msg.content,
+      sessionId: msg.sessionId,
+    ),
+    'teacher_suggestion' => _buildTeacherSuggestionCard(msg, onTeachPrinciple),
+    'outline_confirmation' => OutlineConfirmationCard.fromMessageContent(
+      msg.content,
+    ),
+    'reference_change' => ReferenceChangeCard.fromMessageContent(msg.content),
+    'phase_upgrade' => PhaseUpgradeCard.fromMessageContent(msg.content),
+    'partial_agreement' => _buildPartialAgreementCard(
+      msg,
+      onPartialAgreementSubmit,
+      onPartialAgreementSkip,
+    ),
+    'phase_summary' => _buildPhaseSummaryCard(
+      msg,
+      onContinueTraining,
+      onViewProfile,
+      onBackToChat,
+    ),
+    'diagnosis_failed' => _buildDiagnosisFailedCard(
+      msg,
+      onAddContent,
+      onContinueChat,
+    ),
+    'genui' => GenUICard.fromMessageContent(msg.content, messageId: msg.id),
+    _ => null,
+  };
+}
+
+Widget _wrapWithVerticalPadding(Widget child) => Padding(
+  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+  child: child,
+);
+
+Widget _buildTeacherSuggestionCard(
+  Message msg,
+  ValueChanged<String>? onTeachPrinciple,
+) => TeacherSuggestionCard.fromMessageContent(
+  msg.content,
+  onTeachPrinciple: onTeachPrinciple,
+);
+
+Widget _buildPartialAgreementCard(
+  Message msg,
+  void Function(String feedback, String? quickOption)? onSubmit,
+  VoidCallback? onSkip,
+) => PartialAgreementCard.fromMessageContent(
+  msg.content,
+  onSubmit: onSubmit,
+  onSkip: onSkip,
+);
+
+Widget _buildPhaseSummaryCard(
+  Message msg,
+  VoidCallback? onContinueTraining,
+  VoidCallback? onViewProfile,
+  VoidCallback? onBackToChat,
+) => PhaseSummaryCard.fromMessageContent(
+  msg.content,
+  onContinueTraining: onContinueTraining,
+  onViewProfile: onViewProfile,
+  onBackToChat: onBackToChat,
+);
+
+Widget _buildDiagnosisFailedCard(
+  Message msg,
+  VoidCallback? onAddContent,
+  VoidCallback? onContinueChat,
+) => DiagnosisFailedCard.fromMessageContent(
+  msg.content,
+  onAddContent: onAddContent,
+  onContinueChat: onContinueChat,
+);
+
+Widget _buildEvaluationReportPanel(
+  EvaluationData evaluation,
+  VoidCallback? onDismiss,
+  VoidCallback? onOpenGrowth,
+) => EvaluationReportPanel(
+  evaluation: evaluation,
+  onDismiss: onDismiss,
+  onOpenGrowth: onOpenGrowth,
+);
+
+Widget _buildSuggestionAdoptCard(
+  Message msg,
+  BuildContext context,
+  VoidCallback onAdoptSuggestion,
+) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      MessageBubble(message: msg),
+      Padding(
+        padding: const EdgeInsets.only(left: 40, bottom: AppSpacing.sm),
+        child: TextButton(
+          onPressed: onAdoptSuggestion,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            minimumSize: const Size(0, 28),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(
+            '采纳',
+            style: TextStyle(fontSize: 12, color: context.palette.primary),
           ),
         ),
-      ],
-    );
-  }
-
-  return null;
+      ),
+    ],
+  );
 }

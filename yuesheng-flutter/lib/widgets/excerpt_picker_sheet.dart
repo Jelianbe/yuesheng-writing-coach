@@ -125,106 +125,126 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.xs,
-            ),
-            child: Text(
-              '选段：${widget.chapterTitle}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: context.palette.textPrimary,
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text(
-              '点击段落选择重点分析范围：点区间外扩展，点区间内重选',
-              style: context.text.caption,
-            ),
-          ),
+          _buildTitle(),
+          _buildHint(),
           const SizedBox(height: 8),
-          Flexible(
-            child: _paras.isEmpty
-                ? Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-                    child: Text(
-                      '本章暂无内容',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: context.palette.disabledText),
-                    ),
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (var i = 0; i < _paras.length; i++)
-                          _buildParaRow(i),
-                        const SizedBox(height: 8),
-                      ],
-                    ),
-                  ),
-          ),
+          _buildParasList(),
           Divider(height: 1, color: context.palette.borderSoft),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.smx,
-              AppSpacing.lg,
-              AppSpacing.md,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _statusLabel,
-                  textAlign: TextAlign.center,
-                  style: context.text.subBody,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    if (_hasSelection)
-                      TextButton(
-                        onPressed: _handleClear,
-                        child: Text(
-                          '清除选段',
-                          style: TextStyle(color: context.palette.textTertiary),
-                        ),
-                      ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(
-                        '取消',
-                        style: TextStyle(color: context.palette.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: _handleConfirm,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: context.palette.primary,
-                      ),
-                      child: const Text('确定'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildFooter(),
         ],
       ),
+    );
+  }
+
+  Widget _buildTitle() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
+      child: Text(
+        '选段：${widget.chapterTitle}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textPrimary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHint() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Text('点击段落选择重点分析范围：点区间外扩展，点区间内重选', style: context.text.caption),
+    );
+  }
+
+  Widget _buildParasList() {
+    return Flexible(
+      child: _paras.isEmpty ? _buildEmptyParas() : _buildParasScrollView(),
+    );
+  }
+
+  Widget _buildEmptyParas() {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      child: Text(
+        '本章暂无内容',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: context.palette.disabledText),
+      ),
+    );
+  }
+
+  Widget _buildParasScrollView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < _paras.length; i++) _buildParaRow(i),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.smx,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            _statusLabel,
+            textAlign: TextAlign.center,
+            style: context.text.subBody,
+          ),
+          const SizedBox(height: 8),
+          _buildFooterActions(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterActions() {
+    return Row(
+      children: [
+        if (_hasSelection)
+          TextButton(
+            onPressed: _handleClear,
+            child: Text(
+              '清除选段',
+              style: TextStyle(color: context.palette.textTertiary),
+            ),
+          ),
+        const Spacer(),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(
+            '取消',
+            style: TextStyle(color: context.palette.textSecondary),
+          ),
+        ),
+        const SizedBox(width: 8),
+        FilledButton(
+          onPressed: _handleConfirm,
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.primary,
+          ),
+          child: const Text('确定'),
+        ),
+      ],
     );
   }
 

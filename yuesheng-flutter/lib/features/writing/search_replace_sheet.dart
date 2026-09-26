@@ -316,38 +316,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Text(
-                // 批次96-11：独立「全文搜索」入口 → 标题显示「全文搜索」
-                _viewAllBook && widget.initialBookView ? '全文搜索' : '查找替换',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.textInk,
-                ),
-              ),
-              const Spacer(),
-              if (widget.manuscriptId != null && !widget.initialBookView)
-                TextButton.icon(
-                  onPressed: _viewAllBook ? null : _searchAllBook,
-                  style: TextButton.styleFrom(
-                    foregroundColor: context.palette.primary,
-                  ),
-                  icon: const Icon(Icons.menu_book_outlined, size: 16),
-                  label: const Text('搜索全书', style: TextStyle(fontSize: 12)),
-                ),
-              IconButton(
-                icon: Icon(
-                  Icons.close,
-                  size: 20,
-                  color: context.palette.textTertiary,
-                ),
-                tooltip: '关闭',
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
+          _buildHeader(context),
           const SizedBox(height: 8),
           SizedBox(
             height: 400,
@@ -360,78 +329,117 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
     );
   }
 
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          // 批次96-11：独立「全文搜索」入口 → 标题显示「全文搜索」
+          _viewAllBook && widget.initialBookView ? '全文搜索' : '查找替换',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textInk,
+          ),
+        ),
+        const Spacer(),
+        if (widget.manuscriptId != null && !widget.initialBookView)
+          TextButton.icon(
+            onPressed: _viewAllBook ? null : _searchAllBook,
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.primary,
+            ),
+            icon: const Icon(Icons.menu_book_outlined, size: 16),
+            label: const Text('搜索全书', style: TextStyle(fontSize: 12)),
+          ),
+        IconButton(
+          icon: Icon(
+            Icons.close,
+            size: 20,
+            color: context.palette.textTertiary,
+          ),
+          tooltip: '关闭',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+
   /// 本章视图：查找 + 替换
   Widget _buildChapterView(String countText, bool hasMatches) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 查找行：输入框 + 上一个/下一个 + 计数
-        Row(
-          children: [
-            Expanded(
-              child: _buildInputField(
-                controller: _queryCtrl,
-                hint: '查找',
-                isFind: true,
-              ),
-            ),
-            const SizedBox(width: 6),
-            IconButton(
-              icon: const Icon(Icons.keyboard_arrow_up, size: 20),
-              tooltip: '上一个',
-              onPressed: hasMatches ? _prev : null,
-              color: hasMatches
-                  ? context.palette.textPrimary
-                  : context.palette.disabledText,
-            ),
-            IconButton(
-              icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-              tooltip: '下一个',
-              onPressed: hasMatches ? _next : null,
-              color: hasMatches
-                  ? context.palette.textPrimary
-                  : context.palette.disabledText,
-            ),
-            SizedBox(
-              width: 64,
-              child: Text(
-                countText,
-                textAlign: TextAlign.right,
-                style: context.text.noteCaption,
-              ),
-            ),
-          ],
-        ),
+        _buildFindRow(hasMatches, countText),
         const SizedBox(height: 8),
-        // 替换行：输入框 + 替换 + 全部替换
-        Row(
-          children: [
-            Expanded(
-              child: _buildInputField(
-                controller: _replaceCtrl,
-                hint: '替换为',
-                isFind: false,
-              ),
-            ),
-            const SizedBox(width: 6),
-            TextButton(
-              onPressed: hasMatches ? _replaceCurrent : null,
-              style: TextButton.styleFrom(
-                foregroundColor: context.palette.primary,
-              ),
-              child: const Text('替换', style: TextStyle(fontSize: 12)),
-            ),
-            TextButton(
-              onPressed: hasMatches ? _replaceAll : null,
-              style: TextButton.styleFrom(
-                foregroundColor: context.palette.primary,
-              ),
-              child: const Text('全部替换', style: TextStyle(fontSize: 12)),
-            ),
-          ],
-        ),
+        _buildReplaceRow(hasMatches),
         const SizedBox(height: 4),
         Text('查找会在正文里标出位置，替换后即时保存', style: context.text.caption),
+      ],
+    );
+  }
+
+  /// 查找行：输入框 + 上一个/下一个 + 计数
+  Widget _buildFindRow(bool hasMatches, String countText) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildInputField(
+            controller: _queryCtrl,
+            hint: '查找',
+            isFind: true,
+          ),
+        ),
+        const SizedBox(width: 6),
+        IconButton(
+          icon: const Icon(Icons.keyboard_arrow_up, size: 20),
+          tooltip: '上一个',
+          onPressed: hasMatches ? _prev : null,
+          color: hasMatches
+              ? context.palette.textPrimary
+              : context.palette.disabledText,
+        ),
+        IconButton(
+          icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+          tooltip: '下一个',
+          onPressed: hasMatches ? _next : null,
+          color: hasMatches
+              ? context.palette.textPrimary
+              : context.palette.disabledText,
+        ),
+        SizedBox(
+          width: 64,
+          child: Text(
+            countText,
+            textAlign: TextAlign.right,
+            style: context.text.noteCaption,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 替换行：输入框 + 替换 + 全部替换
+  Widget _buildReplaceRow(bool hasMatches) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildInputField(
+            controller: _replaceCtrl,
+            hint: '替换为',
+            isFind: false,
+          ),
+        ),
+        const SizedBox(width: 6),
+        TextButton(
+          onPressed: hasMatches ? _replaceCurrent : null,
+          style: TextButton.styleFrom(foregroundColor: context.palette.primary),
+          child: const Text('替换', style: TextStyle(fontSize: 12)),
+        ),
+        TextButton(
+          onPressed: hasMatches ? _replaceAll : null,
+          style: TextButton.styleFrom(foregroundColor: context.palette.primary),
+          child: const Text('全部替换', style: TextStyle(fontSize: 12)),
+        ),
       ],
     );
   }
@@ -505,81 +513,77 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
     );
   }
 
-  Widget _buildBookResultList(
-    List<
-      ({
-        String chapterId,
-        String title,
-        int count,
-        int firstOffset,
-        String snippet,
-      })
-    >?
-    results,
-    String q,
-  ) {
-    if (results == null) {
-      return Center(
-        child: SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: context.palette.primary,
-          ),
-        ),
-      );
-    }
-    if (results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 36,
-              color: context.palette.placeholder,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              q.trim().isEmpty ? '输入关键词搜索全书章节' : '全书没有找到相关内容',
-              style: TextStyle(
-                fontSize: 13,
-                color: context.palette.textTertiary,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+  Widget _buildBookResultList(List<_BookResult>? results, String q) {
+    if (results == null) return _buildBookLoading();
+    if (results.isEmpty) return _buildBookEmpty(q);
     return ListView.separated(
       itemCount: results.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final r = results[index];
-        return _BookResultTile(
-          title: r.title,
-          snippet: r.snippet,
-          query: q,
-          count: r.count,
-          onTap: () {
-            Navigator.of(context).pop();
-            final qLen = q.length;
-            if (r.chapterId == widget.currentChapterId) {
-              // 当前章：直接定位首处命中（onLocate 设 selection）
-              widget.onLocate(r.firstOffset, r.firstOffset + qLen);
-            } else {
-              // 跨章：跳转并携带首处命中偏移（新页加载后定位）
-              widget.onJumpToChapter?.call(r.chapterId, r.title, r.firstOffset);
-            }
-          },
-        );
+      itemBuilder: (context, index) =>
+          _buildBookTile(context, results[index], q),
+    );
+  }
+
+  Widget _buildBookLoading() {
+    return Center(
+      child: SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: context.palette.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookEmpty(String q) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.search_off, size: 36, color: context.palette.placeholder),
+          const SizedBox(height: 8),
+          Text(
+            q.trim().isEmpty ? '输入关键词搜索全书章节' : '全书没有找到相关内容',
+            style: TextStyle(fontSize: 13, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBookTile(BuildContext context, _BookResult r, String q) {
+    return _BookResultTile(
+      title: r.title,
+      snippet: r.snippet,
+      query: q,
+      count: r.count,
+      onTap: () {
+        Navigator.of(context).pop();
+        final qLen = q.length;
+        if (r.chapterId == widget.currentChapterId) {
+          // 当前章：直接定位首处命中（onLocate 设 selection）
+          widget.onLocate(r.firstOffset, r.firstOffset + qLen);
+        } else {
+          // 跨章：跳转并携带首处命中偏移（新页加载后定位）
+          widget.onJumpToChapter?.call(r.chapterId, r.title, r.firstOffset);
+        }
       },
     );
   }
 }
 
 // ── 批次96-11：全书搜索结果项——标题 + 命中片段（关键词高亮）+ 命中数 ──
+/// 全书搜索结果项记录类型（章节 id / 标题 / 命中数 / 首个偏移 / 片段）
+typedef _BookResult = ({
+  String chapterId,
+  String title,
+  int count,
+  int firstOffset,
+  String snippet,
+});
+
 class _BookResultTile extends StatelessWidget {
   final String title;
   final String snippet;
@@ -634,41 +638,7 @@ class _BookResultTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.article_outlined,
-                  size: 16,
-                  color: context.palette.textTertiary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: context.palette.textInk,
-                    ),
-                  ),
-                ),
-                Text(
-                  '$count 处',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.palette.textTertiary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right,
-                  size: 16,
-                  color: context.palette.placeholder,
-                ),
-              ],
-            ),
+            _buildTitleRow(context),
             const SizedBox(height: 4),
             Text.rich(
               _buildSnippetSpan(context),
@@ -679,6 +649,37 @@ class _BookResultTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTitleRow(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          Icons.article_outlined,
+          size: 16,
+          color: context.palette.textTertiary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textInk,
+            ),
+          ),
+        ),
+        Text(
+          '$count 处',
+          style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+        ),
+        const SizedBox(width: 8),
+        Icon(Icons.chevron_right, size: 16, color: context.palette.placeholder),
+      ],
     );
   }
 }

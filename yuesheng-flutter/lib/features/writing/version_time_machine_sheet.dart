@@ -174,6 +174,11 @@ List<DiffSegment> _charDiff(String removed, String added) {
     raw.add((text: added[j], kind: DiffKind.added));
     j++;
   }
+  return _mergeCharSegments(raw);
+}
+
+/// 相邻同类分段合并（R-019：从 _charDiff 抽出）
+List<DiffSegment> _mergeCharSegments(List<({String text, DiffKind kind})> raw) {
   final out = <DiffSegment>[];
   for (final s in raw) {
     if (out.isNotEmpty && out.last.kind == s.kind) {
@@ -321,27 +326,7 @@ class _VersionTimeMachineSheetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '${_formatTime(v.savedAt)} · ${v.wordCount}字',
-          style: context.text.noteCaption,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '恢复时当前内容会先自动保存为新版本，不会丢失。',
-          style: TextStyle(fontSize: 12, color: context.palette.textDeep),
-        ),
-        if (hasContent) ...[
-          const SizedBox(height: 4),
-          Text(
-            hasDiff ? '相对当前内容：新增标绿 · 删除划线' : '与当前内容一致',
-            style: TextStyle(
-              fontSize: 12,
-              color: hasDiff
-                  ? context.palette.textSecondary
-                  : context.palette.success,
-            ),
-          ),
-        ],
+        ..._buildDetailMeta(v, hasContent, hasDiff),
         const SizedBox(height: 8),
         Expanded(
           child: Container(
@@ -365,24 +350,58 @@ class _VersionTimeMachineSheetState
           ),
         ),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: TextButton(
-                onPressed: () => setState(() => _selected = null),
-                child: const Text('返回列表'),
-              ),
+        _buildDetailActions(v),
+      ],
+    );
+  }
+
+  List<Widget> _buildDetailMeta(
+    ChapterVersion v,
+    bool hasContent,
+    bool hasDiff,
+  ) {
+    return [
+      Text(
+        '${_formatTime(v.savedAt)} · ${v.wordCount}字',
+        style: context.text.noteCaption,
+      ),
+      const SizedBox(height: 6),
+      Text(
+        '恢复时当前内容会先自动保存为新版本，不会丢失。',
+        style: TextStyle(fontSize: 12, color: context.palette.textDeep),
+      ),
+      if (hasContent) ...[
+        const SizedBox(height: 4),
+        Text(
+          hasDiff ? '相对当前内容：新增标绿 · 删除划线' : '与当前内容一致',
+          style: TextStyle(
+            fontSize: 12,
+            color: hasDiff
+                ? context.palette.textSecondary
+                : context.palette.success,
+          ),
+        ),
+      ],
+    ];
+  }
+
+  Widget _buildDetailActions(ChapterVersion v) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextButton(
+            onPressed: () => setState(() => _selected = null),
+            child: const Text('返回列表'),
+          ),
+        ),
+        Expanded(
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
             ),
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.palette.primary,
-                ),
-                onPressed: () => _restore(v),
-                child: const Text('恢复此版本'),
-              ),
-            ),
-          ],
+            onPressed: () => _restore(v),
+            child: const Text('恢复此版本'),
+          ),
         ),
       ],
     );
@@ -424,91 +443,91 @@ class _VersionTimeMachineSheetState
 
   Widget _buildList() {
     final versions = _versions;
-    if (versions == null) {
-      return Center(
-        child: CircularProgressIndicator(color: context.palette.primary),
-      );
-    }
-    if (versions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.history, size: 40, color: context.palette.placeholder),
-            SizedBox(height: 8),
-            Text(
-              '还没有版本记录\n写到 200 字时会自动保存一个版本',
-              textAlign: TextAlign.center,
-              style: context.text.subCaption,
-            ),
-          ],
-        ),
-      );
-    }
+    if (versions == null) return _buildLoading();
+    if (versions.isEmpty) return _buildEmpty();
     return ListView.separated(
       itemCount: versions.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final v = versions[index];
-        // 批次87-4：相对当前内容的差异量角标（+新增/-删除字符数）
-        final (added, removed) = diffCounts(widget.currentContent, v.content);
-        return InkWell(
-          onTap: () => setState(() => _selected = v),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 92,
-                  child: Text(
-                    _formatTime(v.savedAt),
-                    style: context.text.subBody,
-                  ),
-                ),
-                SizedBox(
-                  width: 48,
-                  child: Text('${v.wordCount}字', style: context.text.subBody),
-                ),
-                Expanded(
-                  child: Text(
-                    _preview(v),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: context.palette.textInk,
-                    ),
-                  ),
-                ),
-                if (added > 0 || removed > 0) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    [
-                      if (added > 0) '+$added',
-                      if (removed > 0) '-$removed',
-                    ].join(' '),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: added > 0 && removed > 0
-                          ? context.palette.textTertiary
-                          : added > 0
-                          ? context.palette.success
-                          : context.palette.danger,
-                    ),
-                  ),
-                ],
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right,
-                  size: 16,
-                  color: context.palette.placeholder,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      itemBuilder: (context, index) => _buildVersionItem(versions[index]),
     );
+  }
+
+  Widget _buildLoading() {
+    return Center(
+      child: CircularProgressIndicator(color: context.palette.primary),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.history, size: 40, color: context.palette.placeholder),
+          SizedBox(height: 8),
+          Text(
+            '还没有版本记录\n写到 200 字时会自动保存一个版本',
+            textAlign: TextAlign.center,
+            style: context.text.subCaption,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVersionItem(ChapterVersion v) {
+    // 批次87-4：相对当前内容的差异量角标（+新增/-删除字符数）
+    final (added, removed) = diffCounts(widget.currentContent, v.content);
+    return InkWell(
+      onTap: () => setState(() => _selected = v),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 92,
+              child: Text(_formatTime(v.savedAt), style: context.text.subBody),
+            ),
+            SizedBox(
+              width: 48,
+              child: Text('${v.wordCount}字', style: context.text.subBody),
+            ),
+            Expanded(
+              child: Text(
+                _preview(v),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, color: context.palette.textInk),
+              ),
+            ),
+            if (added > 0 || removed > 0) ..._buildDiffBadge(added, removed),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: context.palette.placeholder,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDiffBadge(int added, int removed) {
+    return [
+      const SizedBox(width: 6),
+      Text(
+        [if (added > 0) '+$added', if (removed > 0) '-$removed'].join(' '),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: added > 0 && removed > 0
+              ? context.palette.textTertiary
+              : added > 0
+              ? context.palette.success
+              : context.palette.danger,
+        ),
+      ),
+    ];
   }
 }

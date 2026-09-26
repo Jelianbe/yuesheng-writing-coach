@@ -534,65 +534,70 @@ class _TimelineEntry extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 左侧时间线轨道
-          SizedBox(
-            width: 24,
-            child: Column(
-              children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  margin: const EdgeInsets.only(top: AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: context.palette.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: context.palette.borderSoft,
-                      margin: const EdgeInsets.only(top: AppSpacing.xxs),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          _buildTrack(context),
           const SizedBox(width: 8),
-          // 右侧内容卡片
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.md),
-              padding: const EdgeInsets.all(AppSpacing.smx),
-              decoration: BoxDecoration(
-                color: context.palette.surface,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(color: context.palette.borderSoft),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (date.isNotEmpty)
-                    Text(date, style: context.text.microCaption),
-                  const SizedBox(height: 2),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: context.palette.textPrimary,
-                    ),
-                  ),
-                  if (desc != null && desc!.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(desc!, style: context.text.noteCaption),
-                  ],
-                ],
-              ),
+          _buildContentCard(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrack(BuildContext context) {
+    return SizedBox(
+      width: 24,
+      child: Column(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            margin: const EdgeInsets.only(top: AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: context.palette.primary,
+              shape: BoxShape.circle,
             ),
           ),
+          if (!isLast)
+            Expanded(
+              child: Container(
+                width: 2,
+                color: context.palette.borderSoft,
+                margin: const EdgeInsets.only(top: AppSpacing.xxs),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildContentCard(BuildContext context) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.smx),
+        decoration: BoxDecoration(
+          color: context.palette.surface,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: context.palette.borderSoft),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (date.isNotEmpty) Text(date, style: context.text.microCaption),
+            const SizedBox(height: 2),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: context.palette.textPrimary,
+              ),
+            ),
+            if (desc != null && desc!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(desc!, style: context.text.noteCaption),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -107,163 +107,188 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 标题行（点击折叠/展开）
-          InkWell(
-            onTap: () {
-              setState(() {
-                _expanded = !_expanded;
-              });
-              if (_expanded && _total == null && !_loading) {
-                _load();
-              }
-            },
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.visibility_outlined,
-                    size: 20,
-                    color: context.palette.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Editor 观察记录',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                  ),
-                  if (!_expanded && _total != null)
-                    Flexible(
-                      child: Text(
-                        _collapsedSummary,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.palette.textTertiary,
-                        ),
-                      ),
-                    ),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_down,
-                    size: 20,
-                    color: context.palette.textTertiary,
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildHeaderRow(context, hasSession),
           if (_expanded) ...[
             const SizedBox(height: 8),
             Text('Editor 对你写作的叙事层观察记录', style: context.text.caption),
             const SizedBox(height: 12),
-            if (!hasSession)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text('无当前会话', style: context.text.subBody),
-              )
-            else if (_error != null)
-              Text(
-                '错误：$_error',
-                style: TextStyle(fontSize: 13, color: context.palette.danger),
-              )
-            else if (_loading)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: context.palette.primary,
-                  ),
-                ),
-              )
-            else if (_total == null)
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text('暂无数据', style: context.text.subBody),
-              )
-            else ...[
-              // 统计行
-              Row(
-                children: [
-                  _StatItem(value: '$_total', label: '总数'),
-                  const SizedBox(width: 8),
-                  _StatItem(value: '$_triggered', label: '教练触发'),
-                  const SizedBox(width: 8),
-                  _StatItem(value: _rate, label: '触发率'),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (_total == 0)
-                Text('暂无 observation 数据', style: context.text.subBody)
-              else if (_recent.isEmpty)
-                Text('暂无最近 observation', style: context.text.subBody)
-              else
-                ..._recent.map((obs) {
-                  final triggerTag = obs.teacherTriggered == 1 ? '触发' : '未触发';
-                  final impression = obs.overallImpression.isEmpty
-                      ? '—'
-                      : obs.overallImpression;
-                  final preview = impression.length > 60
-                      ? '${impression.substring(0, 60)}...'
-                      : impression;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: context.palette.divider),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${_formatTime(obs.timestamp)} · $triggerTag · '
-                          'pronounced ${obs.pronouncedCount} / against ${obs.againstCount}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.microCaption,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          preview,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: context.text.noteCaption,
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              const SizedBox(height: 12),
-              // 刷新按钮
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _load,
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('刷新'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.primary,
-                    side: BorderSide(color: context.palette.primarySoft),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.smx,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ..._buildExpandedBody(context, hasSession),
           ],
         ],
+      ),
+    );
+  }
+
+  /// 标题行（点击折叠/展开）
+  Widget _buildHeaderRow(BuildContext context, bool hasSession) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _expanded = !_expanded;
+        });
+        if (_expanded && _total == null && !_loading) {
+          _load();
+        }
+      },
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+        child: Row(
+          children: [
+            Icon(
+              Icons.visibility_outlined,
+              size: 20,
+              color: context.palette.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Editor 观察记录',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+            ),
+            if (!_expanded && _total != null) _buildCollapsedSummary(context),
+            Icon(
+              _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              size: 20,
+              color: context.palette.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 折叠态摘要（有数据时在标题行右侧显示）
+  Widget _buildCollapsedSummary(BuildContext context) {
+    return Flexible(
+      child: Text(
+        _collapsedSummary,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+      ),
+    );
+  }
+
+  /// 展开态正文：按加载状态分支出 统计/列表/刷新
+  List<Widget> _buildExpandedBody(BuildContext context, bool hasSession) {
+    if (!hasSession) {
+      return [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Text('无当前会话', style: context.text.subBody),
+        ),
+      ];
+    }
+    if (_error != null) {
+      return [
+        Text(
+          '错误：$_error',
+          style: TextStyle(fontSize: 13, color: context.palette.danger),
+        ),
+      ];
+    }
+    if (_loading) {
+      return [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+          child: Center(
+            child: CircularProgressIndicator(color: context.palette.primary),
+          ),
+        ),
+      ];
+    }
+    if (_total == null) {
+      return [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Text('暂无数据', style: context.text.subBody),
+        ),
+      ];
+    }
+    return [
+      _buildStatRow(context),
+      const SizedBox(height: 12),
+      if (_total == 0)
+        Text('暂无 observation 数据', style: context.text.subBody)
+      else if (_recent.isEmpty)
+        Text('暂无最近 observation', style: context.text.subBody)
+      else
+        ..._buildRecentList(context),
+      const SizedBox(height: 12),
+      _buildRefreshButton(context),
+    ];
+  }
+
+  /// 统计行：总数 / 教练触发 / 触发率
+  Widget _buildStatRow(BuildContext context) {
+    return Row(
+      children: [
+        _StatItem(value: '$_total', label: '总数'),
+        const SizedBox(width: 8),
+        _StatItem(value: '$_triggered', label: '教练触发'),
+        const SizedBox(width: 8),
+        _StatItem(value: _rate, label: '触发率'),
+      ],
+    );
+  }
+
+  /// 最近 observation 列表（每条：时间·触发·命中 + 摘要预览）
+  List<Widget> _buildRecentList(BuildContext context) {
+    return _recent.map((obs) {
+      final triggerTag = obs.teacherTriggered == 1 ? '触发' : '未触发';
+      final impression = obs.overallImpression.isEmpty
+          ? '—'
+          : obs.overallImpression;
+      final preview = impression.length > 60
+          ? '${impression.substring(0, 60)}...'
+          : impression;
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: context.palette.divider)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${_formatTime(obs.timestamp)} · $triggerTag · '
+              'pronounced ${obs.pronouncedCount} / against ${obs.againstCount}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.microCaption,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              preview,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.noteCaption,
+            ),
+          ],
+        ),
+      );
+    }).toList();
+  }
+
+  /// 刷新按钮（重新拉取观察记录）
+  Widget _buildRefreshButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _load,
+        icon: const Icon(Icons.refresh, size: 16),
+        label: const Text('刷新'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: context.palette.primary,
+          side: BorderSide(color: context.palette.primarySoft),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+        ),
       ),
     );
   }

@@ -201,42 +201,9 @@ class _OutlineConfirmationCardState
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xxs,
-          ),
-          decoration: BoxDecoration(
-            color: context.palette.primarySoft,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Text(
-            typeName,
-            style: TextStyle(fontSize: 11, color: context.palette.primary),
-          ),
-        ),
+        _buildEntityTypeChip(context, typeName),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xxs,
-          ),
-          decoration: BoxDecoration(
-            color: p.isNewEntity
-                ? context.palette.primarySoft
-                : context.palette.border.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Text(
-            p.isNewEntity ? '新实体' : '已有实体',
-            style: TextStyle(
-              fontSize: 11,
-              color: p.isNewEntity
-                  ? context.palette.primary
-                  : context.palette.textSecondary,
-            ),
-          ),
-        ),
+        _buildEntityStateChip(context),
         const Spacer(),
         Flexible(
           child: Text(
@@ -246,6 +213,48 @@ class _OutlineConfirmationCardState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEntityTypeChip(BuildContext context, String typeName) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Text(
+        typeName,
+        style: TextStyle(fontSize: 11, color: context.palette.primary),
+      ),
+    );
+  }
+
+  Widget _buildEntityStateChip(BuildContext context) {
+    final p = widget.payload;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: p.isNewEntity
+            ? context.palette.primarySoft
+            : context.palette.border.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Text(
+        p.isNewEntity ? '新实体' : '已有实体',
+        style: TextStyle(
+          fontSize: 11,
+          color: p.isNewEntity
+              ? context.palette.primary
+              : context.palette.textSecondary,
+        ),
+      ),
     );
   }
 
@@ -272,66 +281,78 @@ class _OutlineConfirmationCardState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isConflict) ...[
-            Row(
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  size: 14,
-                  color: context.palette.warning,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '与既有认知矛盾：接受将更新记忆，拒绝保留原有认知',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.palette.warning,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-          ],
+          if (isConflict) ..._buildConflictBanner(context),
           Text(
             im.text,
             style: TextStyle(fontSize: 13, height: 1.4, color: baseColor),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              if (isStale)
-                Expanded(
-                  child: Text(
-                    '已过期/已处理',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.palette.disabledText,
-                    ),
-                  ),
-                )
-              else ...[
-                Expanded(
-                  child: _actionButton(
-                    label: '接受',
-                    filled: true,
-                    onTap: () => _handleApprove(im.id),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _actionButton(
-                    label: '拒绝',
-                    filled: false,
-                    onTap: () => _handleReject(im.id),
-                  ),
-                ),
-              ],
-            ],
+          _buildImpressionActions(context, im),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildConflictBanner(BuildContext context) {
+    return [
+      Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            size: 14,
+            color: context.palette.warning,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '与既有认知矛盾：接受将更新记忆，拒绝保留原有认知',
+            style: TextStyle(
+              fontSize: 11,
+              color: context.palette.warning,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
+      const SizedBox(height: 6),
+    ];
+  }
+
+  Widget _buildImpressionActions(
+    BuildContext context,
+    OutlineImpressionPayload im,
+  ) {
+    final isStale = _isStale(im.id);
+    return Row(
+      children: [
+        if (isStale)
+          Expanded(
+            child: Text(
+              '已过期/已处理',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 11,
+                color: context.palette.disabledText,
+              ),
+            ),
+          )
+        else ...[
+          Expanded(
+            child: _actionButton(
+              label: '接受',
+              filled: true,
+              onTap: () => _handleApprove(im.id),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _actionButton(
+              label: '拒绝',
+              filled: false,
+              onTap: () => _handleReject(im.id),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

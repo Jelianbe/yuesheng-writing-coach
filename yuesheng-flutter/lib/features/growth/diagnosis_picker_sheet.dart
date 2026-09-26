@@ -116,67 +116,81 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 顶部把手
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(
-                top: AppSpacing.md,
-                bottom: AppSpacing.md,
-              ),
-              decoration: BoxDecoration(
-                color: context.palette.border,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-            ),
-            Text(
-              '选择要诊断的章节',
-              textAlign: TextAlign.center,
-              style: context.text.titleLg,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '选择一个章节进行写作分析',
-              textAlign: TextAlign.center,
-              style: context.text.subCaption,
-            ),
+            _buildHandle(context),
+            ..._buildHeaderText(context),
             const SizedBox(height: 12),
-            Flexible(
-              child: _loading
-                  ? SizedBox(
-                      height: 120,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: context.palette.primary,
-                        ),
-                      ),
-                    )
-                  : _manuscripts.isEmpty
-                  ? _buildEmpty()
-                  : _buildList(),
-            ),
+            _buildPickerList(context),
             const SizedBox(height: 8),
-            // 取消按钮
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.palette.textSecondary,
-                  side: BorderSide(color: context.palette.border),
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                child: const Text(
-                  '取消',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-            ),
+            _buildCancelButton(context),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 顶部拖拽把手
+  Widget _buildHandle(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 4,
+      margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.palette.border,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+    );
+  }
+
+  /// 标题 + 副标题
+  List<Widget> _buildHeaderText(BuildContext context) {
+    return [
+      Text(
+        '选择要诊断的章节',
+        textAlign: TextAlign.center,
+        style: context.text.titleLg,
+      ),
+      const SizedBox(height: 4),
+      Text(
+        '选择一个章节进行写作分析',
+        textAlign: TextAlign.center,
+        style: context.text.subCaption,
+      ),
+    ];
+  }
+
+  /// 列表区：加载中 / 空库 / 作品列表
+  Widget _buildPickerList(BuildContext context) {
+    return Flexible(
+      child: _loading
+          ? SizedBox(
+              height: 120,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: context.palette.primary,
+                ),
+              ),
+            )
+          : _manuscripts.isEmpty
+          ? _buildEmpty()
+          : _buildList(),
+    );
+  }
+
+  /// 取消按钮
+  Widget _buildCancelButton(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: OutlinedButton(
+        onPressed: () => Navigator.of(context).pop(),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: context.palette.textSecondary,
+          side: BorderSide(color: context.palette.border),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+        child: const Text('取消', style: TextStyle(fontWeight: FontWeight.w500)),
       ),
     );
   }
@@ -218,67 +232,61 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
         itemCount: _manuscripts.length,
         itemBuilder: (context, index) {
           final m = _manuscripts[index];
-          final expanded = _expandedMsId == m.id;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              InkWell(
-                onTap: () => _toggleExpand(m.id),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          m.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: context.palette.textPrimary,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        expanded ? '▼' : '▶',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: expanded
-                              ? context.palette.primary
-                              : context.palette.disabledText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (expanded) _buildChapters(m.id),
-              if (index < _manuscripts.length - 1)
-                Divider(height: 1, color: context.palette.borderSoft),
-            ],
-          );
+          return _buildManuscriptRow(m, _expandedMsId == m.id, index);
         },
       ),
+    );
+  }
+
+  Widget _buildManuscriptRow(Manuscript m, bool expanded, int index) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () => _toggleExpand(m.id),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    m.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: context.palette.textPrimary,
+                    ),
+                  ),
+                ),
+                Text(
+                  expanded ? '▼' : '▶',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: expanded
+                        ? context.palette.primary
+                        : context.palette.disabledText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (expanded) _buildChapters(m.id),
+        if (index < _manuscripts.length - 1)
+          Divider(height: 1, color: context.palette.borderSoft),
+      ],
     );
   }
 
   Widget _buildChapters(String manuscriptId) {
     final chapters = _chaptersMap[manuscriptId] ?? const <Chapter>[];
     if (chapters.isEmpty) {
-      return Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        child: Text(
-          '暂无章节',
-          style: TextStyle(fontSize: 13, color: context.palette.disabledText),
-        ),
-      );
+      return _buildEmptyChapters();
     }
     final visibleCount =
         (chapters.length <
@@ -294,67 +302,84 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (final ch in visibleChapters) ...[
-            InkWell(
-              onTap: () => _handleSelect(manuscriptId, ch),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.smx,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            ch.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: context.palette.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${ch.wordCount} 字',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.palette.disabledText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: context.palette.primary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildChapterRow(manuscriptId, ch),
             Divider(height: 1, color: context.palette.borderLight),
           ],
           if (hasMore)
-            InkWell(
-              onTap: () => _loadMore(manuscriptId),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Text(
-                  '加载更多（${chapters.length - visibleCount} 章未显示）',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: context.palette.primary,
-                    fontWeight: FontWeight.w500,
+            _buildLoadMore(manuscriptId, chapters.length - visibleCount),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyChapters() {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      child: Text(
+        '暂无章节',
+        style: TextStyle(fontSize: 13, color: context.palette.disabledText),
+      ),
+    );
+  }
+
+  Widget _buildChapterRow(String manuscriptId, Chapter ch) {
+    return InkWell(
+      onTap: () => _handleSelect(manuscriptId, ch),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.smx,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    ch.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.palette.textSecondary,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${ch.wordCount} 字',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.palette.disabledText,
+                    ),
+                  ),
+                ],
               ),
             ),
-        ],
+            Icon(Icons.chevron_right, size: 20, color: context.palette.primary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadMore(String manuscriptId, int remaining) {
+    return InkWell(
+      onTap: () => _loadMore(manuscriptId),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: Text(
+          '加载更多（$remaining 章未显示）',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13,
+            color: context.palette.primary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }

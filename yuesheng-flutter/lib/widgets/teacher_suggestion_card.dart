@@ -280,28 +280,32 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
         ),
         if (difficulty.isNotEmpty) ...[
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: 3,
-            ),
-            decoration: BoxDecoration(
-              color: context.palette.l2,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              difficulty,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: context.palette.l2Text,
-              ),
-            ),
-          ),
+          _buildDifficultyBadge(difficulty),
         ],
         const Spacer(),
         Text('训练建议', style: context.text.noteCaption),
       ],
+    );
+  }
+
+  Widget _buildDifficultyBadge(String difficulty) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: context.palette.l2,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        difficulty,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: context.palette.l2Text,
+        ),
+      ),
     );
   }
 
@@ -342,115 +346,119 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     final hasLocations = widget.payload.locationMarks.isNotEmpty;
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 34,
-                child: FilledButton(
-                  onPressed: _handleStartPractice,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.palette.primary,
-                    padding: EdgeInsets.zero,
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  child: const Text('开始练习'),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: SizedBox(
-                height: 34,
-                child: OutlinedButton(
-                  onPressed: _dismiss,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.textDeep,
-                    side: BorderSide(color: context.palette.borderSoft),
-                    padding: EdgeInsets.zero,
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  child: const Text('跳过此建议'),
-                ),
-              ),
-            ),
-          ],
-        ),
+        _buildPracticeRow(),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 34,
-                child: OutlinedButton(
-                  onPressed: () => setState(() => _expanded = !_expanded),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.textDeep,
-                    side: BorderSide(color: context.palette.borderSoft),
-                    padding: EdgeInsets.zero,
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  child: Text(_expanded ? '收起详情' : '查看详情'),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: SizedBox(
-                height: 34,
-                child: OutlinedButton(
-                  onPressed: _handleTeachPrinciple,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.textDeep,
-                    side: BorderSide(color: context.palette.borderSoft),
-                    padding: EdgeInsets.zero,
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  child: const Text('教我原理'),
-                ),
-              ),
-            ),
-            if (hasLocations) ...[
-              const SizedBox(width: 8),
-              Expanded(
-                child: SizedBox(
-                  height: 34,
-                  child: OutlinedButton(
-                    onPressed: () =>
-                        setState(() => _showLocations = !_showLocations),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.palette.primary,
-                      side: BorderSide(color: context.palette.primary),
-                      padding: EdgeInsets.zero,
-                      textStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    child: Text(_showLocations ? '收起位置' : '标注位置'),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
+        _buildSecondaryRow(hasLocations),
         if (_showLocations && hasLocations) ...[
           const SizedBox(height: 10),
           _buildLocations(widget.payload.locationMarks),
         ],
       ],
+    );
+  }
+
+  Widget _buildPracticeRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 34,
+            child: FilledButton(
+              onPressed: _handleStartPractice,
+              style: FilledButton.styleFrom(
+                backgroundColor: context.palette.primary,
+                padding: EdgeInsets.zero,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: const Text('开始练习'),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: SizedBox(
+            height: 34,
+            child: OutlinedButton(
+              onPressed: _dismiss,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: context.palette.textDeep,
+                side: BorderSide(color: context.palette.borderSoft),
+                padding: EdgeInsets.zero,
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              child: const Text('跳过此建议'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecondaryRow(bool hasLocations) {
+    return Row(
+      children: [
+        Expanded(child: _buildDetailToggleButton()),
+        const SizedBox(width: 8),
+        Expanded(child: _buildTeachButton()),
+        if (hasLocations) ...[
+          const SizedBox(width: 8),
+          Expanded(child: _buildLocationToggleButton()),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDetailToggleButton() {
+    return SizedBox(
+      height: 34,
+      child: OutlinedButton(
+        onPressed: () => setState(() => _expanded = !_expanded),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: context.palette.textDeep,
+          side: BorderSide(color: context.palette.borderSoft),
+          padding: EdgeInsets.zero,
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        child: Text(_expanded ? '收起详情' : '查看详情'),
+      ),
+    );
+  }
+
+  Widget _buildTeachButton() {
+    return SizedBox(
+      height: 34,
+      child: OutlinedButton(
+        onPressed: _handleTeachPrinciple,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: context.palette.textDeep,
+          side: BorderSide(color: context.palette.borderSoft),
+          padding: EdgeInsets.zero,
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        child: const Text('教我原理'),
+      ),
+    );
+  }
+
+  Widget _buildLocationToggleButton() {
+    return SizedBox(
+      height: 34,
+      child: OutlinedButton(
+        onPressed: () => setState(() => _showLocations = !_showLocations),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: context.palette.primary,
+          side: BorderSide(color: context.palette.primary),
+          padding: EdgeInsets.zero,
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        child: Text(_showLocations ? '收起位置' : '标注位置'),
+      ),
     );
   }
 
@@ -531,67 +539,75 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
             ),
             const SizedBox(height: 8),
           ],
-          if (taskType.isNotEmpty)
-            Row(
-              children: [
-                Text(
-                  '任务类型：',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: context.palette.textPrimary,
-                  ),
-                ),
-                Text(
-                  taskType,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.palette.textDeep,
-                  ),
-                ),
-              ],
-            ),
-          if (p.evaluationCriteria.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              '评估标准：',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: context.palette.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            for (var i = 0; i < p.evaluationCriteria.length; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${i + 1}.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        p.evaluationCriteria[i],
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: context.palette.textDeep,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+          ..._buildDetailTaskType(p, taskType),
+          ..._buildDetailCriteria(p),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildDetailTaskType(
+    TeacherSuggestionCardPayload p,
+    String taskType,
+  ) {
+    if (taskType.isEmpty) return const [];
+    return [
+      Row(
+        children: [
+          Text(
+            '任务类型：',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textPrimary,
+            ),
+          ),
+          Text(
+            taskType,
+            style: TextStyle(fontSize: 12, color: context.palette.textDeep),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> _buildDetailCriteria(TeacherSuggestionCardPayload p) {
+    if (p.evaluationCriteria.isEmpty) return const [];
+    return [
+      const SizedBox(height: 6),
+      Text(
+        '评估标准：',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 4),
+      for (var i = 0; i < p.evaluationCriteria.length; i++)
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${i + 1}.',
+                style: TextStyle(fontSize: 12, color: context.palette.primary),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  p.evaluationCriteria[i],
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: context.palette.textDeep,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+    ];
   }
 }

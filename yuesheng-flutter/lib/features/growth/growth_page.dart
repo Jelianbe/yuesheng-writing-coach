@@ -258,125 +258,141 @@ class _GrowthContent extends StatelessWidget {
           FocusCard(data: focus),
           const SizedBox(height: 12),
         ],
-        // 熟练度卡片
-        _Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        _buildProficiencyCard(context, proficiency, confidence, totalSessions),
+        const SizedBox(height: 12),
+        _buildSeverityCard(context, state, counts),
+        const SizedBox(height: 12),
+        if (onOpenDetail != null) _buildDetailEntryCard(context),
+        const SizedBox(height: 12),
+        // B8：Editor 观察记录审计卡（对齐 RN growth.tsx#L122，折叠展开）
+        ObservationAuditCard(sessionId: sessionId),
+      ],
+    );
+  }
+
+  /// 熟练度卡片：能力画像 + 熟练度环 + 总会话数
+  Widget _buildProficiencyCard(
+    BuildContext context,
+    ProficiencyLevel proficiency,
+    double confidence,
+    int totalSessions,
+  ) {
+    return _Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '能力画像',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.palette.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: ProficiencyRing(
+                level: proficiency,
+                confidence: confidence,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: Text(
+                '共 $totalSessions 次写作会话',
+                style: context.text.subBody,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 症候概览卡片：活跃数 + 严重度条 + 图例
+  Widget _buildSeverityCard(
+    BuildContext context,
+    GrowthState state,
+    SeverityCounts counts,
+  ) {
+    return _Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
                 Text(
-                  '能力画像',
+                  '症候概览',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: context.palette.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Center(
-                  child: ProficiencyRing(
-                    level: proficiency,
-                    confidence: confidence,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: Text(
-                    '共 $totalSessions 次写作会话',
-                    style: context.text.subBody,
+                const Spacer(),
+                Text(
+                  '${state.activeProblems.length} 个活跃',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.palette.primary,
                   ),
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 12),
+            SeverityBar(counts: counts, height: 10),
+            const SizedBox(height: 8),
+            _buildSeverityLegend(context, counts),
+          ],
         ),
-        const SizedBox(height: 12),
-        // 症候概览卡片
-        _Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '症候概览',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: context.palette.textSecondary,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${state.activeProblems.length} 个活跃',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SeverityBar(counts: counts, height: 10),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _Legend(
-                      color: context.palette.l1,
-                      label: 'L1 ${counts.l1}',
-                    ),
-                    const SizedBox(width: 12),
-                    _Legend(
-                      color: context.palette.l2,
-                      label: 'L2 ${counts.l2}',
-                    ),
-                    const SizedBox(width: 12),
-                    _Legend(
-                      color: context.palette.l3,
-                      label: 'L3 ${counts.l3}',
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // 详情入口
-        if (onOpenDetail != null)
-          _Card(
-            child: InkWell(
-              onTap: onOpenDetail,
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Row(
-                  children: [
-                    Text(
-                      '查看完整能力画像',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                    Spacer(),
-                    Icon(
-                      Icons.chevron_right,
-                      size: 20,
-                      color: context.palette.textTertiary,
-                    ),
-                  ],
+      ),
+    );
+  }
+
+  /// 症候概览图例（L1/L2/L3 计数）
+  Widget _buildSeverityLegend(BuildContext context, SeverityCounts counts) {
+    return Row(
+      children: [
+        _Legend(color: context.palette.l1, label: 'L1 ${counts.l1}'),
+        const SizedBox(width: 12),
+        _Legend(color: context.palette.l2, label: 'L2 ${counts.l2}'),
+        const SizedBox(width: 12),
+        _Legend(color: context.palette.l3, label: 'L3 ${counts.l3}'),
+      ],
+    );
+  }
+
+  /// 详情入口卡片（查看完整能力画像）
+  Widget _buildDetailEntryCard(BuildContext context) {
+    return _Card(
+      child: InkWell(
+        onTap: onOpenDetail,
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.lg),
+          child: Row(
+            children: [
+              Text(
+                '查看完整能力画像',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: context.palette.textPrimary,
                 ),
               ),
-            ),
+              Spacer(),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: context.palette.textTertiary,
+              ),
+            ],
           ),
-        const SizedBox(height: 12),
-        // B8：Editor 观察记录审计卡（对齐 RN growth.tsx#L122，折叠展开）
-        ObservationAuditCard(sessionId: sessionId),
-      ],
+        ),
+      ),
     );
   }
 

@@ -96,56 +96,62 @@ class DiagnosisFailedCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
-              // 搜索图标圆底（对齐 RN iconContainer bgTint）
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: context.palette.surface,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.search,
-                  size: 28,
-                  color: context.palette.textTertiary,
-                ),
-              ),
+              _buildIcon(context),
               const SizedBox(height: 12),
-              Text(
-                '未检测到明显问题',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '你可以尝试补充更多写作内容或具体描述遇到的问题。',
-                textAlign: TextAlign.center,
-                style: context.text.body.copyWith(height: 1.4),
-              ),
+              ..._buildTitleBlock(context),
               const SizedBox(height: 12),
               _buildSuggestions(context),
               const SizedBox(height: 12),
               _buildButtonRow(context),
-              if (showHint) ...[
-                const SizedBox(height: 8),
-                Text(
-                  '提示：多次诊断失败后建议主动描述问题',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: context.palette.disabledText,
-                  ),
-                ),
-              ],
+              if (showHint) ..._buildHint(context),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildIcon(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.search, size: 28, color: context.palette.textTertiary),
+    );
+  }
+
+  List<Widget> _buildTitleBlock(BuildContext context) {
+    return [
+      Text(
+        '未检测到明显问题',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        '你可以尝试补充更多写作内容或具体描述遇到的问题。',
+        textAlign: TextAlign.center,
+        style: context.text.body.copyWith(height: 1.4),
+      ),
+    ];
+  }
+
+  List<Widget> _buildHint(BuildContext context) {
+    return [
+      const SizedBox(height: 8),
+      Text(
+        '提示：多次诊断失败后建议主动描述问题',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 12, color: context.palette.disabledText),
+      ),
+    ];
   }
 
   /// 建议列表（对齐 RN suggestionsSection）

@@ -128,133 +128,147 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 顶部把手
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: context.palette.borderSoft,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              alignment: Alignment.center,
-            ),
-            Text(
-              '保存到文件',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: context.palette.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '保存到《${widget.bookTitle}》',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: context.palette.textTertiary,
-              ),
-            ),
+            _buildHandleBar(),
+            ..._buildTitleBlock(),
             const SizedBox(height: 16),
-
-            // 文件角色
-            Text(
-              '文件角色',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: context.palette.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                for (final role in _fileRoles) ...[
-                  _RoleChip(
-                    label: role.label,
-                    active: _fileRole == role.key,
-                    onTap: () => setState(() => _fileRole = role.key),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-              ],
-            ),
+            ..._buildRoleSelector(),
             const SizedBox(height: 12),
-
-            // 文件名
-            Text(
-              '文件名',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: context.palette.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: '请输入文件名',
-                isDense: true,
-                filled: true,
-                fillColor: context.palette.surface,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-              ),
-            ),
+            ..._buildNameField(),
             const SizedBox(height: 16),
-
-            // 操作按钮
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _saving
-                        ? null
-                        : () => Navigator.of(context).pop(),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                      side: BorderSide(color: context.palette.borderSoft),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                    child: Text(
-                      '取消',
-                      style: TextStyle(color: context.palette.textSecondary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: _saving ? null : _handleSave,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(44),
-                      backgroundColor: context.palette.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
-                    child: Text(
-                      _saving ? '保存中...' : '保存',
-                      style: TextStyle(color: context.palette.onPrimary),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildActionButtons(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHandleBar() {
+    return Container(
+      width: 36,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: context.palette.borderSoft,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
+  List<Widget> _buildTitleBlock() {
+    return [
+      Text(
+        '保存到文件',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        '保存到《${widget.bookTitle}》',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 13, color: context.palette.textTertiary),
+      ),
+    ];
+  }
+
+  List<Widget> _buildRoleSelector() {
+    return [
+      Text(
+        '文件角色',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: context.palette.textSecondary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Row(
+        children: [
+          for (final role in _fileRoles) ...[
+            _RoleChip(
+              label: role.label,
+              active: _fileRole == role.key,
+              onTap: () => setState(() => _fileRole = role.key),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> _buildNameField() {
+    return [
+      Text(
+        '文件名',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: context.palette.textSecondary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _nameController,
+        decoration: InputDecoration(
+          hintText: '请输入文件名',
+          isDense: true,
+          filled: true,
+          fillColor: context.palette.surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
+        ),
+      ),
+    ];
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _saving ? null : () => Navigator.of(context).pop(),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(44),
+              side: BorderSide(color: context.palette.borderSoft),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+            child: Text(
+              '取消',
+              style: TextStyle(color: context.palette.textSecondary),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FilledButton(
+            onPressed: _saving ? null : _handleSave,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(44),
+              backgroundColor: context.palette.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+            child: Text(
+              _saving ? '保存中...' : '保存',
+              style: TextStyle(color: context.palette.onPrimary),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

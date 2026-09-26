@@ -174,18 +174,7 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 顶部拖拽指示条
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: context.palette.border,
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                ),
-              ),
-            ),
+            _buildDragHandle(),
             // 标题
             Text(
               '采纳建议',
@@ -196,86 +185,113 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
               ),
             ),
             const SizedBox(height: 12),
-            // 建议内容预览
-            Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(maxHeight: 200),
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: context.palette.background,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  widget.suggestion,
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: context.palette.textInk,
-                  ),
-                ),
-              ),
-            ),
+            _buildSuggestionPreview(),
             const SizedBox(height: 20),
-            // 局部合并（默认）
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _isProcessing ? null : _adoptLocalMerge,
-                icon: const Icon(Icons.merge_type, size: 18),
-                label: const Text('局部合并'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: context.palette.primary,
-                  foregroundColor: context.palette.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                ),
-              ),
-            ),
+            _buildLocalMergeBtn(),
             const SizedBox(height: 8),
-            // 替换全部（需二次确认）
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _isProcessing ? null : _adoptReplaceAll,
-                icon: const Icon(Icons.find_replace, size: 18),
-                label: const Text('替换全部'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: context.palette.primary,
-                  side: BorderSide(color: context.palette.primary),
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                ),
-              ),
-            ),
-            // 撤销上次采纳（仅 previous_content 存在时显示）
-            // P2-4：查询未完成时预留固定高度，避免按钮延迟出现导致布局跳动
-            if (!_hasPreviousLoaded)
-              const SizedBox(height: 44) // 预留高度≈按钮+间距
-            else if (_hasPreviousContent) ...[
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton.icon(
-                  onPressed: _isProcessing ? null : _undoLastAdoption,
-                  icon: const Icon(Icons.undo, size: 18),
-                  label: const Text('撤销上次采纳'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: context.palette.textSecondary,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.smx,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            _buildReplaceAllBtn(),
+            ..._buildUndoSection(),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDragHandle() {
+    return Center(
+      child: Container(
+        width: 36,
+        height: 4,
+        margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: context.palette.border,
+          borderRadius: BorderRadius.circular(AppRadius.xs),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuggestionPreview() {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 200),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.palette.background,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: SingleChildScrollView(
+        child: Text(
+          widget.suggestion,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: context.palette.textInk,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocalMergeBtn() {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: _isProcessing ? null : _adoptLocalMerge,
+        icon: const Icon(Icons.merge_type, size: 18),
+        label: const Text('局部合并'),
+        style: FilledButton.styleFrom(
+          backgroundColor: context.palette.primary,
+          foregroundColor: context.palette.onPrimary,
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplaceAllBtn() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: _isProcessing ? null : _adoptReplaceAll,
+        icon: const Icon(Icons.find_replace, size: 18),
+        label: const Text('替换全部'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: context.palette.primary,
+          side: BorderSide(color: context.palette.primary),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildUndoSection() {
+    // 撤销上次采纳（仅 previous_content 存在时显示）
+    // P2-4：查询未完成时预留固定高度，避免按钮延迟出现导致布局跳动
+    if (!_hasPreviousLoaded) {
+      return const [SizedBox(height: 44)]; // 预留高度≈按钮+间距
+    }
+    if (!_hasPreviousContent) return const [];
+    return [
+      const SizedBox(height: 8),
+      SizedBox(
+        width: double.infinity,
+        child: TextButton.icon(
+          onPressed: _isProcessing ? null : _undoLastAdoption,
+          icon: const Icon(Icons.undo, size: 18),
+          label: const Text('撤销上次采纳'),
+          style: TextButton.styleFrom(
+            foregroundColor: context.palette.textSecondary,
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+          ),
+        ),
+      ),
+    ];
   }
 }

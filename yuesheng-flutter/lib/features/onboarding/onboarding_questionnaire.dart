@@ -376,45 +376,46 @@ class _CheckCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // 多选方框
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                  border: Border.all(
-                    color: selected
-                        ? context.palette.primary
-                        : context.palette.textTertiary,
-                    width: 2,
-                  ),
-                  color: selected
-                      ? context.palette.primary
-                      : Colors.transparent,
-                ),
-                child: selected
-                    ? Icon(
-                        Icons.check,
-                        size: 16,
-                        color: context.palette.onPrimary,
-                      )
-                    : null,
-              ),
+              _buildCheckbox(context),
               const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: selected
-                        ? context.palette.primary
-                        : context.palette.textPrimary,
-                  ),
-                ),
-              ),
+              _buildLabel(context),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckbox(BuildContext context) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+        border: Border.all(
+          color: selected
+              ? context.palette.primary
+              : context.palette.textTertiary,
+          width: 2,
+        ),
+        color: selected ? context.palette.primary : Colors.transparent,
+      ),
+      child: selected
+          ? Icon(Icons.check, size: 16, color: context.palette.onPrimary)
+          : null,
+    );
+  }
+
+  Widget _buildLabel(BuildContext context) {
+    return Expanded(
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: selected
+              ? context.palette.primary
+              : context.palette.textPrimary,
         ),
       ),
     );

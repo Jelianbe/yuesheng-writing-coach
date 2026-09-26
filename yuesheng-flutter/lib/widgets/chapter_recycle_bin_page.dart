@@ -151,51 +151,61 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
   }
 
   Widget _buildBody() {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_error) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: context.palette.textTertiary,
+    if (_loading) return _buildLoading();
+    if (_error) return _buildError();
+    if (_items.isEmpty) return _buildEmpty();
+    return _buildList();
+  }
+
+  Widget _buildLoading() {
+    return const Center(child: CircularProgressIndicator());
+  }
+
+  Widget _buildError() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: context.palette.textTertiary,
+          ),
+          const SizedBox(height: 12),
+          const Text('加载失败，请稍后重试'),
+          const SizedBox(height: 16),
+          OutlinedButton(onPressed: _load, child: const Text('重试')),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.delete_sweep_outlined,
+            size: 48,
+            color: context.palette.textTertiary,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '回收站是空的',
+            style: TextStyle(
+              fontSize: 15,
+              color: context.palette.textSecondary,
             ),
-            const SizedBox(height: 12),
-            const Text('加载失败，请稍后重试'),
-            const SizedBox(height: 16),
-            OutlinedButton(onPressed: _load, child: const Text('重试')),
-          ],
-        ),
-      );
-    }
-    if (_items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.delete_sweep_outlined,
-              size: 48,
-              color: context.palette.textTertiary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '回收站是空的',
-              style: TextStyle(
-                fontSize: 15,
-                color: context.palette.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text('删除的章节会先进入这里，可恢复或永久删除', style: context.text.subCaption),
-          ],
-        ),
-      );
-    }
+          ),
+          const SizedBox(height: 8),
+          Text('删除的章节会先进入这里，可恢复或永久删除', style: context.text.subCaption),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -204,57 +214,54 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       itemCount: _items.length,
       separatorBuilder: (_, _) =>
           Divider(height: 1, color: context.palette.divider),
-      itemBuilder: (context, index) {
-        final c = _items[index];
-        final title = c.title.trim().isEmpty ? '未命名章节' : c.title.trim();
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: context.palette.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${c.wordCount} 字 · ${_relativeTime(c.updatedAt)}',
-                      style: context.text.noteCaption,
-                    ),
-                  ],
+      itemBuilder: (context, index) => _buildRow(_items[index]),
+    );
+  }
+
+  Widget _buildRow(Chapter c) {
+    final title = c.title.trim().isEmpty ? '未命名章节' : c.title.trim();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: context.palette.textPrimary,
+                  ),
                 ),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.restore,
-                  size: 20,
-                  color: context.palette.primary,
+                const SizedBox(height: 4),
+                Text(
+                  '${c.wordCount} 字 · ${_relativeTime(c.updatedAt)}',
+                  style: context.text.noteCaption,
                 ),
-                tooltip: '恢复',
-                onPressed: () => _restore(c),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.delete_forever_outlined,
-                  size: 20,
-                  color: context.palette.danger,
-                ),
-                tooltip: '永久删除',
-                onPressed: () => _purge(c),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+          IconButton(
+            icon: Icon(Icons.restore, size: 20, color: context.palette.primary),
+            tooltip: '恢复',
+            onPressed: () => _restore(c),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete_forever_outlined,
+              size: 20,
+              color: context.palette.danger,
+            ),
+            tooltip: '永久删除',
+            onPressed: () => _purge(c),
+          ),
+        ],
+      ),
     );
   }
 

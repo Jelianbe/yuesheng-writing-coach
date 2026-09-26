@@ -126,76 +126,69 @@ class GrowthStore extends StateNotifier<GrowthState> {
   Future<void> loadGrowthData() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final diagRepo = DiagnosisRepository(_db);
-      final sessionRepo = SessionRepository(_db);
-      final studentModelRepo = StudentModelRepository(_db);
-      final growthService = GrowthService(_db);
-
-      // 并行加载十项数据
-      final results = await Future.wait([
-        // 1. 能力画像（全局聚合，sessionId: null）
-        buildStudentContext(
-          diagnosisRepo: diagRepo,
-          studentModelRepo: studentModelRepo,
-          sessionRepo: sessionRepo,
-          sessionId: null, // 全局聚合
-        ),
-        // 2. 跨 session 活跃问题
-        diagRepo.listAllActiveProblems(),
-        // 3. 最近 10 条诊断历史（跨 session，走 Repository 方法）
-        diagRepo.listRecentDiagnoses(limit: 10),
-        // 4. 成长总览
-        growthService.getGrowthOverview(),
-        // 5. 六大能力评分
-        growthService.getAbilityScores(),
-        // 6. 写作曲线（近 14 天）
-        growthService.getWritingCurve(),
-        // 7. 症候历史（近 30 天）
-        growthService.getSyndromeHistory(),
-        // 8. 最新写作风格画像（批次53c）
-        growthService.getLatestStyleProfile(),
-        // 9. 同类症候复发率（批次65 B62h）
-        growthService.getSyndromeRecurrences(),
-        // 10. 症候-训练通过率聚合（X-041b，近 30 天）
-        growthService.getSyndromeTrainingStats(),
-        // 11. 跨会话评估历史（P1-5 能力进步曲线）
-        AppStateRepository(_db).listAllEvaluationReports(),
-      ]);
-
-      final profileResult = results[0] as ProfileTextResult;
-      final activeProblems = results[1] as List<ActiveProblemView>;
-      final history = results[2] as List<DiagnosisRow>;
-      final overview = results[3] as GrowthOverview;
-      final abilityScores = results[4] as List<AbilityScore>;
-      final writingCurve = results[5] as List<WritingDataPoint>;
-      final syndromeHistory = results[6] as List<SyndromeHistoryEvent>;
-      final styleProfile = results[7] as WritingStyleProfile?;
-      final syndromeRecurrences = results[8] as List<SyndromeRecurrence>;
-      final trainingStats = results[9] as List<SyndromeTrainingStats>;
-      final evaluationHistory = results[10] as List<EvaluationData>;
-
-      // 全量重建（此处**不**用 copyWith）：成功路径要一次性覆盖 11 项数据
-      // 并把 error 清空——改 copyWith 反而得显式传 11 个参数，漏一个就静默
-      // 残留上一次的旧值。error 不传 = 清空，是有意设计（成功即无错误）。
-      state = GrowthState(
-        isLoading: false,
-        profile: profileResult.profile,
-        activeProblems: activeProblems,
-        diagnosisHistory: history,
-        overview: overview,
-        beginnerLevel: overview.currentBeginnerLevel,
-        abilityScores: abilityScores,
-        writingCurve: writingCurve,
-        syndromeHistory: syndromeHistory,
-        styleProfile: styleProfile,
-        syndromeRecurrences: syndromeRecurrences,
-        trainingStats: trainingStats,
-        evaluationHistory: evaluationHistory,
-      );
+      final results = await _loadGrowthDataParallel();
+      _applyGrowthResults(results);
     } catch (e) {
       debugPrint('[GrowthStore] loadGrowthData 失败: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  Future<List<Object?>> _loadGrowthDataParallel() async {
+    final diagRepo = DiagnosisRepository(_db);
+    final sessionRepo = SessionRepository(_db);
+    final studentModelRepo = StudentModelRepository(_db);
+    final growthService = GrowthService(_db);
+    return Future.wait([
+      buildStudentContext(
+        diagnosisRepo: diagRepo,
+        studentModelRepo: studentModelRepo,
+        sessionRepo: sessionRepo,
+        sessionId: null,
+      ),
+      diagRepo.listAllActiveProblems(),
+      diagRepo.listRecentDiagnoses(limit: 10),
+      growthService.getGrowthOverview(),
+      growthService.getAbilityScores(),
+      growthService.getWritingCurve(),
+      growthService.getSyndromeHistory(),
+      growthService.getLatestStyleProfile(),
+      growthService.getSyndromeRecurrences(),
+      growthService.getSyndromeTrainingStats(),
+      AppStateRepository(_db).listAllEvaluationReports(),
+    ]);
+  }
+
+  void _applyGrowthResults(List<Object?> results) {
+    final profileResult = results[0] as ProfileTextResult;
+    final activeProblems = results[1] as List<ActiveProblemView>;
+    final history = results[2] as List<DiagnosisRow>;
+    final overview = results[3] as GrowthOverview;
+    final abilityScores = results[4] as List<AbilityScore>;
+    final writingCurve = results[5] as List<WritingDataPoint>;
+    final syndromeHistory = results[6] as List<SyndromeHistoryEvent>;
+    final styleProfile = results[7] as WritingStyleProfile?;
+    final syndromeRecurrences = results[8] as List<SyndromeRecurrence>;
+    final trainingStats = results[9] as List<SyndromeTrainingStats>;
+    final evaluationHistory = results[10] as List<EvaluationData>;
+    // 全量重建（此处**不**用 copyWith）：成功路径要一次性覆盖 11 项数据
+    // 并把 error 清空——改 copyWith 反而得显式传 11 个参数，漏一个就静默
+    // 残留上一次的旧值。error 不传 = 清空，是有意设计（成功即无错误）。
+    state = GrowthState(
+      isLoading: false,
+      profile: profileResult.profile,
+      activeProblems: activeProblems,
+      diagnosisHistory: history,
+      overview: overview,
+      beginnerLevel: overview.currentBeginnerLevel,
+      abilityScores: abilityScores,
+      writingCurve: writingCurve,
+      syndromeHistory: syndromeHistory,
+      styleProfile: styleProfile,
+      syndromeRecurrences: syndromeRecurrences,
+      trainingStats: trainingStats,
+      evaluationHistory: evaluationHistory,
+    );
   }
 
   /// 批次57：学员纠正最新风格画像（纠错非重写）

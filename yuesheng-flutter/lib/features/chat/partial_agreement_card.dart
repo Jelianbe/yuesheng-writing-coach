@@ -154,40 +154,43 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
               children: [
                 // 左侧 4dp severity 色条（对齐 RN borderLeftColor + borderLeftWidth 4）
                 Container(width: 4, color: severity.text),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(severity),
-                        const SizedBox(height: 10),
-                        if (widget.syndromeName.isNotEmpty) ...[
-                          _buildSyndromeName(),
-                          const SizedBox(height: 10),
-                        ],
-                        Text(
-                          '告诉我哪些描述不准确，我会调整诊断结果。',
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.4,
-                            color: context.palette.textTertiary,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildInput(),
-                        const SizedBox(height: 10),
-                        _buildQuickOptions(),
-                        const SizedBox(height: 12),
-                        _buildButtonRow(),
-                      ],
-                    ),
-                  ),
-                ),
+                Expanded(child: _buildContent(severity)),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 卡片主体内容（R-019：从 build 抽出，避免超 50 行）
+  Widget _buildContent(({Color text, Color bg}) severity) {
+    return Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeader(severity),
+          const SizedBox(height: 10),
+          if (widget.syndromeName.isNotEmpty) ...[
+            _buildSyndromeName(),
+            const SizedBox(height: 10),
+          ],
+          Text(
+            '告诉我哪些描述不准确，我会调整诊断结果。',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: context.palette.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildInput(),
+          const SizedBox(height: 10),
+          _buildQuickOptions(),
+          const SizedBox(height: 12),
+          _buildButtonRow(),
+        ],
       ),
     );
   }

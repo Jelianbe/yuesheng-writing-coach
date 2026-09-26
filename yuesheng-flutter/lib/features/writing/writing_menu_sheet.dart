@@ -46,6 +46,24 @@ import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
 
+/// 写作菜单所需的所有回调与展示态（聚合为 record，避免逐方法透传 14 个参数）
+typedef _WritingMenuCallbacks = ({
+  DateTime? lastSavedAt,
+  VoidCallback onDiagnose,
+  VoidCallback? onOpenChapterTree,
+  VoidCallback? onOpenOutline,
+  VoidCallback? onOpenCharacters,
+  VoidCallback? onOpenWorlds,
+  VoidCallback? onOpenFullTextSearch,
+  VoidCallback? onOpenFindReplace,
+  VoidCallback? onOpenRecycleBin,
+  VoidCallback? onOpenQuickPhrases,
+  VoidCallback? onOpenStyleProfile,
+  VoidCallback? onOpenWritingStats,
+  VoidCallback? onOpenSettings,
+  VoidCallback? onOpenVersions,
+});
+
 class WritingMenuSheet {
   const WritingMenuSheet._();
 
@@ -53,189 +71,170 @@ class WritingMenuSheet {
     BuildContext context, {
     required DateTime? lastSavedAt,
     required VoidCallback onDiagnose,
-    // 批次96-7：拖拽调整篇幅——初始高度占比（默认 0.55）+ 松手后高度回调
-    // （用户级持久化由调用方负责，见 AppStateRepository.get/setEditorMenuHeight）
     double initialHeight = 0.55,
     ValueChanged<double>? onHeightChanged,
-    // 批次83：章节树抽屉入口
     VoidCallback? onOpenChapterTree,
-    // 批次83：大纲边写边看入口
     VoidCallback? onOpenOutline,
-    // C78 批次3：角色页入口（独立路由页，ADR-C78 §3.0）
     VoidCallback? onOpenCharacters,
-    // W1 批次：世界观设定页入口（独立路由页 /worlds）
     VoidCallback? onOpenWorlds,
-    // 批次96-11：全文搜索入口（整本作品章节搜索，命中片段+高亮+跳转定位）
     VoidCallback? onOpenFullTextSearch,
-    // 批次84-2：全文查找替换入口
     VoidCallback? onOpenFindReplace,
-    // 批次86-1：回收板入口（删除/剪切长文本找回）
     VoidCallback? onOpenRecycleBin,
-    // 批次85-3：快捷短语入口（常用语管理 + 光标插入）
     VoidCallback? onOpenQuickPhrases,
-    // 批次85-4：当前文风展示入口（风格画像五维）
     VoidCallback? onOpenStyleProfile,
-    // 批次85-5：写作统计入口（近 14 天写作曲线）
     VoidCallback? onOpenWritingStats,
-    // 批次82：排版设置入口（P0 四件套之①；批次96-9：兼管三开关）
     VoidCallback? onOpenSettings,
-    // 批次82：版本时光机入口（P0 四件套之③）
     VoidCallback? onOpenVersions,
   }) {
-    // 批次96-6→96-7：菜单改非全屏抽屉 + DraggableScrollableSheet 拖拽调整篇幅——
-    // 三档吸附（30%/55%/85%），min 0.30 保证菜单项可读，max 0.85 顶部始终露出编辑器区域；
-    // initialChildSize 由调用方传入（用户级记忆）；松手后经 onHeightChanged 落库
     final initial = initialHeight.clamp(0.30, 0.85);
-    // 拖拽/吸附动画会持续发出 notification——仅当 extent 变化超过阈值才上报，
-    // 避免动画中间值反复落库（最后一次上报即最终吸附档位）
-    var lastReported = initial;
     showYueModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: initial,
-        minChildSize: 0.30,
-        maxChildSize: 0.85,
-        snap: true,
-        snapSizes: const [0.30, 0.55, 0.85],
-        expand: false,
-        builder: (ctx, scrollController) =>
-            NotificationListener<DraggableScrollableNotification>(
-              onNotification: (n) {
-                // 松手/吸附到位后上报当前高度占比，由调用方持久化
-                if ((n.extent - lastReported).abs() >= 0.005) {
-                  lastReported = n.extent;
-                  onHeightChanged?.call(n.extent);
-                }
-                return false;
-              },
-              child: SingleChildScrollView(
-                controller: scrollController,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.section),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _SaveStatusRow(lastSavedAt: lastSavedAt),
-                      const Divider(height: 20),
-                      // ─── 写作工具 ───
-                      const _SectionHeader(label: '写作工具'),
-                      _MenuItem(
-                        label: '章节列表',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenChapterTree?.call();
-                        },
-                      ),
-                      _MenuItem(
-                        label: '大纲',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenOutline?.call();
-                        },
-                      ),
-                      // C78 批次3：角色档案（列表/详情/断言校正/合并）
-                      _MenuItem(
-                        label: '角色',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenCharacters?.call();
-                        },
-                      ),
-                      // 批次96-11：全文搜索（整本作品章节搜索，命中片段+高亮+跳转定位）
-                      _MenuItem(
-                        label: '全文搜索',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenFullTextSearch?.call();
-                        },
-                      ),
-                      _MenuItem(
-                        label: '查找替换',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenFindReplace?.call();
-                        },
-                      ),
-                      _MenuItem(
-                        label: '回收板',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenRecycleBin?.call();
-                        },
-                      ),
-                      _MenuItem(
-                        label: '快捷短语',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenQuickPhrases?.call();
-                        },
-                      ),
-                      // W1 批次：世界观设定（列表/详情/追加/归档）
-                      // 置于「写作工具」组末位：不挤占既有项位置，避免既有
-                      // 直点测试（全文搜索等）因下移出首屏而失效。
-                      _MenuItem(
-                        label: '世界观',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenWorlds?.call();
-                        },
-                      ),
-                      // ─── 教学 ───
-                      const _SectionHeader(label: '教学'),
-                      _MenuItem(
-                        label: '当前文风',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenStyleProfile?.call();
-                        },
-                      ),
-                      _MenuItem(
-                        label: '写作统计',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenWritingStats?.call();
-                        },
-                      ),
-                      _MenuItem(
-                        label: '打开教练面板',
-                        textColor: context.palette.primary,
-                        bold: true,
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onDiagnose();
-                        },
-                      ),
-                      // ─── 设置 ───
-                      const _SectionHeader(label: '设置'),
-                      _MenuItem(
-                        label: '排版设置',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenSettings?.call();
-                        },
-                      ),
-                      _MenuItem(
-                        label: '版本时光机',
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onOpenVersions?.call();
-                        },
-                      ),
-                      // 批次96-5：菜单末尾「取消」——菜单近全屏时遮罩仅剩顶部窄条，
-                      // 仅靠点遮罩/下滑关闭不直观，需显式关闭入口（对齐详情页更多菜单）
-                      const Divider(height: 20),
-                      _MenuItem(
-                        label: '取消',
-                        textColor: context.palette.textSecondary,
-                        onTap: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+      builder: (ctx) => _buildSheet(ctx, initial, onHeightChanged, (
+        lastSavedAt: lastSavedAt,
+        onDiagnose: onDiagnose,
+        onOpenChapterTree: onOpenChapterTree,
+        onOpenOutline: onOpenOutline,
+        onOpenCharacters: onOpenCharacters,
+        onOpenWorlds: onOpenWorlds,
+        onOpenFullTextSearch: onOpenFullTextSearch,
+        onOpenFindReplace: onOpenFindReplace,
+        onOpenRecycleBin: onOpenRecycleBin,
+        onOpenQuickPhrases: onOpenQuickPhrases,
+        onOpenStyleProfile: onOpenStyleProfile,
+        onOpenWritingStats: onOpenWritingStats,
+        onOpenSettings: onOpenSettings,
+        onOpenVersions: onOpenVersions,
+      )),
+    );
+  }
+
+  static Widget _buildSheet(
+    BuildContext context,
+    double initial,
+    ValueChanged<double>? onHeightChanged,
+    _WritingMenuCallbacks c,
+  ) {
+    // 拖拽/吸附动画会持续发出 notification——仅当 extent 变化超过阈值才上报，
+    // 避免动画中间值反复落库（最后一次上报即最终吸附档位）
+    var lastReported = initial;
+    return DraggableScrollableSheet(
+      initialChildSize: initial,
+      minChildSize: 0.30,
+      maxChildSize: 0.85,
+      snap: true,
+      snapSizes: const [0.30, 0.55, 0.85],
+      expand: false,
+      builder: (ctx, scrollController) =>
+          NotificationListener<DraggableScrollableNotification>(
+            onNotification: (n) {
+              if ((n.extent - lastReported).abs() >= 0.005) {
+                lastReported = n.extent;
+                onHeightChanged?.call(n.extent);
+              }
+              return false;
+            },
+            child: _buildMenuBody(ctx, scrollController, c),
+          ),
+    );
+  }
+
+  static Widget _menuItem(
+    BuildContext ctx,
+    String label, {
+    Color? textColor,
+    bool bold = false,
+    required VoidCallback? onAction,
+  }) {
+    return _MenuItem(
+      label: label,
+      textColor: textColor,
+      bold: bold,
+      onTap: () {
+        Navigator.pop(ctx);
+        onAction?.call();
+      },
+    );
+  }
+
+  static List<Widget> _buildWritingToolsGroup(
+    BuildContext ctx,
+    _WritingMenuCallbacks c,
+  ) {
+    return [
+      const _SectionHeader(label: '写作工具'),
+      _menuItem(ctx, '章节列表', onAction: c.onOpenChapterTree),
+      _menuItem(ctx, '大纲', onAction: c.onOpenOutline),
+      // C78 批次3：角色档案（列表/详情/断言校正/合并）
+      _menuItem(ctx, '角色', onAction: c.onOpenCharacters),
+      // 批次96-11：全文搜索（整本作品章节搜索，命中片段+高亮+跳转定位）
+      _menuItem(ctx, '全文搜索', onAction: c.onOpenFullTextSearch),
+      _menuItem(ctx, '查找替换', onAction: c.onOpenFindReplace),
+      _menuItem(ctx, '回收板', onAction: c.onOpenRecycleBin),
+      _menuItem(ctx, '快捷短语', onAction: c.onOpenQuickPhrases),
+      // W1 批次：世界观设定（列表/详情/追加/归档）
+      // 置于「写作工具」组末位：不挤占既有项位置，避免既有
+      // 直点测试（全文搜索等）因下移出首屏而失效。
+      _menuItem(ctx, '世界观', onAction: c.onOpenWorlds),
+    ];
+  }
+
+  static List<Widget> _buildTeachingGroup(
+    BuildContext ctx,
+    _WritingMenuCallbacks c,
+  ) {
+    return [
+      const _SectionHeader(label: '教学'),
+      _menuItem(ctx, '当前文风', onAction: c.onOpenStyleProfile),
+      _menuItem(ctx, '写作统计', onAction: c.onOpenWritingStats),
+      _menuItem(
+        ctx,
+        '打开教练面板',
+        textColor: ctx.palette.primary,
+        bold: true,
+        onAction: c.onDiagnose,
+      ),
+    ];
+  }
+
+  static List<Widget> _buildSettingsGroup(
+    BuildContext ctx,
+    _WritingMenuCallbacks c,
+  ) {
+    return [
+      const _SectionHeader(label: '设置'),
+      _menuItem(ctx, '排版设置', onAction: c.onOpenSettings),
+      _menuItem(ctx, '版本时光机', onAction: c.onOpenVersions),
+    ];
+  }
+
+  static Widget _buildMenuBody(
+    BuildContext ctx,
+    ScrollController scrollController,
+    _WritingMenuCallbacks c,
+  ) {
+    return SingleChildScrollView(
+      controller: scrollController,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.section),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SaveStatusRow(lastSavedAt: c.lastSavedAt),
+            const Divider(height: 20),
+            ..._buildWritingToolsGroup(ctx, c),
+            ..._buildTeachingGroup(ctx, c),
+            ..._buildSettingsGroup(ctx, c),
+            const Divider(height: 20),
+            _menuItem(
+              ctx,
+              '取消',
+              textColor: ctx.palette.textSecondary,
+              onAction: null,
             ),
+          ],
+        ),
       ),
     );
   }

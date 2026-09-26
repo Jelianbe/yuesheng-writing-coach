@@ -167,94 +167,102 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 顶部把手
-          Container(
-            width: 36,
-            height: 4,
-            margin: const EdgeInsets.only(
-              top: AppSpacing.md,
-              bottom: AppSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              color: context.palette.borderSoft,
-              borderRadius: BorderRadius.circular(AppRadius.xs),
-            ),
-            alignment: Alignment.center,
-          ),
-          Text(
-            '选择引用',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: context.palette.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '选择要分析的作品或章节',
-            textAlign: TextAlign.center,
-            style: context.text.subCaption,
-          ),
+          _buildHandleBar(),
+          ..._buildPickerTitleBlock(),
           const SizedBox(height: 12),
-
-          // Tab 切换
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            padding: const EdgeInsets.all(AppSpacing.xxs),
-            decoration: BoxDecoration(
-              color: context.palette.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Row(
-              children: [
-                _TabButton(
-                  label: '作品',
-                  active: _tab == 0,
-                  onTap: () => setState(() => _tab = 0),
-                ),
-                _TabButton(
-                  label: '素材',
-                  active: _tab == 1,
-                  onTap: () => setState(() => _tab = 1),
-                ),
-              ],
-            ),
-          ),
+          _buildTabSwitcher(),
           const SizedBox(height: 8),
-
-          // 列表区
           Flexible(
             child: SingleChildScrollView(
               child: _tab == 0 ? _buildWorksTab() : _buildFilesTab(),
             ),
           ),
           const SizedBox(height: 8),
+          _buildCancelButton(),
+        ],
+      ),
+    );
+  }
 
-          // 取消
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              0,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            child: OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
-                side: BorderSide(color: context.palette.borderSoft),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
-              child: Text(
-                '取消',
-                style: TextStyle(color: context.palette.textSecondary),
-              ),
-            ),
+  Widget _buildHandleBar() {
+    return Container(
+      width: 36,
+      height: 4,
+      margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: context.palette.borderSoft,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
+  List<Widget> _buildPickerTitleBlock() {
+    return [
+      Text(
+        '选择引用',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        '选择要分析的作品或章节',
+        textAlign: TextAlign.center,
+        style: context.text.subCaption,
+      ),
+    ];
+  }
+
+  Widget _buildTabSwitcher() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.xxs),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Row(
+        children: [
+          _TabButton(
+            label: '作品',
+            active: _tab == 0,
+            onTap: () => setState(() => _tab = 0),
+          ),
+          _TabButton(
+            label: '素材',
+            active: _tab == 1,
+            onTap: () => setState(() => _tab = 1),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCancelButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      child: OutlinedButton(
+        onPressed: () => Navigator.of(context).pop(),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(44),
+          side: BorderSide(color: context.palette.borderSoft),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+        child: Text(
+          '取消',
+          style: TextStyle(color: context.palette.textSecondary),
+        ),
       ),
     );
   }
@@ -296,81 +304,79 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkWell(
-          onTap: () => _toggleExpand(m.id),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          m.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: context.palette.textPrimary,
-                          ),
-                        ),
-                      ),
-                      if (widget.mode == 'mention') ...[
-                        const SizedBox(width: 8),
-                        _mentionBadge(buildMentionPath(m.title)),
-                      ],
-                    ],
-                  ),
-                ),
-                // 引用整本书
-                GestureDetector(
-                  onTap: () => _handleSelect(
-                    'manuscript',
-                    m.id,
-                    m.title,
-                    buildMentionPath(m.title),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xxs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.palette.primarySoft,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: Text(
-                      '引用整本书',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.palette.primary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  size: 18,
-                  color: context.palette.disabledText,
-                ),
-              ],
-            ),
-          ),
-        ),
+        _buildManuscriptHeader(m, expanded),
         if (expanded) ...[
           Divider(height: 1, color: context.palette.borderSoft),
           _buildChapterList(m),
         ],
         Divider(height: 1, color: context.palette.borderSoft),
       ],
+    );
+  }
+
+  Widget _buildManuscriptHeader(Manuscript m, bool expanded) {
+    return InkWell(
+      onTap: () => _toggleExpand(m.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      m.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: context.palette.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (widget.mode == 'mention') ...[
+                    const SizedBox(width: 8),
+                    _mentionBadge(buildMentionPath(m.title)),
+                  ],
+                ],
+              ),
+            ),
+            _buildWholeBookBtn(m),
+            const SizedBox(width: 8),
+            Icon(
+              expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+              size: 18,
+              color: context.palette.disabledText,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWholeBookBtn(Manuscript m) {
+    return GestureDetector(
+      onTap: () =>
+          _handleSelect('manuscript', m.id, m.title, buildMentionPath(m.title)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xxs,
+        ),
+        decoration: BoxDecoration(
+          color: context.palette.primarySoft,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          '引用整本书',
+          style: TextStyle(fontSize: 12, color: context.palette.primary),
+        ),
+      ),
     );
   }
 
@@ -600,84 +606,84 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkWell(
-          onTap: () => setState(() {
-            expanded ? _filesExpanded.remove(m.id) : _filesExpanded.add(m.id);
-          }),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    m.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: context.palette.textPrimary,
-                    ),
-                  ),
-                ),
-                Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  size: 18,
-                  color: context.palette.disabledText,
-                ),
-              ],
-            ),
-          ),
-        ),
+        _buildFileGroupHeader(m, expanded),
         if (expanded)
-          for (var fIndex = 0; fIndex < files.length; fIndex++)
-            InkWell(
-              onTap: () => _handleSelect(
-                'file',
-                files[fIndex].id,
-                '【素材】${files[fIndex].fileName}',
-                buildMentionPath(m.title, subTitle: files[fIndex].fileName),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.section + AppSpacing.sm,
-                  right: AppSpacing.lg,
-                  top: AppSpacing.smx,
-                  bottom: AppSpacing.smx,
-                ),
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        files[fIndex].fileName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: context.palette.textSecondary,
-                        ),
-                      ),
-                    ),
-                    if (widget.mode == 'mention') ...[
-                      const SizedBox(width: 8),
-                      _mentionBadge(
-                        buildMentionPath(
-                          m.title,
-                          subTitle: files[fIndex].fileName,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+          for (final f in files) _buildFileRow(m, f),
         Divider(height: 1, color: context.palette.borderSoft),
       ],
+    );
+  }
+
+  Widget _buildFileGroupHeader(Manuscript m, bool expanded) {
+    return InkWell(
+      onTap: () => setState(() {
+        expanded ? _filesExpanded.remove(m.id) : _filesExpanded.add(m.id);
+      }),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                m.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+            ),
+            Icon(
+              expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+              size: 18,
+              color: context.palette.disabledText,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileRow(Manuscript m, AttachedFileRow file) {
+    return InkWell(
+      onTap: () => _handleSelect(
+        'file',
+        file.id,
+        '【素材】${file.fileName}',
+        buildMentionPath(m.title, subTitle: file.fileName),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          left: AppSpacing.section + AppSpacing.sm,
+          right: AppSpacing.lg,
+          top: AppSpacing.smx,
+          bottom: AppSpacing.smx,
+        ),
+        child: Row(
+          children: [
+            Flexible(
+              child: Text(
+                file.fileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.palette.textSecondary,
+                ),
+              ),
+            ),
+            if (widget.mode == 'mention') ...[
+              const SizedBox(width: 8),
+              _mentionBadge(buildMentionPath(m.title, subTitle: file.fileName)),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -61,114 +61,131 @@ class ImportSuccessSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 顶部把手
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.section),
-              decoration: BoxDecoration(
-                color: context.palette.border,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              alignment: Alignment.center,
-            ),
-            // 成功图标（圆底 + 勾，对齐 RN successIcon）
-            Container(
-              width: 56,
-              height: 56,
-              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: context.palette.primary,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Icon(
-                Icons.check,
-                size: 24,
-                color: context.palette.onPrimary,
-              ),
-            ),
-            Text(
-              '导入成功！',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: context.palette.textPrimary,
-              ),
-            ),
+            _buildHandle(context),
+            _buildSuccessIcon(context),
+            _buildTitleText(context),
             const SizedBox(height: 8),
-            Text(
-              '已成功导入 $chapterCount 个章节到\n「$manuscriptTitle」',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.55,
-                color: context.palette.textSecondary,
-              ),
-            ),
+            _buildSubtitleText(context),
             const SizedBox(height: 16),
-            if (diagnoseEnabled) ...[
-              Text(
-                '是否立即发送给月笙诊断？',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: context.palette.textTertiary,
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-            // 立即诊断 / 返回作品（primary 实底）
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                onDiagnose();
-              },
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(46),
-                backgroundColor: context.palette.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
-              child: Text(
-                diagnoseEnabled ? '立即诊断' : '返回作品',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.onPrimary,
-                ),
-              ),
-            ),
-            if (diagnoseEnabled) ...[
-              const SizedBox(height: 10),
-              // 稍后再说（描边）
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  onClose();
-                },
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(46),
-                  side: BorderSide(color: context.palette.border),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-                child: Text(
-                  '稍后再说',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: context.palette.textSecondary,
-                  ),
-                ),
-              ),
-            ],
+            if (diagnoseEnabled) ..._buildDiagnosePrompt(context),
+            _buildPrimaryButton(context),
+            if (diagnoseEnabled) ..._buildLaterButton(context),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildHandle(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: AppSpacing.section),
+      decoration: BoxDecoration(
+        color: context.palette.border,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      alignment: Alignment.center,
+    );
+  }
+
+  Widget _buildSuccessIcon(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: context.palette.primary,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Icon(Icons.check, size: 24, color: context.palette.onPrimary),
+    );
+  }
+
+  Widget _buildTitleText(BuildContext context) {
+    return Text(
+      '导入成功！',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: context.palette.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildSubtitleText(BuildContext context) {
+    return Text(
+      '已成功导入 $chapterCount 个章节到\n「$manuscriptTitle」',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 14,
+        height: 1.55,
+        color: context.palette.textSecondary,
+      ),
+    );
+  }
+
+  List<Widget> _buildDiagnosePrompt(BuildContext context) {
+    return [
+      Text(
+        '是否立即发送给月笙诊断？',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 14, color: context.palette.textTertiary),
+      ),
+      const SizedBox(height: 20),
+    ];
+  }
+
+  Widget _buildPrimaryButton(BuildContext context) {
+    return FilledButton(
+      onPressed: () {
+        Navigator.of(context).pop();
+        onDiagnose();
+      },
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(46),
+        backgroundColor: context.palette.primary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+      ),
+      child: Text(
+        diagnoseEnabled ? '立即诊断' : '返回作品',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: context.palette.onPrimary,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildLaterButton(BuildContext context) {
+    return [
+      const SizedBox(height: 10),
+      OutlinedButton(
+        onPressed: () {
+          Navigator.of(context).pop();
+          onClose();
+        },
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(46),
+          side: BorderSide(color: context.palette.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+        child: Text(
+          '稍后再说',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: context.palette.textSecondary,
+          ),
+        ),
+      ),
+    ];
   }
 }
