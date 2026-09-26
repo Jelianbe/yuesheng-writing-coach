@@ -26,6 +26,7 @@ import '../config/app_theme.dart';
 import 'knowledge_card.dart';
 import 'thinking_chain.dart';
 import 'yue_sheet.dart';
+import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../services/decode_guard.dart';
@@ -1135,6 +1136,39 @@ class _SyndromeConfirmationBarState
     }
   }
 
+  /// 诊断编辑器：「不适用，以后别报」——把症候 ID 写入全局 disabledIds，
+  /// 同时把当前这条标 disputed。用户不是惩罚症候，是声明自己的写作类型。
+  Future<void> _dismissForever() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      final repo = AppStateRepository(ref.read(appDatabaseProvider));
+      final prefs = await repo.getDiagnosisPrefs() ?? DiagnosisPrefs();
+      final updated = prefs.copyWith(
+        disabledIds: {...prefs.disabledIds, widget.syndrome.syndromeId},
+      );
+      await repo.setDiagnosisPrefs(updated);
+      // 同时把当前这条标 disputed（别留在 active_problems）
+      await ref
+          .read(diagnosisServiceProvider)
+          .disputeDiagnosis(
+            widget.sessionId,
+            widget.syndrome.syndromeId,
+            widget.syndrome.name,
+          );
+      if (mounted) setState(() => _status = 'dismissed');
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'dismissSyndromeForever',
+        error: e,
+        stack: st,
+      );
+      _showFailureSnack('操作失败，请稍后重试');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -1185,7 +1219,22 @@ class _SyndromeConfirmationBarState
             ),
           ],
         ),
+        const SizedBox(height: 4),
+        _buildDismissLink(),
       ],
+    );
+  }
+
+  Widget _buildDismissLink() {
+    return TextButton(
+      onPressed: _submitting ? null : _dismissForever,
+      style: TextButton.styleFrom(
+        foregroundColor: context.palette.l3Text,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: const Text('这个问题不适用我，以后别报', style: TextStyle(fontSize: 12)),
     );
   }
 
@@ -1223,8 +1272,8 @@ class _SyndromeConfirmationBarState
   }
 
   /// 已确认/质疑：状态行 + 提示文案
-  Widget _buildStatus() {
-    final (icon, statusText, hint, color) = switch (_status) {
+  (IconData, String, String, Color) _statusDisplay() {
+    return switch (_status) {
       'confirmed' => (
         Icons.check_circle_outline,
         '已认同',
@@ -1243,9 +1292,18 @@ class _SyndromeConfirmationBarState
         '诊断已标记为不适用',
         context.palette.l3Text,
       ),
+      'dismissed' => (
+        Icons.do_not_disturb_on_outlined,
+        '已关闭',
+        '以后不再提示（成长页可恢复）',
+        context.palette.l3Text,
+      ),
       _ => (Icons.help_outline, '', '', context.palette.textSecondary),
     };
+  }
 
+  Widget _buildStatus() {
+    final (icon, statusText, hint, color) = _statusDisplay();
     return Column(
       children: [
         Row(
