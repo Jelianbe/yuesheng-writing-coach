@@ -6,8 +6,12 @@ part of 'syndrome_knowledge_base.dart';
 
 /// L2 索引：写作问题→症候 ID 映射表（对应 RN SYNDROME_INDEX_CONTENT）
 /// 映射表行由注册表渲染（b9 批次28），输出与手写逐字一致。
-final String kSyndromeIndexContent =
-    r'''# SKILL: 写作问题→症候 ID 映射表
+///
+/// [disabled] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
+/// 诊断编辑器：非空时映射表剔除对应行——AI 索引表里看不到被关的症候，
+/// 从源头减少误报（比解析后丢弃省 token，且无"正文提到却 JSON 丢弃"的不一致）。
+String buildSyndromeIndexContent([Set<String> disabled = const {}]) {
+  return r'''# SKILL: 写作问题→症候 ID 映射表
 
 > 定位：你已凭认知锚点识别出写作问题后，用此表为问题标注症候 ID。
 > 这是"名分"映射，不是诊断标准——你的判断在前，ID 在后。
@@ -25,11 +29,11 @@ final String kSyndromeIndexContent =
 | 症候 ID | 问题类型关键词 | 一句话描述 |
 |---------|--------------|-----------|
 ''' +
-    kSyndromeRegistry
-        .where((s) => s.retired != true)
-        .map(_syndromeIndexRow)
-        .join('\n') +
-    r'''
+      kSyndromeRegistry
+          .where((s) => s.retired != true && !disabled.contains(s.id))
+          .map(_syndromeIndexRow)
+          .join('\n') +
+      r'''
 ## 严重度三维标定
 
 - L1 轻微：局部/不影响理解/改几句即可
@@ -87,6 +91,11 @@ final String kSyndromeIndexContent =
 
 如果文本中有"看起来像问题但实际是合理写法"的地方，在自然说明部分提及，
 简要说明为什么不是问题。JSON 中不需要包含排除项。''';
+}
+
+/// L2 索引全启用默认值（测试与 fallback 用；运行时按启用集构造请用
+/// [buildSyndromeIndexContent]）。
+final String kSyndromeIndexContent = buildSyndromeIndexContent();
 
 /// L3 完整手册：症候诊断手册（对应 RN content，含 P003-P041 完整定义）
 /// 头部「症候图谱」计数由注册表派生（b9 批次28），正文段落保留人工编写。

@@ -101,6 +101,10 @@ class ChatService {
   /// 设计为可选参数：避免破坏 30+ 处现有测试构造（默认 null 跳过回写）。
   final TrainingResultRepository? _trainingResultRepo;
 
+  /// 诊断编辑器：用户永久关闭的症候 ID（由 UI 层在诊断开始前从
+  /// AppStateRepository 读入后设置；空集 = 全启用，历史行为）。
+  Set<String> disabledSyndromeIds = const {};
+
   // ─── 四大纯能力（选项 B 依赖倒置：经 capability provider 注入，默认 const impl） ───
   // 阶段 1：消费层从顶层纯函数迁移到能力方法；impl 为纯委托，行为零变更。
   // 生产侧经 chatServiceProvider 读 capability provider 注入；测试替身
@@ -1075,6 +1079,7 @@ extension ChatServiceSend on ChatService {
       subphase: subphase,
       isBeginner: isBeginner,
       isOutlineContext: isOutlineContext,
+      disabledSyndromeIds: disabledSyndromeIds,
     );
     final rawMode = _teaching.resolveL2Mode(skillCtx);
     final override = _routeHysteresis.overrideFor(sessionId, rawMode);

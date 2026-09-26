@@ -42,12 +42,17 @@ class SkillLoadContext {
   final bool isBeginner;
   final bool isOutlineContext;
 
+  /// 诊断编辑器：用户永久关闭（「不适用于我」）的症候 ID 集合。
+  /// 空集 = 全启用（历史行为）。非空时 L2 索引表剔除对应行。
+  final Set<String> disabledSyndromeIds;
+
   const SkillLoadContext({
     required this.phase,
     required this.attitude,
     this.subphase,
     this.isBeginner = false,
     this.isOutlineContext = false,
+    this.disabledSyndromeIds = const {},
   });
 }
 

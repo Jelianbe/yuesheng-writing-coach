@@ -191,9 +191,15 @@ void _buildL2Chunks(
       // Phase 3 A 组：块内按教学阶段裁剪（无裁剪钩子时退化为完整 content）
       // P3-R3：裁剪函数签名扩为 (phase, content)，原文由此处送入，
       // 使裁剪逻辑得以迁出 part 家族（家族私有常量跨库不可见）。
-      chunks.add(
-        skill.contentForPhase?.call(ctx.phase, skill.content) ?? skill.content,
-      );
+      var content =
+          skill.contentForPhase?.call(ctx.phase, skill.content) ??
+          skill.content;
+      // 诊断编辑器：索引 skill 按用户启用集动态生成（剔除关闭行）。
+      if (ref.skillId == 'syndrome-diagnosis-index' &&
+          ctx.disabledSyndromeIds.isNotEmpty) {
+        content = buildSyndromeIndexContent(ctx.disabledSyndromeIds);
+      }
+      chunks.add(content);
       loadedIds.add(ref.skillId);
       if (ref.contextHint != null) {
         chunks.add(ref.contextHint!);

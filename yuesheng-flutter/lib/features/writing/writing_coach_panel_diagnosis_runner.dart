@@ -81,7 +81,6 @@ class WritingCoachDiagnosisRunner {
     required CancelToken cancelToken,
   }) async {
     // D2：长度路由 — 先尝试分块链路（长文本）
-    // 诊断编辑器：读用户全局启用集，关闭的症候不进分块 prompt
     final diagPrefs = await AppStateRepository(
       _ref.read(appDatabaseProvider),
     ).getDiagnosisPrefs();
@@ -101,7 +100,8 @@ class WritingCoachDiagnosisRunner {
     );
 
     final store = _ref.read(writingCoachStoreProvider(_chapterId).notifier);
-    final chatService = _ref.read(chatServiceProvider);
+    final chatService = _ref.read(chatServiceProvider)
+      ..disabledSyndromeIds = diagPrefs?.disabledIds ?? const {};
     if (progressive != null) {
       // D4-A：分块链路完成 → 解析+持久化+卡片插入
       await chatService.commitDiagnosisFromContent(

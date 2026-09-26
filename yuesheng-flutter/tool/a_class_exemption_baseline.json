@@ -6,6 +6,8 @@
   "fileCount": 53,
   "partCount": 49,
   "minPartCount": 49,
-  "allowedFunctions": {},
+  "allowedFunctions": {
+    "services/syndrome_kb_content.dart": ["buildSyndromeIndexContent"]
+  },
   "violations": []
 }

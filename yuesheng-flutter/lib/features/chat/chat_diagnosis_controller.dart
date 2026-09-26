@@ -95,6 +95,9 @@ class ChatDiagnosisController {
     final diagPrefs = await AppStateRepository(
       host.ref.read(appDatabaseProvider),
     ).getDiagnosisPrefs();
+    // 诊断编辑器：短文本链路（单次 sendMessage）也用同一启用集
+    host.ref.read(chatServiceProvider).disabledSyndromeIds =
+        diagPrefs?.disabledIds ?? const {};
     final progressive = await runProgressiveDiagnosis(
       content: chapter.content,
       title: chapter.title,

@@ -174,7 +174,9 @@ void main() {
     test('说明在 kSyndromeIndexContent 区间、不在 kSyndromeManualContent 区间', () {
       final src = _readSrc(kSyndromeKb);
 
-      final idxIndex = src.indexOf('final String kSyndromeIndexContent =');
+      final idxIndex = src.indexOf(
+        'String buildSyndromeIndexContent([Set<String> disabled',
+      );
       final idxManual = src.indexOf('final String kSyndromeManualContent =');
       final idxNote = src.indexOf(kUncappedScopeNote);
 

@@ -198,7 +198,9 @@ void main() {
     test('N36 两段落在 kSyndromeIndexContent 区间、不在 kSyndromeManualContent 区间', () {
       final src = _readSrc(kSyndromeKb);
 
-      final idxIndex = src.indexOf('final String kSyndromeIndexContent =');
+      final idxIndex = src.indexOf(
+        'String buildSyndromeIndexContent([Set<String> disabled',
+      );
       final idxManual = src.indexOf('final String kSyndromeManualContent =');
       expect(idxIndex, isNot(-1), reason: '找不到 kSyndromeIndexContent 声明');
       expect(
