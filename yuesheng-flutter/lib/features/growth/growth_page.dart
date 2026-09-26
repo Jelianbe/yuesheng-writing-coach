@@ -30,6 +30,7 @@ import '../../router/app_routes.dart';
 import '../../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
 import 'growth_detail_nav.dart';
+import 'growth_diagnosis_prefs_card.dart';
 import 'observation_audit_card.dart';
 import 'proficiency_ring.dart';
 import 'severity_bar.dart';
@@ -253,6 +254,8 @@ class _GrowthContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
+        const GrowthDiagnosisPrefsCard(),
+        const SizedBox(height: 12),
         // 当前焦点卡（P1-4）
         if (focus != null) ...[
           FocusCard(data: focus),
@@ -417,50 +420,55 @@ class _GrowthContent extends StatelessWidget {
 
   /// P2-1：新用户空状态——引导去写作
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.edit_note,
-              size: 48,
-              color: context.palette.textSecondary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '还没有写作记录',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: context.palette.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '完成第一次写作后，这里会展示你的能力画像',
-              style: context.text.subBody,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: () => context.go('/bookshelf'),
-              style: FilledButton.styleFrom(
-                backgroundColor: context.palette.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.md,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
-              child: const Text('去写第一篇'),
-            ),
-          ],
-        ),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const GrowthDiagnosisPrefsCard(),
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.xxl),
+            child: _buildEmptyStateBody(context),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildEmptyStateBody(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.edit_note, size: 48, color: context.palette.textSecondary),
+        const SizedBox(height: 12),
+        Text(
+          '还没有写作记录',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '完成第一次写作后，这里会展示你的能力画像',
+          style: context.text.subBody,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        FilledButton(
+          onPressed: () => context.go('/bookshelf'),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.primary,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl,
+              vertical: AppSpacing.md,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
+          child: const Text('去写第一篇'),
+        ),
+      ],
     );
   }
 }

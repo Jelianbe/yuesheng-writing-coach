@@ -48,14 +48,18 @@ class _GrowthDiagnosisPrefsCardState
   }
 
   Future<void> _load() async {
-    final p = await AppStateRepository(
-      ref.read(appDatabaseProvider),
-    ).getDiagnosisPrefs();
-    if (mounted) {
-      setState(() {
-        _prefs = p;
-        _loading = false;
-      });
+    try {
+      final p = await AppStateRepository(
+        ref.read(appDatabaseProvider),
+      ).getDiagnosisPrefs();
+      if (mounted) {
+        setState(() {
+          _prefs = p;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      // 读不到偏好（测试/异常）→ 不渲染卡片，不阻塞页面
     }
   }
 

@@ -44,8 +44,15 @@ void main() {
     );
   }
 
+  void _setSurfaceSize(WidgetTester tester, {double height = 1200}) {
+    tester.view.physicalSize = Size(800, height);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+  }
+
   group('GrowthPage 视觉规范（月色竹青）', () {
     testWidgets('#V1 AppBar 浅色 #F7F8F6 + 48dp + 深字 #2D3142', (tester) async {
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -56,6 +63,7 @@ void main() {
     });
 
     testWidgets('#V2 Scaffold 背景 #F7F8F6', (tester) async {
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -64,6 +72,7 @@ void main() {
     });
 
     testWidgets('#V3 空状态：显示引导 CTA（无数据卡片）', (tester) async {
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -73,6 +82,7 @@ void main() {
     });
 
     testWidgets('#V4 AppBar 右上有详情入口图标', (tester) async {
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -80,6 +90,7 @@ void main() {
     });
 
     testWidgets('#V5 快捷入口渲染（设置/写作诊断/学习进度）', (tester) async {
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -163,6 +174,7 @@ void main() {
       final msId = await msRepo.createManuscript(title: '测试作品');
       await chRepo.createChapter(msId, title: '第一章：启程', content: longContent);
 
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -177,6 +189,7 @@ void main() {
 
   group('GrowthPage 功能', () {
     testWidgets('#F1 空状态：显示"还没有写作记录"引导', (tester) async {
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -185,6 +198,7 @@ void main() {
     });
 
     testWidgets('#F2 空状态：显示"去写第一篇" CTA 按钮', (tester) async {
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
@@ -245,6 +259,7 @@ void main() {
             ),
           );
 
+      _setSurfaceSize(tester);
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
