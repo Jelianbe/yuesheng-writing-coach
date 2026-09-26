@@ -84,8 +84,12 @@ class _ProtocolLlmClient extends LlmClient {
 void main() {
   late AppDatabase db;
 
-  setUp(() {
+  setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
+    // C2（批次 1f4abb61）：发送入口会先弹一次性「配置 API」引导。
+    // 本文件测的是端到端卡片/落库联动，与首次引导无关 ⇒ 预置「已展示」标记。
+    // （引导自身行为见 test/widgets/api_config_nudge_test.dart）
+    await AppStateRepository(db).setApiConfigHintSeen(true);
   });
 
   tearDown(() async => db.close());

@@ -146,6 +146,10 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
+    // C2（批次 1f4abb61）：诊断入口会先弹一次性「配置 API」引导。
+    // 本文件测的是写作页/编辑器行为，与首次引导无关 ⇒ 预置「已展示」标记。
+    // （引导自身行为见 test/widgets/api_config_nudge_test.dart）
+    await AppStateRepository(db).setApiConfigHintSeen(true);
     container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db)],
     );

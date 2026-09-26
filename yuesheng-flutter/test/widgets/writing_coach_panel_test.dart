@@ -27,6 +27,7 @@ import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
@@ -52,6 +53,8 @@ import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
 import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
+
+import '../helpers/mock_secure_storage.dart';
 
 /// 测试用 Fake LLM：预设 chatCompletion 响应（ADR-C88 快速观察非流式化；
 /// streamChat 保留供聊天/诊断链路 mock）
@@ -123,6 +126,11 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
+    // C2（批次 1f4abb61）：诊断入口会先弹一次性「配置 API」引导。
+    // 本文件测的是诊断/教学链路本身，与首次引导无关 ⇒ 预置「已展示」标记，
+    // 让引导不触发。（引导自身行为见 test/widgets/api_config_nudge_test.dart；
+    //   接线判据见本文件 D1-nudge）
+    await AppStateRepository(db).setApiConfigHintSeen(true);
     fakeLlm = FakeLlmClient('诊断完成。本章结构清晰，节奏明快。');
     final msRepo = ManuscriptRepository(db);
     final chRepo = ChapterRepository(db);
@@ -691,6 +699,38 @@ void main() {
         reason: 'E1: 面板初始化应从 app_state KV 恢复该章节会话的历史评估报告',
       );
       expect(restored.currentRound, greaterThanOrEqualTo(1));
+    });
+
+    // C2 接线判据（批次 1f4abb61 事故的防复发网）：
+    // 本文件其余用例都在 setUp 里预置了 api_config_hint_seen=true，而且
+    // api_config_nudge_test 是**直接调 helper** ⇒ 若有人把
+    // `await maybeShowApiConfigNudge(...)` 从诊断入口删掉，两边都会照绿。
+    // 故必须有本用例：**不预置 + 走真实入口**。
+    testWidgets('C2 未配 + 未看过 → 诊断前弹引导，〔稍后〕后诊断继续（接线判据）', (tester) async {
+      // 反向预置：撤回 setUp 的「已展示」标记，并隔离 secure_storage 通道
+      await AppStateRepository(db).setApiConfigHintSeen(false);
+      final storage = MockSecureStorage()..install();
+      addTearDown(storage.uninstall);
+
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+
+      // ① 接线：引导先于请求弹出
+      await tester.tap(find.text('诊断本章'));
+      await tester.pumpAndSettle();
+      expect(find.text('还未配置 AI 服务商 API'), findsOneWidget);
+
+      // ② 不阻断：〔稍后〕后真实诊断链路继续（不是被吞掉）
+      await tester.tap(find.text('稍后'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('还未配置 AI 服务商 API'), findsNothing);
+      final chatState = container.read(writingCoachStoreProvider(chapterId));
+      expect(
+        chatState.messages.length,
+        greaterThanOrEqualTo(2),
+        reason: '引导关闭后诊断应继续：用户诊断消息 + 助手回复',
+      );
     });
   });
 

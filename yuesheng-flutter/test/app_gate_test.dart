@@ -3,7 +3,7 @@
 //
 // 覆盖路径：
 //   1. 未看过引导（onboarding_completed 未写）→ 显示 OnboardingFlow
-//   2. 引导完成（走完 3 页点「开始使用」）→ 落库标记 + 进主壳（书架）
+//   2. 引导完成（走完引导点「开始使用」）→ 落库标记 + 进主壳（书架）
 //   3. 已看过引导（onboarding_completed=true）→ 直接主壳
 // ─────────────────────────────────────────────────────────────
 
@@ -51,13 +51,27 @@ void main() {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
-    // 走完 3 页引导（OnboardingFlow._pages 恰 3 个元素）：非末页点「下一步」2 次到末页
-    // 注：6b04d639 误将问卷(onboarding_questionnaire)的 6 页当成引导页数改坏本测试，
-    // 此处还原。引导页末页按钮与页标题同名「开始使用」，故用按钮精确 finder。
-    for (var i = 0; i < 2; i++) {
+    // 走完引导：循环点「下一步」直到末页按钮「开始使用」出现。
+    // ★ 不硬编码页数：`OnboardingFlow._pages` 已由 3 页增至 5 页
+    //   （a64b50bb 增「怎么开始」、1f4abb61 增「配置 API」）⇒ 硬编码点击数必红。
+    // 注：6b04d639 曾把问卷(onboarding_questionnaire)的 6 页误当引导页数改坏本测试，
+    // 73acfaed 还原为 3 页；本次改为「走到末页为止」，两错皆不再复现。
+    // 引导页末页按钮「开始使用」与任意页标题可能重名，故用按钮精确 finder。
+    var advanced = false;
+    for (var i = 0; i < 10; i++) {
+      if (find.widgetWithText(FilledButton, '开始使用').evaluate().isNotEmpty) {
+        advanced = true;
+        break;
+      }
+      expect(
+        find.text('下一步'),
+        findsOneWidget,
+        reason: '非末页应恰有一个「下一步」（当前第 ${i + 1} 页）',
+      );
       await tester.tap(find.text('下一步'));
       await tester.pumpAndSettle();
     }
+    expect(advanced, isTrue, reason: '循环 10 次仍未走到引导末页');
     await tester.tap(find.widgetWithText(FilledButton, '开始使用'));
     await tester.pumpAndSettle();
 
