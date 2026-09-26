@@ -22,6 +22,7 @@ import '../../providers/growth_providers.dart';
 import '../../types/teaching_types.dart';
 import 'ability_chart.dart';
 import 'ability_progress_chart.dart';
+import 'growth_diagnosis_prefs_card.dart';
 import 'growth_detail_overview.dart';
 import 'growth_detail_sections.dart';
 import 'growth_detail_syndrome_groups.dart';
@@ -83,6 +84,8 @@ class GrowthDetailContent extends StatelessWidget {
         WritingCurveChart(points: state.writingCurve),
         const SizedBox(height: 12),
         SyndromeHistoryList(events: state.syndromeHistory, limit: 10),
+        const SizedBox(height: 12),
+        const GrowthDiagnosisPrefsCard(),
         const SizedBox(height: 12),
         GrowthProgressLink(onTap: onOpenProgressDetail),
       ],
