@@ -14,6 +14,7 @@
 // ADR: docs/ADR-capability-contracts.md
 // ─────────────────────────────────────────────────────────────
 
+import '../types/coach_persona.dart';
 import '../types/teaching_types.dart';
 
 /// L2 加载模式：决定注入哪组 skill（DTO 上移至契约层，原定义于 skill_layers.dart）
@@ -47,6 +48,13 @@ class SkillLoadContext {
   /// 空集 = 全启用（历史行为）。非空时 L2 索引表剔除对应行。
   final Set<String> disabledSyndromeIds;
 
+  /// D1/D2 Phase 2：当前激活教练人格。
+  ///
+  /// - null / 系统预设：走原态度档位注入（attitude-*，快照锁守护，逐字节不变）。
+  /// - 用户自定义人格（isSystem == false）：注入其 [CoachPersona.systemPromptFragment]
+  ///   替代默认态度档位内容（用户人格 = 用户选择的固定声音）。
+  final CoachPersona? activePersona;
+
   const SkillLoadContext({
     required this.phase,
     required this.attitude,
@@ -55,6 +63,7 @@ class SkillLoadContext {
     this.isBeginner = false,
     this.isOutlineContext = false,
     this.disabledSyndromeIds = const {},
+    this.activePersona,
   });
 }
 

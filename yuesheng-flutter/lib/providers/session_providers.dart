@@ -249,6 +249,8 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     editorObservationRepo: EditorObservationRepository(db),
     // X-041c：训练结果持久化仓储装配，启用 training_results 落库
     trainingResultRepo: TrainingResultRepository(db),
+    // D1/D2 Phase 2：应用状态仓储装配，启用用户自定义教练人格注入
+    appStateRepo: AppStateRepository(db),
     // 阶段 1（选项 B 依赖倒置）：四大纯能力经 capability provider 注入，
     // 生产侧走 DI 接缝；impl 为纯委托，行为与原顶层纯函数等价。
     genUi: ref.watch(genUiCapabilityProvider),

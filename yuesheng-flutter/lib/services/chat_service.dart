@@ -54,6 +54,7 @@ import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
@@ -78,6 +79,8 @@ import 'package:writingcoach/services/stage_drop_notice.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
 import 'package:writingcoach/types/teaching_types.dart';
+import 'package:writingcoach/types/coach_persona.dart';
+import 'package:writingcoach/types/coach_persona_seed.dart';
 
 /// 批次64（B62f）诊断请求标记（ADR-C74 K-7 迁至 MessageInjector：
 /// lib/services/message_injector.dart._kDiagnosisRequestMarker）
@@ -100,6 +103,10 @@ class ChatService {
   /// 同步写入 training_results 表，补全 GrowthStore.trainingStats 数据源。
   /// 设计为可选参数：避免破坏 30+ 处现有测试构造（默认 null 跳过回写）。
   final TrainingResultRepository? _trainingResultRepo;
+
+  /// D1/D2 Phase 2：应用状态仓储（可选——不装配则跳过用户自定义人格注入，
+  /// 走系统预设路径，行为零变化。避免破坏 30+ 处现有测试构造，同 trainingResultRepo）。
+  final AppStateRepository? _appStateRepo;
 
   /// 诊断编辑器：用户永久关闭的症候 ID（由 UI 层在诊断开始前从
   /// AppStateRepository 读入后设置；空集 = 全启用，历史行为）。
@@ -186,6 +193,8 @@ class ChatService {
     required EditorObservationRepository editorObservationRepo,
     // X-041c：可选装配，不传则跳过 training_results 落库（不破坏现有测试构造）
     TrainingResultRepository? trainingResultRepo,
+    // D1/D2 Phase 2：可选装配，不传则无用户人格注入（行为零变化，同 trainingResultRepo）
+    AppStateRepository? appStateRepo,
     GenUiCapability genUi = const GenUiParser(),
     MaterialCapability material = const MaterialCapabilityImpl(),
     TeachingCapability teaching = const TeachingCapabilityImpl(),
@@ -220,6 +229,7 @@ class ChatService {
        ),
        _teacherSuggestionRepo = teacherSuggestionRepo,
        _trainingResultRepo = trainingResultRepo,
+       _appStateRepo = appStateRepo,
        _genUi = genUi,
        _material = material,
        _teaching = teaching,
@@ -987,6 +997,8 @@ extension ChatServiceSend on ChatService {
     required SendMessageOptions options,
     required _LoadedContext loaded,
   }) async {
+    // D1/D2 Phase 2：解析当前激活教练人格（用户预设 → 注入其声音；系统预设/null → 原路径）。
+    final activePersona = await _resolveActivePersona();
     final messages = _buildSystemPrompt(
       loaded.effectivePhase,
       options.attitude,
@@ -995,6 +1007,7 @@ extension ChatServiceSend on ChatService {
       sessionId: sessionId,
       isOutlineContext: loaded.isOutlineContext,
       options: options,
+      activePersona: activePersona,
     );
     // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据）
     final stageIndexes = <String, List<int>>{};
@@ -1076,6 +1089,7 @@ extension ChatServiceSend on ChatService {
     required String sessionId,
     bool isOutlineContext = false,
     required SendMessageOptions options,
+    CoachPersona? activePersona,
   }) {
     final skillCtx = SkillLoadContext(
       phase: phase,
@@ -1085,6 +1099,7 @@ extension ChatServiceSend on ChatService {
       isBeginner: isBeginner,
       isOutlineContext: isOutlineContext,
       disabledSyndromeIds: disabledSyndromeIds,
+      activePersona: activePersona,
     );
     final rawMode = _teaching.resolveL2Mode(skillCtx);
     final override = _routeHysteresis.overrideFor(sessionId, rawMode);
@@ -1103,6 +1118,25 @@ extension ChatServiceSend on ChatService {
     return <ChatMessage>[
       ChatMessage(role: 'system', content: promptResult.systemPrompt),
     ];
+  }
+
+  /// D1/D2 Phase 2：解析当前激活教练人格。
+  ///
+  /// - 未装配 AppStateRepository 或读取失败 → null（走系统预设路径，行为零变化）。
+  /// - 激活项为系统预设 / 未知（回退 doubao）→ null（原 attitude-* 路径，快照锁守护）。
+  /// - 激活项为用户自定义人格（isSystem == false）→ 返回该人格，供注入其 systemPromptFragment。
+  Future<CoachPersona?> _resolveActivePersona() async {
+    final repo = _appStateRepo;
+    if (repo == null) return null;
+    try {
+      final activeId = await repo.getActiveCoachPersonaId();
+      if (activeId == null) return null;
+      final customs = await repo.getCustomCoachPersonas();
+      final resolved = resolveActiveCoachPersona(activeId, customs);
+      return resolved.isSystem ? null : resolved;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// 5.0-5.2 上下文注入装配（R-019 拆出，委托 MessageInjector）。

@@ -49,3 +49,20 @@ CoachPersona? builtInCoachPersonaById(String id) {
   }
   return null;
 }
+
+/// 解析当前激活教练人格（D1/D2 Phase 2）。
+///
+/// 规则：先在系统预设里按 [activeId] 找（doubao/yuesheng/sensei），
+/// 找不到再在用户自定义 [customList] 里找；两者都找不到 → 回退系统预设 doubao。
+/// 纯函数，便于单元测试（不碰 DB）。
+CoachPersona resolveActiveCoachPersona(
+  String activeId,
+  List<CoachPersona> customList,
+) {
+  final builtIn = builtInCoachPersonaById(activeId);
+  if (builtIn != null) return builtIn;
+  for (final p in customList) {
+    if (p.id == activeId) return p;
+  }
+  return builtInCoachPersonas.first;
+}

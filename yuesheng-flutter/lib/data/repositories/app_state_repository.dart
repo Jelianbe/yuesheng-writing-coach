@@ -546,6 +546,29 @@ class AppStateRepository {
         await setValue(_coachPersonasCustomKey, json);
       });
 
+  // ════════════ 当前激活教练人格（D1/D2 Phase 2，active persona id）═══════════
+  // key='coach_persona_active' → 人格 id：系统预设 'doubao'|'yuesheng'|'sensei'
+  //   或用户自定义 id（coach_personas_custom 内）。无记录 → 回退 coach_attitude
+  //   → 默认 doubao。选系统预设时双写 coach_attitude（与旧行为一致，避免漂移）。
+  static const String _coachPersonaActiveKey = 'coach_persona_active';
+
+  /// 读当前激活教练人格 id（无记录 → 回退 coach_attitude → null）。
+  Future<String?> getActiveCoachPersonaId() async {
+    final active = await getValue(_coachPersonaActiveKey);
+    if (active != null && active.isNotEmpty) return active;
+    return getCoachAttitude();
+  }
+
+  /// 写当前激活教练人格 id。系统预设双写 coach_attitude 保持兼容。
+  Future<void> setActiveCoachPersona(String personaId) async {
+    await setValue(_coachPersonaActiveKey, personaId);
+    if (personaId == 'doubao' ||
+        personaId == 'yuesheng' ||
+        personaId == 'sensei') {
+      await setCoachAttitude(personaId);
+    }
+  }
+
   // ════════════ 写作菜单高度（批次96-7 拖拽调整篇幅） ════════════
   // key 规约：editor_menu_height → '0.55'（字符串小数，默认 0.55，clamp 0.30-0.85）
   // 写作页 ⋮ 更多菜单 DraggableScrollableSheet 拖拽调整后的高度占比（用户级记忆）

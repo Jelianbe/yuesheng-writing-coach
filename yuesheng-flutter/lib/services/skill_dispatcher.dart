@@ -166,10 +166,25 @@ void _buildL1Chunks(
   //   组逐条守护：移动本段位置 / 给态度档挂裁剪钩子 / 把 attitude-* 挂进
   //   l2SkillMap，都会使该组变红。改动本段前先读该组。
   final attitudeKey = 'attitude-${ctx.attitude.value}';
-  final attitudeSkill = getSkill(attitudeKey);
-  if (attitudeSkill != null) {
-    chunks.add(attitudeSkill.content);
-    loadedIds.add(attitudeKey);
+
+  // D1/D2 Phase 2：用户自定义人格 → 注入其固定声音文本，替代默认态度档位。
+  // 仅当 ctx.activePersona 为「用户预设」（isSystem == false）且 fragment 非空时走注入；
+  // 系统预设 / 无激活人格 / 空 fragment → 走原 attitude-* 路径（逐字节不变，快照锁守护）。
+  // 空 fragment 回退而非静默跳过：态度/声音块是 L1 必注的 pinned block，
+  // 绝不能因数据缺陷让 prompt 整块失去声音指令。
+  final activePersona = ctx.activePersona;
+  final personaFragment = (activePersona != null && !activePersona.isSystem)
+      ? activePersona.systemPromptFragment.trim()
+      : '';
+  if (personaFragment.isNotEmpty) {
+    chunks.add(personaFragment);
+    loadedIds.add('persona-${activePersona!.id}');
+  } else {
+    final attitudeSkill = getSkill(attitudeKey);
+    if (attitudeSkill != null) {
+      chunks.add(attitudeSkill.content);
+      loadedIds.add(attitudeKey);
+    }
   }
 
   // 教学方式块（L1 — 与人格档正交，按 ctx.teachingMode 加载一个）。

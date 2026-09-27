@@ -1,11 +1,12 @@
 // ─────────────────────────────────────────────────────────────
 // coach_selector_card — 教练人格（全局，设置页）
 //
-// 三档内置教练（豆包温和 / 月笙如歌 / sensei 严格）本就在聊天头部可切换，
-// 这里把它们提成设置页里**有说明**的卡片，并在底部标注「自定义教练」入口（下批）。
-// 选择写入 coach_attitude KV，下次启动自动沿用
-// （chat_attitude_controller.loadAttitude 读取后覆盖 session 级态度）。
-// 态度色沿用 App 既有语义：doubao=l1Text / yuesheng=l2Text / sensei=l3Text。
+// D1/D2 Phase 2：选人卡动态化 —— 列表 = 系统预设（doubao/月笙如歌/sensei，
+// 来自 CoachPersona 内置 seed）+ 用户自定义预设（来自 app_state KV
+// coach_personas_custom）。选择写入 coach_persona_active KV（系统预设双写
+// coach_attitude 兼容旧行为），下次启动自动沿用。
+// 系统预设态度色沿用 App 既有语义：doubao=l1Text / yuesheng=l2Text / sensei=l3Text；
+// 用户预设统一 primary。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -15,6 +16,8 @@ import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../types/coach_persona.dart';
+import '../../types/coach_persona_seed.dart';
 import '../../types/teaching_types.dart';
 
 class CoachSelectorCard extends ConsumerStatefulWidget {
@@ -25,16 +28,10 @@ class CoachSelectorCard extends ConsumerStatefulWidget {
 }
 
 class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
-  String? _current;
+  String? _activeId;
+  List<CoachPersona> _customs = const [];
   TeachingMode _mode = TeachingMode.socratic;
   bool _loading = true;
-
-  /// 内置教练（态度级 + 名称 + 一句话声音描述），顺序即展示顺序。
-  static const _coaches = [
-    (AttitudeLevel.doubao, '豆包', '温和，先肯定再给建议，适合刚起步'),
-    (AttitudeLevel.yuesheng, '月笙如歌', '有主张但不冷硬，平衡鼓励与指正'),
-    (AttitudeLevel.sensei, 'sensei', '严格，直指问题、不留情面'),
-  ];
 
   @override
   void initState() {
@@ -45,13 +42,14 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
   Future<void> _load() async {
     try {
       final repo = AppStateRepository(ref.read(appDatabaseProvider));
-      final raw = await repo.getCoachAttitude();
-      final parsed = raw == null ? null : AttitudeLevel.fromString(raw);
+      final activeId = await repo.getActiveCoachPersonaId();
+      final customs = await repo.getCustomCoachPersonas();
       final modeRaw = await repo.getCoachTeachingMode();
       final mode = TeachingMode.fromString(modeRaw) ?? TeachingMode.socratic;
       if (!mounted) return;
       setState(() {
-        _current = parsed?.name;
+        _activeId = activeId ?? 'doubao';
+        _customs = customs;
         _mode = mode;
         _loading = false;
       });
@@ -60,12 +58,15 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     }
   }
 
-  Future<void> _select(AttitudeLevel level) async {
+  /// 展示列表：系统预设在前，用户预设在后。
+  List<CoachPersona> get _all => [...builtInCoachPersonas, ..._customs];
+
+  Future<void> _select(String personaId) async {
     try {
       await AppStateRepository(
         ref.read(appDatabaseProvider),
-      ).setCoachAttitude(level.name);
-      if (mounted) setState(() => _current = level.name);
+      ).setActiveCoachPersona(personaId);
+      if (mounted) setState(() => _activeId = personaId);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -90,11 +91,61 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     }
   }
 
-  Color _attitudeColor(AppPalette p, AttitudeLevel a) => switch (a) {
-    AttitudeLevel.doubao => p.l1Text,
-    AttitudeLevel.yuesheng => p.l2Text,
-    AttitudeLevel.sensei => p.l3Text,
-  };
+  /// 打开新建/编辑自定义教练对话框；保存后刷新列表。
+  Future<void> _openPersonaEditor([CoachPersona? existing]) async {
+    final result = await showDialog<CoachPersona>(
+      context: context,
+      builder: (_) => _CustomPersonaDialog(existing: existing),
+    );
+    if (result == null || !mounted) return;
+    try {
+      final repo = AppStateRepository(ref.read(appDatabaseProvider));
+      await repo.saveCustomCoachPersona(result);
+      final customs = await repo.getCustomCoachPersonas();
+      if (!mounted) return;
+      setState(() => _customs = customs);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('保存失败，请稍后再试')));
+      }
+    }
+  }
+
+  Future<void> _deletePersona(CoachPersona persona) async {
+    try {
+      final repo = AppStateRepository(ref.read(appDatabaseProvider));
+      await repo.removeCustomCoachPersona(persona.id);
+      // 删除的正是当前激活项 → 回退系统预设 doubao。
+      if (_activeId == persona.id) {
+        await repo.setActiveCoachPersona('doubao');
+      }
+      final customs = await repo.getCustomCoachPersonas();
+      if (!mounted) return;
+      setState(() {
+        _customs = customs;
+        if (_activeId == persona.id) _activeId = 'doubao';
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('删除失败，请稍后再试')));
+      }
+    }
+  }
+
+  Color _personaColor(AppPalette p, CoachPersona persona) {
+    if (persona.isSystem) {
+      return switch (persona.attitudeLevel) {
+        AttitudeLevel.doubao => p.l1Text,
+        AttitudeLevel.yuesheng => p.l2Text,
+        AttitudeLevel.sensei => p.l3Text,
+      };
+    }
+    return p.primary;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,16 +168,24 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
             style: TextStyle(fontSize: 13, color: palette.textTertiary),
           ),
           const SizedBox(height: 12),
-          for (final (level, name, desc) in _coaches)
-            _coachRow(
+          for (final persona in _all)
+            _personaRow(
               context,
-              level: level,
-              name: name,
-              desc: desc,
-              selected: _current == level.name,
-              onTap: () => _select(level),
+              persona: persona,
+              selected: persona.id == _activeId,
+              onTap: () => _select(persona.id),
+              onDelete: persona.isSystem
+                  ? null
+                  : () => _deletePersona(persona),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
+          TextButton.icon(
+            onPressed: () => _openPersonaEditor(),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('自定义教练'),
+            style: TextButton.styleFrom(alignment: Alignment.centerLeft),
+          ),
+          const SizedBox(height: 12),
           _modeHeaderRow(palette),
           const SizedBox(height: 4),
           Text(
@@ -135,11 +194,6 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
           ),
           const SizedBox(height: 10),
           _modeToggle(palette),
-          const SizedBox(height: 10),
-          Text(
-            '自定义教练（从模板复制、改 prompt、换图标）下批。',
-            style: TextStyle(fontSize: 11, color: palette.textTertiary),
-          ),
         ],
       ),
     );
@@ -172,16 +226,16 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     ],
   );
 
-  Widget _coachRow(
+  Widget _personaRow(
     BuildContext context, {
-    required AttitudeLevel level,
-    required String name,
-    required String desc,
+    required CoachPersona persona,
     required bool selected,
     required VoidCallback onTap,
+    required VoidCallback? onDelete,
   }) {
     final palette = context.palette;
-    final color = _attitudeColor(palette, level);
+    final color = _personaColor(palette, persona);
+    final isCustom = !persona.isSystem;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -206,9 +260,25 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 10),
-            _coachNameDesc(palette, name, desc),
+            _coachNameDesc(
+              palette,
+              persona.name,
+              '${isCustom ? '自定义 · ' : ''}${persona.label}',
+            ),
             if (selected)
               Icon(Icons.check_circle, size: 18, color: palette.primary),
+            if (isCustom && onDelete != null) ...[
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: onDelete,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: palette.textTertiary,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -345,4 +415,109 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       Text(desc, style: TextStyle(fontSize: 12, color: palette.textSecondary)),
     ],
   );
+}
+
+/// 新建/编辑自定义教练对话框。
+class _CustomPersonaDialog extends StatefulWidget {
+  final CoachPersona? existing;
+
+  const _CustomPersonaDialog({this.existing});
+
+  @override
+  State<_CustomPersonaDialog> createState() => _CustomPersonaDialogState();
+}
+
+class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _labelCtrl;
+  late final TextEditingController _promptCtrl;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _nameCtrl = TextEditingController(text: e?.name ?? '');
+    _labelCtrl = TextEditingController(text: e?.label ?? '');
+    _promptCtrl = TextEditingController(text: e?.systemPromptFragment ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _labelCtrl.dispose();
+    _promptCtrl.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final name = _nameCtrl.text.trim();
+    final label = _labelCtrl.text.trim();
+    final prompt = _promptCtrl.text.trim();
+    if (name.isEmpty || prompt.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('名称和语气设定不能为空')),
+      );
+      return;
+    }
+    final e = widget.existing;
+    final persona = CoachPersona(
+      id: e?.id ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      label: label.isEmpty ? '自定义教练' : label,
+      isSystem: false,
+      attitudeLevel: AttitudeLevel.doubao,
+      systemPromptFragment: prompt,
+      personaLayer: e?.personaLayer,
+      iconKey: e?.iconKey,
+    );
+    Navigator.of(context).pop(persona);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return AlertDialog(
+      title: Text(_isEdit ? '编辑自定义教练' : '新建自定义教练'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _nameCtrl,
+              decoration: const InputDecoration(
+                labelText: '名称',
+                hintText: '如：毒舌编辑',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _labelCtrl,
+              decoration: const InputDecoration(
+                labelText: '一句话声音描述（选填）',
+                hintText: '如：犀利、直给、不许废话',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _promptCtrl,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: '语气/角色设定',
+                hintText: '教它怎么说话，会注入到系统提示里',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('取消', style: TextStyle(color: palette.textSecondary)),
+        ),
+        TextButton(onPressed: _save, child: const Text('保存')),
+      ],
+    );
+  }
 }
