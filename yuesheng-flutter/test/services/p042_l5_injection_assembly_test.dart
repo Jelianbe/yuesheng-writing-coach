@@ -41,14 +41,10 @@ const String kKbHeader = '## 活跃症候详细定义（系统注入，学员不
 /// P042 词条三级标题（syndrome_kb_content_manual_6.dart:270）。
 const String kP042EntryTitle = '### P042 声线漂移症';
 
-/// P042 词条正文的**尾行**（syndrome_kb_content_manual_6.dart:310）。
+/// P042 词条正文的**尾句**（syndrome_kb_content_manual_6.dart:310）。
+/// 作为抽取边界的锚点：尾句之后第一个 `\n\n---` 即条目终止符，
+/// 词条内夹入的新增内容（如「外部佐证」段）不影响抽取。
 const String kP042TailSentence = '**推荐教学动作**：首选 A009 节奏变速，备选 A016 高频词清扫';
-
-/// 词条切出的**完整**右边界：`_extractSyndromeSection`
-/// （syndrome_knowledge_base.dart:23-37）只切到下一个 `## ` 标题（此处是
-/// 手册的「## 症候类型速查」），故尾行与它之间的 `---` 分隔符**仍留在词条内**。
-/// 作为切片右边界时，边界由实际装配文本自己给出，不依赖锚点 len。
-const String kP042BlockEnd = '$kP042TailSentence\n\n---';
 
 /// FNV-1a 64 位指纹（与 test/services/l3_entry_anchor_test.dart:39-49 同款）。
 int _fnv1a64(String s) {
@@ -81,13 +77,20 @@ String _extractInjectedP042Block(String assembled) {
     greaterThanOrEqualTo(0),
     reason: '装配结果未含 L3 KB header（$kKbHeader）',
   );
-  final end = assembled.indexOf(kP042BlockEnd, start);
+  final tailIdx = assembled.indexOf(kP042TailSentence, start);
   expect(
-    end,
+    tailIdx,
     greaterThanOrEqualTo(0),
-    reason: '装配结果未含 P042 词条尾边界锚点（$kP042TailSentence + ---）',
+    reason: '装配结果未含 P042 词条尾句（$kP042TailSentence）',
   );
-  return assembled.substring(start, end + kP042BlockEnd.length);
+  // 条目终止符：尾句之后第一个 `\n\n---`。词条内若夹入新增内容
+  // （如「外部佐证」段），不改变此边界——抽取对词条内增删免疫。
+  final sepIdx = assembled.indexOf(
+    '\n\n---',
+    tailIdx + kP042TailSentence.length,
+  );
+  expect(sepIdx, greaterThanOrEqualTo(0), reason: '装配结果未含 P042 词条终止分隔符（---）');
+  return assembled.substring(start, sepIdx + '\n\n---'.length);
 }
 
 /// 构造 P042 活跃症候视图（focus 装配面输入）。
