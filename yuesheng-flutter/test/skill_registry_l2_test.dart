@@ -71,8 +71,8 @@ void main() {
       for (final id in expected) {
         expect(skillRegistry[id], isNotNull, reason: '缺失 L2 skill: $id');
       }
-      // 批次65：L1 9（含 reply-voice）+ 态度 3 = 12
-      expect(skillRegistry.length, 12 + expected.length);
+      // 批次65：L1 9（含 reply-voice）+ 态度 3 + 教学方式 2 = 14
+      expect(skillRegistry.length, 14 + expected.length);
     });
 
     test('skill 内容非空且非占位', () {
@@ -364,7 +364,7 @@ void main() {
       }
     });
 
-    test('装配序全序 = [九件套...] + [人格块] + [L2 全量期望项...]', () {
+    test('装配序全序 = [九件套...] + [人格块] + [教学方式块] + [L2 全量期望项...]', () {
       for (final a in AttitudeLevel.values) {
         for (final ctx in contextsFor(a)) {
           final r = buildSystemPromptV2(ctx);
@@ -383,9 +383,14 @@ void main() {
             isEmpty,
             reason: '档=$a 模式=${r.l2Mode}：L2 缺注册项 $missing ⇒ 装配已静默跳过',
           );
+          // 教学方式块（teaching-mode-*）与人格块正交，按 ctx.teachingMode 注入，
+          // 紧跟人格块之后、全部 L2 之前（_buildL1Chunks 内联，默认 socratic）。
+          final expectedTeachingModeId =
+              'teaching-mode-${ctx.teachingMode.value}';
           expect(r.loadedSkillIds, [
             ...l1SkillIds,
             attitudeId(a),
+            expectedTeachingModeId,
             ...expectedL2,
           ], reason: '档=$a 模式=${r.l2Mode}：装配序偏离契约');
         }

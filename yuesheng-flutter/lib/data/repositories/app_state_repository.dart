@@ -465,6 +465,17 @@ class AppStateRepository {
   /// 写全局教练人格偏好
   Future<void> setCoachAttitude(String a) => setValue('coach_attitude', a);
 
+  // ════════════ 教练教学方式（疑问式 / 直接说）═══════════
+  // key='coach_teaching_mode' → 'socratic' | 'direct'
+  // 无记录 = socratic（默认疑问式，与 doubao 默认行为一致）
+
+  /// 读全局教练教学方式偏好（无记录 = socratic）
+  Future<String?> getCoachTeachingMode() => getValue('coach_teaching_mode');
+
+  /// 写全局教练教学方式偏好
+  Future<void> setCoachTeachingMode(String m) =>
+      setValue('coach_teaching_mode', m);
+
   // ════════════ 写作菜单高度（批次96-7 拖拽调整篇幅） ════════════
   // key 规约：editor_menu_height → '0.55'（字符串小数，默认 0.55，clamp 0.30-0.85）
   // 写作页 ⋮ 更多菜单 DraggableScrollableSheet 拖拽调整后的高度占比（用户级记忆）

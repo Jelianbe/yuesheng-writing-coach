@@ -275,6 +275,9 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   final GlobalKey<ChatInputState> _chatInputKey = GlobalKey<ChatInputState>();
 
   @override
+  TeachingMode get teachingMode => TeachingMode.socratic;
+
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {

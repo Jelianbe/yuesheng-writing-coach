@@ -25,6 +25,7 @@ import 'llm_client.dart';
 import 'llm_usage.dart';
 import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
 import 'output_whitelist.dart'; // L3：severity 白名单归一化
+import '../types/teaching_types.dart';
 
 // ── 常量（对齐 RN shared-constants.ts DIAGNOSIS_CHUNK）──
 /// 触发分块诊断的字符阈值
@@ -292,7 +293,20 @@ const String _kMergeOutputRequirement = '''输出要求（两部分都必须输�
 ///
 /// 每行 4 个，沿用 RN 逐字移植时的紧凑排布，避免 39 条摊成 39 行。
 /// [disabled] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
-String _buildChunkSystemPrompt([Set<String> disabled = const {}]) {
+/// 分块链路教学方式指令（与 teaching-mode skill 组语义一致，但分块旁路不走
+/// skill_dispatcher，故在此内联注入）。socratic=引导发现；direct=直给结论。
+String _kTeachingModeChunkInstruction(TeachingMode mode) => switch (mode) {
+  TeachingMode.socratic =>
+    '\n\n## 教学风格（疑问式）\n- 指出问题时优先用提问引导学员自己发现，不要一次性倾倒全部结论；'
+        '长文更应聚焦最核心的 1-2 个问题让学员先动手。',
+  TeachingMode.direct => '\n\n## 教学风格（直接说）\n- 直接给出诊断结论与可操作改法，不绕弯、不铺垫。',
+  _ => '',
+};
+
+String _buildChunkSystemPrompt([
+  Set<String> disabled = const {},
+  TeachingMode teachingMode = TeachingMode.socratic,
+]) {
   final labels = _activeSyndromeLabels(disabled);
   final listBlock = <String>[];
   for (var i = 0; i < labels.length; i += 4) {
@@ -306,7 +320,7 @@ ${listBlock.join('\n')}
 
 $_kChunkExceptionGuide
 
-$_kChunkOutputFormat''';
+$_kChunkOutputFormat$_kTeachingModeChunkInstruction(teachingMode)''';
 }
 
 /// 单块系统提示词（全启用默认值）：症候清单由注册表派生，调用处无需感知（ADR-C69）。
@@ -352,6 +366,7 @@ String buildMergePrompt(
   List<ChunkAnalysisResult> chunkResults, {
   String diagnosisContext = '',
   Set<String> disabledSyndromeIds = const {},
+  TeachingMode teachingMode = TeachingMode.socratic,
 }) {
   final allNotesJson = <String>[];
 
@@ -412,7 +427,7 @@ syndrome 对象格式要求：
 - explanation (string): 诊断解释
 - reader_impact (string): 一句话说明"不改这段，读者会有什么体验影响"。示例："不改这段，读者会在前 200 字内走神，无法进入后续剧情"
 
-$_kMergeOutputRequirement''';
+$_kMergeOutputRequirement$_kTeachingModeChunkInstruction(teachingMode)''';
 }
 
 /// 简易 JSON 编码器（仅用于合并 prompt 中展示 notes，不做校验）。
@@ -470,6 +485,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   String diagnosisContext = '',
   CancelToken? cancelToken,
   Set<String> disabledSyndromeIds = const {},
+  TeachingMode teachingMode = TeachingMode.socratic,
 }) async {
   if (content.length <= kDiagnosisChunkThreshold) {
     return null;
@@ -494,6 +510,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
       chunkCount: chunks.length,
       onProgress: onProgress,
       disabledSyndromeIds: disabledSyndromeIds,
+      teachingMode: teachingMode,
     );
     if (!result.success) failedChunks++;
     chunkResults.add(result);
@@ -506,6 +523,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
     chunkResults,
     diagnosisContext: diagnosisContext,
     disabledSyndromeIds: disabledSyndromeIds,
+    teachingMode: teachingMode,
   );
   var fullContent = '';
 
@@ -591,15 +609,17 @@ List<ChatMessage> _chunkMessages(
   int chunkIndex,
   int chunkCount, {
   Set<String> disabledSyndromeIds = const {},
+  TeachingMode teachingMode = TeachingMode.socratic,
 }) {
   return [
     // ADR-C69：kChunkSystemPrompt 改由注册表派生（非 const），此处 const 去掉。
     // 诊断编辑器：按用户启用集运行时构造 prompt（空集 = 全启用默认）。
     ChatMessage(
       role: 'system',
-      content: disabledSyndromeIds.isEmpty
+      content:
+          disabledSyndromeIds.isEmpty && teachingMode == TeachingMode.socratic
           ? kChunkSystemPrompt
-          : _buildChunkSystemPrompt(disabledSyndromeIds),
+          : _buildChunkSystemPrompt(disabledSyndromeIds, teachingMode),
     ),
     ChatMessage(
       role: 'user',
@@ -625,6 +645,7 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
   required int chunkCount,
   required ProgressCallback? onProgress,
   Set<String> disabledSyndromeIds = const {},
+  TeachingMode teachingMode = TeachingMode.socratic,
 }) async {
   final messages = _chunkMessages(
     title,
@@ -632,6 +653,7 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
     chunkIndex,
     chunkCount,
     disabledSyndromeIds: disabledSyndromeIds,
+    teachingMode: teachingMode,
   );
   try {
     // TH 九批：分块分析（含 fallback 重发）同属诊断链路 —— 每次调用前

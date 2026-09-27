@@ -38,6 +38,7 @@ enum L2Mode {
 class SkillLoadContext {
   final TeachingPhase phase;
   final AttitudeLevel attitude;
+  final TeachingMode teachingMode;
   final TeachingSubphase? subphase;
   final bool isBeginner;
   final bool isOutlineContext;
@@ -49,6 +50,7 @@ class SkillLoadContext {
   const SkillLoadContext({
     required this.phase,
     required this.attitude,
+    this.teachingMode = TeachingMode.socratic,
     this.subphase,
     this.isBeginner = false,
     this.isOutlineContext = false,

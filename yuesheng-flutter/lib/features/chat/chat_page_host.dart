@@ -44,6 +44,9 @@ abstract class ChatPageHost {
   /// 当前态度档位
   AttitudeLevel get attitude;
 
+  /// 当前教学方式（疑问式/直接说，正交于态度档位）
+  TeachingMode get teachingMode;
+
   /// 当前教学阶段
   TeachingPhase get phase;
 

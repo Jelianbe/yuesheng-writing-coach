@@ -171,6 +171,16 @@ void _buildL1Chunks(
     chunks.add(attitudeSkill.content);
     loadedIds.add(attitudeKey);
   }
+
+  // 教学方式块（L1 — 与人格档正交，按 ctx.teachingMode 加载一个）。
+  // 抽离自 attitude-* 的「诊断方式/发现引导级别/提问上限」句式（R-027 拆分）：
+  // 人格只定语气，教学方式由 coach_teaching_mode 开关决定。
+  final teachingModeKey = 'teaching-mode-${ctx.teachingMode.value}';
+  final teachingModeSkill = getSkill(teachingModeKey);
+  if (teachingModeSkill != null) {
+    chunks.add(teachingModeSkill.content);
+    loadedIds.add(teachingModeKey);
+  }
 }
 
 /// L2 按需层加载（R-019 拆出：buildSystemPromptV2）。

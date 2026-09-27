@@ -102,6 +102,27 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   @override
   AttitudeLevel get attitude => _attitude;
 
+  TeachingMode _teachingMode = TeachingMode.socratic;
+
+  @override
+  TeachingMode get teachingMode => _teachingMode;
+
+  /// 载入全局教学方式偏好（coach_teaching_mode KV，默认 socratic）。
+  Future<void> _loadTeachingMode() async {
+    try {
+      final raw = await AppStateRepository(
+        ref.read(appDatabaseProvider),
+      ).getCoachTeachingMode();
+      if (!mounted) return;
+      setState(
+        () => _teachingMode =
+            TeachingMode.fromString(raw) ?? TeachingMode.socratic,
+      );
+    } catch (_) {
+      // 读不到 → 保持默认 socratic
+    }
+  }
+
   @override
   TeachingPhase get phase => _phase;
 
@@ -219,6 +240,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   void _onBootstrapReady(SessionBootstrapState bootstrap) {
     final sessionId = bootstrap.sessionId;
     _attitudeController.loadAttitude(sessionId);
+    _loadTeachingMode();
     _reference.loadPrimaryRefTitle(); // 头部小字：当前主引用书名
     _session.loadSessions(); // 切换/新建会话后刷新列表（updated_at/标题变化）
     // 批次4-M3：恢复该会话的评估报告 + 当前轮次（应用重启/会话切换后）

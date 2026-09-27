@@ -17,6 +17,7 @@ import '../../providers/chat_store.dart';
 import '../../providers/session_providers.dart';
 import '../../services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+import '../../services/chat_service.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../types/teaching_types.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
@@ -89,6 +90,7 @@ class WritingCoachDiagnosisRunner {
       title: title,
       llmClient: _ref.read(llmClientProvider),
       sessionId: sid,
+      teachingMode: _host.teachingMode,
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
       onContent: (delta) {
         _ref
@@ -104,11 +106,7 @@ class WritingCoachDiagnosisRunner {
       ..disabledSyndromeIds = diagPrefs?.effectiveDisabledIds ?? const {};
     if (progressive != null) {
       // D4-A：分块链路完成 → 解析+持久化+卡片插入
-      await chatService.commitDiagnosisFromContent(
-        sessionId: sid,
-        fullContent: progressive.fullContent,
-        chapterContent: content,
-      );
+      await _commitProgressive(sid, progressive, content, chatService);
       await handleComplete(sid);
       return;
     }
@@ -121,6 +119,20 @@ class WritingCoachDiagnosisRunner {
       store: store,
       chatService: chatService,
       cancelToken: cancelToken,
+    );
+  }
+
+  /// 分块链路结果落库（解析 + 持久化 + 卡片插入）。
+  Future<void> _commitProgressive(
+    String sid,
+    ProgressiveResult progressive,
+    String content,
+    ChatService chatService,
+  ) async {
+    await chatService.commitDiagnosisFromContent(
+      sessionId: sid,
+      fullContent: progressive.fullContent,
+      chapterContent: content,
     );
   }
 
@@ -145,6 +157,7 @@ class WritingCoachDiagnosisRunner {
       SendMessageOptions(
         phase: TeachingPhase.p1World,
         attitude: _host.attitude,
+        teachingMode: _host.teachingMode,
         // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
         lastEditorEditAtSec: _ref.read(editorActivityProvider),
         // ADR-C87：取消令牌——诊断中可主动中止

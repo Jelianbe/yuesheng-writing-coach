@@ -135,6 +135,7 @@ class WritingCoachChatRunner {
       SendMessageOptions(
         phase: TeachingPhase.p0Engage,
         attitude: _host.attitude,
+        teachingMode: _host.teachingMode,
         // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
         lastEditorEditAtSec: _ref.read(editorActivityProvider),
         // ADR-C87：取消令牌——流式中可主动中止

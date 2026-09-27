@@ -27,6 +27,7 @@ part 'skills_l1_core_p2.dart';
 part 'skills_l1_core_p3.dart';
 part 'skills_l1_core_p4.dart';
 part 'skills_attitude.dart';
+part 'skills_teaching_mode.dart';
 part 'skills_beginner.dart';
 part 'skills_beginner_p1.dart';
 part 'skills_beginner_p2.dart';
@@ -164,6 +165,9 @@ final Map<String, Skill> skillRegistry = {
   'attitude-doubao': _attitudeDoubao,
   'attitude-yuesheng': _attitudeYuesheng,
   'attitude-sensei': _attitudeSensei,
+  // 教学方式（疑问式 / 直接说）—— 与人格档位正交，由 coach_teaching_mode 开关驱动
+  'teaching-mode-socratic': _teachingModeSocratic,
+  'teaching-mode-direct': _teachingModeDirect,
   // L2 按需层 — beginner 组（2026-08-08 批次 17）
   'beginner-path': _beginnerPath,
   'gap-detector': _gapDetector,

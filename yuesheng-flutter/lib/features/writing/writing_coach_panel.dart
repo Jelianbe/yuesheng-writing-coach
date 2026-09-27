@@ -24,8 +24,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
 import '../../types/teaching_types.dart';
+import '../../data/repositories/app_state_repository.dart';
 import 'writing_coach_panel_bootstrapper.dart';
 import 'writing_coach_panel_host.dart';
 import 'writing_coach_panel_message_list.dart';
@@ -90,6 +92,9 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
   /// teaching_state 恢复（与对话页切换保持同步，不再硬编码 doubao）。
   AttitudeLevel _attitude = AttitudeLevel.doubao;
 
+  /// 教学方式（疑问式/直接说），与人格档位正交。默认 socratic（疑问式）。
+  TeachingMode _teachingMode = TeachingMode.socratic;
+
   /// ADR-C87：当前流式的取消令牌（发送/快速观察/诊断共用）。
   /// 供「停止生成」按钮在流式中段中止（避免卡死时无出口）；
   /// 面板关闭（dispose）时也取消，防止流式在面板销毁后继续跑。
@@ -111,6 +116,7 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
         onSessionBound: (id) => _sessionId = id,
         onAttitudeLoaded: (attitude) {
           if (mounted) setState(() => _attitude = attitude);
+          _loadTeachingMode();
         },
         isMounted: () => mounted,
       );
@@ -142,6 +148,25 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
 
   @override
   AttitudeLevel get attitude => _attitude;
+
+  @override
+  TeachingMode get teachingMode => _teachingMode;
+
+  /// 载入全局教学方式偏好（coach_teaching_mode KV，默认 socratic）。
+  Future<void> _loadTeachingMode() async {
+    try {
+      final raw = await AppStateRepository(
+        ref.read(appDatabaseProvider),
+      ).getCoachTeachingMode();
+      if (!mounted) return;
+      setState(
+        () => _teachingMode =
+            TeachingMode.fromString(raw) ?? TeachingMode.socratic,
+      );
+    } catch (_) {
+      // 读不到 → 保持默认 socratic
+    }
+  }
 
   @override
   set streamStageLabel(String? value) =>

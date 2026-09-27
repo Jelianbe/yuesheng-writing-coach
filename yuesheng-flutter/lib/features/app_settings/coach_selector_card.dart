@@ -26,6 +26,7 @@ class CoachSelectorCard extends ConsumerStatefulWidget {
 
 class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
   String? _current;
+  TeachingMode _mode = TeachingMode.socratic;
   bool _loading = true;
 
   /// 内置教练（态度级 + 名称 + 一句话声音描述），顺序即展示顺序。
@@ -43,13 +44,15 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
 
   Future<void> _load() async {
     try {
-      final raw = await AppStateRepository(
-        ref.read(appDatabaseProvider),
-      ).getCoachAttitude();
+      final repo = AppStateRepository(ref.read(appDatabaseProvider));
+      final raw = await repo.getCoachAttitude();
       final parsed = raw == null ? null : AttitudeLevel.fromString(raw);
+      final modeRaw = await repo.getCoachTeachingMode();
+      final mode = TeachingMode.fromString(modeRaw) ?? TeachingMode.socratic;
       if (!mounted) return;
       setState(() {
         _current = parsed?.name;
+        _mode = mode;
         _loading = false;
       });
     } catch (_) {
@@ -68,6 +71,21 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('教练切换失败，请稍后再试')));
+      }
+    }
+  }
+
+  Future<void> _selectMode(TeachingMode mode) async {
+    try {
+      await AppStateRepository(
+        ref.read(appDatabaseProvider),
+      ).setCoachTeachingMode(mode.value);
+      if (mounted) setState(() => _mode = mode);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('教学方式切换失败，请稍后再试')));
       }
     }
   }
@@ -108,6 +126,15 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               selected: _current == level.name,
               onTap: () => _select(level),
             ),
+          const SizedBox(height: 16),
+          _modeHeaderRow(palette),
+          const SizedBox(height: 4),
+          Text(
+            '决定教练用提问引导，还是直接给答案。与上方人格正交。',
+            style: TextStyle(fontSize: 13, color: palette.textTertiary),
+          ),
+          const SizedBox(height: 10),
+          _modeToggle(palette),
           const SizedBox(height: 10),
           Text(
             '自定义教练（从模板复制、改 prompt、换图标）下批。',
@@ -209,4 +236,113 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
           ],
         ),
       );
+
+  Widget _modeHeaderRow(AppPalette palette) => Row(
+    children: [
+      Icon(Icons.help_outline, size: 18, color: palette.primary),
+      const SizedBox(width: 6),
+      Text(
+        '教学方式',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: palette.textPrimary,
+        ),
+      ),
+      const SizedBox(width: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: palette.primarySoft,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          '全局',
+          style: TextStyle(fontSize: 11, color: palette.primary),
+        ),
+      ),
+    ],
+  );
+
+  Widget _modeToggle(AppPalette palette) => Row(
+    children: [
+      _modeChip(
+        context,
+        mode: TeachingMode.socratic,
+        name: '疑问式',
+        desc: '用提问引导你自己发现，不直接给答案',
+        selected: _mode == TeachingMode.socratic,
+        onTap: () => _selectMode(TeachingMode.socratic),
+      ),
+      const SizedBox(width: 8),
+      _modeChip(
+        context,
+        mode: TeachingMode.direct,
+        name: '直接说',
+        desc: '直接指出问题与改法，不绕弯',
+        selected: _mode == TeachingMode.direct,
+        onTap: () => _selectMode(TeachingMode.direct),
+      ),
+    ],
+  );
+
+  Widget _modeChip(
+    BuildContext context, {
+    required TeachingMode mode,
+    required String name,
+    required String desc,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final palette = context.palette;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: _modeChipDecoration(palette, selected),
+          child: _modeChipBody(palette, name, desc, selected),
+        ),
+      ),
+    );
+  }
+
+  BoxDecoration _modeChipDecoration(AppPalette palette, bool selected) =>
+      BoxDecoration(
+        color: selected ? palette.primarySoft : palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: selected ? palette.primary : palette.border),
+      );
+
+  Widget _modeChipBody(
+    AppPalette palette,
+    String name,
+    String desc,
+    bool selected,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: palette.textPrimary,
+            ),
+          ),
+          const Spacer(),
+          if (selected)
+            Icon(Icons.check_circle, size: 18, color: palette.primary),
+        ],
+      ),
+      const SizedBox(height: 2),
+      Text(desc, style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+    ],
+  );
 }

@@ -994,6 +994,7 @@ extension ChatServiceSend on ChatService {
       loaded.isBeginner,
       sessionId: sessionId,
       isOutlineContext: loaded.isOutlineContext,
+      options: options,
     );
     // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据）
     final stageIndexes = <String, List<int>>{};
@@ -1074,10 +1075,12 @@ extension ChatServiceSend on ChatService {
     bool isBeginner, {
     required String sessionId,
     bool isOutlineContext = false,
+    required SendMessageOptions options,
   }) {
     final skillCtx = SkillLoadContext(
       phase: phase,
       attitude: attitude,
+      teachingMode: options.teachingMode,
       subphase: subphase,
       isBeginner: isBeginner,
       isOutlineContext: isOutlineContext,

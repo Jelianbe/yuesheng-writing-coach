@@ -147,6 +147,7 @@ class ChatTeachingController {
     return SendMessageOptions(
       phase: TeachingPhase.p0Engage,
       attitude: host.attitude,
+      teachingMode: host.teachingMode,
       // 批次98：诊断全文运行时注入（不落库）
       chapterFullText: chapterFullText,
       // 批次7 O1：心流判定叠加编辑器活跃维度

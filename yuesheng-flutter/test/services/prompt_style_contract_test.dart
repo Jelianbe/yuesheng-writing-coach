@@ -56,13 +56,16 @@ const Map<String, PromptStyle> kExpectedPromptStyle = {
   'text-surgery-v2': PromptStyle.free, // 「只规定底线，不规定流程」
   'training-loop-v2': PromptStyle.free, // 「不是必须执行的脚本」
   'training-templates-index': PromptStyle.free, // 纯索引
+  // 教学方式（疑问式 / 直接说）——与人格档位正交，由 coach_teaching_mode 开关驱动
+  'teaching-mode-socratic': PromptStyle.free, // 教学行为约束：提问引导 vs 直给
+  'teaching-mode-direct': PromptStyle.free,
 };
 
 /// 分布期望。改动分布时提醒复核：是新增 skill，还是档位被误改。
 const Map<PromptStyle, int> kExpectedDistribution = {
   PromptStyle.strict: 10,
   PromptStyle.guided: 16,
-  PromptStyle.free: 10,
+  PromptStyle.free: 12, // +2：teaching-mode-socratic / teaching-mode-direct
 };
 
 /// 示例证据：正文含示例类用词，或含引文话术行（行首 `> "` / `> “`）。

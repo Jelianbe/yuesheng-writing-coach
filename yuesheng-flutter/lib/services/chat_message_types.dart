@@ -12,7 +12,7 @@ import 'dart:async';
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:writingcoach/data/database/database.dart' show Message;
 import 'package:writingcoach/types/teaching_types.dart'
-    show AttitudeLevel, TeachingPhase, TrainingResult;
+    show AttitudeLevel, TeachingMode, TeachingPhase, TrainingResult;
 
 /// 流式回调
 class SendMessageCallbacks {
@@ -57,6 +57,7 @@ class SendMessageCallbacks {
 class SendMessageOptions {
   final TeachingPhase phase;
   final AttitudeLevel attitude;
+  final TeachingMode teachingMode;
   final CancelToken? cancelToken;
 
   /// 批次64（B62g）：编辑器最近一次编辑时间（秒）。写作页传入，
@@ -75,6 +76,7 @@ class SendMessageOptions {
   const SendMessageOptions({
     required this.phase,
     required this.attitude,
+    this.teachingMode = TeachingMode.socratic,
     this.cancelToken,
     this.lastEditorEditAtSec,
     this.referencesJson,

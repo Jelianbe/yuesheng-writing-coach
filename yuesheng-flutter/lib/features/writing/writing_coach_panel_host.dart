@@ -45,6 +45,9 @@ abstract class WritingCoachPanelHost {
   /// 读取态度档位
   AttitudeLevel get attitude;
 
+  /// 读取教学方式（疑问式/直接说，正交于态度档位）
+  TeachingMode get teachingMode;
+
   /// 写入流式阶段标签（null = 复位）
   set streamStageLabel(String? value);
 
