@@ -9,6 +9,7 @@ import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 import '../../services/decode_guard.dart';
+import '../../services/evidence_confidence.dart';
 import '../../services/manuscript_scope.dart';
 import '../../services/syndrome_recurrence.dart';
 import '../../services/teaching_state_cache.dart';
@@ -58,6 +59,8 @@ class ActiveProblemView {
   final String confirmationStatus;
   final String? teachingState; // v19 教学状态机持久化
   final int? confirmedAt;
+  /// Evidence confidence (Part B); weak + unconfirmed -> excluded from teaching injection/focus.
+  final double? evidenceConfidence;
   ActiveProblemView({
     required this.syndromeId,
     required this.syndromeName,
@@ -65,6 +68,7 @@ class ActiveProblemView {
     required this.confirmationStatus,
     this.teachingState,
     this.confirmedAt,
+    this.evidenceConfidence,
   });
 }
 
@@ -157,10 +161,13 @@ class DiagnosisRepository {
               );
 
           // 2. UPSERT active_problem（不复活已 resolved 的症候）
+          // 2.0 evidence confidence (Part B): prior occurrence counts per syndrome
+          final occurrenceCount = await _countSyndromeOccurrences(input.syndromes);
           for (final syndrome in input.syndromes) {
             final syndromeId = syndrome['syndrome_id'] as String? ?? '';
             final syndromeName = syndrome['name'] as String? ?? '';
             final severity = syndrome['severity'] as String? ?? 'L2';
+            final evidenceConfidence = _evidenceConfidenceFor(syndrome, occurrenceCount);
 
             // 查现有 active_problem
             final existing =
@@ -186,6 +193,7 @@ class DiagnosisRepository {
                   syndromeName: Value(syndromeName),
                   severity: Value(severity),
                   status: const Value('active'),
+                  evidenceConfidence: Value(evidenceConfidence),
                   updatedAt: Value(nowSec()),
                 ),
               );
@@ -210,6 +218,7 @@ class DiagnosisRepository {
                       severity: Value(severity),
                       status: const Value('active'),
                       confirmationStatus: const Value('suspected'),
+                      evidenceConfidence: Value(evidenceConfidence),
                       createdAt: Value(now),
                       updatedAt: Value(now),
                     ),
@@ -341,10 +350,58 @@ class DiagnosisRepository {
 
   /// 列出会话的活跃问题
   /// 复刻 listActiveProblems(sessionId)
+  /// Count prior occurrences of each syndrome_id across sessions (Part B recurrence).
+  Future<Map<String, int>> _countSyndromeOccurrences(
+    List<Map<String, dynamic>> syndromes,
+  ) async {
+    final ids = syndromes
+        .map((s) => s['syndrome_id'] as String?)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    final counts = <String, int>{};
+    if (ids.isEmpty) return counts;
+    final rows = await (_db.select(_db.activeProblems)
+          ..where((t) => t.syndromeId.isIn(ids)))
+        .get();
+    for (final r in rows) {
+      counts[r.syndromeId] = (counts[r.syndromeId] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  /// Compute evidence confidence for a syndrome (Part B).
+  /// Returns null when there is no evidence (unknown -> not gated), so legacy
+  /// fixtures without evidence stay included. Only explicit weak evidence gets gated.
+  double? _evidenceConfidenceFor(
+    Map<String, dynamic> syndrome,
+    Map<String, int> occurrenceCount,
+  ) {
+    final raw = syndrome['evidence'];
+    List<String> evidence = const [];
+    if (raw is List) {
+      evidence = raw.map((e) => e is String ? e : e.toString()).toList();
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      evidence = [raw];
+    }
+    if (evidence.isEmpty) return null;
+    final sid = syndrome['syndrome_id'] as String? ?? '';
+    return computeEvidenceConfidence(
+      evidence: evidence,
+      recurrenceOccurrences: (occurrenceCount[sid] ?? 0) + 1,
+    );
+  }
   Future<List<ActiveProblemView>> listActiveProblems(String sessionId) async {
     final rows =
         await (_db.select(_db.activeProblems)..where(
-              (t) => t.sessionId.equals(sessionId) & t.status.equals('active'),
+              (t) =>
+                  t.sessionId.equals(sessionId) &
+                  t.status.equals('active') &
+                  (t.evidenceConfidence.isNull() |
+                      t.evidenceConfidence.isBiggerOrEqualValue(
+                          kWeakEvidenceConfidence) |
+                      t.confirmationStatus.equals('confirmed')),
             ))
             .get();
     return rows
@@ -355,6 +412,7 @@ class DiagnosisRepository {
             severity: r.severity,
             confirmationStatus: r.confirmationStatus,
             teachingState: r.teachingState,
+            evidenceConfidence: r.evidenceConfidence,
             confirmedAt: r.confirmedAt,
           ),
         )
@@ -525,6 +583,7 @@ class DiagnosisRepository {
             severity: r.severity,
             confirmationStatus: r.confirmationStatus,
             teachingState: r.teachingState,
+            evidenceConfidence: r.evidenceConfidence,
             confirmedAt: r.confirmedAt,
           ),
         )
@@ -723,6 +782,7 @@ class DiagnosisRepository {
     severity: r.severity,
     confirmationStatus: r.confirmationStatus,
     teachingState: r.teachingState,
+    evidenceConfidence: r.evidenceConfidence,
     confirmedAt: r.confirmedAt,
   );
 

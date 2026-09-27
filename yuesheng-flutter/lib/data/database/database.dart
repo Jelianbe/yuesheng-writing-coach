@@ -65,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -231,7 +231,7 @@ class AppDatabase extends _$AppDatabase {
       // 条目标签：守卫上移到 37（v37 块对 from=36 存量库可达，建 setting_tag）
       // 批1·N2（FSRS 自评档位）：守卫上移到 38（v38 块对 from=37 存量库可达，幂等 ALTER ADD COLUMN）
       // N12-F3b（fact 层章号身份）：守卫上移到 39（v39 块对 from=38 存量库可达，幂等 ALTER ADD COLUMN）
-      if (from >= 39) return;
+      if (from >= 40) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1114,6 +1114,18 @@ class AppDatabase extends _$AppDatabase {
               'resolved_chapter_sort_order INTEGER DEFAULT NULL',
             );
           }
+        }
+      }
+      // v40: add evidence_confidence to active_problem (idempotent, Part B)
+      if (from < 40) {
+        final apECols = await customSelect(
+          "SELECT name FROM pragma_table_info('active_problem')",
+        ).get();
+        final apENames = apECols.map((r) => r.read<String>('name')).toSet();
+        if (apECols.isNotEmpty && !apENames.contains('evidence_confidence')) {
+          await customStatement(
+            'ALTER TABLE active_problem ADD COLUMN evidence_confidence REAL DEFAULT NULL',
+          );
         }
       }
     },

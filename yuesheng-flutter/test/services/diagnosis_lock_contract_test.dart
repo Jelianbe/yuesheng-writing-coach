@@ -92,7 +92,7 @@ String buildBlock({required String? focusId, String syndromeId = _kInPoolId}) {
       : '{"current_teaching_focus_id": "$focusId", "focus_reason": "原因"}';
   return '[YS_DIAGNOSIS]\n'
       '{"syndromes":[{"syndrome_id":"$syndromeId","name":"铺垫缺失",'
-      '"severity":"L2","evidence":["证据一"],"explanation":"说明"}],'
+      '"severity":"L2","evidence":["证据一：这里是一段足够长的具体原文引用。","证据二：这是第二段具体原文引用。"],"explanation":"说明"}],'
       '"suggested_actions":["动作一"],"confidence":0.8,'
       '"teaching_plan":$plan}\n'
       '[/YS_DIAGNOSIS]';

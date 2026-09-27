@@ -4349,6 +4349,17 @@ class $ActiveProblemsTable extends ActiveProblems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _evidenceConfidenceMeta =
+      const VerificationMeta('evidenceConfidence');
+  @override
+  late final GeneratedColumn<double> evidenceConfidence =
+      GeneratedColumn<double>(
+        'evidence_confidence',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4394,6 +4405,7 @@ class $ActiveProblemsTable extends ActiveProblems
     confirmationStatus,
     teachingState,
     confirmedAt,
+    evidenceConfidence,
     createdAt,
     resolvedAt,
     updatedAt,
@@ -4479,6 +4491,15 @@ class $ActiveProblemsTable extends ActiveProblems
         ),
       );
     }
+    if (data.containsKey('evidence_confidence')) {
+      context.handle(
+        _evidenceConfidenceMeta,
+        evidenceConfidence.isAcceptableOrUnknown(
+          data['evidence_confidence']!,
+          _evidenceConfidenceMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4546,6 +4567,10 @@ class $ActiveProblemsTable extends ActiveProblems
         DriftSqlType.int,
         data['${effectivePrefix}confirmed_at'],
       ),
+      evidenceConfidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}evidence_confidence'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -4577,6 +4602,10 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
   final String confirmationStatus;
   final String? teachingState;
   final int? confirmedAt;
+
+  /// 证据把握度（信心系统 Part B）：本地计算（证据强度+复现），0-1。
+  /// 弱把握（< kWeakEvidenceConfidence）且未确认 → 不进活跃症候注入/教学焦点。
+  final double? evidenceConfidence;
   final int createdAt;
   final int? resolvedAt;
   final int? updatedAt;
@@ -4590,6 +4619,7 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     required this.confirmationStatus,
     this.teachingState,
     this.confirmedAt,
+    this.evidenceConfidence,
     required this.createdAt,
     this.resolvedAt,
     this.updatedAt,
@@ -4609,6 +4639,9 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     }
     if (!nullToAbsent || confirmedAt != null) {
       map['confirmed_at'] = Variable<int>(confirmedAt);
+    }
+    if (!nullToAbsent || evidenceConfidence != null) {
+      map['evidence_confidence'] = Variable<double>(evidenceConfidence);
     }
     map['created_at'] = Variable<int>(createdAt);
     if (!nullToAbsent || resolvedAt != null) {
@@ -4635,6 +4668,9 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       confirmedAt: confirmedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedAt),
+      evidenceConfidence: evidenceConfidence == null && nullToAbsent
+          ? const Value.absent()
+          : Value(evidenceConfidence),
       createdAt: Value(createdAt),
       resolvedAt: resolvedAt == null && nullToAbsent
           ? const Value.absent()
@@ -4662,6 +4698,9 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       ),
       teachingState: serializer.fromJson<String?>(json['teachingState']),
       confirmedAt: serializer.fromJson<int?>(json['confirmedAt']),
+      evidenceConfidence: serializer.fromJson<double?>(
+        json['evidenceConfidence'],
+      ),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       resolvedAt: serializer.fromJson<int?>(json['resolvedAt']),
       updatedAt: serializer.fromJson<int?>(json['updatedAt']),
@@ -4680,6 +4719,7 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       'confirmationStatus': serializer.toJson<String>(confirmationStatus),
       'teachingState': serializer.toJson<String?>(teachingState),
       'confirmedAt': serializer.toJson<int?>(confirmedAt),
+      'evidenceConfidence': serializer.toJson<double?>(evidenceConfidence),
       'createdAt': serializer.toJson<int>(createdAt),
       'resolvedAt': serializer.toJson<int?>(resolvedAt),
       'updatedAt': serializer.toJson<int?>(updatedAt),
@@ -4696,6 +4736,7 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     String? confirmationStatus,
     Value<String?> teachingState = const Value.absent(),
     Value<int?> confirmedAt = const Value.absent(),
+    Value<double?> evidenceConfidence = const Value.absent(),
     int? createdAt,
     Value<int?> resolvedAt = const Value.absent(),
     Value<int?> updatedAt = const Value.absent(),
@@ -4711,6 +4752,9 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
         ? teachingState.value
         : this.teachingState,
     confirmedAt: confirmedAt.present ? confirmedAt.value : this.confirmedAt,
+    evidenceConfidence: evidenceConfidence.present
+        ? evidenceConfidence.value
+        : this.evidenceConfidence,
     createdAt: createdAt ?? this.createdAt,
     resolvedAt: resolvedAt.present ? resolvedAt.value : this.resolvedAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
@@ -4736,6 +4780,9 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       confirmedAt: data.confirmedAt.present
           ? data.confirmedAt.value
           : this.confirmedAt,
+      evidenceConfidence: data.evidenceConfidence.present
+          ? data.evidenceConfidence.value
+          : this.evidenceConfidence,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       resolvedAt: data.resolvedAt.present
           ? data.resolvedAt.value
@@ -4756,6 +4803,7 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
           ..write('confirmationStatus: $confirmationStatus, ')
           ..write('teachingState: $teachingState, ')
           ..write('confirmedAt: $confirmedAt, ')
+          ..write('evidenceConfidence: $evidenceConfidence, ')
           ..write('createdAt: $createdAt, ')
           ..write('resolvedAt: $resolvedAt, ')
           ..write('updatedAt: $updatedAt')
@@ -4774,6 +4822,7 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     confirmationStatus,
     teachingState,
     confirmedAt,
+    evidenceConfidence,
     createdAt,
     resolvedAt,
     updatedAt,
@@ -4791,6 +4840,7 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
           other.confirmationStatus == this.confirmationStatus &&
           other.teachingState == this.teachingState &&
           other.confirmedAt == this.confirmedAt &&
+          other.evidenceConfidence == this.evidenceConfidence &&
           other.createdAt == this.createdAt &&
           other.resolvedAt == this.resolvedAt &&
           other.updatedAt == this.updatedAt);
@@ -4806,6 +4856,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
   final Value<String> confirmationStatus;
   final Value<String?> teachingState;
   final Value<int?> confirmedAt;
+  final Value<double?> evidenceConfidence;
   final Value<int> createdAt;
   final Value<int?> resolvedAt;
   final Value<int?> updatedAt;
@@ -4820,6 +4871,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     this.confirmationStatus = const Value.absent(),
     this.teachingState = const Value.absent(),
     this.confirmedAt = const Value.absent(),
+    this.evidenceConfidence = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.resolvedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -4835,6 +4887,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     this.confirmationStatus = const Value.absent(),
     this.teachingState = const Value.absent(),
     this.confirmedAt = const Value.absent(),
+    this.evidenceConfidence = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.resolvedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -4852,6 +4905,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     Expression<String>? confirmationStatus,
     Expression<String>? teachingState,
     Expression<int>? confirmedAt,
+    Expression<double>? evidenceConfidence,
     Expression<int>? createdAt,
     Expression<int>? resolvedAt,
     Expression<int>? updatedAt,
@@ -4867,6 +4921,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
       if (confirmationStatus != null) 'confirmation_status': confirmationStatus,
       if (teachingState != null) 'teaching_state': teachingState,
       if (confirmedAt != null) 'confirmed_at': confirmedAt,
+      if (evidenceConfidence != null) 'evidence_confidence': evidenceConfidence,
       if (createdAt != null) 'created_at': createdAt,
       if (resolvedAt != null) 'resolved_at': resolvedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -4884,6 +4939,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     Value<String>? confirmationStatus,
     Value<String?>? teachingState,
     Value<int?>? confirmedAt,
+    Value<double?>? evidenceConfidence,
     Value<int>? createdAt,
     Value<int?>? resolvedAt,
     Value<int?>? updatedAt,
@@ -4899,6 +4955,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
       confirmationStatus: confirmationStatus ?? this.confirmationStatus,
       teachingState: teachingState ?? this.teachingState,
       confirmedAt: confirmedAt ?? this.confirmedAt,
+      evidenceConfidence: evidenceConfidence ?? this.evidenceConfidence,
       createdAt: createdAt ?? this.createdAt,
       resolvedAt: resolvedAt ?? this.resolvedAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -4936,6 +4993,9 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     if (confirmedAt.present) {
       map['confirmed_at'] = Variable<int>(confirmedAt.value);
     }
+    if (evidenceConfidence.present) {
+      map['evidence_confidence'] = Variable<double>(evidenceConfidence.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -4963,6 +5023,7 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
           ..write('confirmationStatus: $confirmationStatus, ')
           ..write('teachingState: $teachingState, ')
           ..write('confirmedAt: $confirmedAt, ')
+          ..write('evidenceConfidence: $evidenceConfidence, ')
           ..write('createdAt: $createdAt, ')
           ..write('resolvedAt: $resolvedAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -22183,6 +22244,7 @@ typedef $$ActiveProblemsTableCreateCompanionBuilder =
       Value<String> confirmationStatus,
       Value<String?> teachingState,
       Value<int?> confirmedAt,
+      Value<double?> evidenceConfidence,
       Value<int> createdAt,
       Value<int?> resolvedAt,
       Value<int?> updatedAt,
@@ -22199,6 +22261,7 @@ typedef $$ActiveProblemsTableUpdateCompanionBuilder =
       Value<String> confirmationStatus,
       Value<String?> teachingState,
       Value<int?> confirmedAt,
+      Value<double?> evidenceConfidence,
       Value<int> createdAt,
       Value<int?> resolvedAt,
       Value<int?> updatedAt,
@@ -22279,6 +22342,11 @@ class $$ActiveProblemsTableFilterComposer
 
   ColumnFilters<int> get confirmedAt => $composableBuilder(
     column: $table.confirmedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get evidenceConfidence => $composableBuilder(
+    column: $table.evidenceConfidence,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -22370,6 +22438,11 @@ class $$ActiveProblemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get evidenceConfidence => $composableBuilder(
+    column: $table.evidenceConfidence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -22452,6 +22525,11 @@ class $$ActiveProblemsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<double> get evidenceConfidence => $composableBuilder(
+    column: $table.evidenceConfidence,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -22526,6 +22604,7 @@ class $$ActiveProblemsTableTableManager
                 Value<String> confirmationStatus = const Value.absent(),
                 Value<String?> teachingState = const Value.absent(),
                 Value<int?> confirmedAt = const Value.absent(),
+                Value<double?> evidenceConfidence = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int?> resolvedAt = const Value.absent(),
                 Value<int?> updatedAt = const Value.absent(),
@@ -22540,6 +22619,7 @@ class $$ActiveProblemsTableTableManager
                 confirmationStatus: confirmationStatus,
                 teachingState: teachingState,
                 confirmedAt: confirmedAt,
+                evidenceConfidence: evidenceConfidence,
                 createdAt: createdAt,
                 resolvedAt: resolvedAt,
                 updatedAt: updatedAt,
@@ -22556,6 +22636,7 @@ class $$ActiveProblemsTableTableManager
                 Value<String> confirmationStatus = const Value.absent(),
                 Value<String?> teachingState = const Value.absent(),
                 Value<int?> confirmedAt = const Value.absent(),
+                Value<double?> evidenceConfidence = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int?> resolvedAt = const Value.absent(),
                 Value<int?> updatedAt = const Value.absent(),
@@ -22570,6 +22651,7 @@ class $$ActiveProblemsTableTableManager
                 confirmationStatus: confirmationStatus,
                 teachingState: teachingState,
                 confirmedAt: confirmedAt,
+                evidenceConfidence: evidenceConfidence,
                 createdAt: createdAt,
                 resolvedAt: resolvedAt,
                 updatedAt: updatedAt,
