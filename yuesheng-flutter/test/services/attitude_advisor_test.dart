@@ -214,10 +214,11 @@ void main() {
 
   group('attitudeOrder（D1/D2 清理：由系统预设 seed 派生）', () {
     test('顺序 = doubao → yuesheng → sensei，与 seed 一致', () {
-      expect(
-        attitudeOrder,
-        [AttitudeLevel.doubao, AttitudeLevel.yuesheng, AttitudeLevel.sensei],
-      );
+      expect(attitudeOrder, [
+        AttitudeLevel.doubao,
+        AttitudeLevel.yuesheng,
+        AttitudeLevel.sensei,
+      ]);
     });
   });
 

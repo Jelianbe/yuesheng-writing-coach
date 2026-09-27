@@ -139,7 +139,8 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
   /// 打开系统预设的直接说明阈值编辑对话框（Part A 补：系统预设可编辑阈值）。
   Future<void> _openThresholdEditor(CoachPersona persona) async {
     final repo = AppStateRepository(ref.read(appDatabaseProvider));
-    final current = await repo.getCoachPersonaDirectThreshold(persona.id) ??
+    final current =
+        await repo.getCoachPersonaDirectThreshold(persona.id) ??
         persona.directExplainThreshold;
     if (!mounted) return;
     final controller = TextEditingController(text: current.toString());
@@ -179,9 +180,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       await repo.setCoachPersonaDirectThreshold(persona.id, result);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('保存失败，请稍后再试')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('保存失败，请稍后再试')));
       }
     }
   }
@@ -224,9 +225,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               persona: persona,
               selected: persona.id == _activeId,
               onTap: () => _select(persona.id),
-              onDelete: persona.isSystem
-                  ? null
-                  : () => _deletePersona(persona),
+              onDelete: persona.isSystem ? null : () => _deletePersona(persona),
               onEditThreshold: persona.isSystem
                   ? () => _openThresholdEditor(persona)
                   : null,
@@ -239,18 +238,26 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
             style: TextButton.styleFrom(alignment: Alignment.centerLeft),
           ),
           const SizedBox(height: 12),
-          _modeHeaderRow(palette),
-          const SizedBox(height: 4),
-          Text(
-            '决定教练用提问引导，还是直接给答案。与上方人格正交。',
-            style: TextStyle(fontSize: 13, color: palette.textTertiary),
-          ),
-          const SizedBox(height: 10),
-          _modeToggle(palette),
+          _modeSection(palette),
         ],
       ),
     );
   }
+
+  /// R-019 拆出：build 的教学方式区块（正交于人格档）。
+  Widget _modeSection(AppPalette palette) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _modeHeaderRow(palette),
+      const SizedBox(height: 4),
+      Text(
+        '决定教练用提问引导，还是直接给答案。与上方人格正交。',
+        style: TextStyle(fontSize: 13, color: palette.textTertiary),
+      ),
+      const SizedBox(height: 10),
+      _modeToggle(palette),
+    ],
+  );
 
   Widget _headerRow(AppPalette palette) => Row(
     children: [
@@ -288,8 +295,6 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     VoidCallback? onEditThreshold,
   }) {
     final palette = context.palette;
-    final color = _personaColor(palette, persona);
-    final isCustom = !persona.isSystem;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -308,47 +313,74 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
         ),
         child: Row(
           children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
+            _personaDot(palette, persona),
             const SizedBox(width: 10),
             _coachNameDesc(
               palette,
               persona.name,
-              '${isCustom ? '自定义 · ' : ''}${persona.label}',
+              '${persona.isSystem ? '' : '自定义 · '}${persona.label}',
             ),
-            if (selected)
-              Icon(Icons.check_circle, size: 18, color: palette.primary),
-            if (isCustom && onDelete != null) ...[
-              const SizedBox(width: 4),
-              InkWell(
-                onTap: onDelete,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: palette.textTertiary,
-                ),
-              ),
-            ],
-            if (onEditThreshold != null) ...[
-              const SizedBox(width: 4),
-              InkWell(
-                onTap: onEditThreshold,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: Icon(
-                  Icons.tune,
-                  size: 18,
-                  color: palette.textTertiary,
-                ),
-              ),
-            ],
+            ..._personaTrailing(
+              palette,
+              selected,
+              persona,
+              onDelete,
+              onEditThreshold,
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _personaDot(AppPalette palette, CoachPersona persona) => Container(
+    width: 10,
+    height: 10,
+    decoration: BoxDecoration(
+      color: _personaColor(palette, persona),
+      shape: BoxShape.circle,
+    ),
+  );
+
+  /// R-019 拆出：_personaRow 的尾随操作图标（勾选/删除/阈值调音）。
+  List<Widget> _personaTrailing(
+    AppPalette palette,
+    bool selected,
+    CoachPersona persona,
+    VoidCallback? onDelete,
+    VoidCallback? onEditThreshold,
+  ) {
+    final isCustom = !persona.isSystem;
+    final list = <Widget>[
+      if (selected) Icon(Icons.check_circle, size: 18, color: palette.primary),
+    ];
+    if (isCustom && onDelete != null) {
+      list
+        ..add(const SizedBox(width: 4))
+        ..add(
+          InkWell(
+            onTap: onDelete,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Icon(
+              Icons.delete_outline,
+              size: 18,
+              color: palette.textTertiary,
+            ),
+          ),
+        );
+    }
+    if (onEditThreshold != null) {
+      list
+        ..add(const SizedBox(width: 4))
+        ..add(
+          InkWell(
+            onTap: onEditThreshold,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Icon(Icons.tune, size: 18, color: palette.textTertiary),
+          ),
+        );
+    }
+    return list;
   }
 
   Widget _coachNameDesc(AppPalette palette, String name, String desc) =>
@@ -510,8 +542,9 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     _labelCtrl = TextEditingController(text: e?.label ?? '');
     _promptCtrl = TextEditingController(text: e?.systemPromptFragment ?? '');
     _layerCtrl = TextEditingController(text: e?.personaLayer ?? '');
-    _thresholdCtrl =
-        TextEditingController(text: (e?.directExplainThreshold ?? 5).toString());
+    _thresholdCtrl = TextEditingController(
+      text: (e?.directExplainThreshold ?? 5).toString(),
+    );
   }
 
   @override
@@ -531,9 +564,9 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     final layer = _layerCtrl.text.trim();
     final threshold = int.tryParse(_thresholdCtrl.text.trim()) ?? 5;
     if (name.isEmpty || prompt.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('名称和语气设定不能为空')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('名称和语气设定不能为空')));
       return;
     }
     final e = widget.existing;
@@ -556,55 +589,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     final palette = context.palette;
     return AlertDialog(
       title: Text(_isEdit ? '编辑自定义教练' : '新建自定义教练'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: '名称',
-                hintText: '如：毒舌编辑',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _labelCtrl,
-              decoration: const InputDecoration(
-                labelText: '一句话声音描述（选填）',
-                hintText: '如：犀利、直给、不许废话',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _promptCtrl,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: '语气/角色设定',
-                hintText: '教它怎么说话，会注入到系统提示里',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _layerCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: '人设层 / 角色口吻（选填，D2）',
-                hintText: '叠加在语气之上，如：以资深文学编辑口吻，多用比喻',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _thresholdCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: '症候直接说明阈值（数字）',
-                helperText: '诊断出超过该数量的症候时，当轮直接逐条说明全部症候',
-              ),
-            ),
-          ],
-        ),
-      ),
+      content: _fields(),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -614,4 +599,49 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
       ],
     );
   }
+
+  /// R-019 拆出：对话框字段列（名称/描述/语气/人设层/阈值）。
+  Widget _fields() => SingleChildScrollView(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _field(_nameCtrl, '名称', '如：毒舌编辑'),
+        const SizedBox(height: 12),
+        _field(_labelCtrl, '一句话声音描述（选填）', '如：犀利、直给、不许废话'),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _promptCtrl,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: '语气/角色设定',
+            hintText: '教它怎么说话，会注入到系统提示里',
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _layerCtrl,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: '人设层 / 角色口吻（选填，D2）',
+            hintText: '叠加在语气之上，如：以资深文学编辑口吻，多用比喻',
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _thresholdCtrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: '症候直接说明阈值（数字）',
+            helperText: '诊断出超过该数量的症候时，当轮直接逐条说明全部症候',
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _field(TextEditingController ctrl, String label, String hint) =>
+      TextField(
+        controller: ctrl,
+        decoration: InputDecoration(labelText: label, hintText: hint),
+      );
 }

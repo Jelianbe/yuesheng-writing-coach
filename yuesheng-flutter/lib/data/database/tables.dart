@@ -259,6 +259,7 @@ class ActiveProblems extends Table {
     ]),
   )();
   IntColumn get confirmedAt => integer().nullable()();
+
   /// 证据把握度（信心系统 Part B）：本地计算（证据强度+复现），0-1。
   /// 弱把握（< kWeakEvidenceConfidence）且未确认 → 不进活跃症候注入/教学焦点。
   RealColumn get evidenceConfidence => real().nullable()();

@@ -94,6 +94,7 @@ const String _kPositionGuidance = '''## 内容位置判断（必读）
 /// 实测确认，非此前设想的"静态块不触发"）。内容三条纪律：
 /// ①不把「疑似未收录」包装成正式症候、不在症候列表编造；
 /// ②学员追问时照常说明、不避而不谈；③给到「设置 → 反馈建议」导航。
+// ignore: unused_element  —— D3 有意保留的死代码（静默待接线），启用见上方文档注释。
 const String _kD3DiagnosisGuidance = '''
 【疑似未收录毛病】
 - 若你反复看到一个「已收录症候之外」的常见写作毛病，可以如实跟学员说：这像是常见问题，但还没收录。别把它包装成正式症候，也不要在症候列表里编造它。
@@ -171,22 +172,42 @@ void _buildL1Chunks(
     }
   }
 
-  // 态度档位 skill（L1 — 根据当前 attitude 加载一个）
-  //
-  // ★ 人格块契约（Step 3c，2026-09-14）：态度档在装配链中是一个 **pinned block**
-  //   —— 无条件注入、位置固定（紧跟九件套、在全部 L2 之前）、**不参与阶段切片**
-  //   （三档均不挂 contentForPhase）。该契约由
-  //   test/skill_registry_l2_test.dart 的「Step 3c · 人格块（attitude）不变量守护」
-  //   组逐条守护：移动本段位置 / 给态度档挂裁剪钩子 / 把 attitude-* 挂进
-  //   l2SkillMap，都会使该组变红。改动本段前先读该组。
-  final attitudeKey = 'attitude-${ctx.attitude.value}';
+  // 态度/人格声音块（L1 pinned block，紧跟九件套、在全部 L2 之前）。
+  _injectPersonaOrAttitude(ctx, chunks, loadedIds);
 
-  // D1/D2 Phase 2：用户自定义人格 → 注入其固定声音文本，替代默认态度档位。
-  // 仅当 ctx.activePersona 为「用户预设」（isSystem == false）且 fragment 非空时走注入；
-  // 系统预设 / 无激活人格 / 空 fragment → 走原 attitude-* 路径（逐字节不变，快照锁守护）。
-  // 空 fragment 回退而非静默跳过：态度/声音块是 L1 必注的 pinned block，
-  // 绝不能因数据缺陷让 prompt 整块失去声音指令。
-  // D2 人设层：personaLayer 为可选叠加层（角色设定/口吻），有则紧随基础声音注入。
+  // 教学方式块（L1 — 与人格档正交，按 ctx.teachingMode 加载一个）。
+  // 抽离自 attitude-* 的「诊断方式/发现引导级别/提问上限」句式（R-027 拆分）：
+  // 人格只定语气，教学方式由 coach_teaching_mode 开关决定。
+  final teachingModeKey = 'teaching-mode-${ctx.teachingMode.value}';
+  final teachingModeSkill = getSkill(teachingModeKey);
+  if (teachingModeSkill != null) {
+    chunks.add(teachingModeSkill.content);
+    loadedIds.add(teachingModeKey);
+  }
+}
+
+/// 态度档位 / 自定义人格声音块（L1 pinned block）。
+///
+/// ★ 人格块契约（Step 3c，2026-09-14）：态度档在装配链中是一个 **pinned block**
+/// —— 无条件注入、位置固定（紧跟九件套、在全部 L2 之前）、**不参与阶段切片**
+/// （三档均不挂 contentForPhase）。该契约由
+/// test/skill_registry_l2_test.dart 的「Step 3c · 人格块（attitude）不变量守护」
+/// 组逐条守护：移动本段位置 / 给态度档挂裁剪钩子 / 把 attitude-* 挂进
+/// l2SkillMap，都会使该组变红。改动本段前先读该组。
+///
+/// D1/D2 Phase 2：用户自定义人格 → 注入其固定声音文本，替代默认态度档位。
+/// 仅当 ctx.activePersona 为「用户预设」（isSystem == false）且 fragment 非空时走注入；
+/// 系统预设 / 无激活人格 / 空 fragment → 走原 attitude-* 路径（逐字节不变，快照锁守护）。
+/// 空 fragment 回退而非静默跳过：态度/声音块是 L1 必注的 pinned block，
+/// 绝不能因数据缺陷让 prompt 整块失去声音指令。
+/// D2 人设层：personaLayer 为可选叠加层（角色设定/口吻），有则紧随基础声音注入。
+/// R-019 拆出：_buildL1Chunks 原 60 行 → 拆出本块。
+void _injectPersonaOrAttitude(
+  SkillLoadContext ctx,
+  List<String> chunks,
+  List<String> loadedIds,
+) {
+  final attitudeKey = 'attitude-${ctx.attitude.value}';
   final activePersona = ctx.activePersona;
   final personaFragment = (activePersona != null && !activePersona.isSystem)
       ? activePersona.systemPromptFragment.trim()
@@ -206,16 +227,6 @@ void _buildL1Chunks(
       chunks.add(attitudeSkill.content);
       loadedIds.add(attitudeKey);
     }
-  }
-
-  // 教学方式块（L1 — 与人格档正交，按 ctx.teachingMode 加载一个）。
-  // 抽离自 attitude-* 的「诊断方式/发现引导级别/提问上限」句式（R-027 拆分）：
-  // 人格只定语气，教学方式由 coach_teaching_mode 开关决定。
-  final teachingModeKey = 'teaching-mode-${ctx.teachingMode.value}';
-  final teachingModeSkill = getSkill(teachingModeKey);
-  if (teachingModeSkill != null) {
-    chunks.add(teachingModeSkill.content);
-    loadedIds.add(teachingModeKey);
   }
 }
 

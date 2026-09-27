@@ -53,21 +53,21 @@ class CoachPersona {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'label': label,
-        'is_system': isSystem,
-        'attitude_level': attitudeLevel.value,
-        'system_prompt_fragment': systemPromptFragment,
-        'persona_layer': personaLayer,
-        'icon_key': iconKey,
-        'direct_explain_threshold': directExplainThreshold,
-      };
+    'id': id,
+    'name': name,
+    'label': label,
+    'is_system': isSystem,
+    'attitude_level': attitudeLevel.value,
+    'system_prompt_fragment': systemPromptFragment,
+    'persona_layer': personaLayer,
+    'icon_key': iconKey,
+    'direct_explain_threshold': directExplainThreshold,
+  };
 
   factory CoachPersona.fromJson(Map<String, dynamic> json) {
     final level =
         AttitudeLevel.fromString(json['attitude_level'] as String?) ??
-            AttitudeLevel.doubao;
+        AttitudeLevel.doubao;
     return CoachPersona(
       id: (json['id'] as String?) ?? '',
       name: (json['name'] as String?) ?? '',
@@ -92,17 +92,16 @@ class CoachPersona {
     String? personaLayer,
     String? iconKey,
     int? directExplainThreshold,
-  }) =>
-      CoachPersona(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        label: label ?? this.label,
-        isSystem: isSystem ?? this.isSystem,
-        attitudeLevel: attitudeLevel ?? this.attitudeLevel,
-        systemPromptFragment: systemPromptFragment ?? this.systemPromptFragment,
-        personaLayer: personaLayer ?? this.personaLayer,
-        iconKey: iconKey ?? this.iconKey,
-        directExplainThreshold:
-            directExplainThreshold ?? this.directExplainThreshold,
-      );
+  }) => CoachPersona(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    label: label ?? this.label,
+    isSystem: isSystem ?? this.isSystem,
+    attitudeLevel: attitudeLevel ?? this.attitudeLevel,
+    systemPromptFragment: systemPromptFragment ?? this.systemPromptFragment,
+    personaLayer: personaLayer ?? this.personaLayer,
+    iconKey: iconKey ?? this.iconKey,
+    directExplainThreshold:
+        directExplainThreshold ?? this.directExplainThreshold,
+  );
 }

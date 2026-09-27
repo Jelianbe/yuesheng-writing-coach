@@ -216,10 +216,7 @@ class _PanelThinkingRow extends StatelessWidget {
           ),
           const Spacer(),
           // Standard tap target: keep the switch full-size so it is easy to tap.
-          Switch(
-            value: enabled,
-            onChanged: onChanged,
-          ),
+          Switch(value: enabled, onChanged: onChanged),
         ],
       ),
     );

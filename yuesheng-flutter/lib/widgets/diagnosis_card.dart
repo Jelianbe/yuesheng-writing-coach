@@ -261,7 +261,6 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
 
   @override
   Widget build(BuildContext context) {
-
     // 卡片：#F2F4F2 + 左 4dp 竹青条
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),

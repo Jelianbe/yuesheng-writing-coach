@@ -542,9 +542,7 @@ class AppStateRepository {
 
   Future<void> _writeCustomCoachPersonas(List<CoachPersona> list) =>
       guardRepoWrite('app_state', 'saveCustomCoachPersona', () async {
-        final json = jsonEncode([
-          for (final p in list) p.toJson(),
-        ]);
+        final json = jsonEncode([for (final p in list) p.toJson()]);
         await setValue(_coachPersonasCustomKey, json);
       });
 
@@ -617,7 +615,9 @@ class AppStateRepository {
     Map<String, dynamic> map;
     if (raw != null && raw.isNotEmpty) {
       final decoded = jsonDecode(raw);
-      map = decoded is Map ? Map<String, dynamic>.from(decoded) : <String, dynamic>{};
+      map = decoded is Map
+          ? Map<String, dynamic>.from(decoded)
+          : <String, dynamic>{};
     } else {
       map = <String, dynamic>{};
     }

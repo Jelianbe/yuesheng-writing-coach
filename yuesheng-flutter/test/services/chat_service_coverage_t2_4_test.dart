@@ -108,8 +108,10 @@ void main() {
 
   tearDown(() async => db.close());
 
-  ChatService buildChatService(LlmClient llmClient,
-      {AppStateRepository? appStateRepo}) {
+  ChatService buildChatService(
+    LlmClient llmClient, {
+    AppStateRepository? appStateRepo,
+  }) {
     return ChatService(
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
@@ -170,7 +172,7 @@ void main() {
         teacherSuggestionRepo: TeacherSuggestionRepository(db),
         llmClient: llmClient,
 
-      messageInjector: MessageInjector(
+        messageInjector: MessageInjector(
           sessionRepo: sessionRepo,
 
           diagnosisRepo: DiagnosisRepository(db),
@@ -349,14 +351,18 @@ void main() {
       ),
     );
     await appState.setActiveCoachPersona('custom_y');
-    expect(
-        await appState.resolveGlobalCoachAttitude(), AttitudeLevel.yuesheng);
+    expect(await appState.resolveGlobalCoachAttitude(), AttitudeLevel.yuesheng);
 
-    final chatService = buildChatService(FakeLlmClient('ok'),
-        appStateRepo: appState);
+    final chatService = buildChatService(
+      FakeLlmClient('ok'),
+      appStateRepo: appState,
+    );
     final state = await chatService.loadAttitudeState(sessionId);
-    expect(state.attitude, AttitudeLevel.yuesheng,
-        reason: '会话无持久态度时应回退全局激活人格态度，而非默认 doubao');
+    expect(
+      state.attitude,
+      AttitudeLevel.yuesheng,
+      reason: '会话无持久态度时应回退全局激活人格态度，而非默认 doubao',
+    );
   });
 
   test('A10 直接说明阈值覆盖 round-trip（系统预设可编辑）', () async {

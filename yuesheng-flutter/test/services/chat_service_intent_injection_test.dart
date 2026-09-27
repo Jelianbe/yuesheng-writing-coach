@@ -84,8 +84,10 @@ void main() {
 
   tearDown(() async => db.close());
 
-  ChatService buildChatService(LlmClient llmClient,
-      {AppStateRepository? appStateRepo}) {
+  ChatService buildChatService(
+    LlmClient llmClient, {
+    AppStateRepository? appStateRepo,
+  }) {
     return ChatService(
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
@@ -459,22 +461,19 @@ void main() {
       final service = buildChatService(llm);
 
       // 强信号措辞 → 触发诊断协议注入（同 #10 路径）
-      await service.sendMessage(
-        sessionId,
-        '请诊断我这段文字',
-        callbacks(),
-        options(),
-      );
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
 
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('[YS_DIAGNOSIS]'));
 
       // 对实际发出的 user 消息跑解析器：示例 JSON 须通过校验
       final result = parseDiagnosis(sent);
-      expect(result.diagnosis, isNotNull,
-          reason: '注入示例须通过解析器（syndromes 须为对象数组、confidence 须为 0-1 数字）');
-      expect(result.rejectReason, isNull,
-          reason: '注入示例不应触发任何 rejectReason');
+      expect(
+        result.diagnosis,
+        isNotNull,
+        reason: '注入示例须通过解析器（syndromes 须为对象数组、confidence 须为 0-1 数字）',
+      );
+      expect(result.rejectReason, isNull, reason: '注入示例不应触发任何 rejectReason');
       expect(result.diagnosis!.syndromes.first.syndromeId, 'P003');
     });
 
@@ -482,12 +481,7 @@ void main() {
       final llm = _CaptureLlmClient();
       final service = buildChatService(llm);
 
-      await service.sendMessage(
-        sessionId,
-        '请诊断我这段文字',
-        callbacks(),
-        options(),
-      );
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
 
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('[YS_DIAGNOSIS]'));
@@ -512,12 +506,7 @@ void main() {
       await appState.setActiveCoachPersona('custom_t');
       final service = buildChatService(llm, appStateRepo: appState);
 
-      await service.sendMessage(
-        sessionId,
-        '请诊断我这段文字',
-        callbacks(),
-        options(),
-      );
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
 
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('症候数量 ≥ 7'));
@@ -531,12 +520,7 @@ void main() {
       await appState.setCoachPersonaDirectThreshold('yuesheng', 8);
       final service = buildChatService(llm, appStateRepo: appState);
 
-      await service.sendMessage(
-        sessionId,
-        '请诊断我这段文字',
-        callbacks(),
-        options(),
-      );
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
 
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('症候数量 ≥ 8'));

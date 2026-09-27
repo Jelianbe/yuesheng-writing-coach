@@ -59,6 +59,7 @@ class ActiveProblemView {
   final String confirmationStatus;
   final String? teachingState; // v19 教学状态机持久化
   final int? confirmedAt;
+
   /// Evidence confidence (Part B); weak + unconfirmed -> excluded from teaching injection/focus.
   final double? evidenceConfidence;
   ActiveProblemView({
@@ -105,150 +106,151 @@ class DiagnosisRepository {
   ///
   /// 注意：阶段迁移校验（validatePhaseTransition）在 service 层做，
   ///       DAO 只负责落库，不做业务校验。
-  Future<String> commitDiagnosis(DiagnosisInput input) =>
-      guardRepoWrite('diagnosis', 'commitDiagnosis', () async {
-        final id = generateUuid();
-        final now = nowSec();
+  Future<String> commitDiagnosis(
+    DiagnosisInput input,
+  ) => guardRepoWrite('diagnosis', 'commitDiagnosis', () async {
+    final id = generateUuid();
+    final now = nowSec();
 
-        // 0. 记忆合并（Mem0 风格）：与最近一条诊断比对，同症候同严重度 → NO_OP
-        // 复刻 diagnosis-dao.ts commitDiagnosis 步骤 0
-        final latestRow = await getLatestDiagnosis(input.sessionId);
-        final latestSyndromes = latestRow != null
-            ? _parseSyndromes(latestRow.syndromes)
-            : <Map<String, dynamic>>[];
-        final noOpSyndromeIds = <String>{};
-        for (final s in input.syndromes) {
-          final sid = s['syndrome_id'] as String? ?? '';
-          if (sid.isEmpty) continue;
-          final match = latestSyndromes
-              .where((ls) => ls['syndrome_id'] == sid)
-              .toList();
-          if (match.isNotEmpty && match.first['severity'] == s['severity']) {
-            noOpSyndromeIds.add(sid);
-          }
+    // 0. 记忆合并（Mem0 风格）：与最近一条诊断比对，同症候同严重度 → NO_OP
+    // 复刻 diagnosis-dao.ts commitDiagnosis 步骤 0
+    final latestRow = await getLatestDiagnosis(input.sessionId);
+    final latestSyndromes = latestRow != null
+        ? _parseSyndromes(latestRow.syndromes)
+        : <Map<String, dynamic>>[];
+    final noOpSyndromeIds = <String>{};
+    for (final s in input.syndromes) {
+      final sid = s['syndrome_id'] as String? ?? '';
+      if (sid.isEmpty) continue;
+      final match = latestSyndromes
+          .where((ls) => ls['syndrome_id'] == sid)
+          .toList();
+      if (match.isNotEmpty && match.first['severity'] == s['severity']) {
+        noOpSyndromeIds.add(sid);
+      }
+    }
+    final filteredSyndromes = input.syndromes
+        .where((s) => !noOpSyndromeIds.contains(s['syndrome_id']))
+        .toList();
+
+    await _db.transaction(() async {
+      // 1. INSERT diagnosis_results（仅非 NO_OP 症候）
+      await _db
+          .into(_db.diagnosisResults)
+          .insert(
+            DiagnosisResultsCompanion.insert(
+              id: id,
+              sessionId: input.sessionId,
+              messageId: input.messageId,
+              syndromes: Value(jsonEncode(filteredSyndromes)),
+              suggestedActions: Value(jsonEncode(input.suggestedActions)),
+              rootCauseAnalysis: Value(input.rootCauseAnalysis),
+              nextFocus: Value(input.nextFocus),
+              feedbackSummary: Value(input.feedbackSummary),
+              confidence: Value(input.confidence),
+              teachingProgress: Value(
+                input.teachingProgress != null
+                    ? jsonEncode(input.teachingProgress)
+                    : null,
+              ),
+              targetRefType: Value(input.targetRefType),
+              targetRefId: Value(input.targetRefId),
+              timestamp: Value(now),
+              createdAt: Value(now),
+              currentTeachingFocusId: Value(input.currentTeachingFocusId),
+              focusReason: Value(input.focusReason),
+            ),
+          );
+
+      // 2. UPSERT active_problem（不复活已 resolved 的症候）
+      // 2.0 evidence confidence (Part B): prior occurrence counts per syndrome
+      final occurrenceCount = await _countSyndromeOccurrences(input.syndromes);
+      for (final syndrome in input.syndromes) {
+        final syndromeId = syndrome['syndrome_id'] as String? ?? '';
+        final syndromeName = syndrome['name'] as String? ?? '';
+        final severity = syndrome['severity'] as String? ?? 'L2';
+        final evidenceConfidence = _evidenceConfidenceFor(
+          syndrome,
+          occurrenceCount,
+        );
+
+        // 查现有 active_problem
+        final existing =
+            await (_db.select(_db.activeProblems)..where(
+                  (t) =>
+                      t.sessionId.equals(input.sessionId) &
+                      t.syndromeId.equals(syndromeId),
+                ))
+                .getSingleOrNull();
+
+        if (existing != null && existing.status == 'resolved') {
+          // 不复活已解决的症候
+          continue;
         }
-        final filteredSyndromes = input.syndromes
-            .where((s) => !noOpSyndromeIds.contains(s['syndrome_id']))
-            .toList();
 
-        await _db.transaction(() async {
-          // 1. INSERT diagnosis_results（仅非 NO_OP 症候）
+        if (existing != null) {
+          // UPDATE（保留 confirmation_status、teaching_state，不重置）
+          // 批次5（5.3）：v20 起更新 updated_at
+          await (_db.update(
+            _db.activeProblems,
+          )..where((t) => t.id.equals(existing.id))).write(
+            ActiveProblemsCompanion(
+              syndromeName: Value(syndromeName),
+              severity: Value(severity),
+              status: const Value('active'),
+              evidenceConfidence: Value(evidenceConfidence),
+              updatedAt: Value(nowSec()),
+            ),
+          );
+        } else {
+          // INSERT
+          // v19 决策：teaching_state 保持 NULL（不在 INSERT 时初始化 'identified'）
+          // 理由：
+          //  - 首次诊断前可能已有 teaching_history 画像记录（批次44逻辑），
+          //    若初始化 'identified' 会把 startingTeachingState 锁死在 identified，
+          //    导致画像推断出的 in_progress/consolidating 无法成为 FSM 起点。
+          //  - 正确语义：teaching_state 仅存 FSM 输出，首次评估由
+          //    training_input_builder._inferStartingState 按画像推断起点，
+          //    然后若 FSM 迁移发生（summary.teachingState != 推断起点）再写入持久化。
           await _db
-              .into(_db.diagnosisResults)
+              .into(_db.activeProblems)
               .insert(
-                DiagnosisResultsCompanion.insert(
-                  id: id,
+                ActiveProblemsCompanion.insert(
+                  id: generateUuid(),
                   sessionId: input.sessionId,
-                  messageId: input.messageId,
-                  syndromes: Value(jsonEncode(filteredSyndromes)),
-                  suggestedActions: Value(jsonEncode(input.suggestedActions)),
-                  rootCauseAnalysis: Value(input.rootCauseAnalysis),
-                  nextFocus: Value(input.nextFocus),
-                  feedbackSummary: Value(input.feedbackSummary),
-                  confidence: Value(input.confidence),
-                  teachingProgress: Value(
-                    input.teachingProgress != null
-                        ? jsonEncode(input.teachingProgress)
-                        : null,
-                  ),
-                  targetRefType: Value(input.targetRefType),
-                  targetRefId: Value(input.targetRefId),
-                  timestamp: Value(now),
-                  createdAt: Value(now),
-                  currentTeachingFocusId: Value(input.currentTeachingFocusId),
-                  focusReason: Value(input.focusReason),
-                ),
-              );
-
-          // 2. UPSERT active_problem（不复活已 resolved 的症候）
-          // 2.0 evidence confidence (Part B): prior occurrence counts per syndrome
-          final occurrenceCount = await _countSyndromeOccurrences(input.syndromes);
-          for (final syndrome in input.syndromes) {
-            final syndromeId = syndrome['syndrome_id'] as String? ?? '';
-            final syndromeName = syndrome['name'] as String? ?? '';
-            final severity = syndrome['severity'] as String? ?? 'L2';
-            final evidenceConfidence = _evidenceConfidenceFor(syndrome, occurrenceCount);
-
-            // 查现有 active_problem
-            final existing =
-                await (_db.select(_db.activeProblems)..where(
-                      (t) =>
-                          t.sessionId.equals(input.sessionId) &
-                          t.syndromeId.equals(syndromeId),
-                    ))
-                    .getSingleOrNull();
-
-            if (existing != null && existing.status == 'resolved') {
-              // 不复活已解决的症候
-              continue;
-            }
-
-            if (existing != null) {
-              // UPDATE（保留 confirmation_status、teaching_state，不重置）
-              // 批次5（5.3）：v20 起更新 updated_at
-              await (_db.update(
-                _db.activeProblems,
-              )..where((t) => t.id.equals(existing.id))).write(
-                ActiveProblemsCompanion(
+                  syndromeId: syndromeId,
                   syndromeName: Value(syndromeName),
                   severity: Value(severity),
                   status: const Value('active'),
+                  confirmationStatus: const Value('suspected'),
                   evidenceConfidence: Value(evidenceConfidence),
-                  updatedAt: Value(nowSec()),
+                  createdAt: Value(now),
+                  updatedAt: Value(now),
                 ),
               );
-            } else {
-              // INSERT
-              // v19 决策：teaching_state 保持 NULL（不在 INSERT 时初始化 'identified'）
-              // 理由：
-              //  - 首次诊断前可能已有 teaching_history 画像记录（批次44逻辑），
-              //    若初始化 'identified' 会把 startingTeachingState 锁死在 identified，
-              //    导致画像推断出的 in_progress/consolidating 无法成为 FSM 起点。
-              //  - 正确语义：teaching_state 仅存 FSM 输出，首次评估由
-              //    training_input_builder._inferStartingState 按画像推断起点，
-              //    然后若 FSM 迁移发生（summary.teachingState != 推断起点）再写入持久化。
-              await _db
-                  .into(_db.activeProblems)
-                  .insert(
-                    ActiveProblemsCompanion.insert(
-                      id: generateUuid(),
-                      sessionId: input.sessionId,
-                      syndromeId: syndromeId,
-                      syndromeName: Value(syndromeName),
-                      severity: Value(severity),
-                      status: const Value('active'),
-                      confirmationStatus: const Value('suspected'),
-                      evidenceConfidence: Value(evidenceConfidence),
-                      createdAt: Value(now),
-                      updatedAt: Value(now),
-                    ),
-                  );
-            }
-          }
+        }
+      }
 
-          // 3. UPDATE sessions.diagnosis_summary
-          await _updateDiagnosisSummary(input.sessionId);
+      // 3. UPDATE sessions.diagnosis_summary
+      await _updateDiagnosisSummary(input.sessionId);
 
-          // 4. UPDATE chapters.last_diagnosed_at（仅章节引用时）
-          if (input.targetRefType == 'chapter' && input.targetRefId != null) {
-            await (_db.update(
-              _db.chapters,
-            )..where((t) => t.id.equals(input.targetRefId!))).write(
-              ChaptersCompanion(
-                lastDiagnosedAt: Value(now),
-                updatedAt: Value(now),
-              ),
-            );
-          }
+      // 4. UPDATE chapters.last_diagnosed_at（仅章节引用时）
+      if (input.targetRefType == 'chapter' && input.targetRefId != null) {
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(input.targetRefId!))).write(
+          ChaptersCompanion(lastDiagnosedAt: Value(now), updatedAt: Value(now)),
+        );
+      }
 
-          return id;
-        });
+      return id;
+    });
 
-        // 批次54：新诊断落库后失效会话级 teaching state 缓存（DiagnosisCard 复用，
-        // 保证滚动重建读到的是最新画像）
-        invalidateTeachingStates(input.sessionId);
-        return id;
-      });
+    // 批次54：新诊断落库后失效会话级 teaching state 缓存（DiagnosisCard 复用，
+    // 保证滚动重建读到的是最新画像）
+    invalidateTeachingStates(input.sessionId);
+    return id;
+  });
 
   /// 获取最新一条诊断
   /// 复刻 getLatestDiagnosis(sessionId)
@@ -362,9 +364,9 @@ class DiagnosisRepository {
         .toList();
     final counts = <String, int>{};
     if (ids.isEmpty) return counts;
-    final rows = await (_db.select(_db.activeProblems)
-          ..where((t) => t.syndromeId.isIn(ids)))
-        .get();
+    final rows = await (_db.select(
+      _db.activeProblems,
+    )..where((t) => t.syndromeId.isIn(ids))).get();
     for (final r in rows) {
       counts[r.syndromeId] = (counts[r.syndromeId] ?? 0) + 1;
     }
@@ -392,6 +394,7 @@ class DiagnosisRepository {
       recurrenceOccurrences: (occurrenceCount[sid] ?? 0) + 1,
     );
   }
+
   Future<List<ActiveProblemView>> listActiveProblems(String sessionId) async {
     final rows =
         await (_db.select(_db.activeProblems)..where(
@@ -400,7 +403,8 @@ class DiagnosisRepository {
                   t.status.equals('active') &
                   (t.evidenceConfidence.isNull() |
                       t.evidenceConfidence.isBiggerOrEqualValue(
-                          kWeakEvidenceConfidence) |
+                        kWeakEvidenceConfidence,
+                      ) |
                       t.confirmationStatus.equals('confirmed')),
             ))
             .get();

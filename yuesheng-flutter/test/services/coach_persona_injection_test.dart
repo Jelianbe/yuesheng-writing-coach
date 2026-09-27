@@ -26,13 +26,12 @@ void main() {
   SkillLoadContext ctx({
     AttitudeLevel attitude = AttitudeLevel.doubao,
     CoachPersona? activePersona,
-  }) =>
-      SkillLoadContext(
-        phase: TeachingPhase.p2PracticeLoop,
-        attitude: attitude,
-        subphase: TeachingSubphase.diagnosis,
-        activePersona: activePersona,
-      );
+  }) => SkillLoadContext(
+    phase: TeachingPhase.p2PracticeLoop,
+    attitude: attitude,
+    subphase: TeachingSubphase.diagnosis,
+    activePersona: activePersona,
+  );
 
   group('Phase 2 · 用户自定义人格注入', () {
     test('#B1 注入用户 fragment、替换态度档、loadedIds 记 persona-<id>', () {
@@ -107,7 +106,9 @@ void main() {
     });
 
     test('#E2 无 personaLayer（null）→ 只注入基础声音，无 persona-layer 标记', () {
-      final r = buildSystemPromptV2(ctx(activePersona: userPersona)); // userPersona 无 layer
+      final r = buildSystemPromptV2(
+        ctx(activePersona: userPersona),
+      ); // userPersona 无 layer
       expect(r.systemPrompt, contains('毒舌大师兄'));
       expect(r.loadedSkillIds, contains('persona-custom_1'));
       expect(r.loadedSkillIds, isNot(contains('persona-layer-')));
@@ -126,7 +127,10 @@ void main() {
       final r = buildSystemPromptV2(ctx(activePersona: blankLayer));
       expect(r.systemPrompt, contains('你是基础声音。'));
       expect(r.loadedSkillIds, contains('persona-custom_blank_layer'));
-      expect(r.loadedSkillIds, isNot(contains('persona-layer-custom_blank_layer')));
+      expect(
+        r.loadedSkillIds,
+        isNot(contains('persona-layer-custom_blank_layer')),
+      );
     });
   });
 

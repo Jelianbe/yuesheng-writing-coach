@@ -95,11 +95,7 @@ class GrowthTimelineItem extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(dateStr, style: context.text.noteCaption),
-          ],
-        ),
+        Row(children: [Text(dateStr, style: context.text.noteCaption)]),
         // E3：展示本次诊断出的症候名（从 syndromes JSON 解析），
         // 让时间线不再是"只有时间"的空壳信息
         ..._buildSyndromeNames(context),

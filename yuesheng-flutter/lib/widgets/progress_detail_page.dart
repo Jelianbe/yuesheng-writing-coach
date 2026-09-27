@@ -367,7 +367,6 @@ class _DiagnosisHistory extends StatelessWidget {
                     color: context.palette.textPrimary,
                   ),
                 ),
-
               ],
             ),
           ),
