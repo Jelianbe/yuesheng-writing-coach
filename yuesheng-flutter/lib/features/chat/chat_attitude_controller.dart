@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database/database.dart';
-import '../../data/repositories/app_state_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_providers.dart';
@@ -139,14 +138,8 @@ class ChatAttitudeController {
           .read(chatServiceProvider)
           .loadAttitudeState(sessionId);
       if (!host.mounted) return;
-      // 全局教练人格偏好覆盖 session 级（用户上次选的档）
-      final global = await AppStateRepository(
-        host.ref.read(appDatabaseProvider),
-      ).getCoachAttitude();
-      final parsed = global != null ? AttitudeLevel.fromString(global) : null;
-      final attitude = parsed ?? state.attitude;
-      if (!host.mounted) return;
-      host.applyAttitudeState(attitude, state.phase);
+      // 会话级态度优先（锁定）；无持久态度时 loadAttitudeState 已回退全局激活人格
+      host.applyAttitudeState(state.attitude, state.phase);
       // 批次 18：P2 阶段进入时加载活跃问题（对齐 RN useEffect currentPhase 依赖）
       if (state.phase == TeachingPhase.p2PracticeLoop) {
         unawaited(diagnosis.loadActiveProblems(sessionId));

@@ -14,6 +14,8 @@ import '../../config/reasoning_tier.dart';
 import '../../services/decode_guard.dart';
 import '../../services/error_handler.dart';
 import '../../types/coach_persona.dart';
+import '../../types/coach_persona_seed.dart';
+import '../../types/teaching_types.dart';
 import '../../types/display_types.dart';
 import '../../widgets/punctuation_bar.dart';
 import 'chapter_scoped_keys.dart';
@@ -567,6 +569,22 @@ class AppStateRepository {
         personaId == 'sensei') {
       await setCoachAttitude(personaId);
     }
+  }
+
+  /// Resolve the global active persona's attitude (new-session fallback).
+  /// Active persona is a system preset -> its level; custom -> its attitudeLevel;
+  /// otherwise fall back to coach_attitude -> doubao.
+  Future<AttitudeLevel> resolveGlobalCoachAttitude() async {
+    final activeId = await getActiveCoachPersonaId();
+    if (activeId == null) return AttitudeLevel.doubao;
+    final builtIn = builtInCoachPersonaById(activeId);
+    if (builtIn != null) return builtIn.attitudeLevel;
+    final customs = await getCustomCoachPersonas();
+    for (final p in customs) {
+      if (p.id == activeId) return p.attitudeLevel;
+    }
+    final global = await getCoachAttitude();
+    return AttitudeLevel.fromString(global) ?? AttitudeLevel.doubao;
   }
 
   // ════════════ 写作菜单高度（批次96-7 拖拽调整篇幅） ════════════

@@ -23,6 +23,8 @@ import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
+import 'package:writingcoach/types/coach_persona.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/message_injector.dart';
@@ -106,7 +108,8 @@ void main() {
 
   tearDown(() async => db.close());
 
-  ChatService buildChatService(LlmClient llmClient) {
+  ChatService buildChatService(LlmClient llmClient,
+      {AppStateRepository? appStateRepo}) {
     return ChatService(
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
@@ -127,6 +130,7 @@ void main() {
         chapterRepo: ChapterRepository(db),
       ),
 
+      appStateRepo: appStateRepo,
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,
 
@@ -166,7 +170,7 @@ void main() {
         teacherSuggestionRepo: TeacherSuggestionRepository(db),
         llmClient: llmClient,
 
-        messageInjector: MessageInjector(
+      messageInjector: MessageInjector(
           sessionRepo: sessionRepo,
 
           diagnosisRepo: DiagnosisRepository(db),
@@ -330,6 +334,29 @@ void main() {
     final state = await chatService.loadAttitudeState(sessionId);
     expect(state.attitude, AttitudeLevel.sensei);
     expect(state.phase, TeachingPhase.p1World);
+  });
+
+  test('A9 新会话无态度 → 回退全局激活人格态度（自定义人格 yuesheng）', () async {
+    final appState = AppStateRepository(db);
+    await appState.saveCustomCoachPersona(
+      CoachPersona(
+        id: 'custom_y',
+        name: '月笙',
+        label: '测',
+        isSystem: false,
+        attitudeLevel: AttitudeLevel.yuesheng,
+        systemPromptFragment: '测试',
+      ),
+    );
+    await appState.setActiveCoachPersona('custom_y');
+    expect(
+        await appState.resolveGlobalCoachAttitude(), AttitudeLevel.yuesheng);
+
+    final chatService = buildChatService(FakeLlmClient('ok'),
+        appStateRepo: appState);
+    final state = await chatService.loadAttitudeState(sessionId);
+    expect(state.attitude, AttitudeLevel.yuesheng,
+        reason: '会话无持久态度时应回退全局激活人格态度，而非默认 doubao');
   });
 
   // ───────────── B 组：活跃症候主链路（_injectDiagnosisLock） ─────────────

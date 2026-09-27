@@ -270,12 +270,28 @@ class ChatService {
     String sessionId,
   ) async {
     final ts = await _stateRepo.getTeachingState(sessionId);
+    // New session without a persisted attitude -> fall back to the global
+    // active persona's attitude (not hard default doubao).
+    var attitude = AttitudeLevel.fromString(ts?.attitudeLevel);
+    attitude ??= await _resolveGlobalAttitude();
     return (
-      attitude:
-          AttitudeLevel.fromString(ts?.attitudeLevel) ?? AttitudeLevel.doubao,
+      attitude: attitude,
       phase:
           TeachingPhase.fromString(ts?.currentPhase) ?? TeachingPhase.p0Engage,
     );
+  }
+
+  /// Global fallback for a new session with no persisted attitude.
+  /// Resolves the active persona (system preset / custom) attitude;
+  /// no AppStateRepository / read failure -> doubao (previous behavior).
+  Future<AttitudeLevel> _resolveGlobalAttitude() async {
+    final repo = _appStateRepo;
+    if (repo == null) return AttitudeLevel.doubao;
+    try {
+      return await repo.resolveGlobalCoachAttitude();
+    } catch (_) {
+      return AttitudeLevel.doubao;
+    }
   }
 
   /// 持久化态度切换
