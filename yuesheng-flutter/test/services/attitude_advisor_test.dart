@@ -212,6 +212,15 @@ void main() {
     });
   });
 
+  group('attitudeOrder（D1/D2 清理：由系统预设 seed 派生）', () {
+    test('顺序 = doubao → yuesheng → sensei，与 seed 一致', () {
+      expect(
+        attitudeOrder,
+        [AttitudeLevel.doubao, AttitudeLevel.yuesheng, AttitudeLevel.sensei],
+      );
+    });
+  });
+
   // ── 批次4（4.4）：负反馈关键词 + 安全词上下文判断 ──
 
   group('containsNegativeFeedback（批次4 4.4）', () {

@@ -8,6 +8,7 @@
 
 import '../config/shared_constants.dart';
 import '../types/teaching_types.dart';
+import '../types/coach_persona_seed.dart';
 
 /// 态度建议（对齐 RN AttitudeSuggestion）
 class AttitudeSuggestion {
@@ -22,12 +23,13 @@ class AttitudeSuggestion {
   });
 }
 
-/// 档位顺序（对齐 RN ATTITUDE_ORDER）：doubao → yuesheng → sensei
-const List<AttitudeLevel> attitudeOrder = [
-  AttitudeLevel.doubao,
-  AttitudeLevel.yuesheng,
-  AttitudeLevel.sensei,
-];
+/// 档位顺序（对齐 RN ATTITUDE_ORDER）：doubao → yuesheng → sensei。
+/// D1/D2 清理：由系统预设 seed 派生，seed 为唯一真源（顺序即展示顺序，
+/// 升级/降级阶梯随之联动）。
+final List<AttitudeLevel> attitudeOrder = builtInCoachPersonas
+    .where((p) => p.isSystem)
+    .map((p) => p.attitudeLevel)
+    .toList(growable: false);
 
 /// 症候严重度排名（对齐 RN severity L3→3 / L2→2 / L1→1）
 int _severityRank(Severity s) => switch (s) {
@@ -171,12 +173,15 @@ String _generateDowngradeReason(
   return '$reasonText，建议切换到「$targetLabel」模式，保持轻松学习氛围。';
 }
 
-/// 档位展示名（对齐 RN getAttitudeLabel）
-String getAttitudeLabel(AttitudeLevel level) => switch (level) {
-  AttitudeLevel.doubao => '豆包',
-  AttitudeLevel.yuesheng => '月笙如歌',
-  AttitudeLevel.sensei => 'sensei',
-};
+/// 档位展示名（对齐 RN getAttitudeLabel）。
+/// D1/D2 清理：改查系统预设 seed 的 name（单一真源），不再硬编码 switch；
+/// 未知档位回退其 `.value` 兜底。
+String getAttitudeLabel(AttitudeLevel level) {
+  for (final p in builtInCoachPersonas) {
+    if (p.isSystem && p.attitudeLevel == level) return p.name;
+  }
+  return level.value;
+}
 
 /// 冷却期检查（R-019 拆出：suggestAttitudeAdjustment 前置守卫）。
 bool _isInCooldown(int currentTime, int? lastSuggestionTime) =>
