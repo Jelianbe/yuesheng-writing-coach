@@ -416,14 +416,14 @@ void main() {
         expect(toggled, isTrue);
       });
 
-      testWidgets('isStreaming → 开关禁用（防中途换档与已发请求不一致）', (tester) async {
+      testWidgets('isStreaming → 开关仍可点（档位只影响下一次请求，与头部一致）', (tester) async {
         await tester.pumpWidget(
           buildInput(isStreaming: true, onThinkingToggle: (_) {}),
         );
         await openPanel(tester);
 
         final sw = tester.widget<Switch>(find.byType(Switch));
-        expect(sw.onChanged, isNull);
+        expect(sw.onChanged, isNotNull);
       });
     });
   });

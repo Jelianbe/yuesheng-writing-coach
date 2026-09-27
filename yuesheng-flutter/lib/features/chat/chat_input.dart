@@ -398,7 +398,6 @@ class ChatInputState extends State<ChatInput> {
             thinkingEnabled: widget.thinkingEnabled,
             reasoningTierLabel: widget.reasoningTierLabel,
             onThinkingToggle: widget.onThinkingToggle,
-            isStreaming: widget.isStreaming,
           ),
         ),
       ),

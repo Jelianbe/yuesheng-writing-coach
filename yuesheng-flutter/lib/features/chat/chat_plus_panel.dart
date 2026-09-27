@@ -34,16 +34,12 @@ class ChatPlusPanel extends StatelessWidget {
   /// 思考开关回调；null 时不渲染该项。
   final ValueChanged<bool>? onThinkingToggle;
 
-  /// 生成中：开关禁用（防中途换档，与已发出的请求不一致）。
-  final bool isStreaming;
-
   const ChatPlusPanel({
     super.key,
     this.onUpload,
     this.thinkingEnabled = true,
     this.reasoningTierLabel = '标准',
     this.onThinkingToggle,
-    this.isStreaming = false,
   });
 
   @override
@@ -84,7 +80,7 @@ class ChatPlusPanel extends StatelessWidget {
                 _PanelThinkingRow(
                   enabled: thinkingEnabled,
                   tierLabel: reasoningTierLabel,
-                  onChanged: isStreaming ? null : onThinkingToggle,
+                  onChanged: onThinkingToggle,
                 ),
             ],
           ),
@@ -219,14 +215,10 @@ class _PanelThinkingRow extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // shrinkWrap + scale：把 Material 默认 48 高触控区压到与文案等高
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: enabled,
-              onChanged: onChanged,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+          // Standard tap target: keep the switch full-size so it is easy to tap.
+          Switch(
+            value: enabled,
+            onChanged: onChanged,
           ),
         ],
       ),
