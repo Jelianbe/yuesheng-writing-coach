@@ -7,6 +7,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
+import 'package:writingcoach/services/skill_layers.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 void main() {
@@ -60,6 +61,36 @@ void main() {
       final boundaryIdx = r.systemPrompt.lastIndexOf('【边界声明】');
       final guidanceIdx = r.systemPrompt.lastIndexOf('## 内容位置判断');
       expect(boundaryIdx, greaterThan(guidanceIdx));
+    });
+  });
+
+  group('D3 最保守版 · 疑似未收录引导（静默未接线）', () {
+    test('#F1 诊断模式 prompt 当前不含 D3 引导（静默态锁）', () {
+      final r = buildSystemPromptV2(
+        SkillLoadContext(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.doubao,
+          subphase: TeachingSubphase.diagnosis,
+        ),
+      );
+      // 内容已落地为源码常量，但未接线注入 → prompt 不含该引导。
+      // 静默态锁：将来启用注入分支时此测试会变红，提醒同步改测试 +
+      // 走舰长批准的快照重冻（会触发 skill_prompt_anchor / message_sequence）。
+      expect(r.systemPrompt, isNot(contains('疑似未收录毛病')));
+      expect(r.l2Mode, L2Mode.diagnosis);
+    });
+
+    test('#F2 非诊断模式（training）不含 D3 引导', () {
+      final r = buildSystemPromptV2(
+        SkillLoadContext(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.doubao,
+          subphase: TeachingSubphase.diagnosis,
+        ),
+        modeOverride: L2Mode.training,
+      );
+      expect(r.systemPrompt, isNot(contains('疑似未收录毛病')));
+      expect(r.l2Mode, L2Mode.training);
     });
   });
 }
