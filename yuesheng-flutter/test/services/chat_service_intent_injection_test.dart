@@ -32,7 +32,7 @@ import 'package:writingcoach/types/teaching_types.dart';
 
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
-    show DiagnosisCapabilityImpl;
+    show DiagnosisCapabilityImpl, parseDiagnosis;
 import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
@@ -442,6 +442,35 @@ void main() {
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('[YS_DIAGNOSIS]'));
       expect(sent, contains('待诊断全文'));
+    });
+
+    // 小项3（台账§一.17）：`kDiagnosisProtocolSuffix` 注入到 user 消息后，
+    // 内嵌的 [YS_DIAGNOSIS] 示例 JSON 必须与解析器 schema 严格一致，否则 AI
+    // 即便照抄示例也会因 `syndrome_item_not_object` / `confidence_invalid`
+    // 被静默拒收。这里直接对「实际发出去的 user 消息」跑解析器（端到端，
+    // 比单测常量字面量更强），防未来把示例改回「字符串数组 / 范围字符串 confidence」。
+    test('#12 注入的协议后缀示例 JSON 可被 parseDiagnosis 解析（小项3 §一.17）', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      // 强信号措辞 → 触发诊断协议注入（同 #10 路径）
+      await service.sendMessage(
+        sessionId,
+        '请诊断我这段文字',
+        callbacks(),
+        options(),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('[YS_DIAGNOSIS]'));
+
+      // 对实际发出的 user 消息跑解析器：示例 JSON 须通过校验
+      final result = parseDiagnosis(sent);
+      expect(result.diagnosis, isNotNull,
+          reason: '注入示例须通过解析器（syndromes 须为对象数组、confidence 须为 0-1 数字）');
+      expect(result.rejectReason, isNull,
+          reason: '注入示例不应触发任何 rejectReason');
+      expect(result.diagnosis!.syndromes.first.syndromeId, 'P003');
     });
   });
 }
