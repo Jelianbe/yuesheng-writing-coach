@@ -172,6 +172,7 @@ void _buildL1Chunks(
   // 系统预设 / 无激活人格 / 空 fragment → 走原 attitude-* 路径（逐字节不变，快照锁守护）。
   // 空 fragment 回退而非静默跳过：态度/声音块是 L1 必注的 pinned block，
   // 绝不能因数据缺陷让 prompt 整块失去声音指令。
+  // D2 人设层：personaLayer 为可选叠加层（角色设定/口吻），有则紧随基础声音注入。
   final activePersona = ctx.activePersona;
   final personaFragment = (activePersona != null && !activePersona.isSystem)
       ? activePersona.systemPromptFragment.trim()
@@ -179,6 +180,12 @@ void _buildL1Chunks(
   if (personaFragment.isNotEmpty) {
     chunks.add(personaFragment);
     loadedIds.add('persona-${activePersona!.id}');
+    // D2 人设层：可选，叠加在基础声音片段之上（角色设定/口吻层）。
+    final layer = activePersona.personaLayer?.trim() ?? '';
+    if (layer.isNotEmpty) {
+      chunks.add(layer);
+      loadedIds.add('persona-layer-${activePersona.id}');
+    }
   } else {
     final attitudeSkill = getSkill(attitudeKey);
     if (attitudeSkill != null) {

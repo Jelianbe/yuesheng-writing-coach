@@ -431,6 +431,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _labelCtrl;
   late final TextEditingController _promptCtrl;
+  late final TextEditingController _layerCtrl;
 
   bool get _isEdit => widget.existing != null;
 
@@ -441,6 +442,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     _nameCtrl = TextEditingController(text: e?.name ?? '');
     _labelCtrl = TextEditingController(text: e?.label ?? '');
     _promptCtrl = TextEditingController(text: e?.systemPromptFragment ?? '');
+    _layerCtrl = TextEditingController(text: e?.personaLayer ?? '');
   }
 
   @override
@@ -448,6 +450,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     _nameCtrl.dispose();
     _labelCtrl.dispose();
     _promptCtrl.dispose();
+    _layerCtrl.dispose();
     super.dispose();
   }
 
@@ -455,6 +458,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     final name = _nameCtrl.text.trim();
     final label = _labelCtrl.text.trim();
     final prompt = _promptCtrl.text.trim();
+    final layer = _layerCtrl.text.trim();
     if (name.isEmpty || prompt.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('名称和语气设定不能为空')),
@@ -469,7 +473,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
       isSystem: false,
       attitudeLevel: AttitudeLevel.doubao,
       systemPromptFragment: prompt,
-      personaLayer: e?.personaLayer,
+      personaLayer: layer.isEmpty ? null : layer,
       iconKey: e?.iconKey,
     );
     Navigator.of(context).pop(persona);
@@ -506,6 +510,15 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
               decoration: const InputDecoration(
                 labelText: '语气/角色设定',
                 hintText: '教它怎么说话，会注入到系统提示里',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _layerCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: '人设层 / 角色口吻（选填，D2）',
+                hintText: '叠加在语气之上，如：以资深文学编辑口吻，多用比喻',
               ),
             ),
           ],

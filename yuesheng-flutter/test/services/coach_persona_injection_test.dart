@@ -80,6 +80,56 @@ void main() {
     });
   });
 
+  group('Phase 2 · D2 人设层叠加注入', () {
+    const layeredPersona = CoachPersona(
+      id: 'custom_layer_1',
+      name: '文学编辑',
+      label: '沉稳讲究',
+      isSystem: false,
+      attitudeLevel: AttitudeLevel.yuesheng,
+      systemPromptFragment: '你是用户的写作陪练，语气沉稳。',
+      personaLayer: '以资深文学编辑口吻说话，多用比喻，少用术语。',
+    );
+
+    test('#E1 用户人格带 personaLayer → 叠加注入（fragment + layer 都在，含顺序）', () {
+      final r = buildSystemPromptV2(ctx(activePersona: layeredPersona));
+
+      expect(r.systemPrompt, contains('你是用户的写作陪练，语气沉稳。'));
+      expect(r.systemPrompt, contains('以资深文学编辑口吻说话，多用比喻，少用术语。'));
+      // 人设层紧随基础声音之后（fragment 索引 < layer 索引）
+      final fragIdx = r.systemPrompt.indexOf('语气沉稳');
+      final layerIdx = r.systemPrompt.indexOf('资深文学编辑口吻');
+      expect(layerIdx, greaterThan(fragIdx));
+      // 态度档被替换
+      expect(r.systemPrompt, isNot(contains('态度：豆包')));
+      expect(r.loadedSkillIds, contains('persona-custom_layer_1'));
+      expect(r.loadedSkillIds, contains('persona-layer-custom_layer_1'));
+    });
+
+    test('#E2 无 personaLayer（null）→ 只注入基础声音，无 persona-layer 标记', () {
+      final r = buildSystemPromptV2(ctx(activePersona: userPersona)); // userPersona 无 layer
+      expect(r.systemPrompt, contains('毒舌大师兄'));
+      expect(r.loadedSkillIds, contains('persona-custom_1'));
+      expect(r.loadedSkillIds, isNot(contains('persona-layer-')));
+    });
+
+    test('#E3 空字符串 personaLayer → 按无 layer 处理', () {
+      const blankLayer = CoachPersona(
+        id: 'custom_blank_layer',
+        name: '无层',
+        label: '只有基础声音',
+        isSystem: false,
+        attitudeLevel: AttitudeLevel.doubao,
+        systemPromptFragment: '你是基础声音。',
+        personaLayer: '   ',
+      );
+      final r = buildSystemPromptV2(ctx(activePersona: blankLayer));
+      expect(r.systemPrompt, contains('你是基础声音。'));
+      expect(r.loadedSkillIds, contains('persona-custom_blank_layer'));
+      expect(r.loadedSkillIds, isNot(contains('persona-layer-custom_blank_layer')));
+    });
+  });
+
   group('resolveActiveCoachPersona 纯函数解析', () {
     const custom = CoachPersona(
       id: 'custom_9',
