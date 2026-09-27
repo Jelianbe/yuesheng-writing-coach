@@ -432,6 +432,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
   late final TextEditingController _labelCtrl;
   late final TextEditingController _promptCtrl;
   late final TextEditingController _layerCtrl;
+  late final TextEditingController _thresholdCtrl;
 
   bool get _isEdit => widget.existing != null;
 
@@ -443,6 +444,8 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     _labelCtrl = TextEditingController(text: e?.label ?? '');
     _promptCtrl = TextEditingController(text: e?.systemPromptFragment ?? '');
     _layerCtrl = TextEditingController(text: e?.personaLayer ?? '');
+    _thresholdCtrl =
+        TextEditingController(text: (e?.directExplainThreshold ?? 5).toString());
   }
 
   @override
@@ -451,6 +454,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     _labelCtrl.dispose();
     _promptCtrl.dispose();
     _layerCtrl.dispose();
+    _thresholdCtrl.dispose();
     super.dispose();
   }
 
@@ -459,6 +463,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     final label = _labelCtrl.text.trim();
     final prompt = _promptCtrl.text.trim();
     final layer = _layerCtrl.text.trim();
+    final threshold = int.tryParse(_thresholdCtrl.text.trim()) ?? 5;
     if (name.isEmpty || prompt.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('名称和语气设定不能为空')),
@@ -475,6 +480,7 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
       systemPromptFragment: prompt,
       personaLayer: layer.isEmpty ? null : layer,
       iconKey: e?.iconKey,
+      directExplainThreshold: threshold < 1 ? 5 : threshold,
     );
     Navigator.of(context).pop(persona);
   }
@@ -519,6 +525,15 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
               decoration: const InputDecoration(
                 labelText: '人设层 / 角色口吻（选填，D2）',
                 hintText: '叠加在语气之上，如：以资深文学编辑口吻，多用比喻',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _thresholdCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: '症候直接说明阈值（数字）',
+                helperText: '诊断出超过该数量的症候时，当轮直接逐条说明全部症候',
               ),
             ),
           ],

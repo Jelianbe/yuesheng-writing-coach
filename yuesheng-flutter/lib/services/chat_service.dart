@@ -676,7 +676,7 @@ extension ChatServiceSend on ChatService {
       // ADR-C84：用户消息落库即通知 UI 上屏（不等 AI 回复）
       await _notifyUserMessagePersisted(ctx, callbacks);
       // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
-      _applyDiagnosisInjection(ctx, content, options);
+      await _applyDiagnosisInjection(ctx, content, options);
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
         messages: ctx.messages,
@@ -1140,6 +1140,27 @@ extension ChatServiceSend on ChatService {
   }
 
   /// 5.0-5.2 上下文注入装配（R-019 拆出，委托 MessageInjector）。
+  /// Resolve the active coach persona's direct-explain threshold (Part A).
+  /// System preset / unknown / read failure -> default 5 (system presets are
+  /// not user-editable via the coach card UI).
+  Future<int> _resolveDirectExplainThreshold() async {
+    final repo = _appStateRepo;
+    if (repo == null) return 5;
+    try {
+      final activeId = await repo.getActiveCoachPersonaId();
+      if (activeId == null) return 5;
+      final builtIn = builtInCoachPersonaById(activeId);
+      if (builtIn != null) return builtIn.directExplainThreshold;
+      final customs = await repo.getCustomCoachPersonas();
+      for (final p in customs) {
+        if (p.id == activeId) return p.directExplainThreshold;
+      }
+      return 5;
+    } catch (_) {
+      return 5;
+    }
+  }
+
   Future<_InjectedContext> _injectContext({
     required String sessionId,
     required String content,
@@ -1327,13 +1348,13 @@ extension ChatServiceSend on ChatService {
   /// CR-56 PHI 脱敏：debugPrint 仅打 `role[length]`，**不打印内容截取**。
   /// 批次98：诊断注入编排（R-019：_sendMessageCore 减负）。
   /// 将诊断协议 + 待诊断全文注入 user 消息，并做请求结构观测。
-  void _injectDiagnosisFor(
+  Future<void> _injectDiagnosisFor(
     List<ChatMessage> messages,
     String content,
     String? chapterFullText, {
     required bool hasDiagnosisContext,
-  }) {
-    _injectDiagnosisProtocolAndLog(
+  }) async {
+    await _injectDiagnosisProtocolAndLog(
       messages,
       content,
       chapterFullText: chapterFullText,
@@ -1343,13 +1364,13 @@ extension ChatServiceSend on ChatService {
 
   /// 原版（删除前）会对 >40 字符消息打前 20+后 20 字符——含用户原文片段，
   /// 触 X-040 PHI P2 风险（debug 日志被外发/截图即泄漏用户输入）。
-  void _injectDiagnosisProtocolAndLog(
+  Future<void> _injectDiagnosisProtocolAndLog(
     List<ChatMessage> messages,
     String content, {
     String? chapterFullText,
     required bool hasDiagnosisContext,
-  }) {
-    _maybeInjectDiagnosisProtocol(
+  }) async {
+    await _maybeInjectDiagnosisProtocol(
       messages,
       content,
       chapterFullText: chapterFullText,
@@ -1364,12 +1385,12 @@ extension ChatServiceSend on ChatService {
   ///
   /// TH 五批：判据不只有措辞 —— 弱信号措辞需 [hasDiagnosisContext] 佐证，
   /// 否则教学场景的「这段怎么改」会误触发注入（后果见 intent_classifier）。
-  void _maybeInjectDiagnosisProtocol(
+  Future<void> _maybeInjectDiagnosisProtocol(
     List<ChatMessage> messages,
     String content, {
     String? chapterFullText,
     required bool hasDiagnosisContext,
-  }) {
+  }) async {
     if (!isDiagnosisRequest(
       content,
       hasDiagnosisContext: hasDiagnosisContext,
@@ -1384,9 +1405,16 @@ extension ChatServiceSend on ChatService {
     final fullTextBlock = chapterFullText == null || chapterFullText.isEmpty
         ? ''
         : '\n\n## 待诊断全文\n\n$chapterFullText';
+    final threshold = await _resolveDirectExplainThreshold();
+    final directExplain =
+        '\n\n【症候过多直接说明】\n'
+        '若本次识别出的症候数量 ≥ $threshold，正文请直接逐条说明全部症候'
+        '（每条简明给出：是什么、为什么、怎么改），不要只挑一个讲解；'
+        '若少于 $threshold，按正常教学方式聚焦讲解。';
     messages[lastUser] = ChatMessage(
       role: m.role,
-      content: '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix',
+      content:
+          '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix$directExplain',
     );
   }
 
@@ -1405,12 +1433,12 @@ extension ChatServiceSend on ChatService {
   ///
   /// TH 五批：判据并入「会话级诊断上下文」——教学场景的通用措辞
   /// （「这段怎么改」）不再注入协议，避免落库诊断 + 二次 Teacher 调用。
-  void _applyDiagnosisInjection(
+  Future<void> _applyDiagnosisInjection(
     _SendContext ctx,
     String content,
     SendMessageOptions options,
-  ) {
-    _injectDiagnosisFor(
+  ) async {
+    await _injectDiagnosisFor(
       ctx.messages,
       content,
       options.chapterFullText,

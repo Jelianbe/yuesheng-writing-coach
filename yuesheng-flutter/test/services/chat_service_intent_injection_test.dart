@@ -37,6 +37,9 @@ import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
+import 'package:writingcoach/types/coach_persona.dart';
+
 /// 捕获注入 messages 的 Fake LLM
 class _CaptureLlmClient extends LlmClient {
   List<String> systemContents = [];
@@ -81,7 +84,8 @@ void main() {
 
   tearDown(() async => db.close());
 
-  ChatService buildChatService(LlmClient llmClient) {
+  ChatService buildChatService(LlmClient llmClient,
+      {AppStateRepository? appStateRepo}) {
     return ChatService(
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
@@ -93,6 +97,7 @@ void main() {
       llmClient: llmClient,
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
       editorObservationRepo: EditorObservationRepository(db),
+      appStateRepo: appStateRepo,
       diagnosisCommitter: DiagnosisCommitter(
         sessionRepo: sessionRepo,
         stateRepo: TeachingStateRepository(db),
@@ -471,6 +476,52 @@ void main() {
       expect(result.rejectReason, isNull,
           reason: '注入示例不应触发任何 rejectReason');
       expect(result.diagnosis!.syndromes.first.syndromeId, 'P003');
+    });
+
+    test('#13 直接说明指令注入默认阈值 5（无自定义人格 → 默认）', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      await service.sendMessage(
+        sessionId,
+        '请诊断我这段文字',
+        callbacks(),
+        options(),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('[YS_DIAGNOSIS]'));
+      expect(sent, contains('症候数量 ≥ 5'));
+      expect(sent, contains('直接逐条说明全部症候'));
+    });
+
+    test('#14 自定义人格阈值生效（激活人格 threshold=7 → 注入 ≥ 7）', () async {
+      final llm = _CaptureLlmClient();
+      final appState = AppStateRepository(db);
+      await appState.saveCustomCoachPersona(
+        CoachPersona(
+          id: 'custom_t',
+          name: '测',
+          label: '测',
+          isSystem: false,
+          attitudeLevel: AttitudeLevel.doubao,
+          systemPromptFragment: '测试',
+          directExplainThreshold: 7,
+        ),
+      );
+      await appState.setActiveCoachPersona('custom_t');
+      final service = buildChatService(llm, appStateRepo: appState);
+
+      await service.sendMessage(
+        sessionId,
+        '请诊断我这段文字',
+        callbacks(),
+        options(),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('症候数量 ≥ 7'));
+      expect(sent, isNot(contains('症候数量 ≥ 5')));
     });
   });
 }

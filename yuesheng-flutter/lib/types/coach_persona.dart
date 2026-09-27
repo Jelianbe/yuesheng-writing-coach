@@ -35,6 +35,11 @@ class CoachPersona {
   /// 可选图标键（用户预设可自选图标）。
   final String? iconKey;
 
+  /// Direct-explain threshold (Part A): when a diagnosis returns more syndromes
+  /// than this value, explain all of them directly this turn instead of picking
+  /// one focus / applying the selected teaching method. Default 5.
+  final int directExplainThreshold;
+
   const CoachPersona({
     required this.id,
     required this.name,
@@ -44,6 +49,7 @@ class CoachPersona {
     required this.systemPromptFragment,
     this.personaLayer,
     this.iconKey,
+    this.directExplainThreshold = 5,
   });
 
   Map<String, dynamic> toJson() => {
@@ -55,6 +61,7 @@ class CoachPersona {
         'system_prompt_fragment': systemPromptFragment,
         'persona_layer': personaLayer,
         'icon_key': iconKey,
+        'direct_explain_threshold': directExplainThreshold,
       };
 
   factory CoachPersona.fromJson(Map<String, dynamic> json) {
@@ -70,6 +77,8 @@ class CoachPersona {
       systemPromptFragment: (json['system_prompt_fragment'] as String?) ?? '',
       personaLayer: json['persona_layer'] as String?,
       iconKey: json['icon_key'] as String?,
+      directExplainThreshold:
+          (json['direct_explain_threshold'] as num?)?.toInt() ?? 5,
     );
   }
 
@@ -82,6 +91,7 @@ class CoachPersona {
     String? systemPromptFragment,
     String? personaLayer,
     String? iconKey,
+    int? directExplainThreshold,
   }) =>
       CoachPersona(
         id: id ?? this.id,
@@ -92,5 +102,7 @@ class CoachPersona {
         systemPromptFragment: systemPromptFragment ?? this.systemPromptFragment,
         personaLayer: personaLayer ?? this.personaLayer,
         iconKey: iconKey ?? this.iconKey,
+        directExplainThreshold:
+            directExplainThreshold ?? this.directExplainThreshold,
       );
 }
