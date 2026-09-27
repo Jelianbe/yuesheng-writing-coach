@@ -23,7 +23,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_motion.dart';
 import '../config/app_theme.dart';
-import 'knowledge_card.dart';
 import 'thinking_chain.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/app_state_repository.dart';
@@ -78,7 +77,6 @@ Color _teachingStateDotColor(BuildContext context, TeachingState state) =>
 class _CardText {
   static const String headerTitle = '本次诊断';
   static const String problemSuffix = ' 个问题';
-  static const String confidenceSuffix = '% 信心';
   static const String evidenceLabel = '证据：';
 
   /// 症候教学解释行标签（批次 N10）。
@@ -263,7 +261,6 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
 
   @override
   Widget build(BuildContext context) {
-    final confPct = (widget.confidence * 100).round();
 
     // 卡片：#F2F4F2 + 左 4dp 竹青条
     return Container(
@@ -277,18 +274,18 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               BorderSide(color: context.palette.border),
             ),
           ),
-          child: Row(children: [Expanded(child: _buildCardBody(confPct))]),
+          child: Row(children: [Expanded(child: _buildCardBody())]),
         ),
       ),
     );
   }
 
   /// 卡片主体：Header + 标签行 + 展开详情（R-019 清偿拆出）。
-  Widget _buildCardBody(int confPct) {
+  Widget _buildCardBody() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(confPct),
+        _buildHeader(),
         _buildTagRow(),
         SizeTransition(
           sizeFactor: CurvedAnimation(
@@ -336,8 +333,6 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           _buildFocusReasonBlock(),
           const SizedBox(height: AppSpacing.md),
         ],
-        ConfidenceBar(label: '诊断信心', value: widget.confidence),
-        const SizedBox(height: AppSpacing.md),
         ThinkingChain(title: '诊断依据', steps: _buildDiagnosisSteps()),
       ],
     );
@@ -412,7 +407,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     _ => '轻微',
   };
   // ── Header：本次诊断 · N 个问题 · N% 信心 · 展开/收起 ▾ ──
-  Widget _buildHeader(int confPct) {
+  Widget _buildHeader() {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -441,7 +436,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                 ),
               ),
               const Spacer(),
-              _buildHeaderMeta(confPct),
+              _buildHeaderMeta(),
             ],
           ),
         ),
@@ -450,19 +445,12 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   }
 
   /// Header 尾部：问题数 · 信心 · 展开箭头（R-019 清偿拆出）。
-  Widget _buildHeaderMeta(int confPct) {
+  Widget _buildHeaderMeta() {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           '${widget.syndromeCount}${_CardText.problemSuffix}',
-          style: context.text.subBody,
-        ),
-        const SizedBox(width: 6),
-        Text('·', style: TextStyle(color: context.palette.textTertiary)),
-        const SizedBox(width: 6),
-        Text(
-          '$confPct${_CardText.confidenceSuffix}',
           style: context.text.subBody,
         ),
         const SizedBox(width: 8),

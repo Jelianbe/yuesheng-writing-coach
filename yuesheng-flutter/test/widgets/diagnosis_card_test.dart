@@ -3,7 +3,7 @@
 //
 // 对齐 RN DiagnosisCard.tsx 核心结构 + 月色竹青视觉
 // 覆盖：
-//   #1 基础渲染：问题数 + 信心 + 标签行 + 矿物色严重度
+//   #1 基础渲染：问题数 + 标签行 + 矿物色严重度
 //   #2 展开/收起：点击 header 展开后看到症候证据、改写建议
 //   #3 空态：syndromes=0 显示"本次未发现显著问题"
 //   #4 严重度配色：L1/L2/L3 对应矿物色
@@ -97,7 +97,7 @@ void main() {
   final actions = ['先处理 P003 情绪标签化，把最刺眼的 3 处改成动作表达', '把视角切换的两处用分节符隔开，保持单视角叙事'];
 
   group('DiagnosisCard 基础结构', () {
-    testWidgets('#1 渲染：问题数/信心/标签行/矿物色严重度', (tester) async {
+    testWidgets('#1 渲染：问题数/标签行/矿物色严重度', (tester) async {
       await tester.pumpWidget(
         _wrap(
           DiagnosisCard(
@@ -109,10 +109,9 @@ void main() {
         ),
       );
 
-      // Header：问题数 + 信心百分比
+      // Header：问题数
       expect(find.text('本次诊断'), findsOneWidget);
       expect(find.text('3 个问题'), findsOneWidget);
-      expect(find.text('92% 信心'), findsOneWidget);
 
       // 收起态：标签行包含 3 个症候名（用 hitTestable 过滤 SizeTransition 折叠态的详情副本）
       expect(find.text('情绪标签化').hitTestable(), findsOneWidget);
@@ -936,16 +935,12 @@ void main() {
       );
 
       // 折叠态：依据区不可命中（SizeTransition 尺寸为 0）
-      expect(find.text('诊断信心').hitTestable(), findsNothing);
       expect(find.text('诊断依据').hitTestable(), findsNothing);
 
       // 点击卡片 header 展开
       await tester.tap(find.text('本次诊断'));
       await tester.pumpAndSettle();
 
-      // 置信条
-      expect(find.text('诊断信心'), findsOneWidget);
-      expect(find.text('85%'), findsOneWidget);
       // 依据链 header（默认折叠）
       expect(find.text('诊断依据'), findsOneWidget);
       expect(find.text('4 步'), findsOneWidget);
@@ -983,7 +978,6 @@ void main() {
       await tester.tap(find.text('诊断依据'));
       await tester.pumpAndSettle();
 
-      expect(find.text('20%'), findsOneWidget);
       expect(find.text('未匹配到已知症候'), findsOneWidget);
       expect(find.text('生成 0 条改写建议'), findsOneWidget);
     });

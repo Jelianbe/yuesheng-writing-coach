@@ -704,7 +704,7 @@ void main() {
       expect(find.text('句式节奏单一'), findsWidgets);
     });
 
-    testWidgets('A3-3 诊断历史时间线：按时间倒序（新在上）+ 症候名 + 置信度', (tester) async {
+    testWidgets('A3-3 诊断历史时间线：按时间倒序（新在上）+ 症候名', (tester) async {
       tester.view.physicalSize = const Size(800, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -713,14 +713,8 @@ void main() {
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
-      // 两次诊断：今天（置信度 95%）和 2 天前（置信度 90%）
+      // 两次诊断：今天和 2 天前
       // 症候名「情绪标签化」在时间线里出现（近期 2 条诊断都有此症候）
-      expect(
-        find.text('置信度 95%'),
-        findsOneWidget,
-        reason: '新诊断应在时间线头部，置信度 = 0.95',
-      );
-      expect(find.text('置信度 90%'), findsOneWidget, reason: '旧诊断时间线条目应存在');
 
       // 症候名显示（最多 3 条 +N 后缀）：第二条诊断 5 症候 → "情绪标签化 · 句式节奏单一 · 逻辑断裂 · +2"
       expect(

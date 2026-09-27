@@ -777,7 +777,6 @@ void main() {
       // 渲染 DiagnosisCard header + 症候 chip
       expect(find.text('本次诊断'), findsOneWidget);
       expect(find.text('2 个问题'), findsOneWidget);
-      expect(find.text('85% 信心'), findsOneWidget);
       expect(find.text('情绪标签化').hitTestable(), findsOneWidget);
       expect(find.text('视角漂移').hitTestable(), findsOneWidget);
 

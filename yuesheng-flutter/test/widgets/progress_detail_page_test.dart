@@ -154,7 +154,6 @@ void main() {
       expect(find.text('总问题数'), findsOneWidget);
       // 诊断历史 section
       expect(find.text('诊断历史'), findsOneWidget);
-      expect(find.text('置信度 80%'), findsNWidgets(2));
       // 症候趋势
       expect(find.text('症候趋势追踪'), findsOneWidget);
       expect(find.text('情绪标签化'), findsWidgets);

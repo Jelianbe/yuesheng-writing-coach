@@ -367,11 +367,7 @@ class _DiagnosisHistory extends StatelessWidget {
                     color: context.palette.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '置信度 ${(records[i].confidence * 100).round()}%',
-                  style: context.text.caption,
-                ),
+
               ],
             ),
           ),

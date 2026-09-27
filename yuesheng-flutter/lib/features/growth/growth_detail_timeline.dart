@@ -3,7 +3,7 @@
 //
 // 从 growth_detail_page.dart 真分解而来（R-019：原 part 伪拆分根除）。
 //   - GrowthTimeline     时间线容器（按 timestamp DESC 渲染条目）
-//   - GrowthTimelineItem 单条时间线（日期 + 置信度 + 症候名，最多 3 条 +N）
+//   - GrowthTimelineItem 单条时间线（日期 + 症候名，最多 3 条 +N）
 //
 // 无状态纯渲染，无宿主状态依赖。
 // ─────────────────────────────────────────────────────────────
@@ -36,7 +36,7 @@ class GrowthTimeline extends StatelessWidget {
   }
 }
 
-/// 单条诊断时间线（左侧竖线 + 圆点；右侧日期/置信度/症候名）
+/// 单条诊断时间线（左侧竖线 + 圆点；右侧日期/症候名）
 class GrowthTimelineItem extends StatelessWidget {
   final DiagnosisRow item;
   final bool isLast;
@@ -84,7 +84,7 @@ class GrowthTimelineItem extends StatelessWidget {
     );
   }
 
-  /// 右侧内容（日期 + 置信度 + 症候名）
+  /// 右侧内容（日期 + 症候名）
   Widget _buildContent(BuildContext context) {
     // timestamp 是秒级 Unix 时间戳
     final dt = DateTime.fromMillisecondsSinceEpoch(item.timestamp * 1000);
@@ -98,18 +98,10 @@ class GrowthTimelineItem extends StatelessWidget {
         Row(
           children: [
             Text(dateStr, style: context.text.noteCaption),
-            const SizedBox(width: 8),
-            Text(
-              '置信度 ${(item.confidence * 100).round()}%',
-              style: TextStyle(
-                fontSize: 13,
-                color: context.palette.textPrimary,
-              ),
-            ),
           ],
         ),
         // E3：展示本次诊断出的症候名（从 syndromes JSON 解析），
-        // 让时间线不再是"只有时间+置信度"的空壳信息
+        // 让时间线不再是"只有时间"的空壳信息
         ..._buildSyndromeNames(context),
       ],
     );
