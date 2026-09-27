@@ -136,6 +136,56 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     }
   }
 
+  /// 打开系统预设的直接说明阈值编辑对话框（Part A 补：系统预设可编辑阈值）。
+  Future<void> _openThresholdEditor(CoachPersona persona) async {
+    final repo = AppStateRepository(ref.read(appDatabaseProvider));
+    final current = await repo.getCoachPersonaDirectThreshold(persona.id) ??
+        persona.directExplainThreshold;
+    if (!mounted) return;
+    final controller = TextEditingController(text: current.toString());
+    final result = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('${persona.name} · 症候直接说明阈值'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: '症候数超过该值时，当轮直接逐条说明全部症候',
+            helperText: '默认 5，填 1 及以上',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              final v = int.tryParse(controller.text.trim());
+              if (v == null || v < 1) {
+                Navigator.of(ctx).pop();
+                return;
+              }
+              Navigator.of(ctx).pop(v);
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (result == null || !mounted) return;
+    try {
+      await repo.setCoachPersonaDirectThreshold(persona.id, result);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('保存失败，请稍后再试')),
+        );
+      }
+    }
+  }
+
   Color _personaColor(AppPalette p, CoachPersona persona) {
     if (persona.isSystem) {
       return switch (persona.attitudeLevel) {
@@ -177,6 +227,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               onDelete: persona.isSystem
                   ? null
                   : () => _deletePersona(persona),
+              onEditThreshold: persona.isSystem
+                  ? () => _openThresholdEditor(persona)
+                  : null,
             ),
           const SizedBox(height: 4),
           TextButton.icon(
@@ -232,6 +285,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     required bool selected,
     required VoidCallback onTap,
     required VoidCallback? onDelete,
+    VoidCallback? onEditThreshold,
   }) {
     final palette = context.palette;
     final color = _personaColor(palette, persona);
@@ -274,6 +328,18 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Icon(
                   Icons.delete_outline,
+                  size: 18,
+                  color: palette.textTertiary,
+                ),
+              ),
+            ],
+            if (onEditThreshold != null) ...[
+              const SizedBox(width: 4),
+              InkWell(
+                onTap: onEditThreshold,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Icon(
+                  Icons.tune,
                   size: 18,
                   color: palette.textTertiary,
                 ),

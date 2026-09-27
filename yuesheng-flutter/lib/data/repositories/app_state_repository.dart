@@ -587,6 +587,44 @@ class AppStateRepository {
     return AttitudeLevel.fromString(global) ?? AttitudeLevel.doubao;
   }
 
+  // Direct-explain threshold override (Part A; system presets editable).
+  // key='coach_persona_thresholds' -> JSON map { personaId: int }.
+  // System presets are const seed (immutable), so the threshold override lives in
+  // KV; custom personas store it in CoachPersona.directExplainThreshold instead.
+  static const String _coachThresholdsKey = 'coach_persona_thresholds';
+
+  /// Read a persona's direct-explain threshold override (null if unset).
+  Future<int?> getCoachPersonaDirectThreshold(String personaId) async {
+    final raw = await getValue(_coachThresholdsKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        final v = decoded[personaId];
+        if (v is num) return v.toInt();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Write a persona's direct-explain threshold override (default 5). Ignores value < 1.
+  Future<void> setCoachPersonaDirectThreshold(
+    String personaId,
+    int value,
+  ) async {
+    if (value < 1) return;
+    final raw = await getValue(_coachThresholdsKey);
+    Map<String, dynamic> map;
+    if (raw != null && raw.isNotEmpty) {
+      final decoded = jsonDecode(raw);
+      map = decoded is Map ? Map<String, dynamic>.from(decoded) : <String, dynamic>{};
+    } else {
+      map = <String, dynamic>{};
+    }
+    map[personaId] = value;
+    await setValue(_coachThresholdsKey, jsonEncode(map));
+  }
+
   // ════════════ 写作菜单高度（批次96-7 拖拽调整篇幅） ════════════
   // key 规约：editor_menu_height → '0.55'（字符串小数，默认 0.55，clamp 0.30-0.85）
   // 写作页 ⋮ 更多菜单 DraggableScrollableSheet 拖拽调整后的高度占比（用户级记忆）

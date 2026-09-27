@@ -1166,7 +1166,10 @@ extension ChatServiceSend on ChatService {
       final activeId = await repo.getActiveCoachPersonaId();
       if (activeId == null) return 5;
       final builtIn = builtInCoachPersonaById(activeId);
-      if (builtIn != null) return builtIn.directExplainThreshold;
+      if (builtIn != null) {
+        final override = await repo.getCoachPersonaDirectThreshold(activeId);
+        return override ?? builtIn.directExplainThreshold;
+      }
       final customs = await repo.getCustomCoachPersonas();
       for (final p in customs) {
         if (p.id == activeId) return p.directExplainThreshold;

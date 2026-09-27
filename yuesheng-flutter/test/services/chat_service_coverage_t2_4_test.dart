@@ -359,6 +359,16 @@ void main() {
         reason: '会话无持久态度时应回退全局激活人格态度，而非默认 doubao');
   });
 
+  test('A10 直接说明阈值覆盖 round-trip（系统预设可编辑）', () async {
+    final appState = AppStateRepository(db);
+    expect(await appState.getCoachPersonaDirectThreshold('yuesheng'), isNull);
+    await appState.setCoachPersonaDirectThreshold('yuesheng', 8);
+    expect(await appState.getCoachPersonaDirectThreshold('yuesheng'), 8);
+    // value < 1 应忽略，不覆盖已存值
+    await appState.setCoachPersonaDirectThreshold('yuesheng', 0);
+    expect(await appState.getCoachPersonaDirectThreshold('yuesheng'), 8);
+  });
+
   // ───────────── B 组：活跃症候主链路（_injectDiagnosisLock） ─────────────
 
   test('B1 活跃症候 + 普通消息 → 进入 focus 锁定注入且不抛错', () async {

@@ -523,5 +523,23 @@ void main() {
       expect(sent, contains('症候数量 ≥ 7'));
       expect(sent, isNot(contains('症候数量 ≥ 5')));
     });
+
+    test('#15 系统预设阈值覆盖生效（yuesheng 覆盖 8 → 注入 ≥ 8）', () async {
+      final llm = _CaptureLlmClient();
+      final appState = AppStateRepository(db);
+      await appState.setActiveCoachPersona('yuesheng');
+      await appState.setCoachPersonaDirectThreshold('yuesheng', 8);
+      final service = buildChatService(llm, appStateRepo: appState);
+
+      await service.sendMessage(
+        sessionId,
+        '请诊断我这段文字',
+        callbacks(),
+        options(),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('症候数量 ≥ 8'));
+    });
   });
 }
