@@ -13,6 +13,7 @@ import '../database/utils.dart';
 import '../../config/reasoning_tier.dart';
 import '../../services/decode_guard.dart';
 import '../../services/error_handler.dart';
+import '../../types/coach_persona.dart';
 import '../../types/display_types.dart';
 import '../../widgets/punctuation_bar.dart';
 import 'chapter_scoped_keys.dart';
@@ -475,6 +476,75 @@ class AppStateRepository {
   /// 写全局教练教学方式偏好
   Future<void> setCoachTeachingMode(String m) =>
       setValue('coach_teaching_mode', m);
+
+  // ════════════ 自定义教练人格（D1 用户预设，零迁移 JSON KV）═══════════
+  // key='coach_personas_custom' → JSON 数组（CoachPersona 用户预设，is_system=false）
+  // 系统预设不走此 KV（保留 AttitudeLevel 枚举兼容壳，见 CoachPersona.attitudeLevel）
+  static const String _coachPersonasCustomKey = 'coach_personas_custom';
+
+  /// 读取全部用户自定义教练人格（无记录 = 空列表）
+  Future<List<CoachPersona>> getCustomCoachPersonas() async {
+    final raw = await getValue(_coachPersonasCustomKey);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return [
+          for (final e in decoded)
+            if (e is Map<String, dynamic>) CoachPersona.fromJson(e),
+        ];
+      }
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'app_state.coach_personas_custom',
+        error: e,
+        stack: st,
+      );
+    }
+    return const [];
+  }
+
+  /// 按 id 读取单个用户自定义教练人格（无 = null）
+  Future<CoachPersona?> getCustomCoachPersona(String id) async {
+    final all = await getCustomCoachPersonas();
+    for (final p in all) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  /// 写入/更新单个用户自定义教练人格（按 id upsert）
+  Future<void> saveCustomCoachPersona(CoachPersona persona) async {
+    final all = await getCustomCoachPersonas();
+    final next = <CoachPersona>[];
+    var replaced = false;
+    for (final p in all) {
+      if (p.id == persona.id) {
+        next.add(persona);
+        replaced = true;
+      } else {
+        next.add(p);
+      }
+    }
+    if (!replaced) next.add(persona);
+    await _writeCustomCoachPersonas(next);
+  }
+
+  /// 删除指定 id 的用户自定义教练人格（无该 id = 无变化）
+  Future<void> removeCustomCoachPersona(String id) async {
+    final all = await getCustomCoachPersonas();
+    final next = all.where((p) => p.id != id).toList();
+    if (next.length == all.length) return;
+    await _writeCustomCoachPersonas(next);
+  }
+
+  Future<void> _writeCustomCoachPersonas(List<CoachPersona> list) =>
+      guardRepoWrite('app_state', 'saveCustomCoachPersona', () async {
+        final json = jsonEncode([
+          for (final p in list) p.toJson(),
+        ]);
+        await setValue(_coachPersonasCustomKey, json);
+      });
 
   // ════════════ 写作菜单高度（批次96-7 拖拽调整篇幅） ════════════
   // key 规约：editor_menu_height → '0.55'（字符串小数，默认 0.55，clamp 0.30-0.85）
