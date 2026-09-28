@@ -106,7 +106,12 @@ class _GrowthDiagnosisPrefsCardState
         ? null
         : _genres.firstWhere((g) => g.$1 == cur.genre).$2;
     final summary = [tierLabel, genreLabel].whereType<String>().join(' · ');
-    return GrowthInfoCard(
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.surfaceWhite,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: palette.divider),
+      ),
       child: InkWell(
         onTap: () => setState(() => _expanded = true),
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -117,13 +122,13 @@ class _GrowthDiagnosisPrefsCardState
           ),
           child: Row(
             children: [
-              Icon(Icons.tune_outlined, size: 18, color: palette.primary),
-              const SizedBox(width: 10),
+              Icon(Icons.tune_outlined, size: 20, color: palette.textTertiary),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   summary.isEmpty ? '教练侧重：未设置' : '教练侧重：$summary',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: palette.textPrimary,
                   ),
@@ -131,11 +136,7 @@ class _GrowthDiagnosisPrefsCardState
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                '调整',
-                style: TextStyle(fontSize: 12, color: palette.primary),
-              ),
-              Icon(Icons.chevron_right, size: 20, color: palette.textTertiary),
+              Icon(Icons.chevron_right, size: 20, color: palette.disabledText),
             ],
           ),
         ),

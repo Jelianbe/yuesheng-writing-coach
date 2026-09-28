@@ -39,7 +39,7 @@ import '../../services/progress_service.dart';
 import '../../services/session_export_service.dart';
 import '../../widgets/privacy_notice_dialog.dart';
 import '../../theme/app_typography.dart';
-import 'coach_selector_card.dart';
+import 'coach_settings_page.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
 const String _appVersion = '0.1.0';
@@ -583,7 +583,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 12),
           _buildModelBehaviorSection(reasoningTier),
           const SizedBox(height: 12),
-          const CoachSelectorCard(),
+          _buildCoachEntrySection(),
           const SizedBox(height: 12),
           _buildMaintenanceSection(),
           const SizedBox(height: 12),
@@ -847,6 +847,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Text(
             reasoningTierOf(tier).hint,
             style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 教练设置入口（教练人格/教学方式收进二级页） ──
+
+  Widget _buildCoachEntrySection() {
+    return _SectionCard(
+      title: '教练',
+      child: Column(
+        children: [
+          _ActionRow(
+            label: '教练人格与教学方式',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const CoachSettingsPage(),
+              ),
+            ),
           ),
         ],
       ),
@@ -1336,10 +1356,7 @@ class _FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: AppSpacing.md,
-        bottom: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
       child: Text(
         text,
         style: context.text.subBody.copyWith(fontWeight: FontWeight.w500),
