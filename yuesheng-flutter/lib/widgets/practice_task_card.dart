@@ -96,45 +96,62 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
   /// 信心 1-5 / 解释文本 / 迁移文本。
   Widget _buildSelfAssessmentSection() {
     if (widget.submitting) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 4),
-        Text(
+    // P2-6：自评可选，默认折叠——作答/提交主流程不被自评区占满首屏；
+    // 需要时点标题展开（提交作答按钮同步上移，更贴近作答区）。
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        initiallyExpanded: false,
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(top: AppSpacing.sm),
+        shape: const Border(),
+        collapsedShape: const Border(),
+        title: Text(
           '提交前自评（可选）',
           style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 2),
-        Text(
+        subtitle: Text(
           '填得越完整，掌握判定越准',
           style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
         ),
-        const SizedBox(height: 8),
-        Text(
-          '你觉得这次改得怎么样？',
-          style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
-        ),
-        const SizedBox(height: 6),
-        _buildConfidenceChips(),
-        const SizedBox(height: 10),
-        // ── 5.6 回忆难度自评（批1·N2，可跳过）──
-        Text(
-          '这次练习对你来说有多难？',
-          style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
-        ),
-        const SizedBox(height: 6),
-        _buildRecallRatingChips(),
-        const SizedBox(height: 10),
-        _buildAssessmentField(
-          controller: _explanationController,
-          hint: '为什么这样改？说说你的判断',
-        ),
-        const SizedBox(height: 8),
-        _buildAssessmentField(
-          controller: _transferController,
-          hint: '如果换个写法/场景，你会怎么做？',
-        ),
-      ],
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '你觉得这次改得怎么样？',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _buildConfidenceChips(),
+              const SizedBox(height: 10),
+              // ── 5.6 回忆难度自评（批1·N2，可跳过）──
+              Text(
+                '这次练习对你来说有多难？',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _buildRecallRatingChips(),
+              const SizedBox(height: 10),
+              _buildAssessmentField(
+                controller: _explanationController,
+                hint: '为什么这样改？说说你的判断',
+              ),
+              const SizedBox(height: 8),
+              _buildAssessmentField(
+                controller: _transferController,
+                hint: '如果换个写法/场景，你会怎么做？',
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

@@ -57,6 +57,10 @@ void main() {
       expect(find.textContaining('找出章节中 3 处'), findsOneWidget);
       expect(find.text('练习目标'), findsOneWidget);
       expect(find.textContaining('避免直接使用情绪词'), findsOneWidget);
+      // P2-6：自评区默认折叠 → 仅作答框 1 个 TextField；展开后才 3 个
+      expect(find.byType(TextField), findsOneWidget);
+      await tester.tap(find.text('提交前自评（可选）'));
+      await tester.pumpAndSettle();
       expect(find.byType(TextField), findsNWidgets(3));
       expect(find.text('跳过'), findsOneWidget);
       expect(find.text('提交作答'), findsOneWidget);
@@ -124,6 +128,8 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(buildCard(onSubmit: (_, _) {}, onSkip: () {}));
 
+      await tester.tap(find.text('提交前自评（可选）'));
+      await tester.pumpAndSettle();
       expect(find.text('提交前自评（可选）'), findsOneWidget);
       expect(find.textContaining('你觉得这次改得怎么样'), findsOneWidget);
       for (var i = 1; i <= 5; i++) {
@@ -149,6 +155,8 @@ void main() {
         ),
       );
 
+      await tester.tap(find.text('提交前自评（可选）'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, '他攥紧拳头。');
       await tester.enterText(find.byType(TextField).at(1), '因为写出了动作。');
       await tester.enterText(find.byType(TextField).at(2), '换成环境先写声音。');
@@ -185,6 +193,8 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(buildCard(onSubmit: (_, _) {}, onSkip: () {}));
 
+      await tester.tap(find.text('提交前自评（可选）'));
+      await tester.pumpAndSettle();
       expect(find.textContaining('这次练习对你来说有多难'), findsOneWidget);
       expect(find.text('再来一次'), findsOneWidget);
       expect(find.text('有点难'), findsOneWidget);
@@ -202,6 +212,8 @@ void main() {
         buildCard(onSubmit: (_, a) => captured = a, onSkip: () {}),
       );
 
+      await tester.tap(find.text('提交前自评（可选）'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, '只选难度。');
       await tester.tap(find.text('很轻松'));
       await tester.pump();
@@ -225,6 +237,8 @@ void main() {
         buildCard(onSubmit: (_, a) => captured = a, onSkip: () {}),
       );
 
+      await tester.tap(find.text('提交前自评（可选）'));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, '先选再改。');
       await tester.tap(find.text('有点难'));
       await tester.pump();
