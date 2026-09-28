@@ -139,12 +139,9 @@ abstract final class AppRadius {
 abstract final class AppSpacing {
   static const double xxs = 2; // 像素级细缝（X-039-Batch1 补：全库 33 次，EI:2 对齐）
   static const double xs = 4;
-  static const double xsm = 6; // X-039-Batch1 补：xs→sm 中间，全库 50 次 EI:6
   static const double sm = 8;
-  static const double smx = 10; // X-039-Batch1 补：sm→md 中间，全库 72 次 EI:10
   static const double md = 12;
   static const double lg = 16;
-  static const double section = 20; // X-039-Batch1 补：区块级内边距，全库 30 次 EI:20
   static const double xl = 24;
   static const double xxl = 32; // X-039-Batch1 补：大区块/大标题内边距，全库 17 次 EI:32
   static const double page = 16; // 页面水平边距
