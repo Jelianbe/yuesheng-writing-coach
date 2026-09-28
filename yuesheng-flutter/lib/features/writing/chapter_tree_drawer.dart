@@ -310,9 +310,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.section,
               AppSpacing.lg,
-              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.lg,
               AppSpacing.sm,
             ),
             child: Text(
@@ -414,9 +414,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.section,
               AppSpacing.lg,
-              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.lg,
               AppSpacing.sm,
             ),
             child: Text(
@@ -564,9 +564,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.section,
             AppSpacing.lg,
-            AppSpacing.section,
+            AppSpacing.lg,
+            AppSpacing.lg,
             AppSpacing.sm,
           ),
           child: Text(

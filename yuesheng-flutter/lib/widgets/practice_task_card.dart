@@ -433,7 +433,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
         backgroundColor: context.palette.primary,
         disabledBackgroundColor: context.palette.disabled,
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.section,
+          horizontal: AppSpacing.lg,
           vertical: 9,
         ),
         shape: RoundedRectangleBorder(

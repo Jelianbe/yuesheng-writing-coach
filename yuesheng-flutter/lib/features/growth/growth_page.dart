@@ -538,7 +538,7 @@ class _ErrorView extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: context.palette.primary,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.section,
+                  horizontal: AppSpacing.lg,
                   vertical: AppSpacing.smx,
                 ),
                 shape: RoundedRectangleBorder(

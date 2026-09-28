@@ -104,9 +104,9 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.md,
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.lg,
       ),
       child: Column(

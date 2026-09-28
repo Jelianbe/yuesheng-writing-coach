@@ -258,9 +258,9 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
   Widget _buildFooter(bool isLastStep) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.md,
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.xl,
       ),
       child: Row(
@@ -326,9 +326,9 @@ class _QuestionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.sm,
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.lg,
       ),
       child: Column(

@@ -217,7 +217,7 @@ class WritingMenuSheet {
     return SingleChildScrollView(
       controller: scrollController,
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.section),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

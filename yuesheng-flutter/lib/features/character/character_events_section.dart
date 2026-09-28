@@ -42,7 +42,7 @@ class CharacterEventsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(height: AppSpacing.section),
+        const Divider(height: AppSpacing.lg),
         Text('相关事件 (${events.length})', style: context.text.title),
         const SizedBox(height: AppSpacing.xsm),
         for (final e in events)

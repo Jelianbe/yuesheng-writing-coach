@@ -68,9 +68,9 @@ class EditorSettingsSheet extends ConsumerWidget {
       child: Padding(
         // X-039-Batch1：20→section / 16→lg / 24→xl
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.section,
           AppSpacing.lg,
-          AppSpacing.section,
+          AppSpacing.lg,
+          AppSpacing.lg,
           AppSpacing.xl,
         ),
         child: Column(

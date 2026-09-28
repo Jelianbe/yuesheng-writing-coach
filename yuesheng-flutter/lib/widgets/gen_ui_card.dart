@@ -456,7 +456,7 @@ class _ProgressConnector extends StatelessWidget {
     return Container(
       width: 20,
       height: 2,
-      margin: const EdgeInsets.only(bottom: AppSpacing.section),
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       color: done ? context.palette.success : context.palette.borderSoft,
     );
   }

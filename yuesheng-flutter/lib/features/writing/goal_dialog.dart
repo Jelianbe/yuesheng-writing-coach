@@ -60,9 +60,9 @@ class _GoalDialogState extends State<GoalDialog> {
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
         AppSpacing.lg,
-        AppSpacing.section,
+        AppSpacing.lg,
+        AppSpacing.lg,
         AppSpacing.sm,
       ),
       child: Text(
@@ -84,9 +84,9 @@ class _GoalDialogState extends State<GoalDialog> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.section,
-            AppSpacing.section,
-            AppSpacing.section,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
             AppSpacing.sm,
           ),
           child: Text(
@@ -95,7 +95,7 @@ class _GoalDialogState extends State<GoalDialog> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.section),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: TextField(
             key: const ValueKey('goal-word-field'),
             controller: _controller,
@@ -116,10 +116,10 @@ class _GoalDialogState extends State<GoalDialog> {
   Widget _buildActions(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.sm,
-        AppSpacing.section,
-        AppSpacing.section,
+        AppSpacing.lg,
+        AppSpacing.lg,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,

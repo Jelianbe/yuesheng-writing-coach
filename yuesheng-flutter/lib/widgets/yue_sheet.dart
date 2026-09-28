@@ -86,9 +86,9 @@ class YueSheetScaffold extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.section,
                 AppSpacing.lg,
-                AppSpacing.section,
+                AppSpacing.lg,
+                AppSpacing.lg,
                 AppSpacing.sm,
               ),
               child: Text(
@@ -104,10 +104,10 @@ class YueSheetScaffold extends StatelessWidget {
             Flexible(child: SingleChildScrollView(child: child)),
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.section,
+                AppSpacing.lg,
                 0,
-                AppSpacing.section,
-                AppSpacing.section,
+                AppSpacing.lg,
+                AppSpacing.lg,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,

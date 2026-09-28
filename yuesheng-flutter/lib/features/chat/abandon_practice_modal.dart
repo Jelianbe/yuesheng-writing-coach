@@ -54,7 +54,7 @@ class AbandonPracticeDialog extends StatelessWidget {
           AppSpacing.xl,
           AppSpacing.xl,
           AppSpacing.xl,
-          AppSpacing.section,
+          AppSpacing.lg,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

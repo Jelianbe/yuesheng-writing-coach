@@ -250,7 +250,7 @@ Future<({bool confirmed, String? reason})?> showRejectReasonSheet(
     showDragHandle: true,
     builder: (ctx) => SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.section),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,7 +389,7 @@ Future<CharacterFact?> showMergePickerDialog(
       children: [
         if (candidates.isEmpty)
           Padding(
-            padding: EdgeInsets.all(AppSpacing.section),
+            padding: EdgeInsets.all(AppSpacing.lg),
             child: Text('没有其他角色行可并入', style: context.text.body),
           )
         else
@@ -406,7 +406,7 @@ Future<CharacterFact?> showMergePickerDialog(
               ),
             ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.section),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('取消'),

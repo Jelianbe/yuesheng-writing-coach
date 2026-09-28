@@ -307,9 +307,9 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         : '${_current + 1}/${_matches.length} 处';
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.md,
-        AppSpacing.section,
+        AppSpacing.lg,
         AppSpacing.lg,
       ),
       child: Column(

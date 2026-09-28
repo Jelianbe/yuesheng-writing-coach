@@ -268,7 +268,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
     if (_assertions.isEmpty) {
       return [
         Padding(
-          padding: EdgeInsets.all(AppSpacing.section),
+          padding: EdgeInsets.all(AppSpacing.lg),
           child: Text('暂无设定', style: context.text.body),
         ),
       ];

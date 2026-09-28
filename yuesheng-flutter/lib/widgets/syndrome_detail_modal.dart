@@ -272,7 +272,7 @@ class SyndromeDetailModal extends StatelessWidget {
   ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.section),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       decoration: BoxDecoration(
         color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),

@@ -67,7 +67,7 @@ class SettingEmptyState extends StatelessWidget {
         // （`Center` 内直接放 Column 会 overflow 报红）。
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.xxl,
-          vertical: AppSpacing.section,
+          vertical: AppSpacing.lg,
         ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),

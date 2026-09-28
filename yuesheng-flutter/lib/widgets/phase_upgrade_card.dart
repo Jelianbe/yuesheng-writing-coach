@@ -132,7 +132,7 @@ class PhaseUpgradeCard extends StatelessWidget {
   Widget _buildPhaseNameBadge(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.section,
+        horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(

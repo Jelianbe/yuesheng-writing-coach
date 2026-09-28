@@ -174,7 +174,7 @@ class WritingEditorView extends StatelessWidget {
           // 标题/正文分隔线（竹青细描边）
           Padding(
             // X-039-Batch1：20→section
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.section),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Divider(height: 1, thickness: 0.6, color: dividerColor),
           ),
           Expanded(child: _buildContentArea(titleColor, hintColor)),
@@ -189,9 +189,9 @@ class WritingEditorView extends StatelessWidget {
       // X-039-Batch1：20→section / 28（非标准= section+sm / 16→lg）— 28 为标题专属
       // 垂直大间距，保留字面（无法映射），后续如需令牌化单独补 largeV=28
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
-        AppSpacing.section + AppSpacing.sm,
-        AppSpacing.section,
+        AppSpacing.lg,
+        AppSpacing.lg + AppSpacing.sm,
+        AppSpacing.lg,
         AppSpacing.lg,
       ),
       child: TextField(
@@ -235,9 +235,9 @@ class WritingEditorView extends StatelessWidget {
     return Padding(
       // X-039-Batch1：20→section / 16→lg
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
         AppSpacing.lg,
-        AppSpacing.section,
+        AppSpacing.lg,
+        AppSpacing.lg,
         AppSpacing.lg,
       ),
       child: Stack(

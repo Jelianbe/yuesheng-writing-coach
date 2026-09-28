@@ -97,9 +97,9 @@ class _YueInputSheetState extends State<YueInputSheet> {
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
         AppSpacing.lg,
-        AppSpacing.section,
+        AppSpacing.lg,
+        AppSpacing.lg,
         AppSpacing.sm,
       ),
       child: Text(
@@ -116,7 +116,7 @@ class _YueInputSheetState extends State<YueInputSheet> {
   /// 输入框区域
   Widget _buildBody(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(AppSpacing.section),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: TextField(
         key: widget.fieldKey,
         controller: _controller,
@@ -137,10 +137,10 @@ class _YueInputSheetState extends State<YueInputSheet> {
   Widget _buildActions(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.section,
+        AppSpacing.lg,
         0,
-        AppSpacing.section,
-        AppSpacing.section,
+        AppSpacing.lg,
+        AppSpacing.lg,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,

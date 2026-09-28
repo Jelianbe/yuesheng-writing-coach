@@ -56,7 +56,7 @@ class SettingProgressionsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(height: AppSpacing.section),
+        const Divider(height: AppSpacing.lg),
         Text('章节演进 (${points.length} 章)', style: context.text.title),
         const SizedBox(height: AppSpacing.xsm),
         for (var i = 0; i < points.length; i++)

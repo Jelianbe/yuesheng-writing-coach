@@ -120,9 +120,9 @@ class _ExportFormatSheet extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
-              AppSpacing.section,
               AppSpacing.lg,
-              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.lg,
               AppSpacing.sm,
             ),
             child: Text(

@@ -443,7 +443,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       ),
       child: Padding(
         padding: const EdgeInsets.only(
-          left: AppSpacing.section + AppSpacing.sm,
+          left: AppSpacing.lg + AppSpacing.sm,
           right: AppSpacing.xxs,
           top: AppSpacing.smx,
           bottom: AppSpacing.smx,
@@ -494,7 +494,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   Widget _buildUngroupedTitle(int count) {
     return Padding(
       padding: const EdgeInsets.only(
-        left: AppSpacing.section + AppSpacing.sm,
+        left: AppSpacing.lg + AppSpacing.sm,
         right: AppSpacing.lg,
         top: AppSpacing.smx,
         bottom: AppSpacing.xxs,
@@ -526,7 +526,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   Widget _buildChapterRowBody(Manuscript m, Chapter c, String path) {
     return Padding(
       padding: const EdgeInsets.only(
-        left: AppSpacing.section + AppSpacing.sm,
+        left: AppSpacing.lg + AppSpacing.sm,
         right: AppSpacing.lg,
         top: AppSpacing.smx,
         bottom: AppSpacing.smx,
@@ -659,7 +659,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       ),
       child: Padding(
         padding: const EdgeInsets.only(
-          left: AppSpacing.section + AppSpacing.sm,
+          left: AppSpacing.lg + AppSpacing.sm,
           right: AppSpacing.lg,
           top: AppSpacing.smx,
           bottom: AppSpacing.smx,

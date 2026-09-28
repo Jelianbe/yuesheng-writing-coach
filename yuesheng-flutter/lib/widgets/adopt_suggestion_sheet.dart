@@ -165,9 +165,9 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-          AppSpacing.section,
-          AppSpacing.section,
-          AppSpacing.section,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
           AppSpacing.lg,
         ),
         child: Column(

@@ -55,7 +55,7 @@ class ImportSuccessSheet extends StatelessWidget {
           AppSpacing.xl,
           AppSpacing.md,
           AppSpacing.xl,
-          AppSpacing.section + AppSpacing.sm,
+          AppSpacing.lg + AppSpacing.sm,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -80,7 +80,7 @@ class ImportSuccessSheet extends StatelessWidget {
     return Container(
       width: 36,
       height: 4,
-      margin: const EdgeInsets.only(bottom: AppSpacing.section),
+      margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       decoration: BoxDecoration(
         color: context.palette.border,
         borderRadius: BorderRadius.circular(AppRadius.xs),
