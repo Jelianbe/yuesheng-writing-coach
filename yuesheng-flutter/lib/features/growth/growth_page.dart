@@ -66,7 +66,8 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
       appBar: _buildAppBar(context),
       body: Column(
         children: [
-          // 快捷入口（批次 11：对齐 RN GROWTH_ENTRIES；P0-4a：设置入口已收口到「我的→教练设置」，此处不再提供）
+          // 快捷入口（批次 11：对齐 RN GROWTH_ENTRIES）
+          // 设置入口：全局壳无「我的」Tab，成长页 AppBar 齿轮兜底直达 /settings（P0-4a 原「收口到我的」目标已不存在，此处回补）
           _QuickEntries(
             onDiagnosis: () => _openDiagnosisPicker(context),
             onProgress: _openProgressDetail,
@@ -104,6 +105,11 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
       toolbarHeight: 48,
       elevation: 0,
       actions: [
+        IconButton(
+          icon: const Icon(Icons.settings_outlined, size: 22),
+          onPressed: () => context.push(AppRoutes.settings),
+          tooltip: '设置',
+        ),
         IconButton(
           icon: const Icon(Icons.info_outline, size: 22),
           onPressed: widget.onOpenDetail,
@@ -415,7 +421,16 @@ class _GrowthContent extends StatelessWidget {
     return SingleChildScrollView(
       child: Column(
         children: [
-          const GrowthDiagnosisPrefsCard(),
+          // 与 _QuickEntries 同款外边距，避免「教学设置」行通栏贴边（问题②修复）
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
+            child: const GrowthDiagnosisPrefsCard(),
+          ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.xxl),
             child: _buildEmptyStateBody(context),
