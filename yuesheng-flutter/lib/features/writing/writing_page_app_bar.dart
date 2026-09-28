@@ -64,7 +64,7 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       toolbarHeight: 48,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: foregroundColor),
+        icon: Icon(Icons.close, color: foregroundColor),
         onPressed: onBack,
       ),
       // 批次95-4：写作页面包屑（卷名·章名）

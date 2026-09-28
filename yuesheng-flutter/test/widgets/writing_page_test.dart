@@ -51,6 +51,7 @@ import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/features/writing/chapter_tree_drawer.dart';
+import 'package:writingcoach/features/writing/outline_drawer.dart';
 import 'package:writingcoach/widgets/outline_content_view.dart';
 import 'package:writingcoach/widgets/punctuation_bar.dart';
 import 'package:writingcoach/features/writing/recycle_bin_sheet.dart';
@@ -312,7 +313,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
       expect(backCalled, isTrue);
@@ -735,7 +736,12 @@ void main() {
       expect(await diagnoseCount(), 1, reason: '首次划词诊断应触发 1 条选段诊断');
 
       // 关闭面板（面板关闭按钮 → onClose）→ 重开（FAB）
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(WritingCoachPanel),
+          matching: find.byIcon(Icons.close),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(WritingCoachPanel), findsNothing);
       // 等待诊断完成 SnackBar 消失（自定义 FAB 在 body Stack 内，不会像 Scaffold FAB 一样自动上浮避让）
@@ -1758,7 +1764,12 @@ void main() {
       await openOutline(tester);
 
       expect(find.text('还没有大纲'), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.close));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(OutlineDrawer),
+          matching: find.byIcon(Icons.close),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // 抽屉闭合后内容 offstage → finder 跳过
@@ -3746,7 +3757,7 @@ void main() {
       final backRect = tester.getRect(
         find.descendant(
           of: find.byType(AppBar),
-          matching: find.widgetWithIcon(IconButton, Icons.arrow_back),
+          matching: find.widgetWithIcon(IconButton, Icons.close),
         ),
       );
       final targetRect = tester.getRect(target);
@@ -3997,6 +4008,52 @@ void main() {
       await tester.tap(find.byIcon(Icons.format_align_left));
       await tester.pumpAndSettle();
       expect(find.text('全文已是当前段落格式'), findsOneWidget);
+    });
+  });
+
+  group('P0-5 返回未保存确认', () {
+    testWidgets('#P0-5 dirty 时点 ✕ → 弹确认；继续编辑不返回', (tester) async {
+      final chRepo = ChapterRepository(db);
+      final id = await chRepo.createChapter(
+        manuscriptId,
+        title: '确认章',
+        content: '原文内容。',
+      );
+      bool backCalled = false;
+      await tester.pumpWidget(
+        buildWritingPage(
+          id: id,
+          msId: manuscriptId,
+          onBack: () => backCalled = true,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 编辑正文触发 dirty
+      await tester.enterText(
+        find.byKey(const Key('chapterContentField')),
+        '改过的内容。',
+      );
+      await tester.pumpAndSettle();
+
+      // 点 AppBar ✕ → 弹居中确认，未直接返回
+      await tester.tap(find.byIcon(Icons.close).first);
+      await tester.pumpAndSettle();
+      expect(find.text('放弃未保存修改？'), findsOneWidget);
+      expect(backCalled, isFalse);
+
+      // 点「继续编辑」→ 关确认，不返回
+      await tester.tap(find.text('继续编辑'));
+      await tester.pumpAndSettle();
+      expect(backCalled, isFalse);
+      expect(find.text('放弃未保存修改？'), findsNothing);
+
+      // 再点 ✕ → 弹确认 → 放弃修改 → 返回
+      await tester.tap(find.byIcon(Icons.close).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('放弃修改'));
+      await tester.pumpAndSettle();
+      expect(backCalled, isTrue);
     });
   });
 }

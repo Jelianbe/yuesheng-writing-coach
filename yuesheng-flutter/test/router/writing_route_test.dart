@@ -223,8 +223,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(WritingPage), findsOneWidget);
 
-      // Step C: 点写作页 AppBar 返回按钮
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      // Step C: 点写作页 AppBar 返回按钮（P0-5：返回键已由 ← 改 ✕）
+      await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
       // Step D: 断言回到作品详情页，且 NOT "未提供作品 ID" 占位页

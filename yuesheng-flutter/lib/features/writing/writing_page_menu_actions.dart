@@ -30,7 +30,37 @@ import 'writing_page_controllers.dart';
 import 'writing_page_host.dart';
 
 /// 返回上一页（批次93-3：返回前发书架刷新信号）
+///
+/// P0-5：未保存修改（dirty）时弹居中确认（破坏性丢弃，居中 Dialog 正确）；
+/// clean 时直接返回。返回逻辑抽到 [_popWritingBack] 保证单函数 ≤50 行。
 void handleWritingBack(WritingPageHost host) {
+  if (host.dirty) {
+    showDialog<void>(
+      context: host.context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('放弃未保存修改？'),
+        content: const Text('返回后，本章未保存的修改将丢失。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('继续编辑'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _popWritingBack(host);
+            },
+            child: const Text('放弃修改'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+  _popWritingBack(host);
+}
+
+void _popWritingBack(WritingPageHost host) {
   host.ref.read(bookshelfRefreshSignalProvider.notifier).state++;
   final onBack = host.onBackCallback;
   if (onBack != null) {
