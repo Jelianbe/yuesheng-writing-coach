@@ -1,21 +1,21 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 437,
+  "fileCount": 445,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
       "func": "copyWith",
-      "start": 373,
-      "end": 465,
-      "lines": 93
+      "start": 379,
+      "end": 473,
+      "lines": 95
     },
     {
       "file": "lib/config/app_palette.dart",
       "func": "lerp",
-      "start": 468,
-      "end": 526,
-      "lines": 59
+      "start": 476,
+      "end": 535,
+      "lines": 60
     },
     {
       "file": "lib/providers/writing_providers.dart",
