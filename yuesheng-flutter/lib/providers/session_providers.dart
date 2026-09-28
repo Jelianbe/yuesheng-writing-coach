@@ -29,6 +29,7 @@ import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/editor_observation_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../services/llm_config_resolver.dart';
+import '../services/llm_config_storage.dart';
 import '../data/repositories/session_repository.dart';
 import '../data/repositories/student_model_repository.dart';
 import '../data/repositories/teacher_suggestion_repository.dart';
@@ -120,6 +121,16 @@ final llmClientProvider = Provider<LlmClient>((ref) {
     LlmCallLogSink().call,
   );
 });
+
+/// 当前 LLM 配置（多账号优先，旧单键兼容）；null = 免费测试模式
+/// （未配置 API Key）。抽为 provider 便于 UI 在调用前判断「是否已配置」，
+/// 也便于测试 override（避免触碰 flutter_secure_storage）。
+final llmConfigResolvedProvider = FutureProvider<LlmConfigValues?>(
+  (ref) async {
+    final db = ref.watch(appDatabaseProvider);
+    return resolveLlmConfig(db);
+  },
+);
 
 /// 诊断提交编排器 Provider（ADR-C74 K-1）
 ///

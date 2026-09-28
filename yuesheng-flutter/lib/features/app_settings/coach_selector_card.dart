@@ -17,6 +17,9 @@ import '../../widgets/yue_sheet.dart';
 import '../../config/app_theme.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/session_providers.dart';
+import '../../services/llm_client.dart';
+import '../../services/llm_config_storage.dart';
 import '../../types/coach_persona.dart';
 import '../../types/coach_persona_seed.dart';
 import '../../types/teaching_types.dart';
@@ -532,6 +535,24 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
   );
 }
 
+/// AI 润色专用提示词（独立于诊断/对话 prompt，单独调用）。
+/// 仅辅助丰满用户自己填的「语气设定」，不代写教练对用户的输出（R-009）。
+const String _kCoachPolishSystemPrompt = '''
+你正在帮一位写作者配置「自定义写作教练」的语气设定。
+用户会给你：教练的名字（可能为空），以及他随手写的几句语气想法（可能为空）。
+请据此生成一段精炼、生动、可直接用作「教练语气设定」的中文描述（1-3 句）。
+要求：
+- 只描述「这位教练该怎么说话、带什么腔调」，不要写教学动作或诊断流程；
+- 口语化、有画面感，避免「专业」「优秀」「有耐心」这类空泛词；
+- 只输出描述本身，不要引号、不要前缀、不要解释。
+''';
+
+/// 拼装润色用户消息（名字 + 当前语气想法，空者标「未填写」）。
+String _buildPolishUserMessage(String name, String tone) => [
+  '教练名字：${name.isEmpty ? '（未填写）' : name}',
+  '用户当前填写的语气想法：${tone.isEmpty ? '（未填写）' : tone}',
+].join('\n');
+
 /// 新建/编辑自定义教练对话框。
 ///
 /// 2026-09-28 重构（UI + 生效机制）：
@@ -542,21 +563,23 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
 ///  - 原「人设层（D2）」并入语气段（对自定义教练两者都是用户自由文本，
 ///    注入时相邻两段 ⇒ 合并一段语义等价；注入代码不动，旧数据编辑后自然迁移）；
 ///  - 阈值与简介一起收进默认收起的「高级选项」折叠区。
-class _CustomPersonaDialog extends StatefulWidget {
+class _CustomPersonaDialog extends ConsumerStatefulWidget {
   final CoachPersona? existing;
 
   const _CustomPersonaDialog({this.existing});
 
   @override
-  State<_CustomPersonaDialog> createState() => _CustomPersonaDialogState();
+  ConsumerState<_CustomPersonaDialog> createState() =>
+      _CustomPersonaDialogState();
 }
 
-class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
+class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _labelCtrl;
   late final TextEditingController _promptCtrl;
   late final TextEditingController _thresholdCtrl;
   bool _advancedOpen = false;
+  bool _isPolishing = false;
 
   bool get _isEdit => widget.existing != null;
 
@@ -615,6 +638,66 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     Navigator.of(context).pop(persona);
   }
 
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// AI 润色：把用户粗糙的「名字 + 语气想法」发给独立模板，
+  /// 返回丰满后的语气设定回填 _promptCtrl。用户仍审阅、可改、可弃（R-009）。
+  Future<void> _polish() async {
+    final name = _nameCtrl.text.trim();
+    final tone = _promptCtrl.text.trim();
+    if (name.isEmpty && tone.isEmpty) {
+      _snack('先填个名字或几句语气，AI 才能帮你润色');
+      return;
+    }
+    // 免费测试模式检测：未配置 API Key 时无法真调用，提前给引导。
+    // 经 provider 读取，失败（如安全存储不可用）按「未配置」降级。
+    LlmConfigValues? cfg;
+    try {
+      cfg = await ref.read(llmConfigResolvedProvider.future);
+    } catch (_) {
+      _snack('请先在「设置 → API 配置」填好 Key，才能用 AI 润色');
+      return;
+    }
+    if (!mounted) return;
+    if (cfg == null) {
+      _snack('请先在「设置 → API 配置」填好 Key，才能用 AI 润色');
+      return;
+    }
+    setState(() => _isPolishing = true);
+    try {
+      final client = ref.read(llmClientProvider);
+      final result = await client.chatCompletion(
+        [
+          const ChatMessage(role: 'system', content: _kCoachPolishSystemPrompt),
+          ChatMessage(role: 'user', content: _buildPolishUserMessage(name, tone)),
+        ],
+        maxTokens: 300,
+      );
+      if (!mounted) return;
+      final polished = result.trim();
+      if (polished.isEmpty) {
+        _snack('AI 未返回内容，请重试或手动填写');
+      } else {
+        _promptCtrl
+          ..text = polished
+          ..selection = TextSelection.fromPosition(
+            TextPosition(offset: polished.length),
+          );
+        _snack('已填好「语气设定」，可继续修改后保存');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _snack('AI 润色失败，请稍后重试或手动填写');
+    } finally {
+      if (mounted) setState(() => _isPolishing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
@@ -639,6 +722,18 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     children: [
       _field(_nameCtrl, '名称', '给教练起个名字，如：毒舌编辑'),
       const SizedBox(height: 12),
+      _toneField(),
+      const SizedBox(height: 4),
+      _advancedToggle(),
+      if (_advancedOpen) ..._advancedFields(),
+    ],
+  );
+
+  /// R-019 拆出：语气设定段（文本框 + AI 润色辅助按钮）。
+  /// 按钮仅辅助丰满用户自己填的内容，不代写教练对用户的输出（R-009）。
+  Widget _toneField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
       TextField(
         controller: _promptCtrl,
         maxLines: 3,
@@ -647,10 +742,30 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
           hintText: '希望教练怎么说话？如：犀利直接，不许废话。留空则用默认语气',
         ),
       ),
-      const SizedBox(height: 4),
-      _advancedToggle(),
-      if (_advancedOpen) ..._advancedFields(),
+      const SizedBox(height: 6),
+      _polishButton(context.palette),
     ],
+  );
+
+  /// R-019 拆出：AI 润色按钮（加载态内联转圈）。
+  Widget _polishButton(AppPalette palette) => Align(
+    alignment: Alignment.centerLeft,
+    child: TextButton.icon(
+      onPressed: _isPolishing ? null : _polish,
+      icon: _isPolishing
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.auto_awesome, size: 18),
+      label: Text(_isPolishing ? '润色中…' : 'AI 润色'),
+      style: TextButton.styleFrom(
+        padding: EdgeInsets.zero,
+        foregroundColor: palette.primary,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    ),
   );
 
   /// R-019 拆出：「高级选项」折叠开关行。
