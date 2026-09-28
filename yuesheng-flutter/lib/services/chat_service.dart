@@ -266,19 +266,31 @@ class ChatService {
   }
 
   /// 加载会话的态度状态
-  Future<({AttitudeLevel attitude, TeachingPhase phase})> loadAttitudeState(
-    String sessionId,
-  ) async {
+  Future<
+    ({AttitudeLevel attitude, TeachingPhase phase, String? activePersonaName})
+  >
+  loadAttitudeState(String sessionId) async {
     final ts = await _stateRepo.getTeachingState(sessionId);
     // New session without a persisted attitude -> fall back to the global
     // active persona's attitude (not hard default doubao).
-    var attitude = AttitudeLevel.fromString(ts?.attitudeLevel);
-    attitude ??= await _resolveGlobalAttitude();
+    final persistedLevel = AttitudeLevel.fromString(ts?.attitudeLevel);
+    var attitude = persistedLevel ?? await _resolveGlobalAttitude();
     return (
       attitude: attitude,
       phase:
           TeachingPhase.fromString(ts?.currentPhase) ?? TeachingPhase.p0Engage,
+      // 无持久态度且回退到全局激活人格时，带出激活人格名（自定义 → 显示名，系统 → null）。
+      // 供聊天页菜单体现「当前教练」，消除「自定义了却显示豆包」的错觉。
+      activePersonaName: persistedLevel == null
+          ? await _resolveActivePersonaName()
+          : null,
     );
+  }
+
+  /// 全局激活人格名：用户自定义人格 → 其 name；系统预设 / 无 / 读失败 → null。
+  Future<String?> _resolveActivePersonaName() async {
+    final persona = await _resolveActivePersona();
+    return persona?.name;
   }
 
   /// Global fallback for a new session with no persisted attitude.

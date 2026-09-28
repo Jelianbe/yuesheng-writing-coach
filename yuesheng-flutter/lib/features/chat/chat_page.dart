@@ -56,6 +56,9 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   /// T6 态度切换：当前态度档位（bootstrap 后从 teaching_state 加载）
   AttitudeLevel _attitude = AttitudeLevel.doubao;
 
+  /// 当前激活的教练人格名（用户自定义 → 显示名；系统预设 / 无 → null）。
+  String? _activePersonaName;
+
   /// 批次 10 头部状态区：当前教学阶段（loadAttitudeState 返回 phase）
   TeachingPhase _phase = TeachingPhase.p0Engage;
 
@@ -101,6 +104,9 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
 
   @override
   AttitudeLevel get attitude => _attitude;
+
+  @override
+  String? get activePersonaName => _activePersonaName;
 
   TeachingMode _teachingMode = TeachingMode.socratic;
 
@@ -158,11 +164,15 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   }
 
   @override
-  void applyAttitudeState(AttitudeLevel attitude, TeachingPhase phase) =>
-      setState(() {
-        _attitude = attitude;
-        _phase = phase;
-      });
+  void applyAttitudeState(
+    AttitudeLevel attitude,
+    TeachingPhase phase, {
+    String? activePersonaName,
+  }) => setState(() {
+    _attitude = attitude;
+    _phase = phase;
+    if (activePersonaName != null) _activePersonaName = activePersonaName;
+  });
 
   @override
   void setPrimaryRefTitle(String? value) =>
@@ -275,6 +285,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       attitude: _attitude,
       phase: _phase,
       primaryRefTitle: _primaryRefTitle,
+      activePersonaName: _activePersonaName,
       attitudeSuggestion: _attitudeSuggestion,
       activeProblems: _activeProblems,
       showTaskPanel: _showTaskPanel,

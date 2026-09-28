@@ -69,6 +69,10 @@ class ChatHeader extends StatelessWidget {
   /// 非 manuscript 入口时显示在标题下方小字；null 表示未关联书籍。
   final String? primaryRefTitle;
 
+  /// 当前激活的教练人格名（用户自定义 → 显示名；系统预设 / 无 → null）。
+  /// 非空时菜单「态度档位」区改显「当前教练」，消除「自定义了却显示豆包」的错觉。
+  final String? activePersonaName;
+
   /// 点主引用小字 → 打开引用管理（设主/添加/移除主引用）
   final VoidCallback? onTapPrimaryRef;
 
@@ -87,6 +91,7 @@ class ChatHeader extends StatelessWidget {
     required this.onNewSession,
     this.entryPoint,
     this.primaryRefTitle,
+    this.activePersonaName,
     this.onTapPrimaryRef,
     this.reasoningTier = reasoningTierStandard,
     this.onReasoningTierChange = _ignoreTierChange,
@@ -121,27 +126,89 @@ class ChatHeader extends StatelessWidget {
   }
 
   Widget _buildAttitudeSection(BuildContext context, BuildContext sheetCtx) {
+    final activeName = activePersonaName;
     return _menuSection(
       context,
-      label: '态度档位',
-      child: Row(
-        children: [
-          for (final (attitude, label, color) in _attitudeOptionsFor(
-            context.palette,
-          )) ...[
-            _AttitudeChip(
-              label: label,
-              color: color,
-              active: attitude == currentAttitude,
-              onTap: () {
-                Navigator.pop(sheetCtx);
-                onAttitudeChange(attitude);
-              },
+      label: activeName != null ? '当前教练' : '态度档位',
+      child: activeName != null
+          ? _buildCurrentCoach(context, sheetCtx, activeName)
+          : _buildSystemAttitudeChips(context, sheetCtx),
+    );
+  }
+
+  /// 激活自定义人格时：显示当前人格名 + 系统档位 chips（点可切回系统预设）。
+  Widget _buildCurrentCoach(
+    BuildContext context,
+    BuildContext sheetCtx,
+    String name,
+  ) {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.person_outline, size: 16, color: palette.primary),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: palette.textPrimary,
+                ),
+              ),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: palette.primarySoft,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Text(
+                '自定义',
+                style: TextStyle(fontSize: 11, color: palette.primary),
+              ),
+            ),
           ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '点下方档位可切回系统预设',
+          style: TextStyle(fontSize: 12, color: palette.textTertiary),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _buildSystemAttitudeChips(context, sheetCtx),
+      ],
+    );
+  }
+
+  /// 三个系统态度档位 chips（豆包/月笙如歌/sensei 快速切换）。
+  Widget _buildSystemAttitudeChips(
+    BuildContext context,
+    BuildContext sheetCtx,
+  ) {
+    return Row(
+      children: [
+        for (final (attitude, label, color) in _attitudeOptionsFor(
+          context.palette,
+        )) ...[
+          _AttitudeChip(
+            label: label,
+            color: color,
+            active: attitude == currentAttitude,
+            onTap: () {
+              Navigator.pop(sheetCtx);
+              onAttitudeChange(attitude);
+            },
+          ),
+          const SizedBox(width: AppSpacing.sm),
         ],
-      ),
+      ],
     );
   }
 

@@ -291,6 +291,8 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   @override
   AttitudeLevel get attitude => _attitude;
   @override
+  String? get activePersonaName => null;
+  @override
   TeachingPhase get phase => _phase;
   @override
   String? get primaryRefTitle => _primaryRefTitle;
@@ -311,7 +313,11 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   @override
   void setAttitude(AttitudeLevel value) => _attitude = value;
   @override
-  void applyAttitudeState(AttitudeLevel attitude, TeachingPhase phase) {
+  void applyAttitudeState(
+    AttitudeLevel attitude,
+    TeachingPhase phase, {
+    String? activePersonaName,
+  }) {
     _attitude = attitude;
     _phase = phase;
   }

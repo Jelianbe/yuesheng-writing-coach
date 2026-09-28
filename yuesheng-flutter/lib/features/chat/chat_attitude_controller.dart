@@ -139,7 +139,12 @@ class ChatAttitudeController {
           .loadAttitudeState(sessionId);
       if (!host.mounted) return;
       // 会话级态度优先（锁定）；无持久态度时 loadAttitudeState 已回退全局激活人格
-      host.applyAttitudeState(state.attitude, state.phase);
+      // （activePersonaName 供菜单体现「当前教练」）
+      host.applyAttitudeState(
+        state.attitude,
+        state.phase,
+        activePersonaName: state.activePersonaName,
+      );
       // 批次 18：P2 阶段进入时加载活跃问题（对齐 RN useEffect currentPhase 依赖）
       if (state.phase == TeachingPhase.p2PracticeLoop) {
         unawaited(diagnosis.loadActiveProblems(sessionId));

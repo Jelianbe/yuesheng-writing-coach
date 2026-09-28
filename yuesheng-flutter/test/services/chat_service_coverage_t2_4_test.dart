@@ -363,6 +363,41 @@ void main() {
       AttitudeLevel.yuesheng,
       reason: '会话无持久态度时应回退全局激活人格态度，而非默认 doubao',
     );
+    expect(
+      state.activePersonaName,
+      '月笙',
+      reason: '会话无持久态度且激活自定义人格时，应带出人格名供菜单展示当前教练',
+    );
+  });
+
+  test('A9b 会话有持久态度 → activePersonaName 为 null（菜单走系统档位）', () async {
+    final appState = AppStateRepository(db);
+    await appState.saveCustomCoachPersona(
+      CoachPersona(
+        id: 'custom_y',
+        name: '月笙',
+        label: '测',
+        isSystem: false,
+        attitudeLevel: AttitudeLevel.yuesheng,
+        systemPromptFragment: '测试',
+      ),
+    );
+    await appState.setActiveCoachPersona('custom_y');
+    await TeachingStateRepository(
+      db,
+    ).persistAttitude(sessionId, AttitudeLevel.sensei.value);
+
+    final chatService = buildChatService(
+      FakeLlmClient('ok'),
+      appStateRepo: appState,
+    );
+    final state = await chatService.loadAttitudeState(sessionId);
+    expect(state.attitude, AttitudeLevel.sensei);
+    expect(
+      state.activePersonaName,
+      isNull,
+      reason: '会话已锁定持久态度时，不应再以激活人格名覆盖菜单展示',
+    );
   });
 
   test('A10 直接说明阈值覆盖 round-trip（系统预设可编辑）', () async {

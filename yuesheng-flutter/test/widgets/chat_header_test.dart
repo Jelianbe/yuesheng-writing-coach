@@ -31,6 +31,7 @@ void main() {
     VoidCallback? onNewSession,
     String? entryPoint,
     String? primaryRefTitle,
+    String? activePersonaName,
     VoidCallback? onTapPrimaryRef,
     String reasoningTier = reasoningTierStandard,
     void Function(String)? onReasoningTierChange,
@@ -45,6 +46,7 @@ void main() {
           onNewSession: onNewSession ?? () {},
           entryPoint: entryPoint,
           primaryRefTitle: primaryRefTitle,
+          activePersonaName: activePersonaName,
           onTapPrimaryRef: onTapPrimaryRef,
           reasoningTier: reasoningTier,
           onReasoningTierChange: onReasoningTierChange ?? (_) {},
@@ -215,5 +217,33 @@ void main() {
     final center = tester.getCenter(find.text('会话'));
     // 360 逻辑宽 ⇒ 屏幕中心 x = 180；旧布局因左1右2按钮不对称会明显偏左
     expect(center.dx, closeTo(180, 2));
+  });
+
+  // ════════════════════════════════════════════════════════
+  // 激活自定义人格：菜单「态度档位」区改显「当前教练」
+  // ════════════════════════════════════════════════════════
+
+  testWidgets('#11 激活自定义人格 → 菜单显「当前教练」+ 人格名', (tester) async {
+    await tester.pumpWidget(buildHeader(activePersonaName: '毒舌编辑'));
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+
+    expect(find.text('当前教练'), findsOneWidget);
+    expect(find.text('毒舌编辑'), findsOneWidget);
+    expect(find.text('自定义'), findsOneWidget);
+    // 系统档位 chips 仍保留（可一键切回系统预设）
+    expect(find.text('态度档位'), findsNothing);
+    expect(find.text('豆包'), findsOneWidget);
+  });
+
+  testWidgets('#11b 未激活自定义 → 菜单仍显「态度档位」', (tester) async {
+    await tester.pumpWidget(buildHeader());
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+
+    expect(find.text('态度档位'), findsOneWidget);
+    expect(find.text('当前教练'), findsNothing);
   });
 }

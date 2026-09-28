@@ -40,6 +40,7 @@ class ChatPageBody extends ConsumerWidget {
   final AttitudeLevel attitude;
   final TeachingPhase phase;
   final String? primaryRefTitle;
+  final String? activePersonaName;
   final AttitudeSuggestion? attitudeSuggestion;
   final List<ActiveProblemView> activeProblems;
   final bool showTaskPanel;
@@ -61,6 +62,7 @@ class ChatPageBody extends ConsumerWidget {
     required this.attitude,
     required this.phase,
     required this.primaryRefTitle,
+    required this.activePersonaName,
     required this.attitudeSuggestion,
     required this.activeProblems,
     required this.showTaskPanel,
@@ -123,6 +125,7 @@ class ChatPageBody extends ConsumerWidget {
     return ChatHeaderSection(
       attitude: attitude,
       primaryRefTitle: primaryRefTitle,
+      activePersonaName: activePersonaName,
       suggestion: attitudeSuggestion,
       onOpenSessionDrawer: onOpenSessionDrawer,
       attitudeController: attitudeController,
@@ -178,6 +181,7 @@ class ChatPageBody extends ConsumerWidget {
 class ChatHeaderSection extends StatelessWidget {
   final AttitudeLevel attitude;
   final String? primaryRefTitle;
+  final String? activePersonaName;
   final AttitudeSuggestion? suggestion;
   final VoidCallback onOpenSessionDrawer;
   final ChatAttitudeController attitudeController;
@@ -193,6 +197,7 @@ class ChatHeaderSection extends StatelessWidget {
     super.key,
     required this.attitude,
     required this.primaryRefTitle,
+    required this.activePersonaName,
     required this.suggestion,
     required this.onOpenSessionDrawer,
     required this.attitudeController,
@@ -215,6 +220,7 @@ class ChatHeaderSection extends StatelessWidget {
           // 批次 29：头部 ⋯ 左侧新建对话快捷入口
           onNewSession: session.handleCreateSession,
           primaryRefTitle: primaryRefTitle,
+          activePersonaName: activePersonaName,
           onTapPrimaryRef: reference.handleOpenReferences,
           reasoningTier: reasoningTier,
           onReasoningTierChange: onReasoningTierChange,
