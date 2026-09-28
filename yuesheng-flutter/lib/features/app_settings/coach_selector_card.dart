@@ -362,7 +362,8 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     final list = <Widget>[
       if (selected) Icon(Icons.check_circle, size: 18, color: palette.primary),
     ];
-    if (isCustom && onEdit != null) list.add(_personaEditButton(palette, onEdit));
+    if (isCustom && onEdit != null)
+      list.add(_personaEditButton(palette, onEdit));
     if (isCustom && onDelete != null) {
       list.add(_personaDeleteButton(palette, onDelete));
     }
@@ -374,44 +375,30 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
 
   /// R-019 拆出：自定义人格「编辑」入口（铅笔图标）。
   Widget _personaEditButton(AppPalette palette, VoidCallback onEdit) =>
-      _personaIconButton(
-        palette,
-        icon: Icons.edit_outlined,
-        onTap: onEdit,
-      );
+      _personaIconButton(palette, icon: Icons.edit_outlined, onTap: onEdit);
 
   /// R-019 拆出：自定义人格「删除」入口。
   Widget _personaDeleteButton(AppPalette palette, VoidCallback onDelete) =>
-      _personaIconButton(
-        palette,
-        icon: Icons.delete_outline,
-        onTap: onDelete,
-      );
+      _personaIconButton(palette, icon: Icons.delete_outline, onTap: onDelete);
 
   /// R-019 拆出：系统预设「阈值调音」入口。
   Widget _personaThresholdButton(
     AppPalette palette,
     VoidCallback onEditThreshold,
-  ) =>
-      _personaIconButton(
-        palette,
-        icon: Icons.tune,
-        onTap: onEditThreshold,
-      );
+  ) => _personaIconButton(palette, icon: Icons.tune, onTap: onEditThreshold);
 
   Widget _personaIconButton(
     AppPalette palette, {
     required IconData icon,
     required VoidCallback onTap,
-  }) =>
-      Padding(
-        padding: const EdgeInsets.only(left: 4),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          child: Icon(icon, size: 18, color: palette.textTertiary),
-        ),
-      );
+  }) => Padding(
+    padding: const EdgeInsets.only(left: 4),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Icon(icon, size: 18, color: palette.textTertiary),
+    ),
+  );
 
   Widget _coachNameDesc(AppPalette palette, String name, String desc) =>
       Expanded(
@@ -546,6 +533,15 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
 }
 
 /// 新建/编辑自定义教练对话框。
+///
+/// 2026-09-28 重构（UI + 生效机制）：
+///  - 名称 = 唯一必填；语气设定选填，留空 → 注入层自动回退默认态度档
+///    （skill_dispatcher._injectPersonaOrAttitude 的 else 分支，机制现成）；
+///  - 原「一句话声音描述」实为纯展示副标题（不注入 prompt）→ 改名
+///    「列表简介（仅展示）」并移入高级区，消除「在调语气其实没用」的误导；
+///  - 原「人设层（D2）」并入语气段（对自定义教练两者都是用户自由文本，
+///    注入时相邻两段 ⇒ 合并一段语义等价；注入代码不动，旧数据编辑后自然迁移）；
+///  - 阈值与简介一起收进默认收起的「高级选项」折叠区。
 class _CustomPersonaDialog extends StatefulWidget {
   final CoachPersona? existing;
 
@@ -559,8 +555,8 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _labelCtrl;
   late final TextEditingController _promptCtrl;
-  late final TextEditingController _layerCtrl;
   late final TextEditingController _thresholdCtrl;
+  bool _advancedOpen = false;
 
   bool get _isEdit => widget.existing != null;
 
@@ -570,8 +566,14 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     final e = widget.existing;
     _nameCtrl = TextEditingController(text: e?.name ?? '');
     _labelCtrl = TextEditingController(text: e?.label ?? '');
-    _promptCtrl = TextEditingController(text: e?.systemPromptFragment ?? '');
-    _layerCtrl = TextEditingController(text: e?.personaLayer ?? '');
+    // 旧数据的 personaLayer 合并进语气框（该字段自 2026-09-28 起不再单独收集）。
+    final promptParts = <String>[
+      if (e != null && e.systemPromptFragment.trim().isNotEmpty)
+        e.systemPromptFragment.trim(),
+      if (e != null && (e.personaLayer ?? '').trim().isNotEmpty)
+        e.personaLayer!.trim(),
+    ];
+    _promptCtrl = TextEditingController(text: promptParts.join('\n'));
     _thresholdCtrl = TextEditingController(
       text: (e?.directExplainThreshold ?? 5).toString(),
     );
@@ -582,23 +584,20 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     _nameCtrl.dispose();
     _labelCtrl.dispose();
     _promptCtrl.dispose();
-    _layerCtrl.dispose();
     _thresholdCtrl.dispose();
     super.dispose();
   }
 
   void _save() {
     final name = _nameCtrl.text.trim();
-    final label = _labelCtrl.text.trim();
-    final prompt = _promptCtrl.text.trim();
-    final layer = _layerCtrl.text.trim();
-    final threshold = int.tryParse(_thresholdCtrl.text.trim()) ?? 5;
-    if (name.isEmpty || prompt.isEmpty) {
+    if (name.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('名称和语气设定不能为空')));
+      ).showSnackBar(const SnackBar(content: Text('请先给教练起个名字')));
       return;
     }
+    final label = _labelCtrl.text.trim();
+    final threshold = int.tryParse(_thresholdCtrl.text.trim()) ?? 5;
     final e = widget.existing;
     final persona = CoachPersona(
       id: e?.id ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
@@ -606,8 +605,10 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
       label: label.isEmpty ? '自定义教练' : label,
       isSystem: false,
       attitudeLevel: AttitudeLevel.doubao,
-      systemPromptFragment: prompt,
-      personaLayer: layer.isEmpty ? null : layer,
+      // 语气选填：留空存 '' → 注入层回退默认态度档（见类注释）。
+      systemPromptFragment: _promptCtrl.text.trim(),
+      // 人设层已并入语气段，不再单独写值；旧数据读侧仍兼容。
+      personaLayer: null,
       iconKey: e?.iconKey,
       directExplainThreshold: threshold < 1 ? 5 : threshold,
     );
@@ -630,43 +631,68 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
     );
   }
 
-  /// R-019 拆出：对话框字段列（名称/描述/语气/人设层/阈值）。
+  /// R-019 拆出：对话框字段列（名称 / 语气选填 / 高级选项折叠区）。
+  /// 名称是唯一主字段；大多数用户到此为止，其余收进折叠区。
   Widget _fields() => Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      _field(_nameCtrl, '名称', '如：毒舌编辑'),
-      const SizedBox(height: 12),
-      _field(_labelCtrl, '一句话声音描述（选填）', '如：犀利、直给、不许废话'),
+      _field(_nameCtrl, '名称', '给教练起个名字，如：毒舌编辑'),
       const SizedBox(height: 12),
       TextField(
         controller: _promptCtrl,
-        maxLines: 4,
-        decoration: const InputDecoration(
-          labelText: '语气/角色设定',
-          hintText: '教它怎么说话，会注入到系统提示里',
-        ),
-      ),
-      const SizedBox(height: 12),
-      TextField(
-        controller: _layerCtrl,
         maxLines: 3,
         decoration: const InputDecoration(
-          labelText: '人设层 / 角色口吻（选填，D2）',
-          hintText: '叠加在语气之上，如：以资深文学编辑口吻，多用比喻',
+          labelText: '语气设定（选填）',
+          hintText: '希望教练怎么说话？如：犀利直接，不许废话。留空则用默认语气',
         ),
       ),
-      const SizedBox(height: 12),
-      TextField(
-        controller: _thresholdCtrl,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-          labelText: '症候直接说明阈值（数字）',
-          helperText: '诊断出超过该数量的症候时，当轮直接逐条说明全部症候',
-        ),
-      ),
+      const SizedBox(height: 4),
+      _advancedToggle(),
+      if (_advancedOpen) ..._advancedFields(),
     ],
   );
+
+  /// R-019 拆出：「高级选项」折叠开关行。
+  Widget _advancedToggle() {
+    final palette = context.palette;
+    return InkWell(
+      onTap: () => setState(() => _advancedOpen = !_advancedOpen),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              _advancedOpen ? Icons.expand_less : Icons.expand_more,
+              size: 18,
+              color: palette.textTertiary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '高级选项',
+              style: TextStyle(fontSize: 13, color: palette.textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// R-019 拆出：折叠区字段（列表简介仅展示 + 直接讲解阈值）。
+  List<Widget> _advancedFields() => [
+    _field(_labelCtrl, '列表简介（选填，仅展示）', '显示在教练列表的副标题，如：犀利、直给'),
+    const SizedBox(height: 12),
+    TextField(
+      controller: _thresholdCtrl,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(
+        labelText: '直接讲解阈值',
+        helperText: '一次诊断超过该数量的症候时，当轮逐条直接说明（默认 5）',
+      ),
+    ),
+    const SizedBox(height: 12),
+  ];
 
   Widget _field(TextEditingController ctrl, String label, String hint) =>
       TextField(
