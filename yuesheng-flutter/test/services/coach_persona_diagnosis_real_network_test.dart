@@ -64,6 +64,10 @@ String? _readPolished(String key) {
   return null;
 }
 
+/// 三人人设润色文本是否齐全（缺失则整个测试 skip，不进函数体）。
+bool _personaFilesPresent() =>
+    _personaMeta.keys.every((k) => _readPolished(k) != null);
+
 void main() {
   // LlmClient.chatCompletion 内部走 checkNetwork() → Connectivity 平台通道，
   // 以及 getLlmFallbacksRaw() → FlutterSecureStorage 平台通道；
@@ -96,10 +100,6 @@ void main() {
   final key = const String.fromEnvironment('YS_TEST_KEY');
 
   test('用各自人设跑真实诊断：少女/老大爷/中年语文老师', () async {
-    if (key.isEmpty) {
-      markTestSkipped('需传 --dart-define=YS_TEST_KEY=<真实Key> 才能跑真实诊断');
-    }
-
     final cfg = LlmConfigValues(
       apiKey: key,
       baseUrl: 'https://api.deepseek.com',
@@ -115,9 +115,6 @@ void main() {
       final label = entry.value;
 
       final polished = _readPolished(k);
-      if (polished == null || polished.isEmpty) {
-        markTestSkipped('outputs/polish/persona_$k.txt 缺失，跳过');
-      }
 
       final persona = CoachPersona(
         id: 'real_$k',
@@ -178,5 +175,7 @@ void main() {
     //    避开「字面语气词」这种在 JSON 诊断里不可靠的断言。
     expect(diags.toSet().length, greaterThan(1),
         reason: '三个人设对同一习作的诊断完全相同，人设未对输出产生任何影响');
-  });
+  }, skip: (key.isEmpty || !_personaFilesPresent())
+      ? '需 --dart-define=YS_TEST_KEY 且 outputs/polish/persona_*.txt 存在'
+      : false);
 }
