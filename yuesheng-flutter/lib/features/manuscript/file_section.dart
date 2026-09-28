@@ -20,6 +20,7 @@ import '../../providers/capability_providers.dart';
 import '../../widgets/file_viewer_modal.dart';
 import '../../widgets/material_upload_sheet.dart';
 import '../../config/app_palette.dart';
+import '../../theme/app_typography.dart';
 
 const Map<String, String> _roleLabels = {
   'outline': '大纲',
@@ -134,9 +135,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
       children: [
         Text(
           '素材文件',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          style: context.text.title.copyWith(
             color: context.palette.textPrimary,
           ),
         ),

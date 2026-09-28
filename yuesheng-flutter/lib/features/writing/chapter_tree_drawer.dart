@@ -118,14 +118,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             color: context.palette.primary,
           ),
           const SizedBox(width: AppSpacing.sm),
-          Text(
-            '章节列表',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: context.palette.textInk,
-            ),
-          ),
+          Text('章节列表', style: context.text.title),
           const Spacer(),
           // 批次89-3：新建卷入口（始终可用，卷可在任何时候追加）
           IconButton(

@@ -30,6 +30,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../widgets/outline_content_view.dart';
+import '../../theme/app_typography.dart';
 
 /// 大纲抽屉外壳（写作页 endDrawer）。
 ///
@@ -108,14 +109,7 @@ class _DrawerHeader extends StatelessWidget {
             color: context.palette.primary,
           ),
           const SizedBox(width: 8),
-          Text(
-            '大纲',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: context.palette.textInk,
-            ),
-          ),
+          Text('大纲', style: context.text.title),
           const Spacer(),
           IconButton(
             icon: Icon(

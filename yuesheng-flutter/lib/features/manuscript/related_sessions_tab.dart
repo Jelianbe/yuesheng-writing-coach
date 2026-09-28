@@ -87,9 +87,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
             const SizedBox(height: 12),
             Text(
               '还没有相关对话',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              style: context.text.title.copyWith(
                 color: context.palette.textPrimary,
               ),
             ),

@@ -117,14 +117,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
   Widget _buildHeaderRow() {
     return Row(
       children: [
-        Text(
-          '快捷短语',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: context.palette.textInk,
-          ),
-        ),
+        Text('快捷短语', style: context.text.title),
         const Spacer(),
         IconButton(
           icon: Icon(

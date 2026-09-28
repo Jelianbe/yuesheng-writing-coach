@@ -96,9 +96,7 @@ class ManuscriptNotFoundView extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               '作品不存在或已删除',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              style: context.text.title.copyWith(
                 color: context.palette.textPrimary,
               ),
             ),

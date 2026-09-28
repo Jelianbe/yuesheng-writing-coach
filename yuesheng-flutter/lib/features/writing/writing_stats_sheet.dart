@@ -93,14 +93,7 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Text(
-          '写作统计',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: context.palette.textInk,
-          ),
-        ),
+        Text('写作统计', style: context.text.title),
         const Spacer(),
         IconButton(
           icon: const Icon(Icons.close, size: 20),

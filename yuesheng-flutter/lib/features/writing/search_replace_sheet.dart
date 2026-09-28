@@ -335,11 +335,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         Text(
           // 批次96-11：独立「全文搜索」入口 → 标题显示「全文搜索」
           _viewAllBook && widget.initialBookView ? '全文搜索' : '查找替换',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: context.palette.textInk,
-          ),
+          style: context.text.title,
         ),
         const Spacer(),
         if (widget.manuscriptId != null && !widget.initialBookView)
