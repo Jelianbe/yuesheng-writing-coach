@@ -66,9 +66,8 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
       appBar: _buildAppBar(context),
       body: Column(
         children: [
-          // 快捷入口（批次 11：对齐 RN GROWTH_ENTRIES，总显示）
+          // 快捷入口（批次 11：对齐 RN GROWTH_ENTRIES；P0-4a：设置入口已收口到「我的→教练设置」，此处不再提供）
           _QuickEntries(
-            onSettings: () => context.push(AppRoutes.settings),
             onDiagnosis: () => _openDiagnosisPicker(context),
             onProgress: _openProgressDetail,
           ),
@@ -139,17 +138,12 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
   }
 }
 
-/// 快捷入口（对齐 RN growth.tsx GROWTH_ENTRIES：设置/写作诊断/学习进度）
+/// 快捷入口（对齐 RN growth.tsx GROWTH_ENTRIES：写作诊断/学习进度）
 class _QuickEntries extends StatelessWidget {
-  final VoidCallback onSettings;
   final VoidCallback onDiagnosis;
   final VoidCallback onProgress;
 
-  const _QuickEntries({
-    required this.onSettings,
-    required this.onDiagnosis,
-    required this.onProgress,
-  });
+  const _QuickEntries({required this.onDiagnosis, required this.onProgress});
 
   @override
   Widget build(BuildContext context) {
@@ -167,8 +161,6 @@ class _QuickEntries extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _entry(context, '设置', Icons.settings_outlined, onSettings),
-          Divider(height: 1, color: context.palette.borderSoft),
           _entry(context, '写作诊断', Icons.search, onDiagnosis),
           Divider(height: 1, color: context.palette.borderSoft),
           // 批次 38：原「敬请期待」占位替换为「学习进度」真实入口

@@ -105,7 +105,9 @@ class MessageBubble extends StatelessWidget {
           vertical: AppSpacing.smx,
         ),
         decoration: BoxDecoration(
-          color: isFailed ? context.palette.dangerBg : context.palette.primary,
+          color: isFailed
+              ? context.palette.dangerBg
+              : context.palette.primarySoft,
           border: isFailed
               ? Border.all(color: context.palette.dangerBorder)
               : null,
@@ -119,11 +121,11 @@ class MessageBubble extends StatelessWidget {
         child: Text(
           message.content,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 14,
             height: 1.4,
             color: isFailed
                 ? context.palette.danger
-                : context.palette.onPrimary,
+                : context.palette.primaryDeep,
           ),
         ),
       ),
@@ -167,46 +169,16 @@ class MessageBubble extends StatelessWidget {
     ];
   }
 
-  /// AI 消息气泡：左对齐 + 头像 + 灰白底 + 左下尖角 + 外部时间戳
+  /// AI 消息：通栏弱卡片（去头像/尖角/描边），下方独立时间戳与操作
   Widget _buildAssistantBubble(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildAssistantAvatar(context),
-          // 气泡 + 时间戳
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildAssistantBubbleBody(context),
-                if (!isStreaming) ..._buildAssistantMetaRow(context),
-              ],
-            ),
-          ),
+          _buildAssistantBubbleBody(context),
+          if (!isStreaming) ..._buildAssistantMetaRow(context),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAssistantAvatar(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      margin: const EdgeInsets.only(right: AppSpacing.sm, top: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: context.palette.primary,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        '月',
-        style: TextStyle(
-          color: context.palette.onPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
       ),
     );
   }
@@ -223,27 +195,18 @@ class MessageBubble extends StatelessWidget {
       child: Opacity(
         opacity: isStreaming ? 0.6 : 1.0,
         child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.80,
-          ),
           padding: const EdgeInsets.symmetric(
             horizontal: 14,
             vertical: AppSpacing.smx,
           ),
           decoration: BoxDecoration(
             color: context.palette.surface,
-            border: Border.all(color: context.palette.borderSoft),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(AppRadius.md),
-              topRight: Radius.circular(AppRadius.md),
-              bottomLeft: Radius.circular(AppRadius.xs),
-              bottomRight: Radius.circular(AppRadius.md),
-            ),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: GptMarkdown(
             message.content,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               height: 1.4,
               color: context.palette.textPrimary,
             ),

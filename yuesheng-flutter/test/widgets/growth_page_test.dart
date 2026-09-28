@@ -94,8 +94,8 @@ void main() {
       await tester.pumpWidget(buildGrowthPage());
       await tester.pumpAndSettle();
 
-      // 批次 11：对齐 RN GROWTH_ENTRIES，总显示于数据区上方
-      expect(find.text('设置'), findsOneWidget);
+      // P0-4a：设置入口已收口到「我的→教练设置」，成长页不再提供
+      expect(find.text('设置'), findsNothing);
       expect(find.text('写作诊断'), findsOneWidget);
       // 批次 38：原「敬请期待」占位替换为「学习进度」真实入口
       expect(find.text('学习进度'), findsOneWidget);

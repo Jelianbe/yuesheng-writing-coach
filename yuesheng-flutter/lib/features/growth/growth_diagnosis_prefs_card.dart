@@ -48,6 +48,8 @@ class _GrowthDiagnosisPrefsCardState
     extends ConsumerState<GrowthDiagnosisPrefsCard> {
   DiagnosisPrefs? _prefs;
   bool _loading = true;
+  // P0-4b：默认折叠成轻量选择器（首屏只占一行，展开才见完整编辑区）
+  bool _expanded = false;
 
   @override
   void initState() {
@@ -89,7 +91,55 @@ class _GrowthDiagnosisPrefsCardState
   Widget build(BuildContext context) {
     if (_loading) return const SizedBox.shrink();
     final cur = _prefs ?? DiagnosisPrefs();
-    return _buildBody(context, cur);
+    // P0-4b：默认折叠态只显示一行轻量选择器，点击展开完整编辑区
+    return _expanded ? _buildBody(context, cur) : _buildCollapsed(context, cur);
+  }
+
+  /// P0-4b：折叠态——一行轻量选择器（当前侧重标签 + 「调整」入口）
+  Widget _buildCollapsed(BuildContext context, DiagnosisPrefs cur) {
+    final palette = context.palette;
+    final tierLabel = cur.tier == null
+        ? null
+        : _tiers.firstWhere((t) => t.$1 == cur.tier).$2;
+    final genreLabel = cur.genre == null
+        ? null
+        : _genres.firstWhere((g) => g.$1 == cur.genre).$2;
+    final summary = [tierLabel, genreLabel].whereType<String>().join(' · ');
+    return GrowthInfoCard(
+      child: InkWell(
+        onTap: () => setState(() => _expanded = true),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.tune_outlined, size: 18, color: palette.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  summary.isEmpty ? '教练侧重：未设置' : '教练侧重：$summary',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: palette.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                '调整',
+                style: TextStyle(fontSize: 12, color: palette.primary),
+              ),
+              Icon(Icons.chevron_right, size: 20, color: palette.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildBody(BuildContext context, DiagnosisPrefs cur) {
@@ -168,6 +218,14 @@ class _GrowthDiagnosisPrefsCardState
           ),
         ),
         const Spacer(),
+        // P0-4b：展开态可收起回轻量选择器
+        IconButton(
+          onPressed: () => setState(() => _expanded = false),
+          icon: const Icon(Icons.expand_less),
+          iconSize: 20,
+          color: palette.textTertiary,
+          tooltip: '收起',
+        ),
         if (disabled.isNotEmpty || cur.tier != null || cur.genre != null)
           TextButton(
             onPressed: _restoreAll,

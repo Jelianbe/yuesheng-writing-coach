@@ -53,7 +53,7 @@ void main() {
       expect(align.alignment, Alignment.centerRight);
     });
 
-    testWidgets('assistant 消息：显示头像 + 灰白背景 + 内容显示', (tester) async {
+    testWidgets('assistant 消息：通栏弱卡片（去头像）+ 内容显示', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -65,10 +65,10 @@ void main() {
       );
 
       expect(find.text('你好，我是月笙'), findsOneWidget);
-      // 应显示"月"字头像
-      expect(find.text('月'), findsOneWidget);
-      // assistant 气泡使用 Row 布局（头像 + 内容行 + 元信息行）
-      expect(find.byType(Row), findsNWidgets(2));
+      // P0-2：教练消息去头像，不再显示"月"字头像
+      expect(find.text('月'), findsNothing);
+      // P0-2：头像外层 Row 已移除，仅保留时间戳 meta 行（非 streaming）
+      expect(find.byType(Row), findsOneWidget);
     });
 
     testWidgets('streaming 气泡：应用半透明', (tester) async {
@@ -114,8 +114,8 @@ void main() {
         ),
       );
 
-      // assistant 消息应有 3 个 Text：头像"月" + 内容 + 时间戳
-      expect(find.byType(Text), findsNWidgets(3));
+      // P0-2：assistant 无头像，非 streaming 共 2 个 Text：内容 + 时间戳
+      expect(find.byType(Text), findsNWidgets(2));
     });
 
     testWidgets('streaming 时不显示时间戳', (tester) async {
@@ -130,8 +130,8 @@ void main() {
         ),
       );
 
-      // streaming 时只有 2 个 Text：头像"月" + 内容（无时间戳）
-      expect(find.byType(Text), findsNWidgets(2));
+      // P0-2：streaming 无头像 + 无时间戳，仅 1 个 Text：内容
+      expect(find.byType(Text), findsOneWidget);
     });
 
     testWidgets('批次14：assistant 非 streaming + onSaveToFile → 显示保存到文件按钮并可点击', (

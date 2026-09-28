@@ -10,7 +10,6 @@ import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/features/growth/growth_detail_page.dart';
 import 'package:writingcoach/features/growth/growth_page.dart';
 import 'package:writingcoach/widgets/placeholder_page.dart';
-import 'package:writingcoach/features/app_settings/settings_page.dart';
 
 void main() {
   late AppDatabase db;
@@ -74,19 +73,6 @@ void main() {
 
       // 应该跳转到详情页
       expect(find.byType(GrowthDetailPage), findsOneWidget);
-    });
-
-    testWidgets('#R4 快捷入口「设置」→ 跳转 /settings 渲染 SettingsPage', (tester) async {
-      await tester.pumpWidget(buildTestApp());
-      appRouter.go(AppRoutes.growth);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('设置'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(SettingsPage), findsOneWidget);
-      // 设置页标题
-      expect(find.text('API 配置'), findsOneWidget);
     });
   });
 }
