@@ -17,6 +17,7 @@ import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../services/syndrome_registry.dart';
 import 'growth_detail_widgets.dart';
+import '../app_settings/coach_settings_page.dart';
 
 String _nameOf(String id) {
   final hit = kSyndromeRegistry.where((s) => s.id == id).firstOrNull;
@@ -38,7 +39,10 @@ const _genres = [
 ];
 
 class GrowthDiagnosisPrefsCard extends ConsumerStatefulWidget {
-  const GrowthDiagnosisPrefsCard({super.key});
+  /// embedded=true：直接展开编辑态（教练设置二级页），无折叠按钮。
+  /// embedded=false：成长页收起态入口行，点击跳二级页。
+  final bool embedded;
+  const GrowthDiagnosisPrefsCard({super.key, this.embedded = false});
 
   @override
   ConsumerState<GrowthDiagnosisPrefsCard> createState() =>
@@ -49,8 +53,6 @@ class _GrowthDiagnosisPrefsCardState
     extends ConsumerState<GrowthDiagnosisPrefsCard> {
   DiagnosisPrefs? _prefs;
   bool _loading = true;
-  // P0-4b：默认折叠成轻量选择器（首屏只占一行，展开才见完整编辑区）
-  bool _expanded = false;
 
   @override
   void initState() {
@@ -92,8 +94,8 @@ class _GrowthDiagnosisPrefsCardState
   Widget build(BuildContext context) {
     if (_loading) return const SizedBox.shrink();
     final cur = _prefs ?? DiagnosisPrefs();
-    // P0-4b：默认折叠态只显示一行轻量选择器，点击展开完整编辑区
-    return _expanded ? _buildBody(context, cur) : _buildCollapsed(context, cur);
+    if (widget.embedded) return _buildBody(context, cur);
+    return _buildCollapsed(context, cur);
   }
 
   /// P0-4b：折叠态——一行轻量选择器（当前侧重标签 + 「调整」入口）
@@ -113,7 +115,9 @@ class _GrowthDiagnosisPrefsCardState
         border: Border.all(color: palette.divider),
       ),
       child: InkWell(
-        onTap: () => setState(() => _expanded = true),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const CoachSettingsPage()),
+        ),
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -126,7 +130,7 @@ class _GrowthDiagnosisPrefsCardState
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  summary.isEmpty ? '教练侧重：未设置' : '教练侧重：$summary',
+                  summary.isEmpty ? '教学设置' : '教学设置 · $summary',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -220,14 +224,6 @@ class _GrowthDiagnosisPrefsCardState
           ),
         ),
         const Spacer(),
-        // P0-4b：展开态可收起回轻量选择器
-        IconButton(
-          onPressed: () => setState(() => _expanded = false),
-          icon: const Icon(Icons.expand_less),
-          iconSize: 20,
-          color: palette.textTertiary,
-          tooltip: '收起',
-        ),
         if (disabled.isNotEmpty || cur.tier != null || cur.genre != null)
           TextButton(
             onPressed: _restoreAll,
