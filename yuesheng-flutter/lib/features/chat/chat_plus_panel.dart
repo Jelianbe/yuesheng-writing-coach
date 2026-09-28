@@ -53,7 +53,7 @@ class ChatPlusPanel extends StatelessWidget {
         border: Border.all(color: context.palette.borderSoft, width: 0.5),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x1A000000),
+            color: AppColors.overlayLight,
             blurRadius: 16,
             offset: Offset(0, 4),
           ),

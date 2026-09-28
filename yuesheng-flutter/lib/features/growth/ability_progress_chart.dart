@@ -105,15 +105,6 @@ class _CurvePainter extends CustomPainter {
     required this.gridColor,
   });
 
-  static const _colors = [
-    Color(0xFF2D5A52),
-    Color(0xFF8B5E3C),
-    Color(0xFF6B7FD7),
-    Color(0xFFB08968),
-    Color(0xFF5B8C5A),
-    Color(0xFF9A6B9E),
-  ];
-
   @override
   void paint(Canvas canvas, Size size) {
     final left = 28.0;
@@ -136,7 +127,7 @@ class _CurvePainter extends CustomPainter {
       final scores = series[si].scores;
       if (scores.length < 2) continue;
       final paint = Paint()
-        ..color = _colors[si % _colors.length]
+        ..color = AppColors.chartSeries[si % AppColors.chartSeries.length]
         ..strokeWidth = 2
         ..style = PaintingStyle.stroke;
       final path = Path();
@@ -180,7 +171,7 @@ class _Legend extends StatelessWidget {
                 height: 8,
                 decoration: BoxDecoration(
                   color:
-                      _CurvePainter._colors[i % _CurvePainter._colors.length],
+                      AppColors.chartSeries[i % AppColors.chartSeries.length],
                   shape: BoxShape.circle,
                 ),
               ),

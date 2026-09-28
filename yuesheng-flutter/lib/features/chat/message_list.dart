@@ -18,6 +18,7 @@ import 'package:go_router/go_router.dart';
 import '../../config/app_motion.dart';
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/manuscript_repository.dart';
@@ -219,7 +220,7 @@ class _MessageListState extends ConsumerState<MessageList> {
   /// 长按消息 → 操作菜单（复制内容 / 删除）。
   /// 复制不依赖 onDelete（任何消息都可用）；删除沿用确认弹窗流程。
   Future<void> _showMessageActions(Message message) async {
-    final action = await showModalBottomSheet<String>(
+    final action = await showYueModalBottomSheet<String>(
       context: context,
       backgroundColor: context.palette.surface,
       builder: (ctx) => SafeArea(

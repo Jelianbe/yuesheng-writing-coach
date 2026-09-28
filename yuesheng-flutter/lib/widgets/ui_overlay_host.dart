@@ -9,6 +9,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import '../config/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_palette.dart';
@@ -93,7 +94,7 @@ class _ToastCard extends StatelessWidget {
         border: Border.all(color: context.palette.borderSoft),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: AppColors.overlayLight,
             blurRadius: 8,
             offset: Offset(0, 2),
           ),

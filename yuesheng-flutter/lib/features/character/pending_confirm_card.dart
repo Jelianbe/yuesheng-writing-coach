@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../services/setting_library_service.dart';
@@ -168,7 +169,7 @@ class PendingConfirmCard extends ConsumerWidget {
 
   /// 拒绝前询问理由（可跳过）。返回 null 表示不填理由。
   Future<String?> _askRejectReason(BuildContext context) async {
-    final picked = await showModalBottomSheet<String>(
+    final picked = await showYueModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(

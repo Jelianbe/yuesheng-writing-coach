@@ -245,7 +245,7 @@ class _AttributeSuggestionChips extends StatelessWidget {
 Future<({bool confirmed, String? reason})?> showRejectReasonSheet(
   BuildContext context,
 ) {
-  return showModalBottomSheet<({bool confirmed, String? reason})>(
+  return showYueModalBottomSheet<({bool confirmed, String? reason})>(
     context: context,
     showDragHandle: true,
     builder: (ctx) => SafeArea(

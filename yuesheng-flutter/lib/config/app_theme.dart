@@ -38,6 +38,7 @@ abstract final class AppColors {
   static const Color surfaceWhite = Color(0xFFFFFFFF); // 白底卡片（章节卡/弹窗）
   static const Color paper = Color(0xFFF5F1E8); // 米纸（写作编辑器底）
   static const Color overlay = Color(0x8A000000); // 弹窗遮罩（black54 等值，批次57 令牌化）
+  static const Color overlayLight = Color(0x1A000000); // 轻遮罩（B17：轻量覆盖，8–10% 黑）
 
   // ── 文字 ──
   static const Color textPrimary = Color(0xFF2D3142); // 主文字
@@ -72,6 +73,15 @@ abstract final class AppColors {
 
   // ── 状态色（统一矿物红系，废弃 Material 默认红）──
   static const Color danger = Color(0xFFB3261E); // 危险文字/按钮
+  // ── 图表系列色（能力曲线等，B16 收敛）──
+  static const List<Color> chartSeries = [
+    Color(0xFF2D5A52), // 竹青（与 primary 同）
+    Color(0xFF8B5E3C),
+    Color(0xFF6B7FD7),
+    Color(0xFFB08968),
+    Color(0xFF5B8C5A),
+    Color(0xFF9A6B9E),
+  ];
   static const Color dangerBg = Color(0xFFFDF0EF); // 危险横幅底
   static const Color dangerBorder = Color(0xFFE8C5C5); // 失败气泡边框（L3 共用）
   static const Color warning = Color(0xFFB45309); // 警示文字（修改中）

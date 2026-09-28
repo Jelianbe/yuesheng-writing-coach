@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
 import '../../theme/app_typography.dart';
@@ -215,7 +216,7 @@ class CharacterAssertionTile extends StatelessWidget {
   Future<void> _showOriginalText(BuildContext context) async {
     final text = await resolveOriginalText();
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
+    await showYueModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (ctx) => SafeArea(
