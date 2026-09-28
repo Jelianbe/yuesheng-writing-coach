@@ -7,9 +7,11 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
+import '../../router/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../config/reasoning_tier.dart';
 import '../../data/repositories/diagnosis_repository.dart';
@@ -217,6 +219,8 @@ class ChatHeaderSection extends StatelessWidget {
           onAttitudeChange: attitudeController.handleAttitudeChange,
           onOpenSessionDrawer: onOpenSessionDrawer,
           onOpenProfile: messages.handleOpenProfile,
+          // P0-4c：对话内快速切换保留，另供「管理教练 ›」直达设置页完整管理
+          onOpenCoachSettings: () => context.push(AppRoutes.settings),
           // 批次 29：头部 ⋯ 左侧新建对话快捷入口
           onNewSession: session.handleCreateSession,
           primaryRefTitle: primaryRefTitle,

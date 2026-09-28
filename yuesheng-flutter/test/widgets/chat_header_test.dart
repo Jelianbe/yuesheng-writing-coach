@@ -35,6 +35,7 @@ void main() {
     VoidCallback? onTapPrimaryRef,
     String reasoningTier = reasoningTierStandard,
     void Function(String)? onReasoningTierChange,
+    VoidCallback? onOpenCoachSettings,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -50,6 +51,7 @@ void main() {
           onTapPrimaryRef: onTapPrimaryRef,
           reasoningTier: reasoningTier,
           onReasoningTierChange: onReasoningTierChange ?? (_) {},
+          onOpenCoachSettings: onOpenCoachSettings ?? () {},
         ),
       ),
     );
@@ -129,6 +131,20 @@ void main() {
     await tester.tap(find.text('画像'));
     await tester.pumpAndSettle();
 
+    expect(opened, isTrue);
+  });
+
+  testWidgets('#12 P0-4c 更多菜单「管理教练›」→ onOpenCoachSettings', (tester) async {
+    var opened = false;
+    await tester.pumpWidget(
+      buildHeader(onOpenCoachSettings: () => opened = true),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    expect(find.text('管理教练'), findsOneWidget, reason: '对话内保留快速切换，另供管理入口');
+    await tester.tap(find.text('管理教练'));
+    await tester.pumpAndSettle();
     expect(opened, isTrue);
   });
 

@@ -38,6 +38,9 @@ import '../../config/app_palette.dart';
 /// 未接线时的思考档位回调占位：菜单入口**不随接线状态忽隐忽现**。
 void _ignoreTierChange(String _) {}
 
+/// 未接线时的教练设置回调占位（P0-4c：菜单入口不随接线忽隐忽现）。
+void _ignoreCoachSettings() {}
+
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
 /// P1-6：const List 装不进运行期 palette ⇒ 改 **palette 驱动函数**，随主题翻。
 List<(AttitudeLevel, String, Color)> _attitudeOptionsFor(AppPalette p) => [
@@ -82,6 +85,9 @@ class ChatHeader extends StatelessWidget {
   /// 切换思考档位（与设置页「模型行为」共用同一 provider）
   final ValueChanged<String> onReasoningTierChange;
 
+  /// 打开教练设置（P0-4c 方案 B：对话内快速切换保留，另供完整管理直达）
+  final VoidCallback onOpenCoachSettings;
+
   const ChatHeader({
     super.key,
     required this.currentAttitude,
@@ -95,6 +101,7 @@ class ChatHeader extends StatelessWidget {
     this.onTapPrimaryRef,
     this.reasoningTier = reasoningTierStandard,
     this.onReasoningTierChange = _ignoreTierChange,
+    this.onOpenCoachSettings = _ignoreCoachSettings,
   });
 
   bool get _isManuscriptEntry => entryPoint == 'manuscript';
@@ -130,9 +137,44 @@ class ChatHeader extends StatelessWidget {
     return _menuSection(
       context,
       label: activeName != null ? '当前教练' : '态度档位',
-      child: activeName != null
-          ? _buildCurrentCoach(context, sheetCtx, activeName)
-          : _buildSystemAttitudeChips(context, sheetCtx),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (activeName != null)
+            _buildCurrentCoach(context, sheetCtx, activeName)
+          else
+            _buildSystemAttitudeChips(context, sheetCtx),
+          const SizedBox(height: AppSpacing.sm),
+          _buildManageCoachEntry(context, sheetCtx),
+        ],
+      ),
+    );
+  }
+
+  /// P0-4c（方案 B）：对话内快速切换保留，另供「管理教练 ›」直达设置页完整管理。
+  Widget _buildManageCoachEntry(BuildContext context, BuildContext sheetCtx) {
+    final palette = context.palette;
+    return InkWell(
+      onTap: () {
+        Navigator.pop(sheetCtx);
+        onOpenCoachSettings();
+      },
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        child: Row(
+          children: [
+            Icon(Icons.tune, size: 16, color: palette.textSecondary),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '管理教练',
+              style: TextStyle(fontSize: 14, color: palette.textSecondary),
+            ),
+            const Spacer(),
+            Icon(Icons.chevron_right, size: 18, color: palette.textTertiary),
+          ],
+        ),
+      ),
     );
   }
 
