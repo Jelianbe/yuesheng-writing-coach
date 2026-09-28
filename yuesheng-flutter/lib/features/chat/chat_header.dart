@@ -35,6 +35,11 @@ import '../../widgets/yue_sheet.dart';
 import '../../types/teaching_types.dart';
 import '../../config/app_palette.dart';
 
+// 顶栏高度（对齐 Material toolbar 默认 56，SafeArea(top) 内）
+const double _kChatHeaderHeight = 56;
+// 单个 IconButton 触控宽近似（标题居中限宽用）
+const double _kBtnZoneWidth = 52;
+
 /// 未接线时的思考档位回调占位：菜单入口**不随接线状态忽隐忽现**。
 void _ignoreTierChange(String _) {}
 
@@ -356,7 +361,7 @@ class ChatHeader extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Container(
-        height: 56,
+        height: _kChatHeaderHeight,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
         decoration: BoxDecoration(
           color: context.palette.background,
@@ -367,7 +372,7 @@ class ChatHeader extends StatelessWidget {
             // 左右按钮区各自贴边，不参与 Spacer 分配 ⇒ 标题恒居中；
             // 居中主体限宽 = 总宽 − 两侧按钮区 ⇒ 主引用长文本触发省略号、
             // 永不过流、绝不把右侧「新建对话/更多」挤掉。
-            const btnZone = 52.0; // 单个 IconButton 触控宽近似
+            const btnZone = _kBtnZoneWidth; // 单个 IconButton 触控宽近似
             final titleMaxW = (constraints.maxWidth - btnZone * 3).clamp(
               0.0,
               double.infinity,

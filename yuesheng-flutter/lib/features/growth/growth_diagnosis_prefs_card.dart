@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../services/syndrome_registry.dart';
@@ -229,7 +230,7 @@ class _GrowthDiagnosisPrefsCardState
         if (disabled.isNotEmpty || cur.tier != null || cur.genre != null)
           TextButton(
             onPressed: _restoreAll,
-            child: const Text('恢复默认', style: TextStyle(fontSize: 12)),
+            child: Text('恢复默认', style: context.text.caption),
           ),
       ],
     );
@@ -353,7 +354,7 @@ class _GrowthDiagnosisPrefsCardState
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text('恢复', style: TextStyle(fontSize: 12)),
+          child: Text('恢复', style: context.text.caption),
         ),
       ],
     ),

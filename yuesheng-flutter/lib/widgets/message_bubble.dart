@@ -101,7 +101,7 @@ class MessageBubble extends StatelessWidget {
         ),
         margin: const EdgeInsets.only(bottom: AppSpacing.xs),
         padding: const EdgeInsets.symmetric(
-          horizontal: 14,
+          horizontal: AppSpacing.lg,
           vertical: AppSpacing.smx,
         ),
         decoration: BoxDecoration(
@@ -196,7 +196,7 @@ class MessageBubble extends StatelessWidget {
         opacity: isStreaming ? 0.6 : 1.0,
         child: Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: 14,
+            horizontal: AppSpacing.lg,
             vertical: AppSpacing.smx,
           ),
           decoration: BoxDecoration(
