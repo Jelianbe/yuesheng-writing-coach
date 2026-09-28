@@ -53,3 +53,70 @@ Future<T?> showYueModalBottomSheet<T>({
     ),
   );
 }
+
+/// 底部 Sheet 统一骨架：标题 + 分隔线 + 内容（可滚动）+ 操作行。
+///
+/// P0-3：多字段表单（新建 / 编辑 / 断言 / 教练等）从居中 AlertDialog 收敛
+/// 底部时复用，保证标题样式、边距、键盘上推与 [YueInputSheet] 完全一致。
+/// [child] 为表单内容（Column），本组件负责 SafeArea / viewInsets 上推 /
+/// 内容可滚动兜底。
+class YueSheetScaffold extends StatelessWidget {
+  final String title;
+  final List<Widget> actions;
+  final Widget child;
+
+  const YueSheetScaffold({
+    super.key,
+    required this.title,
+    required this.actions,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        // 键盘弹起时上推内容，避免遮挡表单
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.section,
+                AppSpacing.lg,
+                AppSpacing.section,
+                AppSpacing.sm,
+              ),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(child: SingleChildScrollView(child: child)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.section,
+                0,
+                AppSpacing.section,
+                AppSpacing.section,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: actions,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

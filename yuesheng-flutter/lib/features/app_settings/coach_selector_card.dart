@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../config/app_theme.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
@@ -93,8 +94,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
 
   /// 打开新建/编辑自定义教练对话框；保存后刷新列表。
   Future<void> _openPersonaEditor([CoachPersona? existing]) async {
-    final result = await showDialog<CoachPersona>(
+    final result = await showYueModalBottomSheet<CoachPersona>(
       context: context,
+      isScrollControlled: true,
       builder: (_) => _CustomPersonaDialog(existing: existing),
     );
     if (result == null || !mounted) return;
@@ -587,9 +589,8 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return AlertDialog(
-      title: Text(_isEdit ? '编辑自定义教练' : '新建自定义教练'),
-      content: _fields(),
+    return YueSheetScaffold(
+      title: _isEdit ? '编辑自定义教练' : '新建自定义教练',
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -597,46 +598,46 @@ class _CustomPersonaDialogState extends State<_CustomPersonaDialog> {
         ),
         TextButton(onPressed: _save, child: const Text('保存')),
       ],
+      child: _fields(),
     );
   }
 
   /// R-019 拆出：对话框字段列（名称/描述/语气/人设层/阈值）。
-  Widget _fields() => SingleChildScrollView(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _field(_nameCtrl, '名称', '如：毒舌编辑'),
-        const SizedBox(height: 12),
-        _field(_labelCtrl, '一句话声音描述（选填）', '如：犀利、直给、不许废话'),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _promptCtrl,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            labelText: '语气/角色设定',
-            hintText: '教它怎么说话，会注入到系统提示里',
-          ),
+  Widget _fields() => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _field(_nameCtrl, '名称', '如：毒舌编辑'),
+      const SizedBox(height: 12),
+      _field(_labelCtrl, '一句话声音描述（选填）', '如：犀利、直给、不许废话'),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _promptCtrl,
+        maxLines: 4,
+        decoration: const InputDecoration(
+          labelText: '语气/角色设定',
+          hintText: '教它怎么说话，会注入到系统提示里',
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _layerCtrl,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: '人设层 / 角色口吻（选填，D2）',
-            hintText: '叠加在语气之上，如：以资深文学编辑口吻，多用比喻',
-          ),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _layerCtrl,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          labelText: '人设层 / 角色口吻（选填，D2）',
+          hintText: '叠加在语气之上，如：以资深文学编辑口吻，多用比喻',
         ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _thresholdCtrl,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: '症候直接说明阈值（数字）',
-            helperText: '诊断出超过该数量的症候时，当轮直接逐条说明全部症候',
-          ),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _thresholdCtrl,
+        keyboardType: TextInputType.number,
+        decoration: const InputDecoration(
+          labelText: '症候直接说明阈值（数字）',
+          helperText: '诊断出超过该数量的症候时，当轮直接逐条说明全部症候',
         ),
-      ],
-    ),
+      ),
+    ],
   );
 
   Widget _field(TextEditingController ctrl, String label, String hint) =>

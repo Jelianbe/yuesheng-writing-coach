@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 
 /// 新建主题结果：(主题名, 属性?, 取值?, 章节?, 原文依据?)
@@ -50,8 +51,9 @@ const String kWorldThemeEmptyHint = '暂无设定';
 Future<CreateWorldThemeResult?> showCreateWorldThemeDialog(
   BuildContext context,
 ) {
-  return showDialog<CreateWorldThemeResult>(
+  return showYueModalBottomSheet<CreateWorldThemeResult>(
     context: context,
+    isScrollControlled: true,
     builder: (_) => const _CreateWorldThemeDialog(),
   );
 }
@@ -61,8 +63,9 @@ Future<AppendAssertionResult?> showAppendAssertionDialog(
   BuildContext context, {
   required String themeName,
 }) {
-  return showDialog<AppendAssertionResult>(
+  return showYueModalBottomSheet<AppendAssertionResult>(
     context: context,
+    isScrollControlled: true,
     builder: (_) => _AppendAssertionDialog(themeName: themeName),
   );
 }
@@ -151,31 +154,8 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('新建设定主题', style: context.text.titleLg),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ..._buildTitleFields(),
-            const SizedBox(height: AppSpacing.sm),
-            ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              title: Text('结构化这条设定（可选）', style: context.text.caption),
-              children: [
-                _AssertionFormFields(
-                  attrCtrl: _attrCtrl,
-                  valueCtrl: _valueCtrl,
-                  chapterCtrl: _chapterCtrl,
-                  evidenceCtrl: _evidenceCtrl,
-                  errorText: _assertionError,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    return YueSheetScaffold(
+      title: '新建设定主题',
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -183,6 +163,27 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
         ),
         FilledButton(onPressed: _submit, child: const Text('保存')),
       ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ..._buildTitleFields(),
+          const SizedBox(height: AppSpacing.sm),
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text('结构化这条设定（可选）', style: context.text.caption),
+            children: [
+              _AssertionFormFields(
+                attrCtrl: _attrCtrl,
+                valueCtrl: _valueCtrl,
+                chapterCtrl: _chapterCtrl,
+                evidenceCtrl: _evidenceCtrl,
+                errorText: _assertionError,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -257,17 +258,8 @@ class _AppendAssertionDialogState extends State<_AppendAssertionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('追加设定 · ${widget.themeName}', style: context.text.titleLg),
-      content: SingleChildScrollView(
-        child: _AssertionFormFields(
-          attrCtrl: _attrCtrl,
-          valueCtrl: _valueCtrl,
-          chapterCtrl: _chapterCtrl,
-          evidenceCtrl: _evidenceCtrl,
-          errorText: _error,
-        ),
-      ),
+    return YueSheetScaffold(
+      title: '追加设定 · ${widget.themeName}',
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -275,6 +267,13 @@ class _AppendAssertionDialogState extends State<_AppendAssertionDialog> {
         ),
         FilledButton(onPressed: _submit, child: const Text('保存')),
       ],
+      child: _AssertionFormFields(
+        attrCtrl: _attrCtrl,
+        valueCtrl: _valueCtrl,
+        chapterCtrl: _chapterCtrl,
+        evidenceCtrl: _evidenceCtrl,
+        errorText: _error,
+      ),
     );
   }
 }

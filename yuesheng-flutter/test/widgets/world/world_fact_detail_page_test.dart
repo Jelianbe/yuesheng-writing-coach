@@ -206,7 +206,7 @@ void main() {
     await tester.tap(find.text('＋ 追加设定'));
     await tester.pumpAndSettle();
     final fields = find.descendant(
-      of: find.byType(AlertDialog),
+      of: find.byType(BottomSheet),
       matching: find.byType(TextField),
     );
     await tester.enterText(fields.at(0), '灵气浓度'); // 属性

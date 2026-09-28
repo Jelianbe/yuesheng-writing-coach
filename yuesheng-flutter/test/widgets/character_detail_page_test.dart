@@ -226,7 +226,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final dialogFields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       // 表单预填原值「冷静」，改成「机警」
@@ -250,7 +250,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final dialogFields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(dialogFields.at(1), '孤儿');

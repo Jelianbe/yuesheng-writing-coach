@@ -77,7 +77,7 @@ void main() {
     );
 
     final fields = find.descendant(
-      of: find.byType(AlertDialog),
+      of: find.byType(BottomSheet),
       matching: find.byType(TextField),
     );
     await tester.enterText(fields.at(0), '灵气体系'); // 主题名

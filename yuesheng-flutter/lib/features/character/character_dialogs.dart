@@ -19,6 +19,7 @@ import '../../data/database/database.dart';
 import '../../services/setting_library_service.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 
 /// 新建角色结果：(名字, 首见章节?, 正文?（用户自由写作，正文优先）)
@@ -38,24 +39,14 @@ Future<CreateCharacterResult?> showCreateCharacterDialog(BuildContext context) {
   final nameCtrl = TextEditingController();
   final chapterCtrl = TextEditingController();
   final descCtrl = TextEditingController();
-  return showDialog<CreateCharacterResult>(
+  return showYueModalBottomSheet<CreateCharacterResult>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('新建角色', style: context.text.titleLg),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: _buildCreateCharacterFields(
-            nameCtrl,
-            chapterCtrl,
-            descCtrl,
-          ),
-        ),
-      ),
+    isScrollControlled: true,
+    builder: (sheetCtx) => YueSheetScaffold(
+      title: '新建角色',
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: () => Navigator.pop(sheetCtx),
           child: const Text('取消'),
         ),
         FilledButton(
@@ -63,7 +54,7 @@ Future<CreateCharacterResult?> showCreateCharacterDialog(BuildContext context) {
             final name = nameCtrl.text.trim();
             if (name.isEmpty) return;
             final chapter = int.tryParse(chapterCtrl.text.trim());
-            Navigator.pop(ctx, (
+            Navigator.pop(sheetCtx, (
               name: name,
               firstSeenChapter: chapter,
               description: descCtrl.text.trim(),
@@ -72,6 +63,11 @@ Future<CreateCharacterResult?> showCreateCharacterDialog(BuildContext context) {
           child: const Text('创建'),
         ),
       ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _buildCreateCharacterFields(nameCtrl, chapterCtrl, descCtrl),
+      ),
     ),
   );
 }
@@ -122,19 +118,14 @@ Future<AssertionFormResult?> showAssertionFormDialog(
   final chapterCtrl = TextEditingController(
     text: initialChapter?.toString() ?? '',
   );
-  return showDialog<AssertionFormResult>(
+  return showYueModalBottomSheet<AssertionFormResult>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(title, style: context.text.titleLg),
-      content: _AssertionFormFields(
-        attrCtrl: attrCtrl,
-        valueCtrl: valueCtrl,
-        chapterCtrl: chapterCtrl,
-        suggestions: suggestions,
-      ),
+    isScrollControlled: true,
+    builder: (sheetCtx) => YueSheetScaffold(
+      title: title,
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(ctx),
+          onPressed: () => Navigator.pop(sheetCtx),
           child: const Text('取消'),
         ),
         FilledButton(
@@ -142,7 +133,7 @@ Future<AssertionFormResult?> showAssertionFormDialog(
             final attr = attrCtrl.text.trim();
             final value = valueCtrl.text.trim();
             if (attr.isEmpty || value.isEmpty) return;
-            Navigator.pop(ctx, (
+            Navigator.pop(sheetCtx, (
               attribute: attr,
               value: value,
               chapter: int.tryParse(chapterCtrl.text.trim()),
@@ -151,6 +142,12 @@ Future<AssertionFormResult?> showAssertionFormDialog(
           child: const Text('保存'),
         ),
       ],
+      child: _AssertionFormFields(
+        attrCtrl: attrCtrl,
+        valueCtrl: valueCtrl,
+        chapterCtrl: chapterCtrl,
+        suggestions: suggestions,
+      ),
     ),
   );
 }
@@ -433,9 +430,10 @@ Future<MergeVerdict?> showConflictResolutionDialog(
   required Map<int, int> chapterNoMap,
   Future<String> Function()? aiCompare,
 }) {
-  return showDialog<MergeVerdict>(
+  return showYueModalBottomSheet<MergeVerdict>(
     context: context,
-    builder: (ctx) => _ConflictResolutionDialog(
+    isScrollControlled: true,
+    builder: (sheetCtx) => _ConflictResolutionDialog(
       pair: pair,
       chapterNoMap: chapterNoMap,
       aiCompare: aiCompare,
@@ -486,30 +484,8 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
   @override
   Widget build(BuildContext context) {
     final pair = widget.pair;
-    return AlertDialog(
-      title: Text('疑似重复：${pair.a.attribute}', style: context.text.titleLg),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ConflictCard(
-              label: 'A',
-              assertion: pair.a,
-              chapterNoMap: widget.chapterNoMap,
-              onKeep: () => Navigator.pop(context, MergeVerdict.keepA),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _ConflictCard(
-              label: 'B',
-              assertion: pair.b,
-              chapterNoMap: widget.chapterNoMap,
-              onKeep: () => Navigator.pop(context, MergeVerdict.keepB),
-            ),
-            _buildAiCompareSection(context),
-          ],
-        ),
-      ),
+    return YueSheetScaffold(
+      title: '疑似重复：${pair.a.attribute}',
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -520,6 +496,26 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
           child: const Text('两者都保留'),
         ),
       ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ConflictCard(
+            label: 'A',
+            assertion: pair.a,
+            chapterNoMap: widget.chapterNoMap,
+            onKeep: () => Navigator.pop(context, MergeVerdict.keepA),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _ConflictCard(
+            label: 'B',
+            assertion: pair.b,
+            chapterNoMap: widget.chapterNoMap,
+            onKeep: () => Navigator.pop(context, MergeVerdict.keepB),
+          ),
+          _buildAiCompareSection(context),
+        ],
+      ),
     );
   }
 

@@ -370,7 +370,7 @@ void main() {
       // 弹窗内三个输入框：0 = 名字，1 = 设定正文（可空），2 = 首见章节
       //（必须限定在 AlertDialog 内——页面搜索框也是 TextField）
       final dialogFields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(dialogFields.at(0), '王建国');
@@ -405,7 +405,7 @@ void main() {
       await tester.tap(find.text('+ 新建'));
       await tester.pumpAndSettle();
       final fields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), name);
@@ -485,7 +485,7 @@ void main() {
       await tester.tap(find.text('+ 新建'));
       await tester.pumpAndSettle();
       final fields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '无名氏');

@@ -311,7 +311,7 @@ void main() {
       await tester.tap(find.text('＋ 新建设定主题'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(BottomSheet), findsOneWidget);
       // 设定库第四批：断言区收进「结构化这条设定（可选）」折叠区（正文优先）
       await tester.tap(find.text('结构化这条设定（可选）'));
       await tester.pumpAndSettle();
@@ -329,7 +329,7 @@ void main() {
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
       expect(find.text('请填写主题名'), findsOneWidget);
-      expect(find.byType(AlertDialog), findsOneWidget, reason: '校验失败不得关闭');
+      expect(find.byType(BottomSheet), findsOneWidget, reason: '校验失败不得关闭');
     });
 
     testWidgets('新建：属性填而取值空 → §6-D 错误提示', (tester) async {
@@ -342,7 +342,7 @@ void main() {
       await tester.tap(find.text('结构化这条设定（可选）'));
       await tester.pumpAndSettle();
       final fields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '灵气体系'); // 主题名
@@ -359,14 +359,14 @@ void main() {
       await tester.pumpAndSettle();
 
       final fields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '空主题');
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(AlertDialog), findsNothing, reason: '空主题应放行（Q3）');
+      expect(find.byType(BottomSheet), findsNothing, reason: '空主题应放行（Q3）');
       expect(find.text('空主题'), findsOneWidget, reason: '新主题应出现在列表');
     });
 
@@ -402,7 +402,7 @@ void main() {
       await tester.tap(find.text('结构化这条设定（可选）'));
       await tester.pumpAndSettle();
       final fields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '灵气体系'); // 主题名
@@ -434,7 +434,7 @@ void main() {
       await tester.tap(find.text('结构化这条设定（可选）'));
       await tester.pumpAndSettle();
       final fields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '灵气体系'); // 主题名
@@ -470,7 +470,7 @@ void main() {
       await tester.tap(find.text('结构化这条设定（可选）'));
       await tester.pumpAndSettle();
       final fields = find.descendant(
-        of: find.byType(AlertDialog),
+        of: find.byType(BottomSheet),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '无此章');
@@ -498,7 +498,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final fields = find.descendant(
-      of: find.byType(AlertDialog),
+      of: find.byType(BottomSheet),
       matching: find.byType(TextField),
     );
     await tester.enterText(fields.at(0), '灵气体系'); // 主题名
