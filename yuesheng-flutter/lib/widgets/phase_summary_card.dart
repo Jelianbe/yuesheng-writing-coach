@@ -337,7 +337,7 @@ class PhaseSummaryCard extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: color,
           padding: EdgeInsets.zero,
-          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         child: const Text('继续训练'),
       ),

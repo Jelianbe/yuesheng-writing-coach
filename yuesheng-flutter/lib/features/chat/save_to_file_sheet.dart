@@ -161,7 +161,7 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
         '保存到文件',
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: context.palette.textPrimary,
         ),

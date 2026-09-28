@@ -33,7 +33,7 @@ class BookshelfNoSearchResult extends StatelessWidget {
           child: Text(
             '没有找到相关作品',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               color: context.palette.textSecondary,
             ),
           ),

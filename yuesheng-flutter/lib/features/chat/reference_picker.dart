@@ -333,7 +333,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w500,
                         color: context.palette.textPrimary,
                       ),
@@ -632,7 +632,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w500,
                   color: context.palette.textPrimary,
                 ),

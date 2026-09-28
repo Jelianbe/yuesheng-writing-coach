@@ -43,7 +43,7 @@ class BookshelfLongPressAction extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: labelColor,
               ),

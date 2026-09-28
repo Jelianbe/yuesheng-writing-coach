@@ -196,7 +196,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
           child: Text(
             '${index + 1}',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: context.palette.onPrimary,
             ),

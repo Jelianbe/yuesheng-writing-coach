@@ -325,7 +325,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             child: Text(
               chapter.title.trim().isEmpty ? '未命名章节' : chapter.title.trim(),
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: context.palette.textPrimary,
               ),
@@ -429,7 +429,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             child: Text(
               volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: context.palette.textPrimary,
               ),
@@ -579,7 +579,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
           child: Text(
             '移动到卷',
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
               color: context.palette.textPrimary,
             ),
@@ -844,7 +844,7 @@ class _ChapterTreeItem extends StatelessWidget {
       ),
       child: Text(
         status.label,
-        style: TextStyle(fontSize: 10, color: status.textColor),
+        style: TextStyle(fontSize: 11, color: status.textColor),
       ),
     );
   }

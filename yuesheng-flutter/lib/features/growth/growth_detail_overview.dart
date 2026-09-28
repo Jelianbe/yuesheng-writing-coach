@@ -124,7 +124,7 @@ class GrowthGridItem extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontSize: 17,
+            fontSize: 16,
             fontWeight: FontWeight.w700,
             color: context.palette.textPrimary,
           ),
@@ -170,7 +170,7 @@ class GrowthProgressLink extends StatelessWidget {
               Text(
                 '›',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: context.palette.primary,
                 ),

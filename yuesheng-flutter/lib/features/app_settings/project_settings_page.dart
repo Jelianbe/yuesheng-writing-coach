@@ -340,7 +340,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           child: Text(
             '保存',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: context.palette.primary,
             ),
@@ -603,7 +603,7 @@ class _SectionTitle extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: danger
               ? context.palette.danger

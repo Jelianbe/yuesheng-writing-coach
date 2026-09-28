@@ -94,7 +94,7 @@ class YueSheetScaffold extends StatelessWidget {
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: context.palette.textPrimary,
                 ),

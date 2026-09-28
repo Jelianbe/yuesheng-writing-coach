@@ -281,7 +281,7 @@ class WritingCompletionBadge extends StatelessWidget {
         // X-039-Batch1：8→sm
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
-      child: Text(label, style: TextStyle(fontSize: 10, color: fg)),
+      child: Text(label, style: TextStyle(fontSize: 11, color: fg)),
     );
   }
 }

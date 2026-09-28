@@ -142,7 +142,7 @@ class PhaseUpgradeCard extends StatelessWidget {
       child: Text(
         _phaseLabel,
         style: TextStyle(
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: context.palette.primary,
         ),

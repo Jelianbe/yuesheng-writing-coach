@@ -49,6 +49,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.surfaceWhite,
     required this.paper,
     required this.overlay,
+    required this.overlayLight,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
@@ -120,6 +121,9 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
   /// 弹窗遮罩（半透明黑）
   final Color overlay;
+
+  /// 轻遮罩（B17：轻量覆盖，8–10% 黑，区别于 overlay 深遮罩）
+  final Color overlayLight;
 
   // ── 文字 ──
   /// 主文字
@@ -247,6 +251,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surfaceWhite: Color(0xFFFFFFFF),
     paper: Color(0xFFF5F1E8),
     overlay: Color(0x8A000000),
+    overlayLight: Color(0x1A000000),
     // 文字
     textPrimary: Color(0xFF2D3142),
     textSecondary: Color(0xFF5F646B),
@@ -328,6 +333,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surfaceWhite: Color(0xFF2A2E34),
     paper: Color(0xFF1E2126),
     overlay: Color(0x8A000000),
+    overlayLight: Color(0x1A000000),
     // 文字（反向层级：textPrimary 最亮 → hintText 最暗）
     textPrimary: Color(0xFFE8EAED),
     textSecondary: Color(0xFFBEC3C8),
@@ -383,6 +389,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? surfaceWhite,
     Color? paper,
     Color? overlay,
+    Color? overlayLight,
     Color? textPrimary,
     Color? textSecondary,
     Color? textTertiary,
@@ -429,6 +436,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       surfaceWhite: surfaceWhite ?? this.surfaceWhite,
       paper: paper ?? this.paper,
       overlay: overlay ?? this.overlay,
+      overlayLight: overlayLight ?? this.overlayLight,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textTertiary: textTertiary ?? this.textTertiary,
@@ -482,6 +490,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       surfaceWhite: Color.lerp(surfaceWhite, other.surfaceWhite, t)!,
       paper: Color.lerp(paper, other.paper, t)!,
       overlay: Color.lerp(overlay, other.overlay, t)!,
+      overlayLight: Color.lerp(overlayLight, other.overlayLight, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,

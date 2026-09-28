@@ -327,7 +327,7 @@ class _EmptyView extends StatelessWidget {
             Text(
               '这本书还没有诊断记录',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 14,
                 color: context.palette.textPrimary,
               ),
             ),

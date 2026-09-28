@@ -429,7 +429,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               Text(
                 _CardText.headerTitle,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: context.palette.textPrimary,
                 ),
@@ -586,7 +586,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           Text(
             '×$occurrence',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: cfg.textColor.withValues(alpha: 0.9),
             ),

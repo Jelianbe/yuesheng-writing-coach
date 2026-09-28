@@ -246,7 +246,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
         child: SelectableText(
           _file!.content,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 14,
             height: 1.6,
             color: context.palette.textPrimary,
           ),

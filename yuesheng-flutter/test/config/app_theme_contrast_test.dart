@@ -516,6 +516,7 @@ const Map<String, String> _exemptTokens = {
   //   （见上方 `_coveredTokens` 处的同族说明）。底色属性的守护已转移到
   //   `app_palette_contrast_test.dart` 的 `_lightParity`（对照 `EditorDarkAxis`）。
   'overlay': '遮罩',
+  'overlayLight': '遮罩（B17 浅层覆盖，黑 8–10%，非文字无对比度要求）',
   // 图形 / 装饰（边界项 2：不卡 3:1 —— 卡了会一次红 4-6 处且无从修复）
   'border': '装饰性分隔',
   'borderSoft': '装饰性分隔',

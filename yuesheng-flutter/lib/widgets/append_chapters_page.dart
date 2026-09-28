@@ -443,7 +443,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
           : Text(
               '确认导入',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: context.palette.onPrimary,
               ),

@@ -106,7 +106,7 @@ class TaskPanel extends StatelessWidget {
           Text(
             '暂无活跃问题',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: context.palette.textPrimary,
             ),
@@ -134,7 +134,7 @@ class TaskPanel extends StatelessWidget {
             child: Text(
               '练习任务',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: context.palette.textPrimary,
               ),

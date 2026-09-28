@@ -255,7 +255,7 @@ class SyndromeDetailModal extends StatelessWidget {
         Text(
           '趋势变化',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: context.palette.textPrimary,
           ),
@@ -319,7 +319,7 @@ class SyndromeDetailModal extends StatelessWidget {
         Text(
           '诊断记录',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: context.palette.textPrimary,
           ),

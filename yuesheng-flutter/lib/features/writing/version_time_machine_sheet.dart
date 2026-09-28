@@ -292,7 +292,7 @@ class _VersionTimeMachineSheetState
           Text(
             _selected != null ? '版本详情' : '版本时光机',
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
               color: context.palette.textPrimary,
             ),

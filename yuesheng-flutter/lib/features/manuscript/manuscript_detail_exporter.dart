@@ -128,7 +128,7 @@ class _ExportFormatSheet extends StatelessWidget {
             child: Text(
               '导出为',
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: context.palette.textPrimary,
               ),

@@ -804,7 +804,7 @@ class _Tag extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(label, style: TextStyle(fontSize: 10, color: fg)),
+      child: Text(label, style: TextStyle(fontSize: 11, color: fg)),
     );
   }
 }

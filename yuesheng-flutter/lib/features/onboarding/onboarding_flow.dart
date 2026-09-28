@@ -145,7 +145,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           Text(
             page.title,
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: context.palette.textPrimary,
             ),
@@ -154,7 +154,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           Text(
             page.subtitle,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: context.palette.primary,
             ),
@@ -289,7 +289,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           Text(
             f.text,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: context.palette.textPrimary,
             ),

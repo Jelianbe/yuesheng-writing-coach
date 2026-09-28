@@ -470,7 +470,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                 Text(
                   '有问题尽管问教练',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: context.palette.textSecondary,
                   ),

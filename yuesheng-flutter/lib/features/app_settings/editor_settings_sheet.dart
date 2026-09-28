@@ -80,7 +80,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             Text(
               '排版设置',
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: context.palette.textPrimary,
               ),

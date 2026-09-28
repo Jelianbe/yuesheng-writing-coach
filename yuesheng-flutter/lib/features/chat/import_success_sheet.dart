@@ -108,7 +108,7 @@ class ImportSuccessSheet extends StatelessWidget {
       '导入成功！',
       textAlign: TextAlign.center,
       style: TextStyle(
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: FontWeight.w700,
         color: context.palette.textPrimary,
       ),
@@ -154,7 +154,7 @@ class ImportSuccessSheet extends StatelessWidget {
       child: Text(
         diagnoseEnabled ? '立即诊断' : '返回作品',
         style: TextStyle(
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: context.palette.onPrimary,
         ),
@@ -180,7 +180,7 @@ class ImportSuccessSheet extends StatelessWidget {
         child: Text(
           '稍后再说',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
             color: context.palette.textSecondary,
           ),

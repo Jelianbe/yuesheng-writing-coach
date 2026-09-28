@@ -235,7 +235,7 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
           : Text(
               '生成学习报告',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: context.palette.onPrimary,
               ),
@@ -824,7 +824,7 @@ class _SectionCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: context.palette.textPrimary,
             ),

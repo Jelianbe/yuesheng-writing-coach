@@ -55,7 +55,7 @@ class MoveToVolumeSheet extends StatelessWidget {
       child: Text(
         '移动《${chapter.title.isEmpty ? '未命名章节' : chapter.title}》到',
         style: TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
           color: context.palette.textPrimary,
         ),

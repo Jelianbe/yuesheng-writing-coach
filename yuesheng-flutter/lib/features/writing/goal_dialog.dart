@@ -68,7 +68,7 @@ class _GoalDialogState extends State<GoalDialog> {
       child: Text(
         '本章写作目标',
         style: TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
           color: context.palette.textPrimary,
         ),

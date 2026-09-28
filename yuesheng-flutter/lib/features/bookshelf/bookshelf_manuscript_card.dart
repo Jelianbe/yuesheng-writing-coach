@@ -115,7 +115,7 @@ class BookshelfManuscriptCard extends StatelessWidget {
       child: Text(
         firstChar,
         style: TextStyle(
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: FontWeight.w700,
           color: context.palette.onPrimary,
         ),
@@ -139,7 +139,7 @@ class BookshelfManuscriptCard extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: context.palette.textPrimary,
           ),

@@ -180,7 +180,7 @@ class _VolumeActionsSheet extends StatelessWidget {
       child: Text(
         volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
         style: TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
           color: context.palette.textPrimary,
         ),

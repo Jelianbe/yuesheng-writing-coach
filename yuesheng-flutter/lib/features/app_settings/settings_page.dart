@@ -697,7 +697,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             child: Text(
               '默认',
-              style: TextStyle(fontSize: 10, color: context.palette.primary),
+              style: TextStyle(fontSize: 11, color: context.palette.primary),
             ),
           ),
         ],
@@ -1472,7 +1472,7 @@ class _ProgressSection extends StatelessWidget {
       Text(
         '${progress.round()}%',
         style: TextStyle(
-          fontSize: 22,
+          fontSize: 18,
           fontWeight: FontWeight.w700,
           color: context.palette.textPrimary,
         ),

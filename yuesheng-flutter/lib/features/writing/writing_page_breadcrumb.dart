@@ -100,7 +100,7 @@ class WritingPageBreadcrumb extends ConsumerWidget {
   Widget _buildLine(String text, Color color) {
     final label = Text(
       text,
-      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color),
+      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: color),
       overflow: TextOverflow.ellipsis,
     );
     final onTap = this.onTap;

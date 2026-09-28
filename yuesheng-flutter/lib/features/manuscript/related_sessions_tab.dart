@@ -142,7 +142,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
       child: Text(
         '月',
         style: TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: context.palette.textTertiary,
         ),
@@ -162,7 +162,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: context.palette.textPrimary,
                 ),

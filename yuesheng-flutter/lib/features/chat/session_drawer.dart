@@ -106,7 +106,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
               '对话',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 17,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: context.palette.textPrimary,
               ),
@@ -165,7 +165,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
           Text(
             '还没有会话',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
               color: context.palette.textPrimary,
             ),
@@ -245,7 +245,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
       child: Text(
         '月',
         style: TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: isActive
               ? context.palette.onPrimary
@@ -276,7 +276,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: context.palette.textPrimary,
                 ),
@@ -376,7 +376,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               color: danger
                   ? context.palette.danger
                   : context.palette.textPrimary,

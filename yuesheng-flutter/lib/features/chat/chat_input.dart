@@ -333,7 +333,7 @@ class ChatInputState extends State<ChatInput> {
             vertical: AppSpacing.smx,
           ),
         ),
-        style: TextStyle(fontSize: 15, color: context.palette.textPrimary),
+        style: TextStyle(fontSize: 14, color: context.palette.textPrimary),
       ),
     );
   }

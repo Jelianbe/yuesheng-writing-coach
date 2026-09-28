@@ -60,7 +60,7 @@ class BookshelfFilterController {
         border: InputBorder.none,
         isDense: true,
       ),
-      style: TextStyle(fontSize: 15, color: host.context.palette.textPrimary),
+      style: TextStyle(fontSize: 14, color: host.context.palette.textPrimary),
       onChanged: host.setQuery,
     );
   }

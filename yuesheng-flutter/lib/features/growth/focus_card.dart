@@ -55,7 +55,7 @@ class _CardBody extends StatelessWidget {
           Text(
             '建议先关注：${data.focusName}',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: context.palette.textPrimary,
             ),

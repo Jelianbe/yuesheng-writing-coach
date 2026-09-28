@@ -84,6 +84,7 @@ final List<(String, Color, Color)> _lightParity = [
   ('surfaceWhite', AppPalette.light.surfaceWhite, AppColors.surfaceWhite),
   ('paper', AppPalette.light.paper, AppColors.paper),
   ('overlay', AppPalette.light.overlay, AppColors.overlay),
+  ('overlayLight', AppPalette.light.overlayLight, AppColors.overlayLight),
   // ── 文字 ──
   ('textPrimary', AppPalette.light.textPrimary, AppColors.textPrimary),
   ('textSecondary', AppPalette.light.textSecondary, AppColors.textSecondary),
@@ -230,6 +231,7 @@ const Map<String, String> _darkExempt = {
   'editorDarkPanel': '底色（暗色下与 paper 同族）',
   'editorDarkDeepMuted': '底色（非前景；app_theme.dart:89 自陈「输入框/分隔底」）',
   'overlay': '遮罩',
+  'overlayLight': '遮罩（B17 浅层覆盖，黑 8–10%，非文字无对比度要求）',
   // 图形 / 装饰
   'border': '装饰性分隔（暗色下必须比底色亮才是可见边框）',
   'borderSoft': '装饰性分隔',

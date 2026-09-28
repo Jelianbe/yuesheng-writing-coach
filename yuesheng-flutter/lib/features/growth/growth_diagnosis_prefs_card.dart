@@ -200,7 +200,7 @@ class _GrowthDiagnosisPrefsCardState
         Text(
           '诊断偏好',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: palette.textPrimary,
           ),

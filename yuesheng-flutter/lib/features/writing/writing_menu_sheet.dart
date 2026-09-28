@@ -299,7 +299,7 @@ class _MenuItem extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               color: textColor ?? context.palette.textInk,
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
             ),

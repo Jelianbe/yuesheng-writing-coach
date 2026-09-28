@@ -212,7 +212,7 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
         style: FilledButton.styleFrom(backgroundColor: context.palette.primary),
         child: const Text(
           '开始练习',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );

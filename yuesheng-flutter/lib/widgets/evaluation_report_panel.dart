@@ -300,7 +300,7 @@ class _StatItem extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: valueColor ?? context.palette.textPrimary,
             ),

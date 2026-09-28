@@ -243,7 +243,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
         Text(
           '练习任务',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: context.palette.textPrimary,
           ),

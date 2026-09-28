@@ -204,7 +204,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
       Text(
         '还没有素材文件',
         style: TextStyle(
-          fontSize: 15,
+          fontSize: 14,
           fontWeight: FontWeight.w500,
           color: context.palette.textPrimary,
         ),

@@ -40,7 +40,7 @@ class ChapterListHeader extends StatelessWidget {
           Text(
             '章节列表',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
               color: context.palette.textSecondary,
             ),

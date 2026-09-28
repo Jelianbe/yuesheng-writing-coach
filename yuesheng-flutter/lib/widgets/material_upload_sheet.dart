@@ -213,7 +213,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
       '添加素材到《${widget.bookTitle}》',
       textAlign: TextAlign.center,
       style: TextStyle(
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: FontWeight.w600,
         color: context.palette.textPrimary,
       ),
@@ -420,7 +420,7 @@ class _OptionCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: context.palette.textPrimary,
                     ),

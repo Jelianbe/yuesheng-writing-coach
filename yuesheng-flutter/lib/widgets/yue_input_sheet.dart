@@ -105,7 +105,7 @@ class _YueInputSheetState extends State<YueInputSheet> {
       child: Text(
         widget.title,
         style: TextStyle(
-          fontSize: 17,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
           color: context.palette.textPrimary,
         ),

@@ -194,7 +194,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
           Text(
             '回收站是空的',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 14,
               color: context.palette.textSecondary,
             ),
           ),
@@ -233,7 +233,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: context.palette.textPrimary,
                   ),

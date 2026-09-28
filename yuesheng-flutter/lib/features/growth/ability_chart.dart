@@ -133,7 +133,7 @@ class _AbilityRow extends StatelessWidget {
         Text(
           '$score',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: color,
           ),
@@ -206,7 +206,7 @@ class _Section extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: context.palette.textPrimary,
                       ),

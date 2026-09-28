@@ -71,7 +71,7 @@ class SyndromeHistoryList extends StatelessWidget {
       Text(
         '症候追踪历史',
         style: TextStyle(
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: FontWeight.w600,
           color: context.palette.textPrimary,
         ),
@@ -227,7 +227,7 @@ class _TimelineItem extends StatelessWidget {
           child: Text(
             isResolved ? '解决' : '发现',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: context.palette.onPrimary,
             ),

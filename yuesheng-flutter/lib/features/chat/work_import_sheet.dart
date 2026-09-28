@@ -287,7 +287,7 @@ class _OptionCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: context.palette.textPrimary,
                     ),

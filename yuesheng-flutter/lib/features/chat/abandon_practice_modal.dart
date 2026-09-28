@@ -138,7 +138,7 @@ class AbandonPracticeDialog extends StatelessWidget {
         child: Text(
           '继续练习',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: context.palette.onPrimary,
           ),
@@ -164,7 +164,7 @@ class AbandonPracticeDialog extends StatelessWidget {
         child: Text(
           '确认跳过',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
             color: context.palette.textSecondary,
           ),

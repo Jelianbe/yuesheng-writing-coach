@@ -95,7 +95,7 @@ class CharacterAssertionTile extends StatelessWidget {
       style: context.text.body.copyWith(
         color: gray ? context.palette.textTertiary : context.palette.textInk,
         decoration: _rejected ? TextDecoration.lineThrough : null,
-        fontSize: 15,
+        fontSize: 14,
       ),
     );
   }

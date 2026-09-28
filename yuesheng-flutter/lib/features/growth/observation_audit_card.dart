@@ -324,7 +324,7 @@ class _StatItem extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 11,
                 color: context.palette.textTertiary,
               ),
             ),

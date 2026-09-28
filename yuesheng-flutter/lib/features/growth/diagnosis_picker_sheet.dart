@@ -204,7 +204,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
         children: [
           Text(
             '还没有作品',
-            style: TextStyle(fontSize: 15, color: context.palette.textTertiary),
+            style: TextStyle(fontSize: 14, color: context.palette.textTertiary),
           ),
           const SizedBox(height: 8),
           InkWell(
@@ -257,7 +257,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: context.palette.textPrimary,
                     ),

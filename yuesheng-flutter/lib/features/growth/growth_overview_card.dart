@@ -82,7 +82,7 @@ class GrowthOverviewCard extends StatelessWidget {
             Text(
               '月笙',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: context.palette.onPrimary,
               ),
@@ -153,7 +153,7 @@ class GrowthOverviewCard extends StatelessWidget {
             Text(
               '›',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 color: context.palette.onPrimaryDim,
                 fontWeight: FontWeight.w700,
               ),
@@ -183,7 +183,7 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
             color: valueColor,
           ),
