@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../../providers/writing_providers.dart';
 import 'goal_dialog.dart';
+import '../../widgets/yue_sheet.dart';
 import 'writing_page_host.dart';
 import 'writing_page_document_controller.dart';
 import '../../config/app_palette.dart';
@@ -70,8 +71,9 @@ class WritingPageStatusController {
     final current = _host.ref
         .read(writingStoreProvider(_host.chapterId))
         .goalWords;
-    final result = await showDialog<int>(
+    final result = await showYueModalBottomSheet<int>(
       context: _host.context,
+      isScrollControlled: true,
       builder: (_) => GoalDialog(current: current),
     );
     if (result != null && _host.mounted) {

@@ -25,6 +25,7 @@ import '../../providers/chapter_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import '../../utils/volume_group.dart';
 import '../manuscript/manuscript_detail_chapter_card.dart';
+import '../../widgets/yue_input_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
@@ -265,31 +266,15 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
 
   /// 修复3：重命名章节（铅笔图标 + 操作弹层均走这里）
   Future<void> _handleRenameChapter(Chapter chapter) async {
-    final controller = TextEditingController(text: chapter.title);
-    final input = await showDialog<String>(
+    final input = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('重命名章节'),
-        content: TextField(
-          key: ValueKey('tree-rename-${chapter.id}'),
-          controller: controller,
-          autofocus: true,
-          maxLength: 30,
-          decoration: const InputDecoration(hintText: '输入章节标题'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.palette.primary,
-            ),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('保存'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => YueInputSheet(
+        title: '重命名章节',
+        hintText: '输入章节标题',
+        maxLength: 30,
+        fieldKey: ValueKey('tree-rename-${chapter.id}'),
+        initialValue: chapter.title,
       ),
     );
     if (input == null) return;
@@ -400,31 +385,15 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
 
   /// 新建卷输入框——从 _handleCreateVolume 抽出（R-019 职责提取）。
   Future<String?> _promptNewVolumeName() {
-    final controller = TextEditingController();
-    return showDialog<String>(
+    return showYueModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('新建卷'),
-        content: TextField(
-          key: const ValueKey('new-volume-field'),
-          controller: controller,
-          autofocus: true,
-          maxLength: 12,
-          decoration: const InputDecoration(hintText: '留空自动命名「第一卷/第二卷…」'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.palette.primary,
-            ),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('创建'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => const YueInputSheet(
+        title: '新建卷',
+        hintText: '留空自动命名「第一卷/第二卷…」',
+        maxLength: 12,
+        fieldKey: ValueKey('new-volume-field'),
+        confirmText: '创建',
       ),
     );
   }
@@ -490,31 +459,15 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
 
   /// 批次92-2：重命名卷（长按菜单 + 铅笔图标均走这里）
   Future<void> _handleRenameVolume(Volume volume) async {
-    final controller = TextEditingController(text: volume.title);
-    final input = await showDialog<String>(
+    final input = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('重命名卷'),
-        content: TextField(
-          key: const ValueKey('tree-rename-volume-field'),
-          controller: controller,
-          autofocus: true,
-          maxLength: 12,
-          decoration: const InputDecoration(hintText: '输入卷名'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: context.palette.primary,
-            ),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('保存'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => YueInputSheet(
+        title: '重命名卷',
+        hintText: '输入卷名',
+        maxLength: 12,
+        fieldKey: const ValueKey('tree-rename-volume-field'),
+        initialValue: volume.title,
       ),
     );
     if (input == null) return;

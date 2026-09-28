@@ -880,12 +880,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('本章写作目标'), findsOneWidget);
 
-      // 输入目标 100 → 保存
-      final goalInput = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(TextField),
-      );
-      await tester.enterText(goalInput, '100');
+      // 输入目标 100 → 保存（P0-3：设置目标已改底部 Sheet，用 Key 定位输入框）
+      await tester.enterText(find.byKey(const Key('goal-word-field')), '100');
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 

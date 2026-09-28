@@ -25,6 +25,7 @@ import 'manuscript_detail_chapter_actions_sheet.dart';
 import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';
 import 'manuscript_detail_move_to_volume_sheet.dart';
+import '../../widgets/yue_input_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
 
@@ -104,29 +105,15 @@ class ManuscriptDetailChapterController {
 
   /// 修复3：重命名章节（铅笔图标 + 长按菜单均走这里）
   Future<void> renameChapter(Chapter chapter) async {
-    final controller = TextEditingController(text: chapter.title);
-    final input = await showDialog<String>(
+    final input = await showYueModalBottomSheet<String>(
       context: host.context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('重命名章节'),
-        content: TextField(
-          key: ValueKey('rename-chapter-${chapter.id}'),
-          controller: controller,
-          autofocus: true,
-          maxLength: 30,
-          decoration: const InputDecoration(hintText: '输入章节标题'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: ctx.palette.primary),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('保存'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => YueInputSheet(
+        title: '重命名章节',
+        hintText: '输入章节标题',
+        maxLength: 30,
+        fieldKey: ValueKey('rename-chapter-${chapter.id}'),
+        initialValue: chapter.title,
       ),
     );
     if (input == null) return;

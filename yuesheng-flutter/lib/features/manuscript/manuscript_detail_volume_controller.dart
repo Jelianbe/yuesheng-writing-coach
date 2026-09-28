@@ -17,6 +17,7 @@ import '../../providers/chapter_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';
+import '../../widgets/yue_input_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
 
@@ -29,29 +30,15 @@ class ManuscriptDetailVolumeController {
 
   /// 修复4：详情页新建卷（对齐章节树抽屉逻辑，留空自动"第一卷/第二卷…"）
   Future<void> createVolume() async {
-    final controller = TextEditingController();
-    final input = await showDialog<String>(
+    final input = await showYueModalBottomSheet<String>(
       context: host.context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('新建卷'),
-        content: TextField(
-          key: const ValueKey('detail-new-volume-field'),
-          controller: controller,
-          autofocus: true,
-          maxLength: 12,
-          decoration: const InputDecoration(hintText: '留空自动命名「第一卷/第二卷…」'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: ctx.palette.primary),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('创建'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => const YueInputSheet(
+        title: '新建卷',
+        hintText: '留空自动命名「第一卷/第二卷…」',
+        maxLength: 12,
+        fieldKey: ValueKey('detail-new-volume-field'),
+        confirmText: '创建',
       ),
     );
     if (input == null) return;
@@ -77,29 +64,15 @@ class ManuscriptDetailVolumeController {
 
   /// 批次92-2：卷重命名（详情页卷头铅笔 + 长按菜单）
   Future<void> renameVolume(Volume volume) async {
-    final controller = TextEditingController(text: volume.title);
-    final input = await showDialog<String>(
+    final input = await showYueModalBottomSheet<String>(
       context: host.context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('重命名卷'),
-        content: TextField(
-          key: const ValueKey('detail-rename-volume-field'),
-          controller: controller,
-          autofocus: true,
-          maxLength: 12,
-          decoration: const InputDecoration(hintText: '输入卷名'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: ctx.palette.primary),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('保存'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => YueInputSheet(
+        title: '重命名卷',
+        hintText: '输入卷名',
+        maxLength: 12,
+        fieldKey: const ValueKey('detail-rename-volume-field'),
+        initialValue: volume.title,
       ),
     );
     if (input == null) return;
