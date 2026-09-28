@@ -378,7 +378,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
           Expanded(
             child: Text(
               '最近批次沉淀 $total 条（按断言落库时间过滤；提示卡仅本次会话内有效）',
-              style: context.text.noteCaption.copyWith(
+              style: context.text.caption.copyWith(
                 color: context.palette.l1Text,
               ),
             ),
@@ -457,7 +457,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
         title: Row(
           children: [
             Expanded(
-              child: Text(row.name, style: context.text.titleMd, maxLines: 1),
+              child: Text(row.name, style: context.text.title, maxLines: 1),
             ),
             _buildNewBadge(row),
           ],
@@ -506,7 +506,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: Text(
               summary,
-              style: context.text.noteCaption,
+              style: context.text.caption,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

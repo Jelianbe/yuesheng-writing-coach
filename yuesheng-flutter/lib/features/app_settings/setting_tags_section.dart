@@ -81,7 +81,7 @@ class _SettingTagsSectionState extends ConsumerState<SettingTagsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('标签', style: context.text.titleMd),
+        Text('标签', style: context.text.title),
         const SizedBox(height: AppSpacing.xs),
         if (_tags.isEmpty)
           Text('暂无标签，添加后便于检索归类', style: context.text.caption)

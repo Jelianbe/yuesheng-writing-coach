@@ -299,10 +299,7 @@ class _VersionTimeMachineSheetState
           ),
           if (_selected == null) ...[
             const SizedBox(height: 4),
-            Text(
-              '每 200 字自动保存一个版本，越早的版本保留间隔越大',
-              style: context.text.noteCaption,
-            ),
+            Text('每 200 字自动保存一个版本，越早的版本保留间隔越大', style: context.text.caption),
           ],
           const SizedBox(height: 12),
           SizedBox(
@@ -363,7 +360,7 @@ class _VersionTimeMachineSheetState
     return [
       Text(
         '${_formatTime(v.savedAt)} · ${v.wordCount}字',
-        style: context.text.noteCaption,
+        style: context.text.caption,
       ),
       const SizedBox(height: 6),
       Text(
@@ -468,7 +465,7 @@ class _VersionTimeMachineSheetState
           Text(
             '还没有版本记录\n写到 200 字时会自动保存一个版本',
             textAlign: TextAlign.center,
-            style: context.text.subCaption,
+            style: context.text.subBody,
           ),
         ],
       ),

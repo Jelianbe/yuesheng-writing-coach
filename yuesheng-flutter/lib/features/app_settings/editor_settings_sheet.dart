@@ -390,7 +390,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           child: Text(
             display,
             textAlign: TextAlign.right,
-            style: context.text.subCaption,
+            style: context.text.subBody,
           ),
         ),
       ],

@@ -9,7 +9,7 @@
 //
 // 竹青化适配（月笙令牌）：
 //   - track 底 AppColors.placeholder（浅灰青），fill AppColors.primary 竹青
-//   - label/value 字号 11 走 noteCaption 语义，颜色 textTertiary / primary
+//   - label/value 字号 11 走 caption 语义，颜色 textTertiary / primary
 //   - 高度 4px、圆角 AppRadius.xs，不引入玻璃效果（月笙扁平竹青体系）
 //
 // 数据诚实约束：value 必须来自真实数据（如诊断 payload.confidence），

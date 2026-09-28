@@ -134,7 +134,7 @@ class ReferenceChangeCard extends StatelessWidget {
           subtitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: context.text.noteCaption,
+          style: context.text.caption,
         ),
       ],
     );

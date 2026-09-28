@@ -371,7 +371,7 @@ class _OutlineConfirmationCardState
         const SizedBox(width: 6),
         Text(
           '已确认 $approved/${widget.payload.impressions.length} 条印象',
-          style: context.text.noteCaption,
+          style: context.text.caption,
         ),
       ],
     );

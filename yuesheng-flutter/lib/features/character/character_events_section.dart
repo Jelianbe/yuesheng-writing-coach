@@ -43,7 +43,7 @@ class CharacterEventsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(height: AppSpacing.section),
-        Text('相关事件 (${events.length})', style: context.text.titleMd),
+        Text('相关事件 (${events.length})', style: context.text.title),
         const SizedBox(height: AppSpacing.xsm),
         for (final e in events)
           ListTile(
@@ -54,7 +54,7 @@ class CharacterEventsSection extends StatelessWidget {
                 _TypeChip(eventType: e.eventType),
                 const SizedBox(width: AppSpacing.xsm),
                 Expanded(
-                  child: Text(e.name, style: context.text.titleMd, maxLines: 1),
+                  child: Text(e.name, style: context.text.title, maxLines: 1),
                 ),
                 Text(_chapterText(e), style: context.text.microCaption),
               ],

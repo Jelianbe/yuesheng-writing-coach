@@ -153,7 +153,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
       Text(
         '选择一个章节进行写作分析',
         textAlign: TextAlign.center,
-        style: context.text.subCaption,
+        style: context.text.subBody,
       ),
     ];
   }

@@ -154,9 +154,9 @@ abstract final class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
-  /// 章节标题 / 卡片标题（fontSize:14 / w600 / textInk）
-  static const TextStyle titleMd = TextStyle(
-    fontSize: 14,
+  /// 章节标题 / 卡片标题（fontSize:16 / w600 / textInk）
+  static const TextStyle title = TextStyle(
+    fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textInk,
   );
@@ -178,21 +178,6 @@ abstract final class AppTextStyles {
   /// 弱化辅助文字 / caption（fontSize:12 / textTertiary）
   static const TextStyle caption = TextStyle(
     fontSize: 12,
-    color: AppColors.textTertiary,
-  );
-
-  /// 次级说明文字 / noteCaption（fontSize:12 / textSecondary，比 caption 颜色深一档）
-  /// 用于需要 secondary 级可读性的 12px 说明文字（比 caption 的 tertiary 更重要）。
-  /// 变体用 .copyWith(fontWeight/height) 扩展。频次 23 处（20 纯形 + 3 变体），2026-08-27 新增。
-  static const TextStyle noteCaption = TextStyle(
-    fontSize: 12,
-    color: AppColors.textSecondary,
-  );
-
-  /// 次级辅助文字 / subCaption（fontSize:13 / textTertiary，比 caption 大一档）
-  /// 用于操作说明、辅助提示等略大于 caption 的弱化文字。频次 15 处，2026-08-27 新增。
-  static const TextStyle subCaption = TextStyle(
-    fontSize: 13,
     color: AppColors.textTertiary,
   );
 

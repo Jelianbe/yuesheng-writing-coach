@@ -154,7 +154,7 @@ class _SettingTagOverviewPageState
         children: [
           Text(
             '#${group.tag} (${group.items.length})',
-            style: context.text.titleMd,
+            style: context.text.title,
           ),
           const SizedBox(height: AppSpacing.xs),
           for (final item in group.items)

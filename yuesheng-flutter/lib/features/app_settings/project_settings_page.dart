@@ -314,7 +314,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         _buildCurrentTagsWrap(),
         // 批次94-5：热门标签预设（点击即加入，已含不再显示）
         const SizedBox(height: 14),
-        Text('热门标签', style: context.text.subCaption),
+        Text('热门标签', style: context.text.subBody),
         const SizedBox(height: 8),
         _buildTagPresetsWrap(),
       ],
@@ -493,7 +493,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             style: BorderStyle.solid,
           ),
         ),
-        child: Text('+ 添加标签', style: context.text.subCaption),
+        child: Text('+ 添加标签', style: context.text.subBody),
       ),
     );
   }

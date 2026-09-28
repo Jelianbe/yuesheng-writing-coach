@@ -37,7 +37,7 @@ class SettingDescriptionCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text('设定正文', style: context.text.titleMd)),
+                Expanded(child: Text('设定正文', style: context.text.title)),
                 TextButton(onPressed: onEdit, child: const Text('编辑')),
               ],
             ),

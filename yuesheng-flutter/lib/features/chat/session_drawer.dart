@@ -172,7 +172,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
           Text(
             '发起你的第一次对话，开始写作诊断之旅',
             textAlign: TextAlign.center,
-            style: context.text.subCaption,
+            style: context.text.subBody,
           ),
           const SizedBox(height: 20),
           FilledButton(

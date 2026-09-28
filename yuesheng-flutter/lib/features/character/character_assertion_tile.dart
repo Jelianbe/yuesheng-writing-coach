@@ -225,7 +225,7 @@ class CharacterAssertionTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_originalTextTitle(), style: context.text.titleMd),
+              Text(_originalTextTitle(), style: context.text.title),
               const SizedBox(height: AppSpacing.md),
               if (text == null || text.isEmpty)
                 Text('未定位到原文', style: context.text.body)

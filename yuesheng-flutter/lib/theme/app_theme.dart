@@ -109,7 +109,7 @@ TextTheme _textTheme(AppPalette p) => TextTheme(
     fontWeight: FontWeight.w600,
     color: p.textPrimary,
   ),
-  bodyMedium: TextStyle(fontSize: 15, color: p.textPrimary),
+  bodyMedium: TextStyle(fontSize: 14, color: p.textPrimary),
   bodySmall: TextStyle(fontSize: 13, color: p.textSecondary),
 );
 

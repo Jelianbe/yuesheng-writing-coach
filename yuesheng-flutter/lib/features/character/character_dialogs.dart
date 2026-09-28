@@ -258,7 +258,7 @@ Future<({bool confirmed, String? reason})?> showRejectReasonSheet(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('选择拒绝理由（可选）', style: context.text.titleMd),
+            Text('选择拒绝理由（可选）', style: context.text.title),
             const SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: AppSpacing.sm,
@@ -401,7 +401,7 @@ Future<CharacterFact?> showMergePickerDialog(
               onPressed: () => Navigator.pop(ctx, c),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(c.name, style: context.text.titleMd),
+                title: Text(c.name, style: context.text.title),
                 subtitle: Text(
                   '该行的断言将迁入本角色，源名收进别名',
                   style: context.text.caption,

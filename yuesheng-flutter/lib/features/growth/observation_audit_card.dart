@@ -268,7 +268,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
               preview,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: context.text.noteCaption,
+              style: context.text.caption,
             ),
           ],
         ),

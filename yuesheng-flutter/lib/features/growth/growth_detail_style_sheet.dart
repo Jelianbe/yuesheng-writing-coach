@@ -161,7 +161,7 @@ class _GrowthStyleCorrectionSheetState
         Text(
           '风格由 AI 从你的文本自动识别。如判断有误，可在此纠正坐标；'
           '下次诊断仍会按你的新文本重新识别。',
-          style: context.text.noteCaption.copyWith(height: 1.5),
+          style: context.text.caption.copyWith(height: 1.5),
         ),
         const SizedBox(height: 12),
         Text('AI 描述', style: context.text.caption),

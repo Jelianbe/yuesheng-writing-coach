@@ -122,7 +122,7 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
       children: [
         Row(
           children: [
-            Text('关联设定', style: context.text.titleMd),
+            Text('关联设定', style: context.text.title),
             const Spacer(),
             TextButton.icon(
               onPressed: _addLink,

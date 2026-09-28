@@ -129,10 +129,7 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              '其他设定（${_entries.length}）',
-              style: context.text.titleMd,
-            ),
+            child: Text('其他设定（${_entries.length}）', style: context.text.title),
           ),
           FilledButton.tonalIcon(
             onPressed: () => _showCreate(),
@@ -277,7 +274,7 @@ class _EntryCard extends StatelessWidget {
         Expanded(
           child: Text(
             entry.name,
-            style: context.text.titleMd,
+            style: context.text.title,
             overflow: TextOverflow.ellipsis,
           ),
         ),

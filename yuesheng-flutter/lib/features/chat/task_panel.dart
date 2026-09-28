@@ -115,7 +115,7 @@ class TaskPanel extends StatelessWidget {
           Text(
             '完成诊断后会显示需要解决的问题',
             textAlign: TextAlign.center,
-            style: context.text.subCaption,
+            style: context.text.subBody,
           ),
         ],
       ),

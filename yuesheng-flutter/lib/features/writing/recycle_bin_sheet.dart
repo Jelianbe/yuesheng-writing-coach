@@ -219,7 +219,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
           Text(
             '回收板是空的\n删掉的长文本会自动留在这里',
             textAlign: TextAlign.center,
-            style: context.text.subCaption,
+            style: context.text.subBody,
           ),
         ],
       ),

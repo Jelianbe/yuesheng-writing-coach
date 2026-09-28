@@ -3,7 +3,7 @@
 //
 // 背景：用户反馈「部分系统字体与背景色色差不足、可读性差」。
 // 已查证：textTertiary（#858B92）对背景 #F7F8F6 仅 3.23:1，
-// caption/microCaption/subCaption 等 11-13px 小号文字不达 WCAG AA
+// caption/microCaption/subBody 等 11-13px 小号文字不达 WCAG AA
 // 正文标准（4.5:1）。批次99b 加深 textSecondary / textTertiary /
 // textDeep / primaryDeep。
 //
@@ -465,15 +465,13 @@ void _popupMenuTests() {
 // I. meta 覆盖：把「护栏自身会不会漏」变成机器判据
 // ─────────────────────────────────────────────────────────────
 
-/// `AppTextStyles` 的 9 档及各自颜色令牌名（Dart 无 `dart:mirrors`，只能手工维护）
+/// `AppTextStyles` 的 7 档及各自颜色令牌名（Dart 无 `dart:mirrors`，只能手工维护）
 const List<(String, TextStyle, String)> _textStyleTokens = [
   ('titleLg', AppTextStyles.titleLg, 'textPrimary'),
-  ('titleMd', AppTextStyles.titleMd, 'textInk'),
+  ('title', AppTextStyles.title, 'textInk'),
   ('body', AppTextStyles.body, 'textSecondary'),
   ('microCaption', AppTextStyles.microCaption, 'textTertiary'),
   ('caption', AppTextStyles.caption, 'textTertiary'),
-  ('noteCaption', AppTextStyles.noteCaption, 'textSecondary'),
-  ('subCaption', AppTextStyles.subCaption, 'textTertiary'),
   ('subBody', AppTextStyles.subBody, 'textSecondary'),
   ('formLabel', AppTextStyles.formLabel, 'textBody'),
 ];

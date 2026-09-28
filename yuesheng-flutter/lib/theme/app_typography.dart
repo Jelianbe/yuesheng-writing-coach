@@ -22,12 +22,10 @@ import '../config/app_palette.dart';
 class AppTypography extends ThemeExtension<AppTypography> {
   const AppTypography({
     required this.titleLg,
-    required this.titleMd,
+    required this.title,
     required this.body,
     required this.microCaption,
     required this.caption,
-    required this.noteCaption,
-    required this.subCaption,
     required this.subBody,
     required this.formLabel,
   });
@@ -39,16 +37,14 @@ class AppTypography extends ThemeExtension<AppTypography> {
       fontWeight: FontWeight.w600,
       color: p.textPrimary,
     ),
-    titleMd: TextStyle(
-      fontSize: 14,
+    title: TextStyle(
+      fontSize: 16,
       fontWeight: FontWeight.w600,
       color: p.textInk,
     ),
     body: TextStyle(fontSize: 14, color: p.textSecondary),
     microCaption: TextStyle(fontSize: 11, color: p.textTertiary),
     caption: TextStyle(fontSize: 12, color: p.textTertiary),
-    noteCaption: TextStyle(fontSize: 12, color: p.textSecondary),
-    subCaption: TextStyle(fontSize: 13, color: p.textTertiary),
     subBody: TextStyle(fontSize: 13, color: p.textSecondary),
     formLabel: TextStyle(
       fontSize: 14,
@@ -61,35 +57,29 @@ class AppTypography extends ThemeExtension<AppTypography> {
   static final AppTypography dark = AppTypography.from(AppPalette.dark);
 
   final TextStyle titleLg;
-  final TextStyle titleMd;
+  final TextStyle title;
   final TextStyle body;
   final TextStyle microCaption;
   final TextStyle caption;
-  final TextStyle noteCaption;
-  final TextStyle subCaption;
   final TextStyle subBody;
   final TextStyle formLabel;
 
   @override
   AppTypography copyWith({
     TextStyle? titleLg,
-    TextStyle? titleMd,
+    TextStyle? title,
     TextStyle? body,
     TextStyle? microCaption,
     TextStyle? caption,
-    TextStyle? noteCaption,
-    TextStyle? subCaption,
     TextStyle? subBody,
     TextStyle? formLabel,
   }) {
     return AppTypography(
       titleLg: titleLg ?? this.titleLg,
-      titleMd: titleMd ?? this.titleMd,
+      title: title ?? this.title,
       body: body ?? this.body,
       microCaption: microCaption ?? this.microCaption,
       caption: caption ?? this.caption,
-      noteCaption: noteCaption ?? this.noteCaption,
-      subCaption: subCaption ?? this.subCaption,
       subBody: subBody ?? this.subBody,
       formLabel: formLabel ?? this.formLabel,
     );
@@ -100,12 +90,10 @@ class AppTypography extends ThemeExtension<AppTypography> {
     if (other is! AppTypography) return this;
     return AppTypography(
       titleLg: TextStyle.lerp(titleLg, other.titleLg, t)!,
-      titleMd: TextStyle.lerp(titleMd, other.titleMd, t)!,
+      title: TextStyle.lerp(title, other.title, t)!,
       body: TextStyle.lerp(body, other.body, t)!,
       microCaption: TextStyle.lerp(microCaption, other.microCaption, t)!,
       caption: TextStyle.lerp(caption, other.caption, t)!,
-      noteCaption: TextStyle.lerp(noteCaption, other.noteCaption, t)!,
-      subCaption: TextStyle.lerp(subCaption, other.subCaption, t)!,
       subBody: TextStyle.lerp(subBody, other.subBody, t)!,
       formLabel: TextStyle.lerp(formLabel, other.formLabel, t)!,
     );

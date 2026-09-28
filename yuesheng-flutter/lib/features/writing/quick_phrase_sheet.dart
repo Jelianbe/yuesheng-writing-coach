@@ -220,7 +220,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
           Text(
             '还没有快捷短语\n把常写的句子记下来，下次一点就出来',
             textAlign: TextAlign.center,
-            style: context.text.subCaption,
+            style: context.text.subBody,
           ),
         ],
       ),

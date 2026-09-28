@@ -355,7 +355,7 @@ class _WorldAssertionTile extends StatelessWidget {
       child: ListTile(
         title: Text(
           '${assertion.attribute}：${assertion.value}',
-          style: context.text.titleMd,
+          style: context.text.title,
         ),
         subtitle: Text(
           '$chapterText · ${hasEvidence ? '✓ 有依据' : '— 无依据'}',

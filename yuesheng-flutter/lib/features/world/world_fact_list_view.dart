@@ -497,7 +497,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
         title: Row(
           children: [
             Expanded(
-              child: Text(row.name, style: context.text.titleMd, maxLines: 1),
+              child: Text(row.name, style: context.text.title, maxLines: 1),
             ),
             if (_isArchived(row)) _buildTag('已归档', context.palette.l2Text),
             if (!_hasValidAssertion(row))
@@ -545,7 +545,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: Text(
               summary,
-              style: context.text.noteCaption,
+              style: context.text.caption,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

@@ -116,7 +116,7 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
         vertical: AppSpacing.xs,
       ),
       child: ListTile(
-        title: Text(entity.entityKey, style: context.text.titleMd),
+        title: Text(entity.entityKey, style: context.text.title),
         subtitle: Text(
           '${outlineTypeLabel(entity.entityType)} · ${_statusLabel(entity.status)}',
           style: context.text.caption,

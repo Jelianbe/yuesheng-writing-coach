@@ -100,7 +100,7 @@ class CharacterHeaderCard extends StatelessWidget {
                 color: context.palette.surface,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
-              child: Text(alias, style: context.text.noteCaption),
+              child: Text(alias, style: context.text.caption),
             ),
         GestureDetector(
           onTap: onEditAliases,
@@ -144,7 +144,7 @@ class CharacterRecentBanner extends StatelessWidget {
           Expanded(
             child: Text(
               '正在查看最近批次沉淀（$visibleCount 条，按落库时间过滤）',
-              style: context.text.noteCaption.copyWith(
+              style: context.text.caption.copyWith(
                 color: context.palette.l1Text,
               ),
             ),
@@ -188,7 +188,7 @@ class CharacterConflictsCard extends StatelessWidget {
           children: [
             Text(
               '⚠ 时序矛盾（${conflicts.length}）',
-              style: context.text.titleMd.copyWith(
+              style: context.text.title.copyWith(
                 color: context.palette.warning,
               ),
             ),
@@ -198,7 +198,7 @@ class CharacterConflictsCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                 child: Text(
                   _conflictText(o),
-                  style: context.text.noteCaption.copyWith(
+                  style: context.text.caption.copyWith(
                     color: context.palette.textPrimary,
                   ),
                 ),
@@ -336,7 +336,7 @@ class CharacterAssertionGroups extends StatelessWidget {
               Expanded(
                 child: Text(
                   '$attribute (${items.length})',
-                  style: context.text.titleMd,
+                  style: context.text.title,
                 ),
               ),
               TextButton.icon(

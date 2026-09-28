@@ -411,7 +411,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
           child: Text(
             countText,
             textAlign: TextAlign.right,
-            style: context.text.noteCaption,
+            style: context.text.caption,
           ),
         ),
       ],
@@ -644,7 +644,7 @@ class _BookResultTile extends StatelessWidget {
               _buildSnippetSpan(context),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: context.text.noteCaption.copyWith(height: 1.5),
+              style: context.text.caption.copyWith(height: 1.5),
             ),
           ],
         ),

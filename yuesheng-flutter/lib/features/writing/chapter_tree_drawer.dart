@@ -733,7 +733,7 @@ class _VolumeHeader extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: context.text.titleMd,
+                style: context.text.title,
               ),
             ),
             _buildTrailing(context),

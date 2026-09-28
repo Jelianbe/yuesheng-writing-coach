@@ -356,7 +356,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           ),
         ),
         const SizedBox(height: 4),
-        Text(_focusReasonText!, style: context.text.noteCaption),
+        Text(_focusReasonText!, style: context.text.caption),
       ],
     );
   }
@@ -805,7 +805,7 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
   /// null / 空串时不渲染（数据诚实：不编造理由）。
   ///
   /// 视觉提档（批次 N11，2026-09-18）：原与「证据」正文**同级同色**
-  /// （`noteCaption` = 12px + textSecondary）⇒ 独立验证判断「长卡片里易被当作
+  /// （`caption` = 12px + textSecondary）⇒ 独立验证判断「长卡片里易被当作
   /// 辅助说明略过，有重演『接出来了但用户仍不看』的风险」。
   /// 现提为 13px + `textDeep`（深青）+ `height: 1.5`，成为症候块内的**视觉次强项**
   /// （仅弱于严重度 chip），且 13px 与本卡片既有次级档一致
@@ -895,7 +895,7 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
         ),
         const SizedBox(height: 4),
         if (count == 0)
-          Text(_CardText.noEvidence, style: context.text.noteCaption)
+          Text(_CardText.noEvidence, style: context.text.caption)
         else if (evidence.isNotEmpty)
           _buildEvidenceToggle(evidence, count)
         else
@@ -1309,11 +1309,7 @@ class _SyndromeConfirmationBarState
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          hint,
-          textAlign: TextAlign.center,
-          style: context.text.noteCaption,
-        ),
+        Text(hint, textAlign: TextAlign.center, style: context.text.caption),
       ],
     );
   }

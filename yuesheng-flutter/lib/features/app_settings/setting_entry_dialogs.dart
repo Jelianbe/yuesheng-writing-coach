@@ -150,7 +150,7 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.md),
-        Text('标签', style: context.text.titleMd),
+        Text('标签', style: context.text.title),
         const SizedBox(height: AppSpacing.xs),
         if (_tags.isNotEmpty)
           Wrap(

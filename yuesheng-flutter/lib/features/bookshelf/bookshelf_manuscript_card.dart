@@ -151,7 +151,7 @@ class BookshelfManuscriptCard extends StatelessWidget {
             manuscript.description,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: context.text.noteCaption.copyWith(height: 1.4),
+            style: context.text.caption.copyWith(height: 1.4),
           ),
         ],
         const SizedBox(height: 6),

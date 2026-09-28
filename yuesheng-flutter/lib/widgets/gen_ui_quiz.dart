@@ -165,7 +165,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
           ),
           if (_submitted && explanation != null && explanation.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text('解析：$explanation', style: context.text.noteCaption),
+            Text('解析：$explanation', style: context.text.caption),
           ],
         ],
       ),

@@ -21,12 +21,10 @@ void main() {
     final t = AppTypography.light;
     test('文字族色对齐 AppColors', () {
       expect(t.titleLg.color, AppColors.textPrimary);
-      expect(t.titleMd.color, AppColors.textInk);
+      expect(t.title.color, AppColors.textInk);
       expect(t.body.color, AppColors.textSecondary);
       expect(t.caption.color, AppColors.textTertiary);
       expect(t.microCaption.color, AppColors.textTertiary);
-      expect(t.noteCaption.color, AppColors.textSecondary);
-      expect(t.subCaption.color, AppColors.textTertiary);
       expect(t.subBody.color, AppColors.textSecondary);
       expect(t.formLabel.color, AppColors.textBody);
     });
@@ -49,12 +47,10 @@ void main() {
     test('各档 fontSize/fontWeight 与 AppTextStyles 一致', () {
       final pairs = <(TextStyle, TextStyle)>[
         (AppTypography.light.titleLg, AppTextStyles.titleLg),
-        (AppTypography.light.titleMd, AppTextStyles.titleMd),
+        (AppTypography.light.title, AppTextStyles.title),
         (AppTypography.light.body, AppTextStyles.body),
         (AppTypography.light.microCaption, AppTextStyles.microCaption),
         (AppTypography.light.caption, AppTextStyles.caption),
-        (AppTypography.light.noteCaption, AppTextStyles.noteCaption),
-        (AppTypography.light.subCaption, AppTextStyles.subCaption),
         (AppTypography.light.subBody, AppTextStyles.subBody),
         (AppTypography.light.formLabel, AppTextStyles.formLabel),
       ];

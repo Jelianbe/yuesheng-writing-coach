@@ -212,7 +212,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       Text(
         '选择要分析的作品或章节',
         textAlign: TextAlign.center,
-        style: context.text.subCaption,
+        style: context.text.subBody,
       ),
     ];
   }

@@ -166,7 +166,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
             Text(
               '还没有文风画像\n完成一次「诊断本章」后，就能看到你的写作风格',
               textAlign: TextAlign.center,
-              style: context.text.subCaption,
+              style: context.text.subBody,
             ),
           ],
         ),
@@ -176,7 +176,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
       children: [
         _buildSummaryCard(p),
         const SizedBox(height: 12),
-        Text('你的文风五维', style: context.text.noteCaption),
+        Text('你的文风五维', style: context.text.caption),
         const SizedBox(height: 6),
         ..._buildDimensionList(p),
       ],

@@ -129,10 +129,7 @@ class GrowthSyndromeCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '严重度 ${problem.severity}',
-                    style: context.text.noteCaption,
-                  ),
+                  Text('严重度 ${problem.severity}', style: context.text.caption),
                 ],
               ),
             ),

@@ -159,7 +159,7 @@ class _GenUiDiff extends StatelessWidget {
         ),
         if (note != null && note.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text(note, style: context.text.noteCaption),
+          Text(note, style: context.text.caption),
         ],
       ],
     );
@@ -280,10 +280,7 @@ class _StatBar extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
-          SizedBox(
-            width: 72,
-            child: Text(label, style: context.text.noteCaption),
-          ),
+          SizedBox(width: 72, child: Text(label, style: context.text.caption)),
           const SizedBox(width: 8),
           Expanded(
             child: ClipRRect(
@@ -594,7 +591,7 @@ class _TimelineEntry extends StatelessWidget {
             ),
             if (desc != null && desc!.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(desc!, style: context.text.noteCaption),
+              Text(desc!, style: context.text.caption),
             ],
           ],
         ),
@@ -633,7 +630,7 @@ class _GenUiPlaceholder extends StatelessWidget {
           Expanded(
             child: Text(
               '「$type」组件${title != null ? '（$title）' : ''}将在后续版本支持',
-              style: context.text.noteCaption,
+              style: context.text.caption,
             ),
           ),
         ],

@@ -283,7 +283,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
           _buildDifficultyBadge(difficulty),
         ],
         const Spacer(),
-        Text('训练建议', style: context.text.noteCaption),
+        Text('训练建议', style: context.text.caption),
       ],
     );
   }

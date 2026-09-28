@@ -51,7 +51,7 @@ class FactBatchCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.xsm),
                 Text(
                   '本次沉淀 ${record.count} 条人物事实',
-                  style: context.text.noteCaption.copyWith(
+                  style: context.text.caption.copyWith(
                     color: context.palette.l1Text,
                   ),
                 ),

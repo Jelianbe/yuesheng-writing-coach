@@ -157,7 +157,7 @@ class PendingConfirmCard extends ConsumerWidget {
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: Text(
               a.evidence!,
-              style: context.text.noteCaption,
+              style: context.text.caption,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -177,7 +177,7 @@ class PendingConfirmCard extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text('拒绝理由（可选）', style: context.text.titleMd),
+              child: Text('拒绝理由（可选）', style: context.text.title),
             ),
             for (final r in _kRejectReasons)
               ListTile(

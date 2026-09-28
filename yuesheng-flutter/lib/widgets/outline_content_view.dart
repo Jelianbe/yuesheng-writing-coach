@@ -626,7 +626,7 @@ class _EntityCard extends StatelessWidget {
             entity.entityKey,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: context.text.titleMd,
+            style: context.text.title,
           ),
         ),
         // N6：「其他」分组内打出类型**原值**（认不出的类型也要说明它是什么）

@@ -199,7 +199,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
             ),
           ),
           const SizedBox(height: 8),
-          Text('删除的章节会先进入这里，可恢复或永久删除', style: context.text.subCaption),
+          Text('删除的章节会先进入这里，可恢复或永久删除', style: context.text.subBody),
         ],
       ),
     );
@@ -241,7 +241,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
                 const SizedBox(height: 4),
                 Text(
                   '${c.wordCount} 字 · ${_relativeTime(c.updatedAt)}',
-                  style: context.text.noteCaption,
+                  style: context.text.caption,
                 ),
               ],
             ),
