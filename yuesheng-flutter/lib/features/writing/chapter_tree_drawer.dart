@@ -673,7 +673,7 @@ class _VolumeHeader extends StatelessWidget {
                   ? context.palette.textTertiary
                   : context.palette.primary,
             ),
-            const SizedBox(width: AppSpacing.xsm),
+            const SizedBox(width: AppSpacing.xs),
             Expanded(
               child: Text(
                 title,
@@ -828,7 +828,7 @@ class _ChapterTreeItem extends StatelessWidget {
   Widget _buildStatusBadge(ChapterStatusConfig status) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(

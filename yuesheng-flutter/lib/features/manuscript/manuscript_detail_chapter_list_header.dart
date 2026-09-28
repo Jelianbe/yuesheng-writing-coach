@@ -54,7 +54,7 @@ class ChapterListHeader extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
-                vertical: AppSpacing.xsm,
+                vertical: AppSpacing.xs,
               ),
               decoration: BoxDecoration(
                 color: context.palette.primarySoft,

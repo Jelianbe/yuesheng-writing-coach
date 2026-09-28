@@ -1338,7 +1338,7 @@ class _FieldLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(
         top: AppSpacing.md,
-        bottom: AppSpacing.xsm,
+        bottom: AppSpacing.xs,
       ),
       child: Text(
         text,

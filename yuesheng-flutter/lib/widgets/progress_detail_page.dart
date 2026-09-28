@@ -542,7 +542,7 @@ class _ProblemStatsState extends State<_ProblemStats> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
-                    vertical: AppSpacing.xsm,
+                    vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
                     color: _filter == f

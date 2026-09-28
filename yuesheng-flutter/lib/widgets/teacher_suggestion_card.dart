@@ -206,7 +206,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     final p = widget.payload;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(

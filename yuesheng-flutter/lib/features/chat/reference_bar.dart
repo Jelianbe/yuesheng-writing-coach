@@ -430,7 +430,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.xsm,
+        vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
         color: context.palette.surfaceWhite,
@@ -451,7 +451,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
     return InkWell(
       onTap: _handleDeselectAll,
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
         child: Text(
           '取消',
           style: TextStyle(
@@ -485,7 +485,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.xsm,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: context.palette.dangerBg,
@@ -602,7 +602,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   Widget _refTypeTag(String refType) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
@@ -616,7 +616,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   Widget _primaryBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(

@@ -541,7 +541,7 @@ class _AttitudeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.xsm,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: active ? context.palette.surface : Colors.transparent,
@@ -595,7 +595,7 @@ class _TierChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.xsm,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           color: active ? context.palette.surface : Colors.transparent,

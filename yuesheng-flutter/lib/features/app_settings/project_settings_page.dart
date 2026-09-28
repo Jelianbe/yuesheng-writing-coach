@@ -389,7 +389,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xsm,
+                  vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
                   color: context.palette.surface,
@@ -464,7 +464,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             onTap: _saving ? null : () => _handleRemoveTag(i),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Padding(
-              padding: EdgeInsets.all(AppSpacing.xsm),
+              padding: EdgeInsets.all(AppSpacing.xs),
               child: Icon(
                 Icons.close,
                 size: 13,
@@ -484,7 +484,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.xsm,
+          vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.pill),

@@ -58,7 +58,7 @@ class SettingProgressionsSection extends StatelessWidget {
       children: [
         const Divider(height: AppSpacing.lg),
         Text('章节演进 (${points.length} 章)', style: context.text.title),
-        const SizedBox(height: AppSpacing.xsm),
+        const SizedBox(height: AppSpacing.xs),
         for (var i = 0; i < points.length; i++)
           _buildRow(context, points[i], isLast: i == points.length - 1),
       ],

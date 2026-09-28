@@ -44,7 +44,7 @@ class CharacterEventsSection extends StatelessWidget {
       children: [
         const Divider(height: AppSpacing.lg),
         Text('相关事件 (${events.length})', style: context.text.title),
-        const SizedBox(height: AppSpacing.xsm),
+        const SizedBox(height: AppSpacing.xs),
         for (final e in events)
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -52,7 +52,7 @@ class CharacterEventsSection extends StatelessWidget {
             title: Row(
               children: [
                 _TypeChip(eventType: e.eventType),
-                const SizedBox(width: AppSpacing.xsm),
+                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(e.name, style: context.text.title, maxLines: 1),
                 ),
@@ -91,7 +91,7 @@ class _TypeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(

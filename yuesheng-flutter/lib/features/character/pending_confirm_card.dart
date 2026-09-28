@@ -90,7 +90,7 @@ class PendingConfirmCard extends ConsumerWidget {
           size: 18,
           color: context.palette.l1Text,
         ),
-        const SizedBox(width: AppSpacing.xsm),
+        const SizedBox(width: AppSpacing.xs),
         Text(
           'AI 抽取待确认 · ${items.length} 条',
           style: context.text.caption.copyWith(color: context.palette.l1Text),
@@ -216,7 +216,7 @@ class _VerdictButtons extends StatelessWidget {
           filled: true,
           onPressed: onConfirm,
         ),
-        const SizedBox(width: AppSpacing.xsm),
+        const SizedBox(width: AppSpacing.xs),
         _VerdictButton(
           icon: Icons.close,
           label: '拒绝',

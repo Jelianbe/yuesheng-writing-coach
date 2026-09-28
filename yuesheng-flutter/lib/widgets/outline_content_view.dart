@@ -500,7 +500,7 @@ class _TypeSection extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(
         top: AppSpacing.md,
-        bottom: AppSpacing.xsm,
+        bottom: AppSpacing.xs,
       ),
       child: Row(
         children: [
@@ -596,7 +596,7 @@ class _EntityCard extends StatelessWidget {
     if (visibleImps.isEmpty) {
       return [
         Padding(
-          padding: EdgeInsets.only(top: AppSpacing.xsm),
+          padding: EdgeInsets.only(top: AppSpacing.xs),
           child: Text('还没有梗概', style: context.text.caption),
         ),
       ];
@@ -652,7 +652,7 @@ class _EntityCard extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: context.palette.primary,
               visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
               minimumSize: const Size(0, 24),
             ),
             child: const Text('确认', style: TextStyle(fontSize: 12)),
@@ -760,7 +760,7 @@ class _ImpressionRow extends StatelessWidget {
           style: TextButton.styleFrom(
             foregroundColor: context.palette.success,
             visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             minimumSize: const Size(0, 24),
           ),
           child: const Text('确认', style: TextStyle(fontSize: 12)),
@@ -770,7 +770,7 @@ class _ImpressionRow extends StatelessWidget {
           style: TextButton.styleFrom(
             foregroundColor: context.palette.textTertiary,
             visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             minimumSize: const Size(0, 24),
           ),
           child: const Text('拒绝', style: TextStyle(fontSize: 12)),
@@ -797,7 +797,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(

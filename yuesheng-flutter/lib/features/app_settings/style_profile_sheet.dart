@@ -223,7 +223,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
 
   Widget _dimensionRow(String name, String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
           SizedBox(width: 72, child: Text(name, style: context.text.subBody)),

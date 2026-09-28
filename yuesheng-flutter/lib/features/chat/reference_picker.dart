@@ -143,7 +143,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     return Flexible(
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xsm,
+          horizontal: AppSpacing.xs,
           vertical: AppSpacing.xxs,
         ),
         decoration: BoxDecoration(

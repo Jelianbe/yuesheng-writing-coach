@@ -515,7 +515,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
     return Container(
       margin: const EdgeInsets.only(left: AppSpacing.xs),
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(

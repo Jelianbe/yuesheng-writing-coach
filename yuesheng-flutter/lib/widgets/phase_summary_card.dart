@@ -142,7 +142,7 @@ class PhaseSummaryCard extends StatelessWidget {
     final config = _resultConfig(context, result);
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -285,7 +285,7 @@ class PhaseSummaryCard extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: context.palette.divider, width: 0.5),

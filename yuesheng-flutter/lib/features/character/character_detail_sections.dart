@@ -66,9 +66,9 @@ class CharacterHeaderCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xsm),
+            const SizedBox(height: AppSpacing.xs),
             _buildAliasRow(context),
-            const SizedBox(height: AppSpacing.xsm),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               '首次登场：${chapterLabel(chapterNoMap, firstSeenChapter) ?? '未知'}'
               ' · 断言 $assertionCount 条',
@@ -82,8 +82,8 @@ class CharacterHeaderCard extends StatelessWidget {
 
   Widget _buildAliasRow(BuildContext context) {
     return Wrap(
-      spacing: AppSpacing.xsm,
-      runSpacing: AppSpacing.xsm,
+      spacing: AppSpacing.xs,
+      runSpacing: AppSpacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text('别名', style: context.text.caption),
@@ -93,7 +93,7 @@ class CharacterHeaderCard extends StatelessWidget {
           for (final alias in aliases)
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xsm,
+                horizontal: AppSpacing.xs,
                 vertical: AppSpacing.xxs,
               ),
               decoration: BoxDecoration(
@@ -192,7 +192,7 @@ class CharacterConflictsCard extends StatelessWidget {
                 color: context.palette.warning,
               ),
             ),
-            const SizedBox(height: AppSpacing.xsm),
+            const SizedBox(height: AppSpacing.xs),
             for (final o in conflicts)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),

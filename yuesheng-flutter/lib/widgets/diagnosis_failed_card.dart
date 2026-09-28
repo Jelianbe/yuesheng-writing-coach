@@ -83,7 +83,7 @@ class DiagnosisFailedCard extends StatelessWidget {
     final showHint = failureCount >= UILimits.failureWarningThreshold;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -172,7 +172,7 @@ class DiagnosisFailedCard extends StatelessWidget {
           ),
           for (final suggestion in _displaySuggestions)
             Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.xsm),
+              padding: const EdgeInsets.only(top: AppSpacing.xs),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

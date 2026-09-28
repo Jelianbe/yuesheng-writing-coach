@@ -447,7 +447,7 @@ class _PanelActions extends StatelessWidget {
                 foregroundColor: context.palette.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xsm,
+                  vertical: AppSpacing.xs,
                 ),
               ),
             ),
@@ -459,7 +459,7 @@ class _PanelActions extends StatelessWidget {
               foregroundColor: context.palette.textTertiary,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
-                vertical: AppSpacing.xsm,
+                vertical: AppSpacing.xs,
               ),
             ),
             child: const Text('关闭', style: labelStyle),

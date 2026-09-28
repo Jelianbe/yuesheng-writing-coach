@@ -131,7 +131,7 @@ class PracticeResultIndicator extends StatelessWidget {
               foregroundColor: context.palette.l3Text,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
-                vertical: AppSpacing.xsm,
+                vertical: AppSpacing.xs,
               ),
             ),
             child: const Text(
@@ -147,7 +147,7 @@ class PracticeResultIndicator extends StatelessWidget {
             foregroundColor: context.palette.textTertiary,
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
-              vertical: AppSpacing.xsm,
+              vertical: AppSpacing.xs,
             ),
           ),
           child: const Text(

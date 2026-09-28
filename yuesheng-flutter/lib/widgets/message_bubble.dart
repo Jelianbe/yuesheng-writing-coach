@@ -297,7 +297,7 @@ class _ReferencesBadges extends StatelessWidget {
   Widget build(BuildContext context) {
     if (references.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xsm),
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
       child: Wrap(
         spacing: 6,
         runSpacing: 4,

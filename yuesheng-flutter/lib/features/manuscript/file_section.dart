@@ -145,7 +145,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xsm,
+              vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
               color: context.palette.surfaceWhite,

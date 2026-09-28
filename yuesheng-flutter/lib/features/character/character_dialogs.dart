@@ -330,8 +330,8 @@ class _AliasEditorDialogState extends State<_AliasEditorDialog> {
             Text('别名参与时序矛盾检测与相关事件关联（主名 ∪ 别名匹配）', style: context.text.caption),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
-              spacing: AppSpacing.xsm,
-              runSpacing: AppSpacing.xsm,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: [
                 for (var i = 0; i < _aliases.length; i++)
                   InputChip(

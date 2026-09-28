@@ -151,7 +151,7 @@ class _OutlineConfirmationCardState
     final pending = p.impressions.where((i) => !_processed.contains(i.id));
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(

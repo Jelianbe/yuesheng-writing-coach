@@ -38,7 +38,7 @@ class FactBatchCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
-              vertical: AppSpacing.xsm,
+              vertical: AppSpacing.xs,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -48,7 +48,7 @@ class FactBatchCard extends StatelessWidget {
                   size: 14,
                   color: context.palette.l1Text,
                 ),
-                const SizedBox(width: AppSpacing.xsm),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   '本次沉淀 ${record.count} 条人物事实',
                   style: context.text.caption.copyWith(

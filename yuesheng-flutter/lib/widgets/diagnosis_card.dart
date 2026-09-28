@@ -263,7 +263,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   Widget build(BuildContext context) {
     // 卡片：#F2F4F2 + 左 4dp 竹青条
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
@@ -561,7 +561,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         Container(
           width: 6,
           height: 6,
-          margin: const EdgeInsets.only(right: AppSpacing.xsm),
+          margin: const EdgeInsets.only(right: AppSpacing.xs),
           decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
         Text(
@@ -695,7 +695,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       padding: EdgeInsets.only(
         bottom: index == widget.suggestedActions.length - 1
             ? 0
-            : AppSpacing.xsm,
+            : AppSpacing.xs,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

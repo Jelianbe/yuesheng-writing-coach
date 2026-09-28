@@ -61,7 +61,7 @@ class CharacterAssertionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -123,7 +123,7 @@ class CharacterAssertionTile extends StatelessWidget {
   Widget _badge(BuildContext context, String text, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
@@ -137,7 +137,7 @@ class CharacterAssertionTile extends StatelessWidget {
   Widget _buildMetaRow(BuildContext context) {
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: AppSpacing.xsm,
+      spacing: AppSpacing.xs,
       runSpacing: AppSpacing.xxs,
       children: [
         Text(_chapterText(), style: context.text.microCaption),

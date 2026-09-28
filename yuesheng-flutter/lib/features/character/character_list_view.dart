@@ -474,7 +474,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     if (newCount <= 0) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(

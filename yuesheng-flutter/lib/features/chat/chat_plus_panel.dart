@@ -203,7 +203,7 @@ class _PanelThinkingRow extends StatelessWidget {
               color: context.palette.textPrimary,
             ),
           ),
-          const SizedBox(width: AppSpacing.xsm),
+          const SizedBox(width: AppSpacing.xs),
           Flexible(
             child: Text(
               enabled ? tierLabel : '已关闭',

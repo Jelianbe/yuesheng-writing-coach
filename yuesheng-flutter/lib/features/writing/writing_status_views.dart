@@ -273,7 +273,7 @@ class WritingCompletionBadge extends StatelessWidget {
       key: const Key('completionBadge'),
       // X-039-Batch1：6→xsm / 2→xxs
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
+        horizontal: AppSpacing.xs,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
