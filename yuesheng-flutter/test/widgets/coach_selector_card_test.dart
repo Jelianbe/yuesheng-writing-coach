@@ -205,4 +205,28 @@ void main() {
     expect(tester.widget<TextField>(fields.at(1)).controller?.text, canned);
     expect(find.text('已填好「语气设定」，可继续修改后保存'), findsOneWidget);
   });
+
+  // ── #8 UI 层验收（2026-09-28 收尾后续项 1）──
+  // 不验证行为，只验证「对话框静态结构完整 + AI 润色按钮已接入」这一 UI 事实。
+  // 像素级视觉走查需舰长在场（本会话 adb 不可用），功能结构由本例守护。
+  testWidgets('#8 UI 验收：对话框静态结构 + AI 润色按钮同屏可达', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+
+    // 对话框标题
+    expect(find.text('新建自定义教练'), findsOneWidget);
+    // 主界面仅 2 个 TextField（名称 + 语气），高级选项默认收起
+    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.text('高级选项'), findsOneWidget);
+    // AI 润色按钮已接入对话框且可定位
+    expect(find.widgetWithText(TextButton, 'AI 润色'), findsOneWidget);
+    // 保存按钮同屏
+    expect(find.widgetWithText(TextButton, '保存'), findsOneWidget);
+    // 未交互时不应出现任何引导报错文案
+    expect(find.text('先填个名字或几句语气，AI 才能帮你润色'), findsNothing);
+    expect(find.text('请先在「设置 → API 配置」填好 Key，才能用 AI 润色'), findsNothing);
+  });
 }
