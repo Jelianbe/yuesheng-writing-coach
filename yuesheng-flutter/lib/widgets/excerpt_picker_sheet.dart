@@ -198,7 +198,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.smx,
+        AppSpacing.sm,
         AppSpacing.lg,
         AppSpacing.md,
       ),
@@ -257,7 +257,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.smx,
+          horizontal: AppSpacing.sm,
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(

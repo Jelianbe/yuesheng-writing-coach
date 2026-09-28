@@ -144,7 +144,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
           borderRadius: BorderRadius.circular(AppRadius.sm),
           child: Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.smx,
+              horizontal: AppSpacing.sm,
               vertical: AppSpacing.xsm,
             ),
             decoration: BoxDecoration(

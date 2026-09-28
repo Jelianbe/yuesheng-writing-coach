@@ -164,7 +164,7 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.smx,
+        horizontal: AppSpacing.sm,
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
@@ -336,7 +336,7 @@ class _SyndromeItem extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.smx),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),

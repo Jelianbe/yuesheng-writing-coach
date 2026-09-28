@@ -302,7 +302,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.smx,
+          vertical: AppSpacing.sm,
         ),
         child: Row(
           children: [
@@ -530,7 +530,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       child: Container(
         width: 22,
         height: 22,
-        margin: const EdgeInsets.only(right: AppSpacing.smx),
+        margin: const EdgeInsets.only(right: AppSpacing.sm),
         decoration: BoxDecoration(
           color: isSelected ? context.palette.primary : null,
           border: Border.all(

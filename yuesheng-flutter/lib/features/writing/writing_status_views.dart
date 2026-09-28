@@ -60,7 +60,7 @@ class WritingOfflineBanner extends StatelessWidget {
           // X-039-Batch1：16→lg / 10→smx
           const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
-            vertical: AppSpacing.smx,
+            vertical: AppSpacing.sm,
           ),
       child: Row(
         children: [

@@ -329,7 +329,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.smx,
+          vertical: AppSpacing.sm,
         ),
         child: Row(
           children: [

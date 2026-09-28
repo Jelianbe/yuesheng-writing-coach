@@ -151,7 +151,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
         hintStyle: TextStyle(fontSize: 13, color: context.palette.hintText),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.smx,
+          horizontal: AppSpacing.sm,
           vertical: AppSpacing.sm,
         ),
         border: OutlineInputBorder(
@@ -224,7 +224,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
     return InkWell(
       onTap: () => _insert(phrase),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Row(
           children: [
             Expanded(

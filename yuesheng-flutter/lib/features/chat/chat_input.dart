@@ -330,7 +330,7 @@ class ChatInputState extends State<ChatInput> {
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
             // vertical 撑到与 + / 发送按钮（40）齐高 ⇒ 单行三件同高
-            vertical: AppSpacing.smx,
+            vertical: AppSpacing.sm,
           ),
         ),
         style: TextStyle(fontSize: 14, color: context.palette.textPrimary),

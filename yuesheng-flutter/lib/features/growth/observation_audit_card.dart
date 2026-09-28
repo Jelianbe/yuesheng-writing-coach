@@ -287,7 +287,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
         style: OutlinedButton.styleFrom(
           foregroundColor: context.palette.primary,
           side: BorderSide(color: context.palette.primarySoft),
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         ),
       ),
     );

@@ -221,7 +221,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
   Widget _buildRow(Chapter c) {
     final title = c.title.trim().isEmpty ? '未命名章节' : c.title.trim();
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
           Expanded(

@@ -127,12 +127,12 @@ class _PanelActionRow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.smx,
+          vertical: AppSpacing.sm,
         ),
         child: Row(
           children: [
             Icon(icon, size: 18, color: context.palette.primary),
-            const SizedBox(width: AppSpacing.smx),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,7 +194,7 @@ class _PanelThinkingRow extends StatelessWidget {
             size: 18,
             color: color,
           ),
-          const SizedBox(width: AppSpacing.smx),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             '思考',
             style: TextStyle(

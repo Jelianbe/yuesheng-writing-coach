@@ -180,7 +180,7 @@ class _DiffPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.smx),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: emphasis ? context.palette.primarySoft : context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -570,7 +570,7 @@ class _TimelineEntry extends StatelessWidget {
     return Expanded(
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.md),
-        padding: const EdgeInsets.all(AppSpacing.smx),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -613,7 +613,7 @@ class _GenUiPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = data['title'] as String?;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.smx),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),

@@ -39,7 +39,7 @@ class BookshelfManuscriptList extends StatelessWidget {
         final ms = manuscripts[index];
 
         return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.smx),
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: BookshelfManuscriptCard(
             manuscript: ms,
             stats: statsMap[ms.id],

@@ -213,7 +213,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.smx,
+              horizontal: AppSpacing.sm,
               vertical: 3,
             ),
             decoration: BoxDecoration(

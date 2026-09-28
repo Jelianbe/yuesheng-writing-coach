@@ -416,7 +416,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             AppSpacing.lg,
             AppSpacing.md,
             AppSpacing.lg,
-            AppSpacing.smx,
+            AppSpacing.sm,
           ),
           child: Row(
             children: [
@@ -501,7 +501,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         children: [
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.smx,
+              horizontal: AppSpacing.sm,
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
@@ -536,7 +536,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.smx,
+          horizontal: AppSpacing.sm,
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(

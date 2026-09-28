@@ -211,7 +211,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
         ),
         Container(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.smx,
+            horizontal: AppSpacing.sm,
             vertical: AppSpacing.xs,
           ),
           decoration: BoxDecoration(
@@ -267,7 +267,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
         hintStyle: TextStyle(fontSize: 14, color: context.palette.disabledText),
         filled: true,
         fillColor: context.palette.surface,
-        contentPadding: const EdgeInsets.all(AppSpacing.smx),
+        contentPadding: const EdgeInsets.all(AppSpacing.sm),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: context.palette.borderSoft),

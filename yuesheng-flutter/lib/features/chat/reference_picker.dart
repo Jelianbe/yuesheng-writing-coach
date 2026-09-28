@@ -445,8 +445,8 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         padding: const EdgeInsets.only(
           left: AppSpacing.lg + AppSpacing.sm,
           right: AppSpacing.xxs,
-          top: AppSpacing.smx,
-          bottom: AppSpacing.smx,
+          top: AppSpacing.sm,
+          bottom: AppSpacing.sm,
         ),
         child: Row(
           children: [
@@ -479,7 +479,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.smx,
+          vertical: AppSpacing.sm,
         ),
         child: Icon(
           expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
@@ -496,7 +496,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       padding: const EdgeInsets.only(
         left: AppSpacing.lg + AppSpacing.sm,
         right: AppSpacing.lg,
-        top: AppSpacing.smx,
+        top: AppSpacing.sm,
         bottom: AppSpacing.xxs,
       ),
       child: Text(
@@ -528,8 +528,8 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       padding: const EdgeInsets.only(
         left: AppSpacing.lg + AppSpacing.sm,
         right: AppSpacing.lg,
-        top: AppSpacing.smx,
-        bottom: AppSpacing.smx,
+        top: AppSpacing.sm,
+        bottom: AppSpacing.sm,
       ),
       child: Row(
         children: [
@@ -661,8 +661,8 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         padding: const EdgeInsets.only(
           left: AppSpacing.lg + AppSpacing.sm,
           right: AppSpacing.lg,
-          top: AppSpacing.smx,
-          bottom: AppSpacing.smx,
+          top: AppSpacing.sm,
+          bottom: AppSpacing.sm,
         ),
         child: Row(
           children: [

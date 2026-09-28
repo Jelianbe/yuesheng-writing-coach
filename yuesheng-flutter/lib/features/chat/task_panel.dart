@@ -142,7 +142,7 @@ class TaskPanel extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.smx,
+              horizontal: AppSpacing.sm,
               vertical: 3,
             ),
             decoration: BoxDecoration(

@@ -654,7 +654,7 @@ class _VolumeHeader extends StatelessWidget {
         color: context.palette.background,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.smx,
+          vertical: AppSpacing.sm,
         ),
         child: Row(
           children: [
@@ -771,7 +771,7 @@ class _ChapterTreeItem extends StatelessWidget {
         color: isCurrent ? context.palette.primarySoft : Colors.transparent,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.smx,
+          vertical: AppSpacing.sm,
         ),
         child: Row(
           children: [

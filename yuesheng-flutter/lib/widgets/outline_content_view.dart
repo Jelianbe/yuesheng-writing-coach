@@ -399,7 +399,7 @@ class _ChapterStructureSection extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(
         top: AppSpacing.sm,
-        bottom: AppSpacing.smx,
+        bottom: AppSpacing.sm,
       ),
       child: Row(
         children: [
@@ -556,9 +556,9 @@ class _EntityCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
-        AppSpacing.smx,
+        AppSpacing.sm,
         AppSpacing.md,
-        AppSpacing.smx,
+        AppSpacing.sm,
       ),
       decoration: BoxDecoration(
         color: context.palette.surfaceWhite,

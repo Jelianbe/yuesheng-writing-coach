@@ -87,7 +87,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
-            vertical: AppSpacing.smx,
+            vertical: AppSpacing.sm,
           ),
           child: Row(
             children: [
@@ -125,7 +125,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
   Widget _buildStepCountBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.smx,
+        horizontal: AppSpacing.sm,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
@@ -163,7 +163,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
     return Container(
       width: 1,
       height: AppSpacing.lg,
-      margin: const EdgeInsets.only(left: AppSpacing.smx),
+      margin: const EdgeInsets.only(left: AppSpacing.sm),
       color: context.palette.primary.withValues(alpha: 0.30),
     );
   }
@@ -175,7 +175,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildIndicator(index, step.confidence),
-        const SizedBox(width: AppSpacing.smx),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(child: _buildStepContent(step)),
       ],
     );

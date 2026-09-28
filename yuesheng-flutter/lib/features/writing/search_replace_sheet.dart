@@ -455,7 +455,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         hintStyle: TextStyle(fontSize: 13, color: context.palette.hintText),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.smx,
+          horizontal: AppSpacing.sm,
           vertical: AppSpacing.sm,
         ),
         border: OutlineInputBorder(
@@ -630,7 +630,7 @@ class _BookResultTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

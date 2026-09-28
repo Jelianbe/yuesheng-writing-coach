@@ -271,7 +271,7 @@ class _OutlineConfirmationCardState
         : context.palette.textPrimary;
     return Container(
       margin: const EdgeInsets.only(top: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.smx),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: isConflict
             ? context.palette.warningBg

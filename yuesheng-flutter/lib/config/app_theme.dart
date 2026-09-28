@@ -245,7 +245,7 @@ abstract final class AppBoxStyles {
     ),
     contentPadding: const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.smx,
+      vertical: AppSpacing.sm,
     ),
   );
 }

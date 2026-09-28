@@ -328,7 +328,7 @@ class _VersionTimeMachineSheetState
         Expanded(
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.smx),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
               color: context.palette.surface,
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -478,7 +478,7 @@ class _VersionTimeMachineSheetState
     return InkWell(
       onTap: () => setState(() => _selected = v),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Row(
           children: [
             SizedBox(

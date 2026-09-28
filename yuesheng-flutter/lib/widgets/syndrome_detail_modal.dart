@@ -106,7 +106,7 @@ class SyndromeDetailModal extends StatelessWidget {
     return Container(
       width: 36,
       height: 4,
-      margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.smx),
+      margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.sm),
       decoration: BoxDecoration(
         color: context.palette.borderLight,
         borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -362,7 +362,7 @@ class SyndromeDetailModal extends StatelessWidget {
     final sev = _sev(context, point.severity);
     final label = _severityLabel[point.severity] ?? point.severity;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         border: Border(
           bottom: isLast

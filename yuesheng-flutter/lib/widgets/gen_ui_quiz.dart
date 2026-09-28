@@ -141,8 +141,8 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
     final isCorrect = _results.length > itemIdx && _results[itemIdx];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.smx),
-      padding: const EdgeInsets.all(AppSpacing.smx),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -200,7 +200,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
       child: Container(
         margin: const EdgeInsets.only(bottom: AppSpacing.xs),
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.smx,
+          horizontal: AppSpacing.sm,
           vertical: 7,
         ),
         decoration: BoxDecoration(
@@ -283,7 +283,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
           foregroundColor: context.palette.onPrimary,
           disabledBackgroundColor: context.palette.disabled,
           disabledForegroundColor: context.palette.disabledText,
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         ),
         child: Text(_allAnswered ? '提交' : '请完成所有题目'),
       ),

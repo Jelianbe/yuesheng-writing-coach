@@ -465,7 +465,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
   /// 批次63（B62d）：位置清单块——段落位置 + 原文摘录，供学员自查修改（AI 不代改）
   Widget _buildLocations(List<String> locations) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.smx),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: context.palette.l1,
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -520,7 +520,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
         ? ''
         : (_taskTypeText[p.taskType] ?? p.taskType);
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.smx),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: context.palette.l1,
         borderRadius: BorderRadius.circular(AppRadius.sm),

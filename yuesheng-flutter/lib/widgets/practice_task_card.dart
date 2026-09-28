@@ -276,7 +276,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
     return [
       Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.smx,
+          horizontal: AppSpacing.sm,
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
@@ -330,7 +330,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
       const SizedBox(height: 4),
       Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.smx),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: context.palette.l1,
           borderRadius: BorderRadius.circular(AppRadius.sm),

@@ -539,7 +539,7 @@ class _ErrorView extends StatelessWidget {
                 backgroundColor: context.palette.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.smx,
+                  vertical: AppSpacing.sm,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),

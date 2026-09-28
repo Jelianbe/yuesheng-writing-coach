@@ -584,7 +584,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
       ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.smx,
+        vertical: AppSpacing.sm,
       ),
     );
   }
@@ -599,7 +599,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.smx),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(
         text,
         style: TextStyle(

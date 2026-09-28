@@ -177,7 +177,7 @@ class WritingCoachInputBar extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(
                   // X-039-Batch1：16→lg / 10→smx
                   horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.smx,
+                  vertical: AppSpacing.sm,
                 ),
               ),
             ),

@@ -328,7 +328,7 @@ class TaskToggleBar extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
-          vertical: AppSpacing.smx,
+          vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
           color: context.palette.background,

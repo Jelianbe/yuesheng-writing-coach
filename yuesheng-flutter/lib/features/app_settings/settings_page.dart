@@ -616,7 +616,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
-        vertical: AppSpacing.smx,
+        vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
         color: editing ? context.palette.primarySoft : context.palette.surface,
@@ -970,7 +970,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     margin: const EdgeInsets.only(bottom: AppSpacing.md),
     padding: const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.smx,
+      vertical: AppSpacing.sm,
     ),
     decoration: BoxDecoration(
       color: context.palette.dangerBg,
@@ -1174,7 +1174,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     margin: const EdgeInsets.only(top: AppSpacing.sm),
     padding: const EdgeInsets.symmetric(
       horizontal: AppSpacing.md,
-      vertical: AppSpacing.smx,
+      vertical: AppSpacing.sm,
     ),
     decoration: BoxDecoration(
       color: _connResult!.success
@@ -1454,7 +1454,7 @@ class _ProgressSection extends StatelessWidget {
 
   Widget _buildPhaseBadge(BuildContext context, String phaseLabel) => Container(
     padding: const EdgeInsets.symmetric(
-      horizontal: AppSpacing.smx,
+      horizontal: AppSpacing.sm,
       vertical: AppSpacing.xs,
     ),
     decoration: BoxDecoration(
@@ -1499,7 +1499,7 @@ class _ProgressSection extends StatelessWidget {
   );
 
   Widget _buildProgressStats(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
     decoration: BoxDecoration(
       color: context.palette.background,
       borderRadius: BorderRadius.circular(AppRadius.md),
