@@ -219,10 +219,7 @@ void main() {
       await tester.tap(find.text('粘贴文本'));
       await tester.pumpAndSettle();
       await tester.enterText(
-        find.descendant(
-          of: find.byType(AlertDialog),
-          matching: find.byType(TextField),
-        ),
+        find.byKey(const Key('work-import-paste-field')),
         '第一章 启程\n启程正文',
       );
       await tester.tap(find.text('确认导入'));
@@ -1273,11 +1270,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('粘贴文本'));
       await tester.pumpAndSettle();
-      // 粘贴对话框内的输入框（ChatInput 主输入框也是 TextField，需精确到对话框内）
-      final pasteField = find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.byType(TextField),
-      );
+      // 粘贴输入框（WorkImportSheet 内 YueInputSheet，用 Key 定位）
+      final pasteField = find.byKey(const Key('work-import-paste-field'));
       await tester.enterText(pasteField, importLongText);
       await tester.tap(find.text('确认导入'));
       await tester.pumpAndSettle();

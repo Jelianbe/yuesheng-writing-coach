@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../theme/app_typography.dart';
+import '../../widgets/yue_input_sheet.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
 
 /// 正文展示卡：正文优先（无正文 → 「尚未写设定正文」占位 + 编辑引导）。
@@ -69,32 +71,15 @@ Future<String?> showDescriptionEditDialog(
   BuildContext context, {
   required String initial,
 }) {
-  final ctrl = TextEditingController(text: initial);
-  return showDialog<String>(
+  return showYueModalBottomSheet<String>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('编辑设定正文', style: context.text.titleLg),
-      content: TextField(
-        controller: ctrl,
-        autofocus: true,
-        minLines: 6,
-        maxLines: 14,
-        decoration: const InputDecoration(
-          hintText: '写下这个设定的内容——它是什么、怎么运作、有什么规则……',
-          alignLabelWithHint: true,
-          border: OutlineInputBorder(),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('取消'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-          child: const Text('保存'),
-        ),
-      ],
+    isScrollControlled: true,
+    builder: (_) => YueInputSheet(
+      title: '编辑设定正文',
+      hintText: '写下这个设定的内容——它是什么、怎么运作、有什么规则……',
+      maxLines: 14,
+      minLines: 6,
+      initialValue: initial,
     ),
   );
 }

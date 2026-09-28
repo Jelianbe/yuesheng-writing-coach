@@ -11,6 +11,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../widgets/yue_input_sheet.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../providers/work_import_providers.dart';
@@ -97,31 +99,16 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
   }
 
   Future<void> _showPasteDialog() async {
-    final controller = TextEditingController();
-    final content = await showDialog<String>(
+    final content = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('粘贴文本'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 8,
-          minLines: 5,
-          decoration: const InputDecoration(
-            hintText: '在此输入或粘贴小说文本...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('确认导入'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => const YueInputSheet(
+        title: '粘贴文本',
+        hintText: '在此输入或粘贴小说文本...',
+        maxLines: 8,
+        minLines: 5,
+        confirmText: '确认导入',
+        fieldKey: ValueKey('work-import-paste-field'),
       ),
     );
 

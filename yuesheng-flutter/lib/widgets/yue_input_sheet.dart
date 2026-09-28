@@ -22,8 +22,8 @@ class YueInputSheet extends StatefulWidget {
   /// 输入框占位提示
   final String hintText;
 
-  /// 输入最大长度（TextField maxLength）
-  final int maxLength;
+  /// 输入最大长度（TextField maxLength；null = 不限）
+  final int? maxLength;
 
   /// 输入框 Key（测试定位用）
   final Key? fieldKey;
@@ -34,14 +34,22 @@ class YueInputSheet extends StatefulWidget {
   /// 初始值（重命名场景回填原名）
   final String? initialValue;
 
+  /// 最大行数（多行输入场景，如粘贴/正文；默认 1 = 单行）
+  final int maxLines;
+
+  /// 最小行数（多行输入可选）
+  final int? minLines;
+
   const YueInputSheet({
     super.key,
     required this.title,
     required this.hintText,
-    this.maxLength = 30,
+    this.maxLength,
     this.fieldKey,
     this.confirmText = '保存',
     this.initialValue,
+    this.maxLines = 1,
+    this.minLines,
   });
 
   @override
@@ -114,6 +122,8 @@ class _YueInputSheetState extends State<YueInputSheet> {
         controller: _controller,
         autofocus: true,
         maxLength: widget.maxLength,
+        maxLines: widget.maxLines,
+        minLines: widget.minLines,
         decoration: InputDecoration(
           hintText: widget.hintText,
           isDense: true,
@@ -144,7 +154,7 @@ class _YueInputSheetState extends State<YueInputSheet> {
             style: FilledButton.styleFrom(
               backgroundColor: context.palette.primary,
             ),
-            onPressed: () => Navigator.of(context).pop(_controller.text),
+            onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
             child: Text(widget.confirmText),
           ),
         ],

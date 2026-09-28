@@ -14,6 +14,8 @@ import '../../config/app_theme.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../utils/time_format.dart';
 import '../../theme/app_typography.dart';
+import '../../widgets/yue_input_sheet.dart';
+import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
 
 class SessionDrawer extends StatefulWidget {
@@ -392,31 +394,14 @@ class _SessionDrawerState extends State<SessionDrawer> {
     String id,
     String current,
   ) async {
-    final controller = TextEditingController(text: current);
-    final newTitle = await showDialog<String>(
+    final newTitle = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('重命名会话', style: context.text.titleLg),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 30,
-          decoration: const InputDecoration(hintText: '输入会话名称'),
-          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.palette.primary,
-            ),
-            child: const Text('保存'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => YueInputSheet(
+        title: '重命名会话',
+        hintText: '输入会话名称',
+        maxLength: 30,
+        initialValue: current,
       ),
     );
     if (newTitle != null && newTitle.isNotEmpty && newTitle != current) {

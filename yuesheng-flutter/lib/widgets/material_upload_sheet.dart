@@ -15,6 +15,8 @@ import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/capability_providers.dart';
 import '../services/file_parser.dart';
+import 'yue_input_sheet.dart';
+import 'yue_sheet.dart';
 import '../config/app_palette.dart';
 
 /// 素材类型（对齐 RN FileRole：general/outline/material）
@@ -100,31 +102,15 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
 
   // ── 粘贴文本 ──
   Future<void> _showPasteDialog() async {
-    final controller = TextEditingController();
-    final text = await showDialog<String>(
+    final text = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('粘贴文本'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 8,
-          minLines: 5,
-          decoration: const InputDecoration(
-            hintText: '在此输入或粘贴素材内容...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('确认'),
-          ),
-        ],
+      isScrollControlled: true,
+      builder: (_) => const YueInputSheet(
+        title: '粘贴文本',
+        hintText: '在此输入或粘贴素材内容...',
+        maxLines: 8,
+        minLines: 5,
+        confirmText: '确认',
       ),
     );
 
