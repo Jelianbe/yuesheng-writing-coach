@@ -17,6 +17,7 @@ import '../../data/repositories/setting_link_repository.dart'
 import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../theme/app_typography.dart';
+import '../../widgets/yue_sheet.dart';
 
 /// 新建/编辑「其他」设定条目。成功写入返回 true（调用方据此刷新）。
 Future<bool?> showSettingEntryDialog(
@@ -28,8 +29,9 @@ Future<bool?> showSettingEntryDialog(
   final repo = SettingEntryRepository(ref.read(appDatabaseProvider));
   final categories = await repo.listCategories(manuscriptId);
   if (!context.mounted) return null;
-  return showDialog<bool>(
+  return showYueModalBottomSheet<bool>(
     context: context,
+    isScrollControlled: true,
     builder: (ctx) => _SettingEntryDialog(
       manuscriptId: manuscriptId,
       existing: existing,
@@ -239,9 +241,8 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
   @override
   Widget build(BuildContext context) {
     final existing = widget.existing;
-    return AlertDialog(
-      title: Text(existing == null ? '新建设定' : '编辑设定'),
-      content: SingleChildScrollView(child: _buildFields()),
+    return YueSheetScaffold(
+      title: existing == null ? '新建设定' : '编辑设定',
       actions: [
         TextButton(
           onPressed: _saving ? null : () => Navigator.of(context).pop(false),
@@ -252,6 +253,7 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
           child: Text(_saving ? '保存中…' : '保存'),
         ),
       ],
+      child: _buildFields(),
     );
   }
 }
