@@ -263,14 +263,12 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                     ),
                   ),
                 ),
-                Text(
-                  expanded ? '▼' : '▶',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: expanded
-                        ? context.palette.primary
-                        : context.palette.disabledText,
-                  ),
+                Icon(
+                  expanded ? Icons.expand_more : Icons.chevron_right,
+                  size: 20,
+                  color: expanded
+                      ? context.palette.primary
+                      : context.palette.disabledText,
                 ),
               ],
             ),

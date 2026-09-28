@@ -557,6 +557,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, size: 22),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/bookshelf'),
+          tooltip: '返回',
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
