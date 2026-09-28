@@ -141,6 +141,35 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     }
   }
 
+  /// 删除自定义教练前二次确认（不可逆操作，避免误触垃圾桶一键删除）。
+  Future<void> _confirmDeletePersona(CoachPersona persona) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除自定义教练'),
+        content: Text(
+          '确认删除「${persona.name}」？此操作不可恢复。'
+          '${persona.id == _activeId
+              ? '\n\n当前正在使用，删除后将回退到系统预设「豆包」。'
+              : ''}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _deletePersona(persona);
+    }
+  }
+
   /// 打开系统预设的直接说明阈值编辑对话框（Part A 补：系统预设可编辑阈值）。
   Future<void> _openThresholdEditor(CoachPersona persona) async {
     final repo = AppStateRepository(ref.read(appDatabaseProvider));
@@ -233,7 +262,8 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               onEdit: persona.isSystem
                   ? null
                   : () => _openPersonaEditor(persona),
-              onDelete: persona.isSystem ? null : () => _deletePersona(persona),
+              onDelete:
+                  persona.isSystem ? null : () => _confirmDeletePersona(persona),
               onEditThreshold: persona.isSystem
                   ? () => _openThresholdEditor(persona)
                   : null,
@@ -378,28 +408,47 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
 
   /// R-019 拆出：自定义人格「编辑」入口（铅笔图标）。
   Widget _personaEditButton(AppPalette palette, VoidCallback onEdit) =>
-      _personaIconButton(palette, icon: Icons.edit_outlined, onTap: onEdit);
+      _personaIconButton(
+        palette,
+        icon: Icons.edit_outlined,
+        onTap: onEdit,
+        tooltip: '编辑',
+      );
 
   /// R-019 拆出：自定义人格「删除」入口。
   Widget _personaDeleteButton(AppPalette palette, VoidCallback onDelete) =>
-      _personaIconButton(palette, icon: Icons.delete_outline, onTap: onDelete);
+      _personaIconButton(
+        palette,
+        icon: Icons.delete_outline,
+        onTap: onDelete,
+        tooltip: '删除',
+      );
 
   /// R-019 拆出：系统预设「阈值调音」入口。
   Widget _personaThresholdButton(
     AppPalette palette,
     VoidCallback onEditThreshold,
-  ) => _personaIconButton(palette, icon: Icons.tune, onTap: onEditThreshold);
+  ) => _personaIconButton(
+        palette,
+        icon: Icons.tune,
+        onTap: onEditThreshold,
+        tooltip: '阈值调音',
+      );
 
   Widget _personaIconButton(
     AppPalette palette, {
     required IconData icon,
     required VoidCallback onTap,
+    required String tooltip,
   }) => Padding(
     padding: const EdgeInsets.only(left: 4),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: Icon(icon, size: 18, color: palette.textTertiary),
+    child: Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Icon(icon, size: 18, color: palette.textTertiary),
+      ),
     ),
   );
 

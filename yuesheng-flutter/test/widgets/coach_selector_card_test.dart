@@ -229,4 +229,42 @@ void main() {
     expect(find.text('先填个名字或几句语气，AI 才能帮你润色'), findsNothing);
     expect(find.text('请先在「设置 → API 配置」填好 Key，才能用 AI 润色'), findsNothing);
   });
+
+  // ── #9 删除入口二次确认（2026-09-28 补：垃圾桶不再一键即删）──
+  testWidgets('#9 删除自定义教练需二次确认：取消不删、确认才删', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    // 新建一个自定义教练
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '待删教练');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(TextButton, '保存'));
+    await tester.pumpAndSettle();
+
+    // 自定义人格行出现删除图标
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+
+    // 点删除 → 出现二次确认弹窗（含不可恢复提示）
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    expect(find.text('删除自定义教练'), findsOneWidget);
+    expect(find.textContaining('此操作不可恢复'), findsOneWidget);
+
+    // 取消 → 弹窗关闭，教练仍在
+    await tester.tap(find.widgetWithText(TextButton, '取消'));
+    await tester.pumpAndSettle();
+    expect(find.text('待删教练'), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+
+    // 再点删除 → 确认「删除」→ 教练被移除
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '删除'));
+    await tester.pumpAndSettle();
+    expect(find.text('待删教练'), findsNothing);
+    expect(find.byIcon(Icons.delete_outline), findsNothing);
+  });
 }
