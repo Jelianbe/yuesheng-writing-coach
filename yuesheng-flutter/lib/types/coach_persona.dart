@@ -8,7 +8,8 @@
 //    见 app_state_repository.dart）；
 //  - [systemPromptFragment] 为注入 chat_context_builder 态度段的候选文本，
 //    Phase 2 才接快照（当前系统预设注入仍由 skill_prompt_anchor 快照锁守护）；
-//  - [personaLayer] 为 D2 人设层文本，Phase 1 仅承载、不消费。
+//  - [personaLayer] 为 D2 人设层文本（可选）。用户预设激活且非空时由
+//    skill_dispatcher 叠加注入（见 .ai/reports/2026-09-27-D-vision-design.md §2）。
 // ─────────────────────────────────────────────────────────────
 
 import 'teaching_types.dart';
@@ -29,7 +30,7 @@ class CoachPersona {
   /// 态度/语气段正文（候选注入文本）。
   final String systemPromptFragment;
 
-  /// D2 人设层文本（可选，Phase 1 不消费）。
+  /// D2 人设层文本（可选）。用户预设激活且非空时由 skill_dispatcher 叠加注入。
   final String? personaLayer;
 
   /// 可选图标键（用户预设可自选图标）。

@@ -227,6 +227,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               persona: persona,
               selected: persona.id == _activeId,
               onTap: () => _select(persona.id),
+              onEdit: persona.isSystem
+                  ? null
+                  : () => _openPersonaEditor(persona),
               onDelete: persona.isSystem ? null : () => _deletePersona(persona),
               onEditThreshold: persona.isSystem
                   ? () => _openThresholdEditor(persona)
@@ -293,6 +296,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     required CoachPersona persona,
     required bool selected,
     required VoidCallback onTap,
+    required VoidCallback? onEdit,
     required VoidCallback? onDelete,
     VoidCallback? onEditThreshold,
   }) {
@@ -326,6 +330,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               palette,
               selected,
               persona,
+              onEdit,
               onDelete,
               onEditThreshold,
             ),
@@ -349,6 +354,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     AppPalette palette,
     bool selected,
     CoachPersona persona,
+    VoidCallback? onEdit,
     VoidCallback? onDelete,
     VoidCallback? onEditThreshold,
   ) {
@@ -356,34 +362,56 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     final list = <Widget>[
       if (selected) Icon(Icons.check_circle, size: 18, color: palette.primary),
     ];
+    if (isCustom && onEdit != null) list.add(_personaEditButton(palette, onEdit));
     if (isCustom && onDelete != null) {
-      list
-        ..add(const SizedBox(width: 4))
-        ..add(
-          InkWell(
-            onTap: onDelete,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Icon(
-              Icons.delete_outline,
-              size: 18,
-              color: palette.textTertiary,
-            ),
-          ),
-        );
+      list.add(_personaDeleteButton(palette, onDelete));
     }
     if (onEditThreshold != null) {
-      list
-        ..add(const SizedBox(width: 4))
-        ..add(
-          InkWell(
-            onTap: onEditThreshold,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Icon(Icons.tune, size: 18, color: palette.textTertiary),
-          ),
-        );
+      list.add(_personaThresholdButton(palette, onEditThreshold));
     }
     return list;
   }
+
+  /// R-019 拆出：自定义人格「编辑」入口（铅笔图标）。
+  Widget _personaEditButton(AppPalette palette, VoidCallback onEdit) =>
+      _personaIconButton(
+        palette,
+        icon: Icons.edit_outlined,
+        onTap: onEdit,
+      );
+
+  /// R-019 拆出：自定义人格「删除」入口。
+  Widget _personaDeleteButton(AppPalette palette, VoidCallback onDelete) =>
+      _personaIconButton(
+        palette,
+        icon: Icons.delete_outline,
+        onTap: onDelete,
+      );
+
+  /// R-019 拆出：系统预设「阈值调音」入口。
+  Widget _personaThresholdButton(
+    AppPalette palette,
+    VoidCallback onEditThreshold,
+  ) =>
+      _personaIconButton(
+        palette,
+        icon: Icons.tune,
+        onTap: onEditThreshold,
+      );
+
+  Widget _personaIconButton(
+    AppPalette palette, {
+    required IconData icon,
+    required VoidCallback onTap,
+  }) =>
+      Padding(
+        padding: const EdgeInsets.only(left: 4),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Icon(icon, size: 18, color: palette.textTertiary),
+        ),
+      );
 
   Widget _coachNameDesc(AppPalette palette, String name, String desc) =>
       Expanded(
