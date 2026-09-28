@@ -239,16 +239,30 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
   Widget _buildQ2() {
     return _QuestionPage(
       title: 'Q2. 你最想提升哪方面？',
-      subtitle: '可多选，也可不选',
+      subtitle: '选个方向，不选也行',
       child: Column(
-        children: kFocusAreaOptions.map((area) {
-          final selected = _focusAreas.contains(area);
-          return _CheckCard(
-            selected: selected,
-            label: area,
-            onTap: () => _toggleFocusArea(area),
-          );
-        }).toList(),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Text(
+              '这只是起点，不是考试——我会在对话里根据你的实际写作调整，随时可以改。',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: context.palette.textSecondary,
+              ),
+            ),
+          ),
+          ...kFocusAreaOptions.map((area) {
+            final selected = _focusAreas.contains(area);
+            return _CheckCard(
+              selected: selected,
+              label: area,
+              onTap: () => _toggleFocusArea(area),
+            );
+          }),
+        ],
       ),
     );
   }
