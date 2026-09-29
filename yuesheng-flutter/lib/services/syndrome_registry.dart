@@ -943,4 +943,20 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     techniques: ['T019', 'T003'],
     actions: ['A016', 'A011'],
   ),
+  // ── 阶段三（档2 通用规范·冲突未升级/模式重复）：P049 ──
+  SyndromeRecord(
+    id: 'P049',
+    name: '冲突未升级/模式重复症',
+    shortName: '冲突未升级',
+    keyword: '冲突模式重复未递进',
+    oneLine: '同一模式重复多次但强度未递增，读者第二次就摸清规律，后续只是音量调大',
+    typeLine: '冲突结构重复，威胁/信息量/情绪未递进',
+    trainingLine: '连续场景/段落结构相同（如都是"异常→紧张→虚惊一场"），但威胁程度、信息量、情绪强度没有递增——读者第二次就摸清规律，第三次只是把音量调大',
+    type: SyndromeType.structuralDisorder,
+    level: SkillLevel.l2,
+    group: MaxAttemptsGroup.structure,
+    position: 'serial',
+    techniques: ['T017', 'T008', 'T018'],
+    actions: ['A007', 'A003', 'A009'],
+  ),
 ];

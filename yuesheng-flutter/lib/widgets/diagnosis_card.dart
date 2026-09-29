@@ -313,6 +313,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                   const SizedBox(height: 16),
                   _buildRewriteBlock(),
                 ],
+                // 读者层弱提示：题材/受众/可读性超出文本诊断范围，恒显在详情末尾。
+                _buildReaderLayerHint(),
               ],
             ),
           ),
@@ -485,6 +487,38 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           color: context.palette.textTertiary,
           fontSize: 11,
         ),
+      ),
+    );
+  }
+
+  // ── 读者层弱提示：题材选择/受众匹配/可读性不在文本诊断覆盖内 ──
+  /// 视觉刻意做弱（灰字、小一号、Divider 隔开），不与正常症候条目抢注意力。
+  Widget _buildReaderLayerHint() {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Divider(height: 1, color: context.palette.border),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '读者层 · 需自行判断',
+            style: context.text.caption?.copyWith(
+              color: context.palette.textTertiary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '以上是文本层面的问题。题材选择、受众匹配、读者会不会想读下去——这部分我覆盖不了，请自行判断。',
+            style: context.text.caption?.copyWith(
+              color: context.palette.textTertiary,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }
