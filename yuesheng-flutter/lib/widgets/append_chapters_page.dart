@@ -19,17 +19,26 @@ import 'package:go_router/go_router.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/chapter_repository.dart';
+import '../data/repositories/volume_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/file_parser.dart';
 import '../features/chat/import_success_sheet.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
 
-/// 解析后的章节（title + content）
+/// 解析后的章节（title + content + volumeTitle）
 class AppendChapterItem {
   final String title;
   final String content;
-  const AppendChapterItem({required this.title, required this.content});
+
+  /// 所属卷标题（追加导入时据此挂卷；null = 未分卷）
+  final String? volumeTitle;
+
+  const AppendChapterItem({
+    required this.title,
+    required this.content,
+    this.volumeTitle,
+  });
 }
 
 /// 追加章节导入页
@@ -75,7 +84,11 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
     final parsed = parseDocument(content, picked.name);
     return [
       for (final ch in parsed.chapters)
-        AppendChapterItem(title: ch.title, content: ch.content),
+        AppendChapterItem(
+          title: ch.title,
+          content: ch.content,
+          volumeTitle: ch.volumeTitle,
+        ),
     ];
   }
 
@@ -160,6 +173,10 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
   }
 
   /// 确认导入：批量入库 → ImportSuccessSheet（对齐 RN handleConfirm）
+  ///
+  /// B8：保留 md 卷结构——按章的 volumeTitle 挂卷（复用稿件已有同名卷，
+  /// 否则新建），与「新建作品导入」(WorkImportService) 的挂卷结果一致；
+  /// 不再把所有新章平铺进「未分卷」。
   Future<void> _handleConfirm() async {
     if (_selected.isEmpty) {
       ScaffoldMessenger.of(
@@ -169,18 +186,61 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
     }
     setState(() => _importing = true);
     try {
-      final repo = ChapterRepository(ref.read(appDatabaseProvider));
-      final toImport = [
-        for (final i in _selected.toList()..sort())
-          (title: _chapters[i].title, content: _chapters[i].content),
-      ];
-      final count = await repo.createChaptersBatch(
-        widget.manuscriptId,
-        toImport,
-      );
+      final db = ref.read(appDatabaseProvider);
+      final chapterRepo = ChapterRepository(db);
+      final volumeRepo = VolumeRepository(db);
+
+      // 已有卷按标题索引，追加同名卷时复用而非新建重复卷
+      final existingVolumes = await volumeRepo.listVolumes(widget.manuscriptId);
+      final volumeIdByTitle = {
+        for (final v in existingVolumes) v.title.trim(): v.id,
+      };
+      final createdVolumeCache = <String, String>{};
+      Future<String?> resolveVolumeId(String? volumeTitle) async {
+        if (volumeTitle == null || volumeTitle.trim().isEmpty) return null;
+        final key = volumeTitle.trim();
+        final cached = createdVolumeCache[key] ?? volumeIdByTitle[key];
+        if (cached != null) return cached;
+        final id = await volumeRepo.createVolume(
+          widget.manuscriptId,
+          title: key,
+        );
+        createdVolumeCache[key] = id;
+        return id;
+      }
+
+      // 按选中顺序（已排序）切同卷连续段，逐段批量入库：
+      // createChaptersBatch 每次取全局 MAX(sort_order)+1 递增，段间顺序不丢。
+      final selectedIndexes = _selected.toList()..sort();
+      var totalImported = 0;
+      var batch = <({String title, String content})>[];
+      String? batchVolumeTitle;
+
+      Future<void> flushBatch() async {
+        if (batch.isEmpty) return;
+        final volumeId = await resolveVolumeId(batchVolumeTitle);
+        totalImported += await chapterRepo.createChaptersBatch(
+          widget.manuscriptId,
+          batch,
+          volumeId: volumeId,
+        );
+        batch = [];
+      }
+
+      for (final i in selectedIndexes) {
+        final item = _chapters[i];
+        final vt = item.volumeTitle;
+        if (batch.isNotEmpty && vt != batchVolumeTitle) {
+          await flushBatch();
+        }
+        batchVolumeTitle = vt;
+        batch.add((title: item.title, content: item.content));
+      }
+      await flushBatch();
+
       if (!mounted) return;
       setState(() => _importing = false);
-      _showSuccessSheet(count);
+      _showSuccessSheet(totalImported);
     } catch (e) {
       if (mounted) {
         setState(() {

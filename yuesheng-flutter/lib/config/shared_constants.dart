@@ -285,6 +285,10 @@ class FocusSwitch {
 class FileParserLimits {
   const FileParserLimits._();
 
+  /// 导入文件大小上限（字节）。超过即拒绝读入，避免超大文本整文件
+  /// 进内存（bytes + 解码 String + split 行列表叠加）触发 OOM 闪退。
+  static const int maxImportBytes = 10 * 1024 * 1024; // 10MB
+
   /// 章节标题最大长度（txt 正则匹配模式）
   static const int chapterTitleMaxLength = 50;
 

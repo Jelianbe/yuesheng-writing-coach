@@ -77,14 +77,44 @@ Future<PickedDocument?> pickDocument() async {
 
 /// 读取本地文件文本（失败抛异常，由调用方处理）
 ///
-/// 编码探测顺序：UTF-8 严格解码 → 失败则回退 GBK/GB18030
-/// （`utf8.decode` 对非法序列抛 FormatException；GBK 解码覆盖
-///  GB18030 常用汉字区，四字节扩展字失败时经 decode_guard 留痕后抛出）。
+/// 编码探测顺序：
+///   1. BOM 嗅探：`EF BB BF`(UTF-8 BOM) / `FF FE`(UTF-16 LE) / `FE FF`(UTF-16 BE)
+///   2. 无 BOM：UTF-8 严格解码 → 失败回退 GBK/GB18030
+/// （`utf8.decode` 对非法序列抛 FormatException；GBK 解码覆盖 GB18030
+///  常用汉字区，四字节扩展字失败时经 decode_guard 留痕后抛出）。
+///
+/// A7：读字节前先 stat 拿大小，超过 [FileParserLimits.maxImportBytes] 直接抛
+/// [StateError]「文件过大已跳过」，不把整文件读进内存（防 OOM）。
 Future<String> readFileContent(String path) async {
   final file = File(path);
+  final stat = await file.stat();
+  if (stat.size > FileParserLimits.maxImportBytes) {
+    throw StateError('文件过大已跳过');
+  }
   final bytes = await file.readAsBytes();
+  return _decodeByBom(bytes);
+}
+
+/// 按 BOM / 编码探测解码字节串，返回正文（已剥 BOM）
+String _decodeByBom(List<int> bytes) {
+  // UTF-8 BOM：EF BB BF → 剥 BOM 字节后走 UTF-8 严格解码
+  if (bytes.length >= 3 &&
+      bytes[0] == 0xEF &&
+      bytes[1] == 0xBB &&
+      bytes[2] == 0xBF) {
+    return _stripBom(utf8.decode(bytes.sublist(3)));
+  }
+  // UTF-16 LE BOM：FF FE → 剥 BOM 按小端解码
+  if (bytes.length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE) {
+    return _decodeUtf16(bytes.sublist(2), littleEndian: true);
+  }
+  // UTF-16 BE BOM：FE FF → 剥 BOM 按大端解码
+  if (bytes.length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF) {
+    return _decodeUtf16(bytes.sublist(2), littleEndian: false);
+  }
+  // 无 BOM：维持原有 UTF-8 严格 → GBK 回退路径（不退化）
   try {
-    return utf8.decode(bytes);
+    return _stripBom(utf8.decode(bytes));
   } on FormatException {
     try {
       return gbk.decode(bytes);
@@ -93,6 +123,25 @@ Future<String> readFileContent(String path) async {
       rethrow;
     }
   }
+}
+
+/// B6：剥离开头的 U+FEFF。UTF-8 带 BOM 时 `utf8.decode` 会把 `EF BB BF`
+/// 解成一个 U+FEFF 留在串首——`String.trim()` 不剔除它，而章节正则 `\s`
+/// 也不匹配它，导致首行「第X章」不被识别、首章内容错位。
+String _stripBom(String s) =>
+    s.isNotEmpty && s.codeUnitAt(0) == 0xFEFF ? s.substring(1) : s;
+
+/// 手动解码 UTF-16（dart:convert 无内置 UTF-16 解码器，且禁止新增依赖）。
+/// BOM 已由调用方剥除；按端序拼出 16 位 code unit 列表，交由
+/// [String.fromCharCodes] 正确处理代理对（增补字符/emoji）。末尾落单字节忽略。
+String _decodeUtf16(List<int> bytes, {required bool littleEndian}) {
+  final units = <int>[];
+  for (var i = 0; i + 1 < bytes.length; i += 2) {
+    final b0 = bytes[i];
+    final b1 = bytes[i + 1];
+    units.add(littleEndian ? (b0 | (b1 << 8)) : ((b0 << 8) | b1));
+  }
+  return String.fromCharCodes(units);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -169,7 +218,8 @@ ParsedFile parseTxtFile(String content, String fileName) {
   final chapters = <ParsedChapter>[];
   final lines = content.split(RegExp(r'\r?\n'));
   var currentChapterTitle = '第一章';
-  var currentChapterContent = '';
+  // B5：StringBuffer 替代 String +=，避免大文件正文 O(n²) 拷贝卡主线程
+  var currentChapterContent = StringBuffer();
   String? currentVolumeTitle;
   String? chapterVolumeAtTitle;
 
@@ -178,10 +228,10 @@ ParsedFile parseTxtFile(String content, String fileName) {
     _flushChapter(
       chapters,
       currentChapterTitle,
-      currentChapterContent,
+      currentChapterContent.toString(),
       chapterVolumeAtTitle ?? currentVolumeTitle,
     );
-    currentChapterContent = '';
+    currentChapterContent = StringBuffer();
     currentChapterTitle = _cleanTitle(newTitle);
     chapterVolumeAtTitle = currentVolumeTitle;
   }
@@ -195,13 +245,15 @@ ParsedFile parseTxtFile(String content, String fileName) {
         trimmed.length < FileParserLimits.chapterTitleMaxLength) {
       beginChapter(trimmed);
     } else {
-      currentChapterContent += '$line\n';
+      currentChapterContent
+        ..write(line)
+        ..write('\n');
     }
   }
   _flushChapter(
     chapters,
     currentChapterTitle,
-    currentChapterContent,
+    currentChapterContent.toString(),
     chapterVolumeAtTitle ?? currentVolumeTitle,
   );
   if (chapters.isEmpty) {
@@ -227,7 +279,8 @@ ParsedFile parseMdFile(String content, String fileName) {
   final chapters = <ParsedChapter>[];
   final lines = content.split(RegExp(r'\r?\n'));
   var currentChapterTitle = '第一章';
-  var currentChapterContent = '';
+  // B5：StringBuffer 替代 String +=，避免大文件正文 O(n²) 拷贝卡主线程
+  var currentChapterContent = StringBuffer();
   String? currentVolumeTitle;
   String? chapterVolumeAtTitle;
 
@@ -236,10 +289,10 @@ ParsedFile parseMdFile(String content, String fileName) {
     _flushChapter(
       chapters,
       currentChapterTitle,
-      currentChapterContent,
+      currentChapterContent.toString(),
       chapterVolumeAtTitle ?? currentVolumeTitle,
     );
-    currentChapterContent = '';
+    currentChapterContent = StringBuffer();
     currentChapterTitle = _cleanTitle(newTitle);
     chapterVolumeAtTitle = currentVolumeTitle;
   }
@@ -258,13 +311,15 @@ ParsedFile parseMdFile(String content, String fileName) {
         trimmed.length < FileParserLimits.chapterTitleMaxLength) {
       beginChapter(trimmed);
     } else {
-      currentChapterContent += '$line\n';
+      currentChapterContent
+        ..write(line)
+        ..write('\n');
     }
   }
   _flushChapter(
     chapters,
     currentChapterTitle,
-    currentChapterContent,
+    currentChapterContent.toString(),
     chapterVolumeAtTitle ?? currentVolumeTitle,
   );
   if (chapters.isEmpty) {

@@ -18,6 +18,7 @@ import 'dart:io';
 import 'package:fast_gbk/fast_gbk.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/services/file_parser.dart';
 
 void main() {
@@ -305,9 +306,87 @@ void main() {
     test('readFileContent: 非 UTF-8/GBK 二进制 → 抛异常（留痕）', () async {
       final dir = await Directory.systemTemp.createTemp('parser_bin');
       final f = File('${dir.path}/bin.txt');
-      await f.writeAsBytes([0xFF, 0xFE, 0x00, 0x81, 0xE0]);
+      // FF FF 不是任何已知 BOM（FF FE=LE / FE FF=BE），既过不了 UTF-8 严格解码、
+      // 也过不了 GBK（0xFF 非法 lead byte）→ 抛异常留痕。
+      await f.writeAsBytes([0xFF, 0xFF, 0x00, 0x81, 0xE0]);
       try {
         await expectLater(readFileContent(f.path), throwsA(isA<Exception>()));
+      } finally {
+        await dir.delete(recursive: true);
+      }
+    });
+
+    test('A7: 超过 10MB → StateError「文件过大已跳过」，不读入内存', () async {
+      final dir = await Directory.systemTemp.createTemp('parser_big');
+      final f = File('${dir.path}/big.txt');
+      await f.writeAsBytes(
+        List<int>.filled(FileParserLimits.maxImportBytes + 1024, 0x20),
+      );
+      try {
+        await expectLater(
+          readFileContent(f.path),
+          throwsA(
+            isA<StateError>().having((e) => e.message, 'message', '文件过大已跳过'),
+          ),
+        );
+      } finally {
+        await dir.delete(recursive: true);
+      }
+    });
+
+    test('B6: UTF-8 带 BOM → 剥 U+FEFF，首章标题不被吞', () async {
+      final dir = await Directory.systemTemp.createTemp('parser_bom');
+      final f = File('${dir.path}/bom.txt');
+      // EF BB BF + 「第一章\n正文内容」
+      await f.writeAsBytes([0xEF, 0xBB, 0xBF, ...utf8.encode('第一章\n正文内容')]);
+      try {
+        final content = await readFileContent(f.path);
+        expect(content.codeUnitAt(0), isNot(0xFEFF));
+        expect(content.startsWith('第一章'), isTrue);
+        // 解析正确识别首章（BOM 曾导致首章标题被吞）
+        final parsed = parseDocument(content, 'bom.txt');
+        expect(parsed.chapters.first.title, '第一章');
+        expect(parsed.chapters.first.content, contains('正文内容'));
+      } finally {
+        await dir.delete(recursive: true);
+      }
+    });
+
+    test('B7: UTF-16 LE BOM (FF FE) → 正确解码', () async {
+      final dir = await Directory.systemTemp.createTemp('parser_utf16le');
+      final f = File('${dir.path}/le.txt');
+      const text = '第一章\n正文内容';
+      final bytes = <int>[0xFF, 0xFE];
+      for (final u in text.codeUnits) {
+        bytes
+          ..add(u & 0xFF)
+          ..add((u >> 8) & 0xFF);
+      }
+      await f.writeAsBytes(bytes);
+      try {
+        final content = await readFileContent(f.path);
+        expect(content, text);
+        final parsed = parseDocument(content, 'le.txt');
+        expect(parsed.chapters.first.title, '第一章');
+      } finally {
+        await dir.delete(recursive: true);
+      }
+    });
+
+    test('B7: UTF-16 BE BOM (FE FF) → 正确解码', () async {
+      final dir = await Directory.systemTemp.createTemp('parser_utf16be');
+      final f = File('${dir.path}/be.txt');
+      const text = '第二章\n正文内容';
+      final bytes = <int>[0xFE, 0xFF];
+      for (final u in text.codeUnits) {
+        bytes
+          ..add((u >> 8) & 0xFF)
+          ..add(u & 0xFF);
+      }
+      await f.writeAsBytes(bytes);
+      try {
+        final content = await readFileContent(f.path);
+        expect(content, text);
       } finally {
         await dir.delete(recursive: true);
       }

@@ -22,6 +22,7 @@ import 'package:go_router/go_router.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/widgets/append_chapters_page.dart';
 
@@ -268,6 +269,88 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('稿件详情测试页'), findsOneWidget);
+    });
+
+    testWidgets('#10 追加导入带 volumeTitle → 建卷并挂卷（B8 不塌成平铺）', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildHost(
+          loader: loaderOf([
+            const AppendChapterItem(
+              title: '第一章',
+              content: '卷1正文',
+              volumeTitle: '第一卷',
+            ),
+            const AppendChapterItem(
+              title: '第二章',
+              content: '卷1正文2',
+              volumeTitle: '第一卷',
+            ),
+            const AppendChapterItem(
+              title: '第三章',
+              content: '卷2正文',
+              volumeTitle: '第二卷',
+            ),
+            const AppendChapterItem(title: '尾声', content: '未分卷正文'),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await pickFile(tester);
+      await tester.tap(find.text('确认导入'));
+      await tester.pumpAndSettle();
+
+      // 落库：4 章，顺序保持
+      final chapterRepo = ChapterRepository(db);
+      final chapters = await chapterRepo.listChapters(manuscriptId);
+      expect(chapters.length, 4);
+      expect(chapters.map((c) => c.title).toList(), [
+        '第一章',
+        '第二章',
+        '第三章',
+        '尾声',
+      ]);
+
+      // 按卷标题建了 2 个卷
+      final volumes = await db.select(db.volumes).get();
+      expect(volumes.length, 2);
+      expect(volumes.map((v) => v.title).toSet(), {'第一卷', '第二卷'});
+      final volId = {for (final v in volumes) v.title: v.id};
+
+      // 章节正确挂卷，尾声未分卷
+      expect(chapters[0].volumeId, volId['第一卷']);
+      expect(chapters[1].volumeId, volId['第一卷']);
+      expect(chapters[2].volumeId, volId['第二卷']);
+      expect(chapters[3].volumeId, isNull);
+    });
+
+    testWidgets('#11 追加复用已有同名卷，不新建重复卷', (tester) async {
+      // 稿件已存在「第一卷」，追加同卷标题应复用而非重复建卷
+      await VolumeRepository(db).createVolume(manuscriptId, title: '第一卷');
+      await tester.pumpWidget(
+        buildHost(
+          loader: loaderOf([
+            const AppendChapterItem(
+              title: '第一章',
+              content: '正文',
+              volumeTitle: '第一卷',
+            ),
+          ]),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await pickFile(tester);
+      await tester.tap(find.text('确认导入'));
+      await tester.pumpAndSettle();
+
+      final volumes = await db.select(db.volumes).get();
+      expect(volumes.length, 1);
+      expect(volumes.single.title, '第一卷');
+      final chapters = await ChapterRepository(db).listChapters(manuscriptId);
+      expect(chapters.single.volumeId, volumes.single.id);
     });
   });
 }
