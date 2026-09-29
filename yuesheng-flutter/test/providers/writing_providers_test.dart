@@ -37,6 +37,17 @@ class _FakeChapterRepo extends ChapterRepository {
   }
 }
 
+/// A3：版本快照失败替身（addChapterVersion 可控抛错；正文保存不受影响）
+class _FailingSnapshotRepo extends AppStateRepository {
+  bool failSnapshot = false;
+  _FailingSnapshotRepo(AppDatabase db) : super(db);
+  @override
+  Future<void> addChapterVersion(String chapterId, String content) async {
+    if (failSnapshot) throw Exception('模拟快照写入失败');
+    return super.addChapterVersion(chapterId, content);
+  }
+}
+
 void main() {
   late AppDatabase db;
   late String chapterId;
@@ -792,6 +803,86 @@ void main() {
       store.updateContent('内容B');
       store.scheduleSave();
       expect(store.hasPendingSave, isTrue);
+    });
+  });
+
+  group('A3：版本快照失败与正文保存解耦', () {
+    test('快照连续失败 3 次：正文照常落库，不误报保存失败、不暂停自动保存', () async {
+      final fakeAppState = _FailingSnapshotRepo(db);
+      fakeAppState.failSnapshot = true;
+      final store = WritingStore(
+        db,
+        chapterId,
+        appStateRepoFactory: (_) => fakeAppState,
+      );
+      await store.loadChapter(); // 初始 4 字 → 快照阈值 200
+
+      // 跨 3 个快照边界（200/400/600），每次 saveNow 都触发快照且快照失败
+      store.updateContent('字' * 205);
+      await store.saveNow();
+      store.updateContent('字' * 405);
+      await store.saveNow();
+      store.updateContent('字' * 605);
+      await store.saveNow();
+
+      // 正文已落库（最后一次 605 字）
+      final ch = await ChapterRepository(db).getChapter(chapterId);
+      expect(ch!.content.length, 605);
+      // 快照全部失败 → 无版本快照
+      expect(
+        await AppStateRepository(db).listChapterVersions(chapterId),
+        isEmpty,
+      );
+
+      // 关键断言：快照失败不得计入正文保存失败
+      expect(store.state.saveError, isNull);
+      expect(store.state.lastSavedAt, isNotNull);
+      expect(
+        store.state.autosavePaused,
+        isFalse,
+        reason: '快照失败不得触发 autosavePaused',
+      );
+
+      // 自动保存仍正常调度（未被误暂停）
+      store.updateContent('字' * 610);
+      store.scheduleSave();
+      expect(store.hasPendingSave, isTrue);
+    });
+
+    test('快照正常时仍落版本（回归：happy path 不被内部 try/catch 吞掉）', () async {
+      final store = WritingStore(db, chapterId); // 默认 AppState repo
+      await store.loadChapter();
+      store.updateContent('字' * 205);
+      await store.saveNow();
+      final versions = await AppStateRepository(db).listChapterVersions(
+        chapterId,
+      );
+      expect(versions.length, 1);
+      expect(versions.first.content, '字' * 205);
+      expect(store.state.saveError, isNull);
+    });
+
+    test('离线草稿保存时快照失败：草稿照常写入，不误报', () async {
+      final fakeAppState = _FailingSnapshotRepo(db);
+      fakeAppState.failSnapshot = true;
+      final store = WritingStore(
+        db,
+        chapterId,
+        appStateRepoFactory: (_) => fakeAppState,
+      );
+      await store.loadChapter();
+      await store.setOffline(true);
+      store.updateContent('离线待草稿');
+      await store.saveNow();
+
+      // 草稿已写入
+      final draft = await AppStateRepository(db).getChapterDraft(chapterId);
+      expect(draft, isNotNull);
+      expect(draft!.content, '离线待草稿');
+      // 快照失败不影响草稿保存语义
+      expect(store.state.hasDraft, true);
+      expect(store.state.saveError, isNull);
+      expect(store.state.autosavePaused, isFalse);
     });
   });
 }

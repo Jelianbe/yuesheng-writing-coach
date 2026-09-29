@@ -228,10 +228,15 @@ class WritingStore extends StateNotifier<WritingState> {
   @visibleForTesting
   final ChapterRepository Function(AppDatabase db) chapterRepoFactory;
 
+  /// 入档批次：AppState 仓库工厂注入点（版本快照失败隔离测试用，默认直接构造）
+  @visibleForTesting
+  final AppStateRepository Function(AppDatabase db) appStateRepoFactory;
+
   WritingStore(
     this._db,
     this.chapterId, {
     this.chapterRepoFactory = ChapterRepository.new,
+    this.appStateRepoFactory = AppStateRepository.new,
   }) : super(const WritingState());
 
   @override
@@ -608,10 +613,24 @@ class WritingStore extends StateNotifier<WritingState> {
     _nextSnapshotWords =
         (wc ~/ AppStateRepository.chapterVersionInterval + 1) *
         AppStateRepository.chapterVersionInterval;
-    await AppStateRepository(
-      _db,
-    ).addChapterVersion(chapterId, state.localContent);
-    debugPrint('[WritingStore] 版本快照已落: chapterId=$chapterId wordCount=$wc');
+    // A3 修复：版本快照与正文保存解耦——快照只是时光机留痕，正文
+    // （在线 saveChapterContent / 离线草稿）已在上一步落库成功。快照抛错
+    // 只记日志静默降级，不得冒泡进 saveNow 外层 catch（否则会误报「保存失败」、
+    // 连错 3 次错误暂停自动保存）。
+    try {
+      await appStateRepoFactory(
+        _db,
+      ).addChapterVersion(chapterId, state.localContent);
+      debugPrint('[WritingStore] 版本快照已落: chapterId=$chapterId wordCount=$wc');
+    } catch (e, st) {
+      ErrorHandler.instance.captureError(
+        level: 'warn',
+        category: 'database',
+        message: '版本快照写入失败，正文保存不受影响',
+        context: {'chapterId': chapterId, 'error': '$e'},
+        stack: st.toString(),
+      );
+    }
   }
 
   /// 批次82：时光机恢复版本

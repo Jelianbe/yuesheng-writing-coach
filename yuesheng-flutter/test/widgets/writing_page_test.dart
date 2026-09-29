@@ -326,6 +326,37 @@ void main() {
       expect(find.textContaining('章节不存在'), findsOneWidget);
     });
 
+    testWidgets('#A1 切后台（lifecycle paused）→ 立即 flush 未落库输入，不等 300ms debounce', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWritingPage());
+      await tester.pumpAndSettle();
+
+      // 输入正文 → onContentChanged 调度 300ms 合并保存定时器（pending）
+      await tester.enterText(
+        find.byKey(const Key('chapterContentField')),
+        '切后台前刚敲的字',
+      );
+      await tester.pump(); // 触发 onChanged；刻意不等待 300ms
+
+      // 前置：debounce 窗口内 DB 仍是旧内容
+      final chRepo = ChapterRepository(db);
+      expect(
+        (await chRepo.getChapter(chapterId))!.content,
+        isNot(contains('切后台前刚敲的字')),
+      );
+
+      // 模拟 App 切后台（paused）→ 应立即 flush，不等 timer/下一帧
+      TestWidgetsFlutterBinding.instance.handleAppLifecycleStateChanged(
+        AppLifecycleState.paused,
+      );
+      await tester.pump(const Duration(milliseconds: 100)); // 让 saveNow 写库完成
+
+      // flush 已把未落库输入落库
+      final ch = await chRepo.getChapter(chapterId);
+      expect(ch!.content, '切后台前刚敲的字');
+    });
+
     // ── B3: 划词诊断（选中 → 浮动菜单 → 校验 → 注入面板） ──
 
     testWidgets('#9 B3 选中文本 → 浮动菜单「诊断这段文字」出现', (tester) async {

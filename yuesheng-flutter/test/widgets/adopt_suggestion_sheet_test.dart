@@ -18,6 +18,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
+import 'package:writingcoach/providers/writing_providers.dart';
 import 'package:writingcoach/widgets/adopt_suggestion_sheet.dart';
 
 void main() {
@@ -171,6 +172,36 @@ void main() {
       // 原文已备份到 previous_content
       expect(ch.previousContent, isNotNull);
       expect(ch.previousContent, contains('原文段落一'));
+    });
+
+    testWidgets('#A2 编辑器有未落库输入时采纳：先 flush，新输入不被 DB 旧版冲掉', (tester) async {
+      // 预置：store 已 loadChapter，但追加一段未落库输入（DB 仍是旧正文）
+      final notifier = container.read(writingStoreProvider(chapterId).notifier);
+      await notifier.loadChapter();
+      notifier.updateContent('原文段落一。\n\n原文段落二。\n\n未落库的新输入');
+      // 此时 DB 仍为旧正文（未 saveNow）
+      final chRepo = ChapterRepository(db);
+      expect(
+        (await chRepo.getChapter(chapterId))!.content,
+        isNot(contains('未落库的新输入')),
+      );
+
+      await tester.pumpWidget(buildSheetHost(suggestion: 'AI建议段落'));
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('局部合并'));
+      await tester.pumpAndSettle();
+
+      // 采纳后：未落库输入被 flush 保留，且建议追加到末尾
+      final ch = await chRepo.getChapter(chapterId);
+      expect(ch!.content, contains('未落库的新输入'));
+      expect(ch.content, contains('原文段落一'));
+      expect(ch.content, contains('AI建议段落'));
+      expect(ch.content, endsWith('AI建议段落'));
+
+      // 排空 updateContent 调度的 1.5s 历史提交定时器（pumpAndSettle 不等普通 Timer），避免 widget tree 销毁后仍有 pending timer 报错。
+      await tester.pump(const Duration(milliseconds: 1600));
     });
   });
 }

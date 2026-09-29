@@ -157,4 +157,22 @@ class WritingPageStoreSyncController {
       });
     }
   }
+
+  /// A1 修复：App 切后台 / 锁屏 / inactive / hidden 时立即 flush 未保存输入。
+  ///
+  /// 自动保存只靠 300ms `Timer`，但后台挂起后 timer 不保证触发、
+  /// `addPostFrameCallback` 也无新帧可跑；最后一次击键后 300ms 内切后台，
+  /// 这一段文字既不落 chapters 表、离线分支也没走。这里取消未决定时器后
+  /// 直接 `saveNow()`（fire-and-forget），复用现有落库通道——在线写库、
+  /// 离线写草稿，两条路都覆盖。
+  void flushOnLifecycle() {
+    final store = _host.store;
+    if (store == null) return;
+    // 与 dispose 强制保存同判据：有未保存改动或未决保存定时器才 flush，
+    // 无改动时 saveNow 是冗余写库。
+    if (!_host.dirty && !store.hasPendingSave) return;
+    store.cancelPendingTimers();
+    debugPrint('[WritingPage] 生命周期切后台触发 flush: chapterId=${_host.chapterId}');
+    store.saveNow();
+  }
 }

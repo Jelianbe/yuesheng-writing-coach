@@ -53,6 +53,7 @@ class WritingPage extends ConsumerStatefulWidget {
 }
 
 class _WritingPageState extends ConsumerState<WritingPage>
+    with WidgetsBindingObserver
     implements WritingPageHost {
   late final FocusAwareEditingController _controller;
   late final FocusNode _focusNode;
@@ -128,6 +129,8 @@ class _WritingPageState extends ConsumerState<WritingPage>
   @override
   void initState() {
     super.initState();
+    // A1：监听 App 生命周期，切后台/锁屏时立即 flush 未保存输入
+    WidgetsBinding.instance.addObserver(this);
     _controller = FocusAwareEditingController();
     _focusNode = FocusNode();
     _titleController = TextEditingController();
@@ -149,6 +152,7 @@ class _WritingPageState extends ConsumerState<WritingPage>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controllers.storeSync.disposeConnectivity();
     // 批次91-1：有未保存改动或未决合并保存 → 离开时强制保存（fire-and-forget）
     _controllers.storeSync.forceSaveOnDispose();
@@ -156,6 +160,19 @@ class _WritingPageState extends ConsumerState<WritingPage>
     _focusNode.dispose();
     _titleController.dispose();
     super.dispose();
+  }
+
+  /// A1：进入 paused（切后台/锁屏）/ inactive（来电、切应用预览）/ hidden
+  /// （引擎挂起）时立即 flush 当前未保存输入——不等 300ms debounce、
+  /// 不依赖定时器或下一帧（后台挂起时 timer/帧回调都不保证执行）。
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      _controllers.storeSync.flushOnLifecycle();
+    }
   }
 
   @override

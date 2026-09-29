@@ -22,6 +22,7 @@ import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/writing_providers.dart';
 
 /// 二次确认对话框文案（与项目铁律一致，勿改）
 const String _kReplaceAllConfirmText = '此操作将用AI改写完全替换章节原有内容，原文可通过撤销上次采纳恢复';
@@ -88,17 +89,40 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
 
   ChapterRepository _repo() => ChapterRepository(ref.read(appDatabaseProvider));
 
+  /// A2 修复：采纳前立即 flush 编辑器未保存输入（不等 300ms debounce）。
+  ///
+  /// 宽屏侧栏模式下正文与面板并排，面板打开期间编辑器始终可输入；若此时
+  /// autosavePaused / 离线 / debounce 竞态，直接读 DB 拿到的是旧正文，
+  /// 拼接回写会把编辑器里未落库的新输入冲掉。复用 WritingStore.saveNow
+  /// 现有落库通道（在线写库 / 离线写草稿），不新造落库逻辑。
+  ///
+  /// store 尚未 loadChapter（chapter==null，异常时序）时不 flush——否则
+  /// 会把空 localContent 写库覆盖正文。
+  Future<void> _flushEditorInput() async {
+    final storeState = ref.read(writingStoreProvider(widget.chapterId));
+    if (storeState.chapter == null) return;
+    await ref.read(writingStoreProvider(widget.chapterId).notifier).saveNow();
+  }
+
   /// 局部合并：追加建议到章节末尾，原文保留。
   Future<void> _adoptLocalMerge() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
+      // A2：先 flush 编辑器未落库输入，再以编辑器最新正文为基准拼接
+      await _flushEditorInput();
       final repo = _repo();
-      final ch = await repo.getChapter(widget.chapterId);
-      if (ch == null) return;
-      final newContent = ch.content.isEmpty
+      // 以编辑器最新正文（flush 后的 localContent）为拼接基准，不回头读 DB；
+      // store 尚未载入正文时回退读 DB，避免误清空已有内容。
+      var base = ref.read(writingStoreProvider(widget.chapterId)).localContent;
+      if (base.isEmpty) {
+        final ch = await repo.getChapter(widget.chapterId);
+        if (ch == null) return;
+        base = ch.content;
+      }
+      final newContent = base.isEmpty
           ? widget.suggestion
-          : '${ch.content}\n\n${widget.suggestion}';
+          : '$base\n\n${widget.suggestion}';
       await repo.adoptContentToChapter(widget.chapterId, newContent);
       if (mounted) {
         widget.onAdopted();
@@ -134,6 +158,9 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
 
     setState(() => _isProcessing = true);
     try {
+      // A2：先 flush 编辑器未落库输入——使 previous_content 备份反映用户当前
+      // 所写（否则撤销时会回退到 DB 旧版，丢失未落库输入）。
+      await _flushEditorInput();
       final repo = _repo();
       await repo.adoptContentToChapter(widget.chapterId, widget.suggestion);
       if (mounted) {
