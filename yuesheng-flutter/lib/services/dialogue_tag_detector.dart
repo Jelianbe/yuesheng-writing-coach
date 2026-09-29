@@ -2,7 +2,7 @@
 // dialogue_tag_detector — F02 对话标签过度检测（批次71）
 //
 // 规格（V2.0 §3.3 F02）：对话行/非"说"类标签比例，Lv1。
-// 观察项挂 P011 对话疲劳症增强补充（不新建症候）。
+// 观察项挂 P009 对话疲劳症增强补充（不新建症候）。
 // 纯函数、无 IO，规则保守精确（避免误报）：
 //   1. 提取对话行（「」/『』/双引号包裹的对话片段）
 //   2. 检测对话后紧跟的修饰性标签（词根 + 说/道/问/喊/答 等后缀）
@@ -17,7 +17,7 @@ enum DialogueTagIssueKind {
   tagRepeat,
 }
 
-/// 对话标签过度观察项（挂 P011 增强补充输入）
+/// 对话标签过度观察项（挂 P009 增强补充输入）
 class DialogueTagIssue {
   final DialogueTagIssueKind kind;
   final String evidence; // 原文片段（5-20 字）

@@ -68,7 +68,7 @@ class _ProtocolLlmClient extends LlmClient {
     const body =
         '王建国这个人物目前的塑造偏单薄，情绪表达直接。\n'
         '[YS_DIAGNOSIS]\n'
-        '{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L2",'
+        '{"syndromes":[{"syndrome_id":"P002","name":"情绪标签化","severity":"L2",'
         '"evidence":["王建国很生气"],"explanation":"情绪直接点破，未转化为动作"}],'
         '"suggested_actions":["将情绪转化为动作"],"confidence":0.85}\n'
         '[/YS_DIAGNOSIS]\n'
@@ -367,8 +367,8 @@ void main() {
       );
       expect(
         active.map((p) => p.syndromeId),
-        contains('P001'),
-        reason: '活跃症候 P001 应落库',
+        contains('P002'),
+        reason: '活跃症候 P002 应落库',
       );
     });
   });

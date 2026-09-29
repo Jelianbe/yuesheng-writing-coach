@@ -40,7 +40,7 @@ String buildDiagnosisBlock(Map<String, dynamic>? extra) {
   final base = <String, dynamic>{
     'syndromes': [
       {
-        'syndrome_id': 'P003',
+        'syndrome_id': 'P001',
         'name': '情绪标签化',
         'severity': 'L2',
         'evidence': ['文中直接写"她很生气"'],

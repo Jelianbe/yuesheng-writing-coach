@@ -152,7 +152,7 @@ void main() {
       trend: 'improving',
       syndromeChanges: const [
         SyndromeChangeItem(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           trend: 'improving',
         ),

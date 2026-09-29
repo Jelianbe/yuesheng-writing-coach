@@ -88,12 +88,12 @@ void main() {
   }
 
   test('#P2-9-1 P3 档 + 到期症候 → 注入复习调度段', () async {
-    await seedSyndrome('P003', '目标模糊');
+    await seedSyndrome('P001', '目标模糊');
     // 连续通过 5 次（间隔 14 天），最后训练 20 天前 → due
     for (var i = 0; i < 5; i++) {
       await studentModelRepo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P003',
+        'syndromeId': 'P001',
         'result': 'passed',
         'timestamp': nowSec() - 20 * 86400,
       });
@@ -112,16 +112,16 @@ void main() {
     final content = messages.map((m) => m.content).join('\n');
     expect(content, contains('症候复习调度'));
     expect(content, contains('到期需复习'));
-    expect(content, contains('P003'));
+    expect(content, contains('P001'));
   });
 
   test('#P2-9-2 P3 档 + 全部 fresh → 不注入', () async {
-    await seedSyndrome('P007', '叙述视角');
+    await seedSyndrome('P005', '叙述视角');
     // 连续通过 2 次（间隔 2 天），最后训练 0 天前 → fresh
     for (var i = 0; i < 2; i++) {
       await studentModelRepo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P007',
+        'syndromeId': 'P005',
         'result': 'passed',
         'timestamp': nowSec(),
       });
@@ -139,11 +139,11 @@ void main() {
   });
 
   test('#P2-9-3 非 P3 档（P0）→ 不注入', () async {
-    await seedSyndrome('P003', '目标模糊');
+    await seedSyndrome('P001', '目标模糊');
     for (var i = 0; i < 5; i++) {
       await studentModelRepo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P003',
+        'syndromeId': 'P001',
         'result': 'passed',
         'timestamp': nowSec() - 20 * 86400,
       });
@@ -160,16 +160,15 @@ void main() {
     expect(messages, isEmpty);
   });
 
-  test('#B2-1 同一天连过 5 次 → 不把阶梯拉满到 14 天（同日只记 1 次步进）',
-      () async {
-    await seedSyndrome('P009', '节奏拖沓');
+  test('#B2-1 同一天连过 5 次 → 不把阶梯拉满到 14 天（同日只记 1 次步进）', () async {
+    await seedSyndrome('P007', '节奏拖沓');
     // 全部落在同一本地自然日（昨天）。修复前：5 条 passed → n=5 → 间隔 14 天，
     // daysSince=1 < 14 → fresh 不注入；修复后：同日去重 → 有效通过=1 → 间隔 1 天，
     // daysSince=1 ≥ 1 → due，且标签应为「间隔 1 天」而非「间隔 14 天」。
     for (var i = 0; i < 5; i++) {
       await studentModelRepo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P009',
+        'syndromeId': 'P007',
         'result': 'passed',
         'timestamp': nowSec() - 86400,
       });
@@ -186,7 +185,7 @@ void main() {
     expect(messages, isNotEmpty);
     final content = messages.map((m) => m.content).join('\n');
     expect(content, contains('到期需复习'));
-    expect(content, contains('P009'));
+    expect(content, contains('P007'));
     expect(content, contains('间隔 1 天'));
     expect(content, isNot(contains('间隔 14 天')));
   });

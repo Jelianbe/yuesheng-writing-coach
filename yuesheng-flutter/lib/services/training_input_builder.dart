@@ -70,7 +70,8 @@ Future<int> countTrainingForSyndrome(
           (r) =>
               r['type'] == 'training' &&
               r['syndromeId'] is String &&
-              effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
+              effectiveSyndromeId(r['syndromeId'] as String) ==
+                  effectiveSyndromeId(syndromeId),
         )
         .length;
   } catch (e, st) {
@@ -119,7 +120,8 @@ Future<TrainingPerformance?> computeTrainingPerformance(
               (r) =>
                   r['type'] == 'training' &&
                   r['syndromeId'] is String &&
-                  effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
+                  effectiveSyndromeId(r['syndromeId'] as String) ==
+                      effectiveSyndromeId(syndromeId),
             )
             .toList()
           ..sort((a, b) {
@@ -381,7 +383,9 @@ List<Map<String, dynamic>> _filterDiagnosisRecords(
     final syndromes = r['syndromes'];
     if (syndromes is! List) return false;
     return syndromes.any(
-      (id) => id is String && effectiveSyndromeId(id) == syndromeId,
+      (id) =>
+          id is String &&
+          effectiveSyndromeId(id) == effectiveSyndromeId(syndromeId),
     );
   }).toList()..sort((a, b) {
     final ta = (a['timestamp'] as num?)?.toInt() ?? 0;

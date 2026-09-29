@@ -26,7 +26,7 @@ String _extractSyndromeSection(String raw, String id) {
   if (match == null) return '';
   final startIdx = match.start;
   // 结束边界：下一个三级段（### P0XX）或二级段（## 章节标题），取更早者。
-  // 修复：最后一个症候段（如 P034）之后若只有 `## ` 二级标题，旧逻辑会落到
+  // 修复：最后一个症候段（如 P025）之后若只有 `## ` 二级标题，旧逻辑会落到
   // 文件末尾，把手册尾部非症候内容（类型速查/诊断规范/重叠规则）一起吞进 L3 详情。
   final nextH3 = raw.indexOf('\n### ', startIdx + 1);
   final nextH2 = raw.indexOf('\n## ', startIdx + 1);
@@ -61,11 +61,11 @@ String _typeLookupRow(SyndromeRecord s) =>
 /// 类型速查表：按类型分组（枚举声明序），组内按注册表 ID 升序，
 /// 与手写表逐字一致（motivation → expressive → structural → commercial）。
 /// 前置换行：前接 _syndromeManualBody6 的表头分隔行（无尾换行），
-/// 缺此行首行（P009）会与分隔行粘连，导致类型速查行数少 1（测试 #12 曾捕获）。
+/// 缺此行首行（P007）会与分隔行粘连，导致类型速查行数少 1（测试 #12 曾捕获）。
 String _typeLookupTable() {
   final buffer = StringBuffer();
   for (final t in SyndromeType.values) {
-    for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+    for (final s in kSyndromeRegistry) {
       if (s.type == t) buffer.writeln(_typeLookupRow(s));
     }
   }

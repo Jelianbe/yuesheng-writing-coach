@@ -336,12 +336,14 @@ bool isDiagnosisRequest(String text, {bool hasDiagnosisContext = false}) {
   final lower = t.toLowerCase();
   // P1-5：中文强信号，跳过被否定前缀修饰的命中。
   for (final sig in _diagnosisSignals) {
-    if (lower.contains(sig) && !_hasNegationBeforeSignal(lower, sig)) return true;
+    if (lower.contains(sig) && !_hasNegationBeforeSignal(lower, sig))
+      return true;
   }
   // P1-5：英文信号降级为需上下文佐证。
   if (hasDiagnosisContext) {
     for (final sig in _englishDiagnosisSignals) {
-      if (lower.contains(sig) && !_hasNegationBeforeSignal(lower, sig)) return true;
+      if (lower.contains(sig) && !_hasNegationBeforeSignal(lower, sig))
+        return true;
     }
     return _contextualDiagnosisSignals.any(lower.contains);
   }

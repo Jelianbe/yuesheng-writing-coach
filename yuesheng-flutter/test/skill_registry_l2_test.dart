@@ -82,21 +82,24 @@ void main() {
       });
     });
 
-    test('training-templates-index 教学知识索引覆盖全部活跃症候（b9 批次31 注册表派生；0.3.6+9 聚类去重后仅含活跃）', () {
-      final skill = skillRegistry['training-templates-index'];
-      expect(skill, isNotNull);
-      // 0.3.6+9：索引由活跃注册表派生（退役记录 mergedInto 指向保留症候，不进索引）。
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
-        final name = s.id == 'P022' ? '重复用词/基础语病症' : s.shortName;
-        expect(
-          skill!.content,
-          contains('| ${s.id} | $name |'),
-          reason: '索引缺 ${s.id}',
-        );
-      }
-      // 头部声明的症候数为活跃注册表派生计数
-      expect(skill!.content, contains('仅含 ${kSyndromeIds.length} 条症候'));
-    });
+    test(
+      'training-templates-index 教学知识索引覆盖全部活跃症候（b9 批次31 注册表派生；0.3.6+9 聚类去重后仅含活跃）',
+      () {
+        final skill = skillRegistry['training-templates-index'];
+        expect(skill, isNotNull);
+        // 0.3.6+9：索引由活跃注册表派生（退役记录 mergedInto 指向保留症候，不进索引）。
+        for (final s in kSyndromeRegistry) {
+          final name = s.id == 'P018' ? '重复用词/基础语病症' : s.shortName;
+          expect(
+            skill!.content,
+            contains('| ${s.id} | $name |'),
+            reason: '索引缺 ${s.id}',
+          );
+        }
+        // 头部声明的症候数为活跃注册表派生计数
+        expect(skill!.content, contains('仅含 ${kSyndromeIds.length} 条症候'));
+      },
+    );
   });
 
   group('buildSystemPromptV2 组装', () {

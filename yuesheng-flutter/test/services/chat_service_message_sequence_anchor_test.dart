@@ -93,8 +93,10 @@ class _Case {
   final AttitudeLevel attitude;
   final TeachingSubphase? subphase;
   final bool isBeginner;
+
   /// 用户消息正文；默认中性 compose 正文（不触发诊断）。
   final String content;
+
   /// 待诊断全文；默认 null（不触发诊断协议注入）。
   final String? chapterFullText;
   const _Case(

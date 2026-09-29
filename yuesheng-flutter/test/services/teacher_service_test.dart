@@ -71,7 +71,7 @@ const String kGuideWithTaskJson = '''{
   "teaching_reason": "需要引导人物能动性",
   "natural_language": "这段文字的意象很独特，可以试着让主角更主动地推动情节。",
   "training_task": {
-    "target_syndrome_id": "P001",
+    "target_syndrome_id": "P002",
     "target_dimension": "character_agency",
     "task_type": "rewrite",
     "task_description": "重写第三段，让主角主动做决定",
@@ -151,7 +151,7 @@ ParsedDiagnosis _parsedDiagnosis() {
   return ParsedDiagnosis(
     syndromes: [
       Syndrome(
-        syndromeId: 'P001',
+        syndromeId: 'P002',
         name: '能动性不足',
         severity: Severity.l2,
         evidence: const ['第3段'],

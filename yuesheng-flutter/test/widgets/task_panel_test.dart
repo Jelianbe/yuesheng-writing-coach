@@ -45,8 +45,8 @@ void main() {
       buildPanel(
         TaskPanel(
           problems: [
-            problem('P001', '视角跳跃症', 'L1'),
-            problem('P002', '对话生硬', 'L2'),
+            problem('P002', '视角跳跃症', 'L1'),
+            problem('P007', '对话生硬', 'L2'),
           ],
           onMarkComplete: (_) {},
         ),
@@ -66,7 +66,7 @@ void main() {
     await tester.pumpWidget(
       buildPanel(
         TaskPanel(
-          problems: [problem('P001', '逻辑断裂', 'L3')],
+          problems: [problem('P002', '逻辑断裂', 'L3')],
           onMarkComplete: (_) {},
         ),
       ),
@@ -81,7 +81,7 @@ void main() {
     await tester.pumpWidget(
       buildPanel(
         TaskPanel(
-          problems: [problem('P001', '视角跳跃症', 'L2')],
+          problems: [problem('P002', '视角跳跃症', 'L2')],
           onMarkComplete: (id) => completedId = id,
         ),
       ),
@@ -90,12 +90,12 @@ void main() {
     await tester.tap(find.text('完成'));
     await tester.pump();
 
-    expect(completedId, 'P001');
+    expect(completedId, 'P002');
   });
 
   testWidgets('#5 无 onMarkComplete → 不显示完成按钮', (tester) async {
     await tester.pumpWidget(
-      buildPanel(TaskPanel(problems: [problem('P001', '视角跳跃症', 'L2')])),
+      buildPanel(TaskPanel(problems: [problem('P002', '视角跳跃症', 'L2')])),
     );
 
     expect(find.text('完成'), findsNothing);
@@ -107,7 +107,7 @@ void main() {
     await tester.pumpWidget(
       buildPanel(
         TaskPanel(
-          problems: [problem('P001', '视角跳跃症', 'L2')],
+          problems: [problem('P002', '视角跳跃症', 'L2')],
           onMarkComplete: (_) {},
           onRemove: (id) => removedId = id,
         ),
@@ -117,14 +117,14 @@ void main() {
     expect(find.text('移除'), findsOneWidget);
     await tester.tap(find.text('移除'));
     await tester.pump();
-    expect(removedId, 'P001');
+    expect(removedId, 'P002');
   });
 
   testWidgets('#7 批次75 无 onRemove → 不显示移除按钮', (tester) async {
     await tester.pumpWidget(
       buildPanel(
         TaskPanel(
-          problems: [problem('P001', '视角跳跃症', 'L2')],
+          problems: [problem('P002', '视角跳跃症', 'L2')],
           onMarkComplete: (_) {},
         ),
       ),
@@ -141,7 +141,7 @@ void main() {
     await tester.pumpWidget(
       buildPanel(
         TaskPanel(
-          problems: [problem('P001', '视角跳跃症', 'L2')],
+          problems: [problem('P002', '视角跳跃症', 'L2')],
           onSelfPractice: () => opened++,
         ),
       ),
@@ -155,7 +155,7 @@ void main() {
     await tester.pumpWidget(
       buildPanel(
         TaskPanel(
-          problems: [problem('P001', '视角跳跃症', 'L2')],
+          problems: [problem('P002', '视角跳跃症', 'L2')],
           onMarkComplete: (_) {},
         ),
       ),

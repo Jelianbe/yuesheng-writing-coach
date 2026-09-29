@@ -39,6 +39,14 @@ class ChatTeachingController {
   /// 当前进行中的流式请求取消令牌；非 null 表示正在生成，可用于「停止生成」。
   CancelToken? _cancelToken;
 
+  /// 流式「代际」号：每发起一次发送自增。A4 会话守卫只防「跨会话」旧流，
+  /// 不防「同会话内」上一轮流的迟到 chunk/缓冲——暂停（Teacher 段被软取消）
+  /// 后用户紧接着回答「原因」/提交反馈时，旧 run 的 onStream 仍会往共享的
+  /// streamingContent 增量上拼，导致新旧输出混进同一个气泡。代际号让旧 run
+  /// 的回调在新 run 开始后全部失效（与 A4 isCurrentSession 同模式，只是维度
+  /// 从会话换成「这一轮生成」）。
+  int _generation = 0;
+
   ChatTeachingController(this.host);
 
   /// 发送消息（含 @ 引用解析、流式回调装配、取消令牌生命周期）。
@@ -73,11 +81,13 @@ class ChatTeachingController {
     final chatService = host.ref.read(chatServiceProvider);
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
+    // 代际号 +1：本轮的回调只认这个号；暂停/新发送都会让旧 run 回调失效。
+    final gen = ++_generation;
     try {
       await chatService.sendMessage(
         bootstrap.sessionId,
         mention.text,
-        _buildCallbacks(bootstrap.sessionId, onTrainingResult),
+        _buildCallbacks(bootstrap.sessionId, onTrainingResult, gen),
         _buildOptions(cancelToken, chapterFullText, mention.referencesJson),
         subphase: subphase,
       );
@@ -93,48 +103,35 @@ class ChatTeachingController {
   SendMessageCallbacks _buildCallbacks(
     String sessionId,
     void Function(TrainingResult)? onTrainingResult,
+    int gen,
   ) {
-    // A4：流式回调会话守卫。闭包捕获的 [sessionId] 必须仍是当前激活会话
-    // （bootstrap 指向的会话），否则说明用户已切走——该 chunk / 完成 / 错误
-    // 一律丢弃。DB 仍按原 sessionId 落库（不落库串台），这里只防止旧会话
-    // 把当前会话的消息列表/流式内容/失败标记覆盖掉。
+    // A4：闭包捕获的 sessionId 必须仍是当前激活会话，否则旧会话 chunk/完成/错误一律丢弃。
     bool isCurrentSession() =>
         host.ref.read(sessionBootstrapProvider).valueOrNull?.sessionId ==
         sessionId;
+    // 代际守卫：同会话内上一轮（已暂停/已完结）run 的迟到回调一律丢弃（暂停混流修复）。
+    bool isCurrentGeneration() => _generation == gen;
     return SendMessageCallbacks(
       // ADR-C84：用户消息落库即上屏（流式中断/失败也保证消息可见）
       onUserMessagePersisted: (message) {
+        if (!isCurrentGeneration()) return;
         host.ref.read(chatStoreProvider.notifier).addMessage(message);
       },
       onStream: (delta) {
-        // A4：旧会话流的 chunk 不追加到当前会话流式气泡
-        if (!isCurrentSession()) return;
+        if (!isCurrentSession() || !isCurrentGeneration()) return;
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },
-      onComplete: (fullContent, messageId) async {
-        // A4：旧会话完成不得用其消息列表覆盖当前会话；listMessages 是异步
-        // 的，await 后再校验一次，覆盖 await 间隙里用户切走的竞态。
-        if (!isCurrentSession()) return;
-        final sessionRepo = SessionRepository(
-          host.ref.read(appDatabaseProvider),
-        );
-        final messages = await sessionRepo.listMessages(sessionId);
-        if (!isCurrentSession()) return;
-        host.ref.read(chatStoreProvider.notifier).setMessages(messages);
-        host.ref.read(chatStoreProvider.notifier).setStreaming(false);
-        // 批次 12：发送完成后延迟检查态度建议（对齐 RN）
-        host.scheduleAttitudeCheck();
-      },
+      onComplete: (fullContent, messageId) => _onStreamComplete(sessionId, gen),
       onError: (error) {
-        // A4：旧会话失败不得把当前会话最后一条 user 消息误标为 failed
-        if (!isCurrentSession()) return;
+        if (!isCurrentSession() || !isCurrentGeneration()) return;
         host.ref.read(chatStoreProvider.notifier).setError(error);
       },
       onCancelled: () {
-        // 用户主动取消：优雅复位（不标记失败、不弹红错）
+        if (!isCurrentGeneration()) return;
         host.ref.read(chatStoreProvider.notifier).cancelStreaming();
       },
       onTeacherPhase: (teacherActive) {
+        if (!isCurrentGeneration()) return;
         // 两段式流透明化：保留已显示的回复，仅切换阶段文案
         host.ref
             .read(chatStoreProvider.notifier)
@@ -143,6 +140,24 @@ class ChatTeachingController {
       onTeacherCancelled: _showTeacherCancelledSnack,
       onTrainingResult: onTrainingResult,
     );
+  }
+
+  /// 流式完成：回读消息列表展示已落库诊断卡；仅当代际仍是当前 run 时才复位
+  /// 流式标志并触发态度检查，避免旧 onComplete 清掉新一轮气泡（见 Bug2 修复）。
+  Future<void> _onStreamComplete(String sessionId, int gen) async {
+    bool stillHere() =>
+        host.ref.read(sessionBootstrapProvider).valueOrNull?.sessionId ==
+        sessionId;
+    if (!stillHere()) return;
+    final isCurrentGen = _generation == gen;
+    final sessionRepo = SessionRepository(host.ref.read(appDatabaseProvider));
+    final messages = await sessionRepo.listMessages(sessionId);
+    if (!stillHere()) return;
+    host.ref.read(chatStoreProvider.notifier).setMessages(messages);
+    if (isCurrentGen) {
+      host.ref.read(chatStoreProvider.notifier).setStreaming(false);
+      host.scheduleAttitudeCheck();
+    }
   }
 
   /// Teacher 建议被用户暂停：轻提示解释「暂停后仍出现症候卡」。
@@ -175,8 +190,17 @@ class ChatTeachingController {
   }
 
   /// 主动停止当前生成（「停止生成」按钮回调）。
+  ///
+  /// 除取消 HTTP 请求外，还要：
+  /// 1. 代际号 +1 —— 让本轮（被暂停的 run）所有在途回调失效，迟到的
+  ///    onStream 增量不会拼到用户接下来发的「原因/反馈」新一轮气泡里；
+  /// 2. 立即清空待渲染的 streamingContent —— Teacher 段被软取消时
+  ///    onTeacherCancelled 只弹提示、缓冲要等 onComplete 才清，这个窗口里
+  ///    残留的旧诊断/教学建议文本必须当场清掉，不留给下一轮。
   void cancelGeneration() {
+    _generation++;
     _cancelToken?.cancel('用户取消生成');
+    host.ref.read(chatStoreProvider.notifier).cancelStreaming();
   }
 
   /// T3 训练系统：提交练习作答（复用 handleSend，强制 subphase=FEEDBACK）。

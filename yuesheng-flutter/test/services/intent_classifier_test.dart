@@ -219,8 +219,14 @@ void main() {
       // P1-5：analyze/feedback/improve/review/comment 降级为需 hasDiagnosisContext 佐证
       expect(isDiagnosisRequest('analyze my writing'), isFalse);
       expect(isDiagnosisRequest('give me feedback'), isFalse);
-      expect(isDiagnosisRequest('analyze my writing', hasDiagnosisContext: true), isTrue);
-      expect(isDiagnosisRequest('give me feedback', hasDiagnosisContext: true), isTrue);
+      expect(
+        isDiagnosisRequest('analyze my writing', hasDiagnosisContext: true),
+        isTrue,
+      );
+      expect(
+        isDiagnosisRequest('give me feedback', hasDiagnosisContext: true),
+        isTrue,
+      );
     });
 
     test('#24 非诊断内容 → false（不误触发）', () {

@@ -245,7 +245,7 @@ void main() {
               syndromes: Value(
                 jsonEncode([
                   {
-                    'syndrome_id': 'P004',
+                    'syndrome_id': 'P002',
                     'name': '信息倾泻症',
                     'severity': 'L2',
                     'evidence': ['例1'],

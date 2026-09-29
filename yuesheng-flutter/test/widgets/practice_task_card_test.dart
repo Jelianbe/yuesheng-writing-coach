@@ -19,7 +19,7 @@ import 'package:writingcoach/widgets/practice_task_card.dart';
 /// 标准练习任务
 PracticeTask buildTask() {
   return const PracticeTask(
-    syndromeId: 'P003',
+    syndromeId: 'P001',
     syndromeName: '情绪标签化',
     taskDescription: '找出章节中 3 处情绪标签化表达，改写成动作与感官细节。',
     taskGoal: '对照评估标准：避免直接使用情绪词；用动作/环境侧面烘托',

@@ -474,7 +474,7 @@ void main() {
         reason: '注入示例须通过解析器（syndromes 须为对象数组、confidence 须为 0-1 数字）',
       );
       expect(result.rejectReason, isNull, reason: '注入示例不应触发任何 rejectReason');
-      expect(result.diagnosis!.syndromes.first.syndromeId, 'P003');
+      expect(result.diagnosis!.syndromes.first.syndromeId, 'P001');
     });
 
     test('#13 直接说明指令注入默认阈值 5（无自定义人格 → 默认）', () async {
@@ -495,7 +495,7 @@ void main() {
       // 3. 选定后才展开改法
       expect(sent, contains('学员选定一条后，才对那一条展开'), reason: '选定后才展开改法');
       // P0-1：清单必须同时输出症候编号，让 P00x 解析器命中学员选择
-      expect(sent, contains('[P007]'), reason: '全貌清单须带症候编号示例');
+      expect(sent, contains('[P005]'), reason: '全貌清单须带症候编号示例');
     });
 
     test('#14 自定义人格阈值生效（激活人格 threshold=7 → 注入 ≥ 7）', () async {
@@ -546,8 +546,11 @@ void main() {
       await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
 
       final sent = llm.capturedUserContent.join('\n');
-      expect(sent, contains('症候数量 ≥ 5'),
-          reason: '无激活人格时必须回退默认阈值 kDefaultDirectExplainThreshold');
+      expect(
+        sent,
+        contains('症候数量 ≥ 5'),
+        reason: '无激活人格时必须回退默认阈值 kDefaultDirectExplainThreshold',
+      );
     });
 
     // P0-4：repo 完全为 null（不传 appStateRepo）→ 也回退默认 5。

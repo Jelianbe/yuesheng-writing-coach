@@ -176,7 +176,7 @@ class L3Case {
 }
 
 const List<L3Case> kL3Cases = [
-  L3Case('syndrome_P003', L3RetrievalContext(activeSyndromeIds: ['P003'])),
+  L3Case('syndrome_P003', L3RetrievalContext(activeSyndromeIds: ['P001'])),
   L3Case(
     'technique_T001_T008',
     L3RetrievalContext(focusedTechniqueIds: ['T001', 'T008']),
@@ -184,7 +184,7 @@ const List<L3Case> kL3Cases = [
   L3Case(
     'both_P003_P007_T001',
     L3RetrievalContext(
-      activeSyndromeIds: ['P003', 'P007'],
+      activeSyndromeIds: ['P001', 'P005'],
       focusedTechniqueIds: ['T001'],
     ),
   ),
@@ -347,7 +347,11 @@ void main() {
       ..._diff('prompt', stored['prompt'], current['prompt']),
       ..._diff('skillContent', stored['skillContent'], current['skillContent']),
       ..._diff('l3Inject', stored['l3Inject'], current['l3Inject']),
-      ..._diff('constSections', stored['constSections'], current['constSections']),
+      ..._diff(
+        'constSections',
+        stored['constSections'],
+        current['constSections'],
+      ),
     ];
 
     if (diffs.isNotEmpty) {

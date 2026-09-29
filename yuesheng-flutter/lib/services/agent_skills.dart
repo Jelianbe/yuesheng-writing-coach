@@ -87,12 +87,12 @@ const String kEditorObservationSkillContent =
     '''# SKILL: 编辑观察（Editor Observation）
 
 > 来源: P4 V2-方向2 后续——Editor Agent 设计规范
-> 定位: 叙事层"编辑观察"，与症候诊断（P003-P027）正交
+> 定位: 叙事层"编辑观察"，与症候诊断（P001-P020）正交
 > 姿态: 观察者，非诊断器——描述现象，不贴标签，不判决
 
 ## 一、核心姿态：编辑，不是诊断器
 
-- **描述现象**，不贴标签（不说"这是 P003"，不说"角色缺乏成长"）
+- **描述现象**，不贴标签（不说"这是 P001"，不说"角色缺乏成长"）
 - **说"是什么"和"读者可能如何感受"**，不说"应该改"
 - **先推断作者意图**，再观察现象——符合意图的现象是风格特征，不是问题
 - **必须看优点**——strengths 必填，编辑不只看问题
@@ -202,7 +202,7 @@ const String kTeacherSkillContent = '''# SKILL: 教学决策（Teacher Decision�
 
 ## 三、training_task 字段（仅 guide/train）
 
-- target_syndrome_id：Diagnosis 分支填症候 ID（如 P003）；Editor 分支填 null
+- target_syndrome_id：Diagnosis 分支填症候 ID（如 P001）；Editor 分支填 null
 - target_dimension：Editor 分支填观察维度（如 character_agency）；Diagnosis 分支填 null
 - task_type：rewrite（重写）/ analyze（分析）/ compare（对比）/ generate（生成）
 - task_description：具体任务描述（一句话，可执行）
@@ -219,7 +219,7 @@ const String kTeacherSkillContent = '''# SKILL: 教学决策（Teacher Decision�
 ## 五、自然语言反馈规范
 
 - 含态度档位话术（doubao 温和 / yuesheng 锐利 / sensei 严格）
-- 不暴露症候 ID（P003 等）
+- 不暴露症候 ID（P001 等）
 - 不使用判决词（"应该"/"必须"/"务必"/"重写"等）
 - 先肯定优点，再提改进点（encourage 档位尤其重要）
 - **AI 自主组织话术**：根据学员原文、场景、性格自主决定表达方式，**不使用固定话术模板**；教原理而非标准答案，禁止以「应改成这样」做标准答案替换。话术由 AI 现场生成，不存在"标准回复"可照搬。
@@ -234,7 +234,7 @@ const String kTeacherSkillContent = '''# SKILL: 教学决策（Teacher Decision�
   "natural_language": "给学员的自然语言反馈",
   "location_marks": ["第2段：他低声说道……", "第5段：她看着窗外……"],
   "training_task": {
-    "target_syndrome_id": "P003 | null",
+    "target_syndrome_id": "P001 | null",
     "target_dimension": "character_agency | null",
     "task_type": "rewrite | analyze | compare | generate",
     "task_description": "具体任务描述",

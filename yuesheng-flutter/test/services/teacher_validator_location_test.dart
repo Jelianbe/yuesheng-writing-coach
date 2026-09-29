@@ -17,7 +17,7 @@ Map<String, dynamic> _baseJson({Object? locationMarks = const ['第2段：他低
     'natural_language': '这里可以先肯定你的处理方式。',
     'location_marks': ?locationMarks,
     'training_task': {
-      'target_syndrome_id': 'P003',
+      'target_syndrome_id': 'P001',
       'target_dimension': null,
       'task_type': 'rewrite',
       'task_description': '找出章节中 3 处情绪标签化表达，改写成动作与感官细节。',

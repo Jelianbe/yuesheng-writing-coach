@@ -69,8 +69,8 @@ final kProfileCases = <ProfileCase>[
       proficiency: ProficiencyLevel.elementary,
       confidence: 0.6,
       syndromeProfile: {
-        'P001': SyndromeAggregation(
-          syndromeId: 'P001',
+        'P002': SyndromeAggregation(
+          syndromeId: 'P002',
           syndromeName: '开篇节奏拖沓',
           occurrenceCount: 3,
           severityHistory: [Severity.l2, Severity.l2, Severity.l3],
@@ -80,8 +80,8 @@ final kProfileCases = <ProfileCase>[
           sessionCount: 3,
           teachingState: TeachingState.identified,
         ),
-        'P003': SyndromeAggregation(
-          syndromeId: 'P003',
+        'P001': SyndromeAggregation(
+          syndromeId: 'P001',
           syndromeName: '描写冗余',
           occurrenceCount: 2,
           severityHistory: [Severity.l1, Severity.l2],

@@ -35,7 +35,7 @@ TeacherSuggestionCardPayload buildPayload({
     taskDescription: '找出章节中 3 处情绪标签化表达，改写成动作与感官细节。',
     difficulty: 'medium',
     evaluationCriteria: ['避免直接使用情绪词', '用动作/环境侧面烘托', '改写后不影响叙事节奏'],
-    targetSyndromeId: 'P003',
+    targetSyndromeId: 'P001',
     targetSyndromeName: '情绪标签化',
     source: 'diagnosis',
     locationMarks: locationMarks,
@@ -65,9 +65,9 @@ void main() {
         ),
       );
 
-      // 症候名称 chip（不是 P003）
+      // 症候名称 chip（不是 P001）
       expect(find.text('情绪标签化'), findsOneWidget);
-      expect(find.text('P003'), findsNothing);
+      expect(find.text('P001'), findsNothing);
       // 难度徽标（medium → 进阶）
       expect(find.text('进阶'), findsOneWidget);
       // 任务描述
@@ -164,7 +164,7 @@ void main() {
           messageId: messageId,
           source: 'diagnosis',
           teachingDecision: 'guide',
-          targetSyndromeId: 'P003',
+          targetSyndromeId: 'P001',
           taskType: 'rewrite',
           taskDescription: '找出章节中 3 处情绪标签化表达，改写成动作与感官细节。',
           difficulty: 'medium',
@@ -218,7 +218,7 @@ void main() {
           messageId: messageId,
           source: 'diagnosis',
           teachingDecision: 'guide',
-          targetSyndromeId: 'P003',
+          targetSyndromeId: 'P001',
           taskType: 'rewrite',
           taskDescription: '找出章节中 3 处情绪标签化表达，改写成动作与感官细节。',
           difficulty: 'medium',
@@ -268,7 +268,7 @@ void main() {
           messageId: messageId,
           source: 'diagnosis',
           teachingDecision: 'guide',
-          targetSyndromeId: 'P003',
+          targetSyndromeId: 'P001',
           taskType: 'rewrite',
           taskDescription: '找出章节中 3 处情绪标签化表达，改写成动作与感官细节。',
           difficulty: 'medium',
@@ -303,7 +303,7 @@ void main() {
     testWidgets('#6 fromMessageContent JSON 解析 + 非法 JSON 兜底', (tester) async {
       // 正常解析
       final content =
-          '{"suggestionId":"sug-2","teachingDecision":"train","naturalLanguage":"继续训练","taskType":"analyze","taskDescription":"分析节奏","difficulty":"easy","evaluationCriteria":["标准1"],"targetSyndromeId":"P005","targetSyndromeName":"视角漂移","source":"diagnosis"}';
+          '{"suggestionId":"sug-2","teachingDecision":"train","naturalLanguage":"继续训练","taskType":"analyze","taskDescription":"分析节奏","difficulty":"easy","evaluationCriteria":["标准1"],"targetSyndromeId":"P003","targetSyndromeName":"视角漂移","source":"diagnosis"}';
       await tester.pumpWidget(
         wrap(TeacherSuggestionCard.fromMessageContent(content)),
       );

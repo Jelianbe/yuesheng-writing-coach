@@ -45,11 +45,11 @@ void main() {
       const raw =
           '一段前导话\n'
           '[YS_DIAGNOSIS]\n'
-          '{"syndromes":[{"syndrome_id":"P003","name":"情绪标签化","severity":"L1","evidence":["x"],"explanation":"y","reader_impact":"z"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P003","teaching_plan":{"current_teaching_focus_id":"P003","focus_reason":"a","next_step":"b"}}\n'
+          '{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L1","evidence":["x"],"explanation":"y","reader_impact":"z"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P001","teaching_plan":{"current_teaching_focus_id":"P001","focus_reason":"a","next_step":"b"}}\n'
           '[/YS_DIAGNOSIS]';
       final r = parseDiagnosis(raw);
       expect(r.diagnosis, isNotNull);
-      expect(r.diagnosis!.syndromes.first.syndromeId, 'P003');
+      expect(r.diagnosis!.syndromes.first.syndromeId, 'P001');
       expect(r.displayContent, contains('一段前导话'));
     });
 
@@ -57,13 +57,13 @@ void main() {
       const raw =
           '自然语言前缀\n'
           '[YS_DIAGNOSIS]\n'
-          '{"syndromes":[{"syndrome_id":"P005","name":"视角漂移","severity":"L1","evidence":["e1","e2"],"explanation":"x","reader_impact":"y"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P005","teaching_plan":{"current_teaching_focus_id":"P005","focus_reason":"a","next_step":"b"}}\n'
+          '{"syndromes":[{"syndrome_id":"P003","name":"视角漂移","severity":"L1","evidence":["e1","e2"],"explanation":"x","reader_impact":"y"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P003","teaching_plan":{"current_teaching_focus_id":"P003","focus_reason":"a","next_step":"b"}}\n'
           '[/YS_DIAGNOSIS]\n\n'
           '[YS_ENTITY]\n{"entities":[{"type":"character","key":"王建国","aliases":["建国"],"matched_entity_id":"","impressions":[{"text":"i"}]}]}\n[/YS_ENTITY]\n\n---\n\n'
           '后缀自然语言诊断说明：最后一处视角切换。';
       final r = parseDiagnosis(raw);
       expect(r.diagnosis, isNotNull);
-      expect(r.diagnosis!.syndromes.first.syndromeId, 'P005');
+      expect(r.diagnosis!.syndromes.first.syndromeId, 'P003');
       expect(r.displayContent, startsWith('自然语言前缀'));
       expect(r.displayContent, endsWith('后缀自然语言诊断说明：最后一处视角切换。'));
       expect(r.displayContent, isNot(contains('[YS_ENTITY]')));
@@ -77,7 +77,7 @@ void main() {
         // 批次74 live 真实结构：YS_DIAGNOSIS 先，YS_ENTITY 中，自然语言最后
         const raw =
             '[YS_DIAGNOSIS]\n'
-            '{"syndromes":[{"syndrome_id":"P005","name":"视角漂移","severity":"L1","evidence":["e"],"explanation":"x","reader_impact":"y"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P005","teaching_plan":{"current_teaching_focus_id":"P005","focus_reason":"a","next_step":"b"}}\n'
+            '{"syndromes":[{"syndrome_id":"P003","name":"视角漂移","severity":"L1","evidence":["e"],"explanation":"x","reader_impact":"y"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P003","teaching_plan":{"current_teaching_focus_id":"P003","focus_reason":"a","next_step":"b"}}\n'
             '[/YS_DIAGNOSIS]\n\n'
             '[YS_ENTITY]\n{"entities":[{"type":"character","key":"林小芸"}]}\n[/YS_ENTITY]\n\n'
             '【位置判断：开头】\n\n你这段开头其实做了很多对的事。';
@@ -99,7 +99,7 @@ void main() {
       const raw =
           '自然语言前缀\n'
           '[YS_DIAGNOSIS]\n'
-          '{"syndromes":[{"syndrome_id":"P003","name":"情绪标签化","severity":"L1","evidence":[],"explanation":"x","reader_impact":"y"}]\n'
+          '{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L1","evidence":[],"explanation":"x","reader_impact":"y"}]\n'
           '[YS_FACT]\n{"events":[{"name":"决定去金陵","event_type":"决定"}]}\n[/YS_FACT]\n'
           '[/YS_DIAGNOSIS]\n'
           '自然语言后缀';
@@ -118,11 +118,11 @@ void main() {
           '自然语言前缀\n'
           '[YS_FACT]\n{"events":[{"name":"决定去金陵","event_type":"决定"}]}\n[/YS_FACT]\n'
           '[YS_DIAGNOSIS]\n'
-          '{"syndromes":[{"syndrome_id":"P003","name":"情绪标签化","severity":"L1","evidence":["x"],"explanation":"y","reader_impact":"z"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P003","teaching_plan":{"current_teaching_focus_id":"P003","focus_reason":"a","next_step":"b"}}\n'
+          '{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L1","evidence":["x"],"explanation":"y","reader_impact":"z"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P001","teaching_plan":{"current_teaching_focus_id":"P001","focus_reason":"a","next_step":"b"}}\n'
           '[/YS_DIAGNOSIS]';
       final r = parseDiagnosis(raw);
       expect(r.diagnosis, isNotNull);
-      expect(r.diagnosis!.syndromes.first.syndromeId, 'P003');
+      expect(r.diagnosis!.syndromes.first.syndromeId, 'P001');
       expect(r.displayContent, isNot(contains('[YS_FACT]')));
       expect(r.displayContent, isNot(contains('"events"')));
       expect(r.displayContent, contains('自然语言前缀'));
@@ -131,13 +131,13 @@ void main() {
     test('#8 V8 顺序错乱（FACT 在 DIAGNOSIS 之后）→ suffix 剥 FACT，诊断正常解析', () {
       const raw =
           '[YS_DIAGNOSIS]\n'
-          '{"syndromes":[{"syndrome_id":"P003","name":"情绪标签化","severity":"L1","evidence":["x"],"explanation":"y","reader_impact":"z"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P003","teaching_plan":{"current_teaching_focus_id":"P003","focus_reason":"a","next_step":"b"}}\n'
+          '{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L1","evidence":["x"],"explanation":"y","reader_impact":"z"}],"suggested_actions":["A002"],"confidence":0.75,"feedback_summary":"ok","root_cause_analysis":"r","next_focus":"P001","teaching_plan":{"current_teaching_focus_id":"P001","focus_reason":"a","next_step":"b"}}\n'
           '[/YS_DIAGNOSIS]\n'
           '[YS_FACT]\n{"events":[{"name":"决定去金陵","event_type":"决定"}]}\n[/YS_FACT]\n'
           '自然语言后缀';
       final r = parseDiagnosis(raw);
       expect(r.diagnosis, isNotNull);
-      expect(r.diagnosis!.syndromes.first.syndromeId, 'P003');
+      expect(r.diagnosis!.syndromes.first.syndromeId, 'P001');
       expect(r.displayContent, isNot(contains('[YS_FACT]')));
       expect(r.displayContent, isNot(contains('"events"')));
       expect(r.displayContent, contains('自然语言后缀'));

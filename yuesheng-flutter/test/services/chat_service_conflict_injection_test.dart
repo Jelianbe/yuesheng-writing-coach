@@ -257,7 +257,7 @@ void main() {
     expect(joined, contains('时序矛盾观察'));
     expect(joined, contains('阿禾「独生子女状态」'));
     expect(joined, contains('第3章「独生子」→ 第15章「妹妹」'));
-    expect(joined, contains('P018'));
+    expect(joined, contains('P015'));
   });
 
   test('#2 无人物数据 → 不注入（零 token 成本）', () async {

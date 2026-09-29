@@ -51,7 +51,7 @@ void main() {
         sessionId: sessionId,
         messageId: 'msg-$m',
         syndromes: const [
-          {'syndrome_id': 'P003', 'name': '口语化', 'severity': 'L2'},
+          {'syndrome_id': 'P001', 'name': '口语化', 'severity': 'L2'},
         ],
         suggestedActions: const [],
         confidence: 0.8,

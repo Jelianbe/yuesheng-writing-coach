@@ -16,7 +16,6 @@ import 'package:drift/native.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 
-
 void main() {
   const userPersona = CoachPersona(
     id: 'custom_1',
@@ -168,17 +167,20 @@ void main() {
   });
 
   group('A6 态度档/教练人格单一真源（coach_persona_active）', () {
-    test('头部切档走 setActiveCoachPersona，读取端 getActiveCoachPersonaId 一致', () async {
-      final db = AppDatabase.forTesting(NativeDatabase.memory());
-      addTearDown(db.close);
-      final repo = AppStateRepository(db);
+    test(
+      '头部切档走 setActiveCoachPersona，读取端 getActiveCoachPersonaId 一致',
+      () async {
+        final db = AppDatabase.forTesting(NativeDatabase.memory());
+        addTearDown(db.close);
+        final repo = AppStateRepository(db);
 
-      await repo.setActiveCoachPersona('yuesheng');
-      expect(await repo.getActiveCoachPersonaId(), 'yuesheng');
+        await repo.setActiveCoachPersona('yuesheng');
+        expect(await repo.getActiveCoachPersonaId(), 'yuesheng');
 
-      await repo.setActiveCoachPersona('sensei');
-      expect(await repo.getActiveCoachPersonaId(), 'sensei');
-    });
+        await repo.setActiveCoachPersona('sensei');
+        expect(await repo.getActiveCoachPersonaId(), 'sensei');
+      },
+    );
 
     test('迁移兼容：老用户只写过 coach_attitude，读取回退到它（不丢配置）', () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -186,8 +188,11 @@ void main() {
       final repo = AppStateRepository(db);
 
       await repo.setCoachAttitude('doubao');
-      expect(await repo.getActiveCoachPersonaId(), 'doubao',
-          reason: 'coach_persona_active 为空时应回退到旧 key，老配置不丢');
+      expect(
+        await repo.getActiveCoachPersonaId(),
+        'doubao',
+        reason: 'coach_persona_active 为空时应回退到旧 key，老配置不丢',
+      );
     });
 
     test('消除双真源：写 active 后旧 coach_attitude 不再影响读取；头部切档覆盖 active', () async {
@@ -205,8 +210,11 @@ void main() {
       // 修后头部切档改走 setActiveCoachPersona ⇒ 同步覆盖 active，两端一致
       await repo.setActiveCoachPersona('yuesheng');
       expect(await repo.getActiveCoachPersonaId(), 'yuesheng');
-      expect(await repo.getCoachAttitude(), 'yuesheng',
-          reason: '系统预设应双写 coach_attitude 保持旧读取路径兼容');
+      expect(
+        await repo.getCoachAttitude(),
+        'yuesheng',
+        reason: '系统预设应双写 coach_attitude 保持旧读取路径兼容',
+      );
     });
   });
 }

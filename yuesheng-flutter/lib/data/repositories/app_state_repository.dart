@@ -879,7 +879,7 @@ class AppStateRepository {
 
   // ════════════ 诊断偏好（诊断编辑器：用户全局启用集） ════════════
   // key 规约：diagnosis_prefs → JSON
-  //   {"disabledIds":["P008",...],"tier":"beginner|story|full",
+  //   {"disabledIds":["P006",...],"tier":"beginner|story|full",
   //    "genre":"literary|webnovel|setting","customized":bool}
   // 空/缺省 = 全启用（与现状零行为变化）。disabledIds 是关闭列表，不是启用列表——
   // 老用户升级后无记录 = 全启用，不破坏存量诊断行为。

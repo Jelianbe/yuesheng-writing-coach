@@ -574,11 +574,15 @@ void main() {
       await repo.addMessage(s2, 'user', 'S2专属历史', messageType: 'chat');
 
       final fake = _PausableFakeChatService(db);
-      final container = ProviderContainer(overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        lastSessionStorageProvider.overrideWithValue(MemoryLastSessionStorage()),
-        chatServiceProvider.overrideWithValue(fake),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          lastSessionStorageProvider.overrideWithValue(
+            MemoryLastSessionStorage(),
+          ),
+          chatServiceProvider.overrideWithValue(fake),
+        ],
+      );
       addTearDown(container.dispose);
 
       await tester.pumpWidget(
@@ -615,16 +619,26 @@ void main() {
       // 旧流迟到 chunk：守卫按闭包 sessionId != 当前 active 丢弃，不得追加到新会话
       fake.callbacks!.onStream('迟到chunk');
       await tester.pump();
-      expect(find.textContaining('迟到chunk'), findsNothing,
-          reason: '旧会话迟到 chunk 不得串到新会话流式气泡');
+      expect(
+        find.textContaining('迟到chunk'),
+        findsNothing,
+        reason: '旧会话迟到 chunk 不得串到新会话流式气泡',
+      );
 
       // 旧流迟到 onComplete：守卫丢弃，不得用旧会话消息列表覆盖新会话
-      final assistantId = await repo.addMessage(active!, 'assistant', '旧会话专属回复');
+      final assistantId = await repo.addMessage(
+        active!,
+        'assistant',
+        '旧会话专属回复',
+      );
       await fake.callbacks!.onComplete('旧会话专属回复', assistantId);
       await tester.pump();
       expect(find.text(otherMarker), findsOneWidget);
-      expect(find.text('旧会话专属回复'), findsNothing,
-          reason: '旧会话 onComplete 不得把其 assistant 灌进当前会话');
+      expect(
+        find.text('旧会话专属回复'),
+        findsNothing,
+        reason: '旧会话 onComplete 不得把其 assistant 灌进当前会话',
+      );
     });
 
     // A5：重试失败消息——重试前删除旧失败 user 行，保证只产生一条 user 气泡
@@ -635,11 +649,15 @@ void main() {
       final repo = SessionRepository(db);
       final fake = _RetryFakeChatService(db);
 
-      final container = ProviderContainer(overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        lastSessionStorageProvider.overrideWithValue(MemoryLastSessionStorage()),
-        chatServiceProvider.overrideWithValue(fake),
-      ]);
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          lastSessionStorageProvider.overrideWithValue(
+            MemoryLastSessionStorage(),
+          ),
+          chatServiceProvider.overrideWithValue(fake),
+        ],
+      );
       addTearDown(container.dispose);
 
       await tester.pumpWidget(
@@ -666,18 +684,19 @@ void main() {
       expect(find.text('重试后回复'), findsOneWidget);
 
       // UI：内容为「我的问题」的 user 气泡只有一条
-      expect(find.text('我的问题'), findsOneWidget,
-          reason: '重试不得复制出第二条 user 气泡');
+      expect(find.text('我的问题'), findsOneWidget, reason: '重试不得复制出第二条 user 气泡');
 
       // DB：当前会话里内容为「我的问题」的 user 行也只有一条
-      final sessionId = container.read(sessionBootstrapProvider).value?.sessionId;
+      final sessionId = container
+          .read(sessionBootstrapProvider)
+          .value
+          ?.sessionId;
       expect(sessionId, isNotNull);
       final rows = await repo.listMessages(sessionId!);
       final userRows = rows
           .where((m) => m.role == 'user' && m.content == '我的问题')
           .toList();
-      expect(userRows, hasLength(1),
-          reason: '旧失败 user 行应在重试前删除，不得残留重复问句污染上下文');
+      expect(userRows, hasLength(1), reason: '旧失败 user 行应在重试前删除，不得残留重复问句污染上下文');
     });
   });
 
@@ -880,7 +899,7 @@ void main() {
       final payload = jsonEncode({
         'syndromes': [
           {
-            'syndrome_id': 'P001',
+            'syndrome_id': 'P002',
             'name': '逻辑跳跃',
             'severity': 'L1',
             'evidence_count': 1,
@@ -1501,7 +1520,7 @@ void main() {
 
     testWidgets('#B18-1 P2 阶段 → 任务开关 + 展开显示活跃问题', (tester) async {
       final sessionId = await seedP2Session();
-      await insertActiveProblem(sessionId, 'P001', '视角跳跃症', 'L2');
+      await insertActiveProblem(sessionId, 'P002', '视角跳跃症', 'L2');
       await pumpChat(tester);
 
       // toggle 显示数量
@@ -1525,7 +1544,7 @@ void main() {
 
     testWidgets('#B18-2 点击完成 → resolveProblem 落库 + 面板刷新为空态', (tester) async {
       final sessionId = await seedP2Session();
-      await insertActiveProblem(sessionId, 'P001', '视角跳跃症', 'L2');
+      await insertActiveProblem(sessionId, 'P002', '视角跳跃症', 'L2');
       await pumpChat(tester);
 
       await tester.tap(find.text('任务 (1)'));
@@ -1560,7 +1579,7 @@ void main() {
 
     testWidgets('#B18-4 批次75 点击移除 → 确认弹窗 → 物理删行 + 面板刷新为空态', (tester) async {
       final sessionId = await seedP2Session();
-      await insertActiveProblem(sessionId, 'P001', '视角跳跃症', 'L2');
+      await insertActiveProblem(sessionId, 'P002', '视角跳跃症', 'L2');
       await pumpChat(tester);
 
       await tester.tap(find.text('任务 (1)'));
@@ -1610,7 +1629,7 @@ void main() {
         'taskDescription': '请改写这段对话，让情绪描写更含蓄。',
         'difficulty': 'medium',
         'evaluationCriteria': ['含蓄自然', '有画面感'],
-        'targetSyndromeId': 'P001',
+        'targetSyndromeId': 'P002',
         'targetSyndromeName': '情绪标签化',
         'source': 'diagnosis',
       };
@@ -1630,7 +1649,7 @@ void main() {
               messageId: messageId,
               source: 'diagnosis',
               teachingDecision: 'guide',
-              targetSyndromeId: const Value('P001'),
+              targetSyndromeId: const Value('P002'),
               taskType: 'rewrite',
               taskDescription: '请改写这段对话，让情绪描写更含蓄。',
               difficulty: 'medium',
@@ -1939,7 +1958,7 @@ void main() {
       final practice = container.read(practiceStoreProvider.notifier);
       practice.startPractice(
         PracticeTask(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           taskDescription: '针对性写作练习',
           taskGoal: '对照标准完成练习',
@@ -2022,7 +2041,7 @@ void main() {
       await seedCardMessage(
         'partial_agreement',
         jsonEncode({
-          'syndromeId': 'P001',
+          'syndromeId': 'P002',
           'syndromeName': '视角跳跃症',
           'severity': 'L2',
         }),
@@ -2065,7 +2084,7 @@ void main() {
       await seedCardMessage(
         'partial_agreement',
         jsonEncode({
-          'syndromeId': 'P001',
+          'syndromeId': 'P002',
           'syndromeName': '视角跳跃症',
           'severity': 'L2',
         }),
@@ -2226,9 +2245,7 @@ class _FakeChatService extends ChatService {
 /// A4 测试替身：捕获 sendMessage 回调后不自动完成，由测试手动触发 onStream/onComplete，
 /// 用于复现「流式中途切会话」的迟到回调场景。
 class _PausableFakeChatService extends _FakeChatService {
-  _PausableFakeChatService(AppDatabase db)
-    : _db = db,
-      super(db);
+  _PausableFakeChatService(AppDatabase db) : _db = db, super(db);
 
   final AppDatabase _db;
   SendMessageCallbacks? callbacks;

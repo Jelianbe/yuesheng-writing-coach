@@ -15,8 +15,8 @@ void main() {
         proficiency: ProficiencyLevel.beginner,
         confidence: 0.8,
         syndromeProfile: {
-          'P004': SyndromeAggregation(
-            syndromeId: 'P004',
+          'P002': SyndromeAggregation(
+            syndromeId: 'P002',
             syndromeName: '信息倾泻症',
             occurrenceCount: 3,
             severityHistory: const [Severity.l1, Severity.l2, Severity.l2],
@@ -36,7 +36,7 @@ void main() {
       );
 
       expect(card, isNotNull);
-      expect(card!.focusId, 'P004');
+      expect(card!.focusId, 'P002');
       expect(card.focusName, '信息倾泻症');
       expect(card.focusScore, greaterThan(0));
       // 为什么：只陈述既有字段，不编造
@@ -69,8 +69,8 @@ void main() {
         proficiency: ProficiencyLevel.beginner,
         confidence: 0.8,
         syndromeProfile: {
-          'P004': SyndromeAggregation(
-            syndromeId: 'P004',
+          'P002': SyndromeAggregation(
+            syndromeId: 'P002',
             syndromeName: '信息倾泻症',
             occurrenceCount: 2,
             severityHistory: const [Severity.l2, Severity.l2],
@@ -89,7 +89,7 @@ void main() {
         profile: profile,
         trainingStats: const [
           SyndromeTrainingStats(
-            syndromeId: 'P004',
+            syndromeId: 'P002',
             passed: 2,
             partial: 1,
             failed: 0,
@@ -103,7 +103,7 @@ void main() {
         profile: profile,
         trainingStats: const [
           SyndromeTrainingStats(
-            syndromeId: 'P004',
+            syndromeId: 'P002',
             passed: 3,
             partial: 1,
             failed: 0,
@@ -118,8 +118,8 @@ void main() {
         proficiency: ProficiencyLevel.beginner,
         confidence: 0.8,
         syndromeProfile: {
-          'P004': SyndromeAggregation(
-            syndromeId: 'P004',
+          'P002': SyndromeAggregation(
+            syndromeId: 'P002',
             syndromeName: '信息倾泻症',
             occurrenceCount: 4,
             severityHistory: const [Severity.l3, Severity.l3, Severity.l3],
@@ -137,7 +137,7 @@ void main() {
         profile: profile,
         trainingStats: const [
           SyndromeTrainingStats(
-            syndromeId: 'P004',
+            syndromeId: 'P002',
             passed: 4,
             partial: 0,
             failed: 0,
@@ -155,8 +155,8 @@ void main() {
         proficiency: ProficiencyLevel.beginner,
         confidence: 0.8,
         syndromeProfile: {
-          'P004': SyndromeAggregation(
-            syndromeId: 'P004',
+          'P002': SyndromeAggregation(
+            syndromeId: 'P002',
             syndromeName: '信息倾泻症',
             occurrenceCount: 4,
             severityHistory: const [
@@ -171,8 +171,8 @@ void main() {
             sessionCount: 2,
             teachingState: TeachingState.inProgress,
           ),
-          'P008': SyndromeAggregation(
-            syndromeId: 'P008',
+          'P006': SyndromeAggregation(
+            syndromeId: 'P006',
             syndromeName: '同义反复',
             occurrenceCount: 1,
             severityHistory: const [Severity.l3],
@@ -201,8 +201,8 @@ void main() {
         proficiency: ProficiencyLevel.beginner,
         confidence: 0.8,
         syndromeProfile: {
-          'P004': SyndromeAggregation(
-            syndromeId: 'P004',
+          'P002': SyndromeAggregation(
+            syndromeId: 'P002',
             syndromeName: '信息倾泻症',
             occurrenceCount: 1,
             severityHistory: const [Severity.l2],

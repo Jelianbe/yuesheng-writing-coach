@@ -124,7 +124,7 @@ void main() {
     expect(ctx, isNotNull);
     expect(ctx, contains('情节闭环观察'));
     expect(ctx, contains('第3章引入的支线「钥匙的秘密」至今（第12章）未回收'));
-    expect(ctx, contains('P014'));
+    expect(ctx, contains('P012'));
     expect(ctx, contains('共 2 条支线收束滞后'));
   });
 

@@ -14,8 +14,8 @@ import 'package:writingcoach/features/chat/practice_launcher.dart';
 
 void main() {
   const syndromes = [
-    PracticeSyndromeOption(id: 'P003', name: '情绪标签化'),
-    PracticeSyndromeOption(id: 'P008', name: '语言堆砌'),
+    PracticeSyndromeOption(id: 'P001', name: '情绪标签化'),
+    PracticeSyndromeOption(id: 'P006', name: '语言堆砌'),
   ];
 
   Future<void> openLauncher(
@@ -80,7 +80,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(captured, isNotNull);
-    expect(captured!.syndromeId, 'P003');
+    expect(captured!.syndromeId, 'P001');
     expect(captured!.syndromeName, '情绪标签化');
     expect(captured!.taskType, 'generate');
     expect(captured!.difficulty, 'hard');

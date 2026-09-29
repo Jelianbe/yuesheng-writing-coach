@@ -127,10 +127,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
       children: [
         Text(
           '你觉得这次改得怎么样？',
-          style: TextStyle(
-            fontSize: 13,
-            color: context.palette.textPrimary,
-          ),
+          style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
         ),
         const SizedBox(height: 6),
         _buildConfidenceChips(),
@@ -138,10 +135,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
         // ── 5.6 回忆难度自评（批1·N2，可跳过）──
         Text(
           '这次练习对你来说有多难？',
-          style: TextStyle(
-            fontSize: 13,
-            color: context.palette.textPrimary,
-          ),
+          style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
         ),
         const SizedBox(height: 6),
         _buildRecallRatingChips(),

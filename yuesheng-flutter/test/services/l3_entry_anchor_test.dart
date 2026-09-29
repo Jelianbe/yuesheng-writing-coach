@@ -4,7 +4,7 @@
 //
 // 背景（docs/research/2026-09-13-injection-refinement-guardrail-gaps.md §G-2）：
 //   test/snapshots/skill_prompt_anchor.json 的 l3Inject 只覆盖 4 个注入组合
-//   （P003 / T001+T008 / P003+P007+T001 / 空），L3 **逐词条正文**无字节级保护。
+//   （P001 / T001+T008 / P001+P005+T001 / 空），L3 **逐词条正文**无字节级保护。
 //   本测试为三类 L3 检索源建立**逐词条**指纹快照（len + FNV-1a 64），
 //   任一词条被删/改都会在 diff 里被指名。
 //

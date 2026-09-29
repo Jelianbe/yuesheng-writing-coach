@@ -2,7 +2,7 @@
 // grammar_lexical_detector — F12 文法与重复用词检测（批次70）
 //
 // 规格（V2.0 §3.3 F12）：基础语法 + 重复用词检测，Lv1（初学段价值高）。
-// 观察项挂 P022 重复用词/基础语病症候补充（新建症候，批次70）。
+// 观察项挂 P018 重复用词/基础语病症候补充（新建症候，批次70）。
 // 纯函数、无 IO，规则保守精确（避免误报）：
 //   1. 相邻重复虚词（的了很是不和在把被着过也就都又再你我他她们）
 //   2. 连续重复标点（，，。。！！？？）
@@ -25,7 +25,7 @@ enum GrammarIssueKind {
   frequentWord,
 }
 
-/// 基础文法观察项（挂 P022 补充输入）
+/// 基础文法观察项（挂 P018 补充输入）
 class GrammarLexicalIssue {
   final GrammarIssueKind kind;
   final String evidence; // 原文片段（5-20 字）

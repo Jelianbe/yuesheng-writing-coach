@@ -15,7 +15,7 @@
 //
 // 场景矩阵：
 //   #1 P1 诊断（doubao，非零基础，无活跃症候）→ L2 diagnosis + 无 L3
-//   #2 P2 训练（training 子阶段 + 活跃症候 P003）→ L2 training + L3 + 画像
+//   #2 P2 训练（training 子阶段 + 活跃症候 P001）→ L2 training + L3 + 画像
 //   #3 零基础（N1_ELEMENTS + P1）→ L2 beginner
 //   #4 Sensei 态度（P1）→ attitude-sensei 注入（不含 doubao）
 //   #5 token 预算：场景 #1-#4 的 system prompt 均 validatePrompt 通过
@@ -275,15 +275,15 @@ void main() {
       expect(constraint, contains('分轮展开'), reason: '缺分轮展开规则');
     });
 
-    test('#2 P2 训练（training + 活跃症候 P003）→ L2(training) + L3 + 画像', () async {
-      // 构造活跃症候 P003（诊断落库 → active_problem）
+    test('#2 P2 训练（training + 活跃症候 P001）→ L2(training) + L3 + 画像', () async {
+      // 构造活跃症候 P001（诊断落库 → active_problem）
       await DiagnosisRepository(db).commitDiagnosis(
         DiagnosisInput(
           sessionId: sessionId,
-          messageId: 'msg-p003',
+          messageId: 'msg-p001',
           syndromes: [
             {
-              'syndrome_id': 'P003',
+              'syndrome_id': 'P001',
               'name': '情绪标签化',
               'severity': 'L2',
               'evidence': <String>['他因为考试失利整个人都很沮丧。', '他反复念叨这次没有希望了。'],
@@ -310,7 +310,7 @@ void main() {
       // L3 症候详情 + 技法
       expect(sys, contains('## 活跃症候详细定义'), reason: '缺 L3 症候定义');
       expect(sys, contains('## 聚焦技法详细内容'), reason: '缺 L3 技法详情');
-      expect(sys, contains('当前教学焦点 P003'), reason: '缺 focus 症候段落');
+      expect(sys, contains('当前教学焦点 P001'), reason: '缺 focus 症候段落');
       // 学员画像注入（有诊断历史）
       expect(sys, contains('# 学员画像'), reason: '缺学员画像注入');
     });
@@ -369,7 +369,7 @@ void main() {
           messageId: 'msg-token',
           syndromes: [
             {
-              'syndrome_id': 'P003',
+              'syndrome_id': 'P001',
               'name': '情绪标签化',
               'severity': 'L2',
               'evidence': <String>['他因为考试失利整个人都很沮丧。', '他反复念叨这次没有希望了。'],

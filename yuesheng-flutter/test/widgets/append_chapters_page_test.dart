@@ -271,9 +271,7 @@ void main() {
       expect(find.text('稿件详情测试页'), findsOneWidget);
     });
 
-    testWidgets('#10 追加导入带 volumeTitle → 建卷并挂卷（B8 不塌成平铺）', (
-      tester,
-    ) async {
+    testWidgets('#10 追加导入带 volumeTitle → 建卷并挂卷（B8 不塌成平铺）', (tester) async {
       await tester.pumpWidget(
         buildHost(
           loader: loaderOf([

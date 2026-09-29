@@ -53,26 +53,26 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
         ),
       );
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
     });
 
     test('用户覆盖 focus 在池中且 active → 通过（userOverride）', () {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
           ],
-          userFocusOverride: 'P003',
+          userFocusOverride: 'P001',
         ),
       );
       expect(out.source, FocusSource.userOverride);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
     });
   });
 
@@ -95,8 +95,8 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.rejected, 'active'),
-            _fp('P004', Severity.l2, ConfirmationStatus.suspected, 'resolved'),
+            _fp('P001', Severity.l3, ConfirmationStatus.rejected, 'active'),
+            _fp('P002', Severity.l2, ConfirmationStatus.suspected, 'resolved'),
           ],
           aiSuggestedFocusId: null,
           userFocusOverride: null,
@@ -108,46 +108,46 @@ void main() {
     });
 
     test('fallback 优先级1（confirmed）按 severity + 层级引导选 L1', () {
-      // P003=L1(基础表达), P005=L4(情节结构)；学员 L1 → 优先层级≤当前+1=L2
+      // P001=L1(基础表达), P003=L4(情节结构)；学员 L1 → 优先层级≤当前+1=L2
+      final out = resolveTeachingFocus(
+        _input(
+          problems: [
+            _fp(
+              'P001',
+              Severity.l3,
+              ConfirmationStatus.confirmed,
+              'active',
+              confirmedAt: 100,
+            ),
+            _fp(
+              'P003',
+              Severity.l2,
+              ConfirmationStatus.confirmed,
+              'active',
+              confirmedAt: 200,
+            ),
+          ],
+          studentSkillLevel: SkillLevel.l1,
+        ),
+      );
+      expect(out.source, FocusSource.fallback);
+      expect(out.activatedFocusId, 'P001'); // L1 优先于 L4
+    });
+
+    test('fallback 优先级1 全部越级 → 回退全候选选最高 severity', () {
+      // P003=L4, P007=L3；学员 L1(maxLevel=2) 全越级 → 回退 sorted.first（severity 降序）
       final out = resolveTeachingFocus(
         _input(
           problems: [
             _fp(
               'P003',
-              Severity.l3,
-              ConfirmationStatus.confirmed,
-              'active',
-              confirmedAt: 100,
-            ),
-            _fp(
-              'P005',
-              Severity.l2,
-              ConfirmationStatus.confirmed,
-              'active',
-              confirmedAt: 200,
-            ),
-          ],
-          studentSkillLevel: SkillLevel.l1,
-        ),
-      );
-      expect(out.source, FocusSource.fallback);
-      expect(out.activatedFocusId, 'P003'); // L1 优先于 L4
-    });
-
-    test('fallback 优先级1 全部越级 → 回退全候选选最高 severity', () {
-      // P005=L4, P009=L3；学员 L1(maxLevel=2) 全越级 → 回退 sorted.first（severity 降序）
-      final out = resolveTeachingFocus(
-        _input(
-          problems: [
-            _fp(
-              'P005',
               Severity.l2,
               ConfirmationStatus.confirmed,
               'active',
               confirmedAt: 100,
             ),
             _fp(
-              'P009',
+              'P007',
               Severity.l3,
               ConfirmationStatus.confirmed,
               'active',
@@ -158,21 +158,21 @@ void main() {
         ),
       );
       expect(out.source, FocusSource.fallback);
-      expect(out.activatedFocusId, 'P009'); // l3 在 l2 之前
+      expect(out.activatedFocusId, 'P007'); // l3 在 l2 之前
     });
 
     test('fallback 优先级2（suspected）', () {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.suspected, 'active'),
-            _fp('P004', Severity.l2, ConfirmationStatus.suspected, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.suspected, 'active'),
+            _fp('P002', Severity.l2, ConfirmationStatus.suspected, 'active'),
           ],
           studentSkillLevel: SkillLevel.l1,
         ),
       );
       expect(out.source, FocusSource.fallback);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
     });
   });
 
@@ -182,7 +182,7 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.suspected, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.suspected, 'active'),
           ],
           aiSuggestedFocusId: 'PX99',
           subphase: TeachingSubphase.diagnosis,
@@ -196,16 +196,16 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
-            _fp('P002', Severity.l2, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P007', Severity.l2, ConfirmationStatus.confirmed, 'active'),
           ],
           userFocusOverride: 'PX99',
           subphase: TeachingSubphase.practice,
-          focusHistory: [FocusHistoryEntry(focusId: 'P002', timestamp: 1)],
+          focusHistory: [FocusHistoryEntry(focusId: 'P007', timestamp: 1)],
         ),
       );
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P002');
+      expect(out.activatedFocusId, 'P007');
       expect(out.reason, contains('维持原 focus'));
     });
 
@@ -213,12 +213,12 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
-            _fp('P002', Severity.l2, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P007', Severity.l2, ConfirmationStatus.confirmed, 'active'),
           ],
           aiSuggestedFocusId: 'PX99',
           subphase: TeachingSubphase.practice,
-          focusHistory: [FocusHistoryEntry(focusId: 'P002', timestamp: 1)],
+          focusHistory: [FocusHistoryEntry(focusId: 'P007', timestamp: 1)],
         ),
       );
       expect(out.source, FocusSource.fallback);
@@ -232,9 +232,9 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.rejected, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.rejected, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.diagnosis,
         ),
       );
@@ -246,9 +246,9 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'resolved'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'resolved'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.diagnosis,
         ),
       );
@@ -260,16 +260,16 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'resolved'),
-            _fp('P002', Severity.l2, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'resolved'),
+            _fp('P007', Severity.l2, ConfirmationStatus.confirmed, 'active'),
           ],
-          userFocusOverride: 'P003',
+          userFocusOverride: 'P001',
           subphase: TeachingSubphase.practice,
-          focusHistory: [FocusHistoryEntry(focusId: 'P002', timestamp: 1)],
+          focusHistory: [FocusHistoryEntry(focusId: 'P007', timestamp: 1)],
         ),
       );
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P002');
+      expect(out.activatedFocusId, 'P007');
       expect(out.rejectReason, contains('已解决'));
     });
   });
@@ -280,14 +280,14 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
           ],
-          userFocusOverride: 'P003',
+          userFocusOverride: 'P001',
           subphase: TeachingSubphase.practice,
         ),
       );
       expect(out.source, FocusSource.userOverride);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
       expect(out.rejectReason, contains('已按你的要求切换'));
     });
 
@@ -295,16 +295,16 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
-            _fp('P002', Severity.l2, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P007', Severity.l2, ConfirmationStatus.confirmed, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.practice,
-          focusHistory: [FocusHistoryEntry(focusId: 'P002', timestamp: 1)],
+          focusHistory: [FocusHistoryEntry(focusId: 'P007', timestamp: 1)],
         ),
       );
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P002');
+      expect(out.activatedFocusId, 'P007');
       expect(out.reason, contains('拒绝 AI 自主切换'));
     });
 
@@ -312,15 +312,15 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.practice,
           focusHistory: [FocusHistoryEntry(focusId: 'P999', timestamp: 1)],
         ),
       );
       expect(out.source, FocusSource.fallback);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
     });
   });
 
@@ -330,20 +330,20 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
-            _fp('P002', Severity.l2, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P007', Severity.l2, ConfirmationStatus.confirmed, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.diagnosis,
           focusHistory: [
-            FocusHistoryEntry(focusId: 'P002', timestamp: 1),
-            FocusHistoryEntry(focusId: 'P005', timestamp: 2),
-            FocusHistoryEntry(focusId: 'P009', timestamp: 3),
+            FocusHistoryEntry(focusId: 'P007', timestamp: 1),
+            FocusHistoryEntry(focusId: 'P003', timestamp: 2),
+            FocusHistoryEntry(focusId: 'P005', timestamp: 3),
           ],
         ),
       );
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P002');
+      expect(out.activatedFocusId, 'P007');
       expect(out.reason, contains('频繁切换检测'));
     });
 
@@ -351,19 +351,19 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.diagnosis,
           focusHistory: [
-            FocusHistoryEntry(focusId: 'P002', timestamp: 1),
-            FocusHistoryEntry(focusId: 'P005', timestamp: 2),
-            FocusHistoryEntry(focusId: 'P009', timestamp: 3),
+            FocusHistoryEntry(focusId: 'P007', timestamp: 1),
+            FocusHistoryEntry(focusId: 'P003', timestamp: 2),
+            FocusHistoryEntry(focusId: 'P005', timestamp: 3),
           ],
         ),
       );
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
       expect(out.reason, contains('原 focus 无效，采用候选'));
     });
 
@@ -371,35 +371,35 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.diagnosis,
           focusHistory: [
-            FocusHistoryEntry(focusId: 'P003', timestamp: 1),
-            FocusHistoryEntry(focusId: 'P005', timestamp: 2),
-            FocusHistoryEntry(focusId: 'P009', timestamp: 3),
+            FocusHistoryEntry(focusId: 'P001', timestamp: 1),
+            FocusHistoryEntry(focusId: 'P003', timestamp: 2),
+            FocusHistoryEntry(focusId: 'P007', timestamp: 3),
           ],
         ),
       );
       // candidate == recent.first → 不降级 → 通过校验
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
     });
 
     test('_isFrequentSwitching：历史不足阈值 → 不触发降级', () {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P001', Severity.l3, ConfirmationStatus.confirmed, 'active'),
           ],
-          aiSuggestedFocusId: 'P003',
+          aiSuggestedFocusId: 'P001',
           subphase: TeachingSubphase.diagnosis,
-          focusHistory: [FocusHistoryEntry(focusId: 'P003', timestamp: 1)],
+          focusHistory: [FocusHistoryEntry(focusId: 'P001', timestamp: 1)],
         ),
       );
       expect(out.source, FocusSource.aiSuggested);
-      expect(out.activatedFocusId, 'P003');
+      expect(out.activatedFocusId, 'P001');
     });
   });
 

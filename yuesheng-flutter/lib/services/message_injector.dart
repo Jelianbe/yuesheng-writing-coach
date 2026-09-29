@@ -1963,7 +1963,9 @@ class MessageInjector {
 
   /// P0-3：读 teaching_history 最近 N 条 disputed 记录，提取 disputeReason 按 syndromeId 映射。
   /// 失败静默降级（不影响主注入链）。
-  Future<Map<String, String>> _loadRecentDisputeReasons(String sessionId) async {
+  Future<Map<String, String>> _loadRecentDisputeReasons(
+    String sessionId,
+  ) async {
     try {
       final history = await _studentModelRepo.getTeachingHistory(sessionId);
       final result = <String, String>{};

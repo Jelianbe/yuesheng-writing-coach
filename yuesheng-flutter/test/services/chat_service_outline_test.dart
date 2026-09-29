@@ -304,7 +304,7 @@ void main() {
         '王建国这个人物塑造得很扎实。\n'
         '[YS_ENTITY]{"entities":[{"type":"character","key":"王叔","aliases":["王师傅"],'
         '"impressions":[{"text":"守在巷口三十年"},{"text":"左眼有一道刀疤"}]}]}[/YS_ENTITY]\n'
-        '[YS_DIAGNOSIS]{"syndromes":[{"syndrome_id":"P001","name":"情绪直白","severity":"medium",'
+        '[YS_DIAGNOSIS]{"syndromes":[{"syndrome_id":"P002","name":"情绪直白","severity":"medium",'
         '"evidence":["心里一紧"],"explanation":"e"}],"suggested_actions":["动作化"],"confidence":0.9}[/YS_DIAGNOSIS]\n'
         '试试把情绪换成动作。';
 

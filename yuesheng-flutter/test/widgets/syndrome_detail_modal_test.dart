@@ -23,7 +23,7 @@ void main() {
     String trend = 'worsening',
   }) {
     return SyndromeTracked(
-      syndromeId: 'P003',
+      syndromeId: 'P001',
       name: '情绪标签化',
       currentSeverity: currentSeverity,
       firstSeen: now - 86400, // 1 天前

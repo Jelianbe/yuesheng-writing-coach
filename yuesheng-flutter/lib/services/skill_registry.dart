@@ -220,7 +220,7 @@ Skill? getSkill(String id) => skillRegistry[id];
 
 // ── b9 批次30：注册表行渲染（输出与手写逐字一致）────────────────
 
-/// 症候 ID 范围（如 P003-P031），提示文本派生用
+/// 症候 ID 范围（如 P001-P023），提示文本派生用
 String get _syndromeIdRange => '${kSyndromeIds.first}-${kSyndromeIds.last}';
 
 /// 动作精简名真源（A001-A016，动作名稳定；动作映射表渲染取用）
@@ -261,15 +261,13 @@ String _actionRow(SyndromeRecord s, String displayName) {
 /// v2 动作映射（coaching-actions-v2）行：症候列用 v2ActionName ?? shortName
 String _v2ActionRow(SyndromeRecord s) => _actionRow(s, s.v2ActionDisplayName);
 
-/// maxAttempts 分组 ID 列表（如 P003/P007/...），组内按注册表 ID 升序
-String _maxAttemptsIds(MaxAttemptsGroup group) => kSyndromeRegistry
-    .where((s) => s.group == group && s.retired != true)
-    .map((s) => s.id)
-    .join('/');
+/// maxAttempts 分组 ID 列表（如 P001/P005/...），组内按注册表 ID 升序
+String _maxAttemptsIds(MaxAttemptsGroup group) =>
+    kSyndromeRegistry.where((s) => s.group == group).map((s) => s.id).join('/');
 
 /// training-templates-index 行：| ID | 症候名 | 核心本质一句话 |
-/// 症候名默认 shortName；P022 现有文本为「重复用词/基础语病症」（带"症"字），特例保留
+/// 症候名默认 shortName；P018 现有文本为「重复用词/基础语病症」（带"症"字），特例保留
 String _trainingIndexRow(SyndromeRecord s) {
-  final name = s.id == 'P022' ? '重复用词/基础语病症' : s.shortName;
+  final name = s.id == 'P018' ? '重复用词/基础语病症' : s.shortName;
   return '| ${s.id} | $name | ${s.trainingLine} |';
 }

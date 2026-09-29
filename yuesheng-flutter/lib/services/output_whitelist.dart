@@ -31,7 +31,7 @@ const List<String> _severityAllowed = ['L1', 'L2', 'L3'];
 String? normalizeSeverity(Object? raw) =>
     whitelistNormalize(raw, _severityAllowed);
 
-/// 症候 ID 格式白名单：`P` + 至少 1 位数字（如 P003/P21）。
+/// 症候 ID 格式白名单：`P` + 至少 1 位数字（如 P001/P21）。
 /// 格式不符（注入形 ID、空串）→ null。
 String? normalizeSyndromeId(Object? raw) {
   if (raw == null) return null;

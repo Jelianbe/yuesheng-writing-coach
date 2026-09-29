@@ -223,7 +223,7 @@ void main() {
 
     final joined = llm.systemContents.join('\n');
     expect(joined, contains('对话标签观察'));
-    expect(joined, contains('P011'));
+    expect(joined, contains('P009'));
     expect(joined, contains('「低声」类对话标签出现 3 次'));
     expect(joined, contains('只定位，不代改正文'));
   });

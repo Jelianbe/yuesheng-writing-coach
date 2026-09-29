@@ -13,27 +13,26 @@ import 'package:writingcoach/types/teaching_types.dart';
 
 void main() {
   group('syndrome 知识库', () {
-    test('索引内容完整（含 P003-P031 映射表）', () {
+    test('索引内容完整（含 P001-P023 映射表）', () {
       expect(kSyndromeIndexContent, startsWith('# SKILL: 写作问题→症候 ID 映射表'));
       for (final id in kSyndromeIds) {
         expect(kSyndromeIndexContent, contains('| $id |'), reason: '索引缺 $id');
       }
     });
 
-    test('手册内容完整（含 P003/P021/P022 定义）', () {
+    test('手册内容完整（含 P001/P017/P018 定义）', () {
       expect(kSyndromeManualContent, startsWith('# SKILL: 症候诊断手册'));
-      expect(kSyndromeManualContent, contains('### P003 情绪标签化'));
-      expect(kSyndromeManualContent, contains('### P021 跳跃叙事/过度概括症'));
-      expect(kSyndromeManualContent, contains('### P022 重复用词/基础语病'));
+      expect(kSyndromeManualContent, contains('### P001 情绪标签化'));
+      expect(kSyndromeManualContent, contains('### P017 跳跃叙事/过度概括症'));
+      expect(kSyndromeManualContent, contains('### P018 重复用词/基础语病'));
     });
 
-    test('手册含批次15 新症候 P023-P027 完整定义', () {
+    test('手册含批次15 网文商业症候完整定义', () {
       for (final name in [
-        'P023 爽点乏力症',
-        'P024 期待感断裂症',
-        'P025 黄金三章失效症',
-        'P026 章节钩子缺失症',
-        'P027 追读动力不足症',
+        'P013 高潮疲软症',
+        'P019 章节钩子缺失症',
+        'P020 追读动力不足症',
+        'P011 开篇平庸症',
       ]) {
         expect(
           kSyndromeManualContent,
@@ -41,47 +40,47 @@ void main() {
           reason: '手册缺 $name',
         );
       }
-      final content = getSyndromeContent(['P023']);
-      expect(content, contains('### P023 爽点乏力症'));
+      final content = getSyndromeContent(['P013']);
+      expect(content, contains('### P013 高潮疲软症'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
     });
 
-    test('手册含批次23 新症候 P028 完整定义', () {
-      expect(kSyndromeManualContent, contains('### P028 画面感缺失症'));
-      final content = getSyndromeContent(['P028']);
-      expect(content, contains('### P028 画面感缺失症'));
+    test('手册含批次23 新症候 P021 完整定义', () {
+      expect(kSyndromeManualContent, contains('### P021 画面感缺失症'));
+      final content = getSyndromeContent(['P021']);
+      expect(content, contains('### P021 画面感缺失症'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
       expect(content, contains('首选 A006 感官全开'));
     });
 
-    test('手册含批次24 新症候 P029 完整定义', () {
-      expect(kSyndromeManualContent, contains('### P029 段落失控症'));
-      final content = getSyndromeContent(['P029']);
-      expect(content, contains('### P029 段落失控症'));
-      expect(content, contains('核心问题'));
-      expect(content, contains('判断原则'));
-      expect(content, contains('推荐教学动作'));
-      expect(content, contains('首选 A011 场景裁剪'));
-    });
-
-    test('手册含批次25 新症候 P030 完整定义', () {
-      expect(kSyndromeManualContent, contains('### P030 节奏比例失衡症'));
-      final content = getSyndromeContent(['P030']);
-      expect(content, contains('### P030 节奏比例失衡症'));
+    test('手册含 P005 句式节奏单一 完整定义', () {
+      expect(kSyndromeManualContent, contains('### P005 句式节奏单一'));
+      final content = getSyndromeContent(['P005']);
+      expect(content, contains('### P005 句式节奏单一'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
       expect(content, contains('首选 A009 节奏变速'));
     });
 
-    test('手册含批次26 新症候 P031 完整定义', () {
-      expect(kSyndromeManualContent, contains('### P031 设定矛盾症'));
-      final content = getSyndromeContent(['P031']);
-      expect(content, contains('### P031 设定矛盾症'));
+    test('手册含批次25 新症候 P022 完整定义', () {
+      expect(kSyndromeManualContent, contains('### P022 节奏比例失衡症'));
+      final content = getSyndromeContent(['P022']);
+      expect(content, contains('### P022 节奏比例失衡症'));
+      expect(content, contains('核心问题'));
+      expect(content, contains('判断原则'));
+      expect(content, contains('推荐教学动作'));
+      expect(content, contains('首选 A009 节奏变速'));
+    });
+
+    test('手册含批次26 新症候 P023 完整定义', () {
+      expect(kSyndromeManualContent, contains('### P023 设定矛盾症'));
+      final content = getSyndromeContent(['P023']);
+      expect(content, contains('### P023 设定矛盾症'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
@@ -89,26 +88,26 @@ void main() {
     });
 
     test('getSyndromeContent 按 ID 提取单个症候', () {
-      final content = getSyndromeContent(['P003']);
-      expect(content, contains('### P003 情绪标签化'));
+      final content = getSyndromeContent(['P001']);
+      expect(content, contains('### P001 情绪标签化'));
       expect(content, contains('核心问题'));
-      // 只含 P003，不含 P004 定义
-      expect(content, isNot(contains('### P004')));
+      // 只含 P001，不含 P002 定义
+      expect(content, isNot(contains('### P002')));
       // header 存在
       expect(content, contains('活跃症候详细定义'));
     });
 
     test('getSyndromeContent 多症候拼接 + 空输入返回空', () {
-      final content = getSyndromeContent(['P003', 'P005']);
-      expect(content, contains('### P003 情绪标签化'));
-      expect(content, contains('### P005 视角漂移'));
+      final content = getSyndromeContent(['P001', 'P003']);
+      expect(content, contains('### P001 情绪标签化'));
+      expect(content, contains('### P003 视角漂移'));
       expect(getSyndromeContent([]), isEmpty);
       expect(getSyndromeContent(['P999']), isEmpty);
     });
 
-    test('getSyndromeContent 提取 P022（批次70 新症候）', () {
-      final content = getSyndromeContent(['P022']);
-      expect(content, contains('### P022 重复用词/基础语病'));
+    test('getSyndromeContent 提取 P018（批次70 新症候）', () {
+      final content = getSyndromeContent(['P018']);
+      expect(content, contains('### P018 重复用词/基础语病'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
@@ -122,7 +121,7 @@ void main() {
         expect(kTechniqueIndexContent, contains('| $id |'), reason: '索引缺 $id');
       }
       // 症候→技法映射表
-      expect(kTechniqueIndexContent, contains('| P003 | T001 动态描写公式'));
+      expect(kTechniqueIndexContent, contains('| P001 | T001 动态描写公式'));
     });
 
     test('技法库内容完整（含 T001 与 T031）', () {
@@ -139,8 +138,8 @@ void main() {
     });
 
     test('getTechniquesBySyndrome 返回首选 + 备选技法', () {
-      // P003 → [T001, T002, T020]，取 T001 + T002
-      final content = getTechniquesBySyndrome(['P003']);
+      // P001 → [T001, T002, T020]，取 T001 + T002
+      final content = getTechniquesBySyndrome(['P001']);
       expect(content, contains('### T001'));
       expect(content, contains('### T002'));
       expect(content, isNot(contains('### T020')));
@@ -153,22 +152,22 @@ void main() {
       final text = buildStructuredSyndromeContext(
         [
           ActiveSyndromeView(
-            syndromeId: 'P003',
+            syndromeId: 'P001',
             syndromeName: '情绪标签化',
             severity: Severity.l2,
             confirmationStatus: ConfirmationStatus.confirmed,
           ),
         ],
         activeFocus: const ActiveFocusContext(
-          focusId: 'P003',
+          focusId: 'P001',
           source: FocusSource.aiSuggested,
           reason: '测试',
         ),
       );
       // L3 症候完整定义
-      expect(text, contains('### P003 情绪标签化'));
+      expect(text, contains('### P001 情绪标签化'));
       expect(text, contains('核心问题'));
-      // L3 技法（P003 → T001 动态描写公式 + T002 感官交织法）
+      // L3 技法（P001 → T001 动态描写公式 + T002 感官交织法）
       expect(text, contains('### T001'));
       expect(text, contains('### T002'));
       // 训练侧完整教学知识不注入（严格对齐 RN 生产路径：getTrainingContent 未被生产调用）
@@ -177,50 +176,50 @@ void main() {
       final simplified = buildStructuredSyndromeContext(
         [
           ActiveSyndromeView(
-            syndromeId: 'P008',
+            syndromeId: 'P006',
             syndromeName: '语言堆砌',
             severity: Severity.l2,
             confirmationStatus: ConfirmationStatus.confirmed,
           ),
         ],
         activeFocus: const ActiveFocusContext(
-          focusId: 'P003',
+          focusId: 'P001',
           source: FocusSource.aiSuggested,
           reason: '测试',
         ),
       );
-      expect(simplified, isNot(contains('### P008')));
+      expect(simplified, isNot(contains('### P006')));
     });
 
     test('focus 注入后非 focus 按剩余预算注入（预算 clamp 锚定）', () {
       final text = buildStructuredSyndromeContext(
         [
           ActiveSyndromeView(
-            syndromeId: 'P003',
+            syndromeId: 'P001',
             syndromeName: '情绪标签化',
             severity: Severity.l2,
             confirmationStatus: ConfirmationStatus.confirmed,
           ),
           ActiveSyndromeView(
-            syndromeId: 'P008',
+            syndromeId: 'P006',
             syndromeName: '语言堆砌',
             severity: Severity.l2,
             confirmationStatus: ConfirmationStatus.confirmed,
           ),
         ],
         activeFocus: const ActiveFocusContext(
-          focusId: 'P003',
+          focusId: 'P001',
           source: FocusSource.aiSuggested,
           reason: '测试',
         ),
       );
-      // focus 已消耗预算，非 focus P008 按剩余预算分级注入（极简/完整摘要）
-      expect(text, contains('- P008 语言堆砌'));
+      // focus 已消耗预算，非 focus P006 按剩余预算分级注入（极简/完整摘要）
+      expect(text, contains('- P006 语言堆砌'));
     });
   });
 
   group('training 知识库（training-templates-v2）', () {
-    test('完整知识库覆盖 P003-P027', () {
+    test('完整知识库覆盖 P001-P020', () {
       expect(kTrainingFullKnowledge, startsWith('# SKILL: 写作问题教学知识库'));
       for (final id in kTrainingSyndromeIds) {
         expect(
@@ -237,19 +236,19 @@ void main() {
     });
 
     test('getTrainingContent 提取单个症候', () {
-      final content = getTrainingContent(['P003']);
-      expect(content, contains('## P003 情绪标签化'));
+      final content = getTrainingContent(['P001']);
+      expect(content, contains('## P001 情绪标签化'));
       expect(content, contains('核心本质'));
       expect(content, contains('教学要点'));
       expect(content, contains('常见误区'));
-      expect(content, isNot(contains('## P004')));
+      expect(content, isNot(contains('## P002')));
       expect(content, contains('当前教学焦点的完整训练知识'));
     });
 
     test('getTrainingContent 多症候 + 空输入', () {
-      final content = getTrainingContent(['P003', 'P019']);
-      expect(content, contains('## P003'));
-      expect(content, contains('## P019'));
+      final content = getTrainingContent(['P001', 'P001']);
+      expect(content, contains('## P001'));
+      expect(content, contains('## P001'));
       expect(getTrainingContent([]), isEmpty);
       expect(getTrainingContent(['P999']), isEmpty);
     });

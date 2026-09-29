@@ -475,12 +475,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   /// P1-7：常驻弱提示——「逐条问题点，不是整篇总评」。
   Widget _buildNotOverallHint() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        4,
-        AppSpacing.lg,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 4, AppSpacing.lg, 0),
       child: Text(
         '以下是逐条问题点，不是对整篇的总评',
         style: context.text.caption?.copyWith(
@@ -694,26 +689,18 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     final structure = widget.syndromes
         .where((s) => s.severity == 'L2' || s.severity == 'L3')
         .toList();
-    final surface = widget.syndromes
-        .where((s) => s.severity == 'L1')
-        .toList();
+    final surface = widget.syndromes.where((s) => s.severity == 'L1').toList();
 
-    Widget buildBlock(s) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SyndromeBlock(
-              syndrome: s,
-              tracked: _trends[s.syndromeId],
-            ),
-            if (widget.sessionId != null) ...[
-              const SizedBox(height: 8),
-              _SyndromeConfirmationBar(
-                syndrome: s,
-                sessionId: widget.sessionId!,
-              ),
-            ],
-          ],
-        );
+    Widget buildBlock(DiagnosisSyndromeCard s) => Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _SyndromeBlock(syndrome: s, tracked: _trends[s.syndromeId]),
+        if (widget.sessionId != null) ...[
+          const SizedBox(height: 8),
+          _SyndromeConfirmationBar(syndrome: s, sessionId: widget.sessionId!),
+        ],
+      ],
+    );
 
     final children = <Widget>[];
     for (var i = 0; i < structure.length; i++) {
@@ -722,18 +709,31 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     }
     if (structure.isNotEmpty && surface.isNotEmpty) {
       children.add(const SizedBox(height: 16));
-      children.add(Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(children: [
-          Expanded(child: Divider(height: 1, color: context.palette.border)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('笔误 / 用词类', style: TextStyle(
-              fontSize: 11, color: context.palette.textTertiary)),
+      children.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Divider(height: 1, color: context.palette.border),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '笔误 / 用词类',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.palette.textTertiary,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Divider(height: 1, color: context.palette.border),
+              ),
+            ],
           ),
-          Expanded(child: Divider(height: 1, color: context.palette.border)),
-        ]),
-      ));
+        ),
+      );
       children.add(const SizedBox(height: 12));
     }
     for (var i = 0; i < surface.length; i++) {
@@ -783,9 +783,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   Widget _buildRewriteAction(int index) {
     return Padding(
       padding: EdgeInsets.only(
-        bottom: index == widget.suggestedActions.length - 1
-            ? 0
-            : AppSpacing.xs,
+        bottom: index == widget.suggestedActions.length - 1 ? 0 : AppSpacing.xs,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -814,7 +814,8 @@ class DiagnosisFlowHandler {
     TeacherResult? teacherResult;
     // P0-1：全貌呈现模式（症候数 ≥ directExplainThreshold）下，本轮只列名+问先动哪个，
     // 不触发 Teacher 给改法——等学员下一轮选定症候（userFocusOverride）后再展开。
-    final inDirectExplain = directExplainThreshold != null &&
+    final inDirectExplain =
+        directExplainThreshold != null &&
         diagnosis.syndromes.length >= directExplainThreshold;
     if (shouldTriggerTeacherForDiagnosis(diagnosis.syndromes) &&
         !diagnosisOnly &&

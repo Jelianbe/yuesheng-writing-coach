@@ -5,7 +5,7 @@
 //   _mapToParsedDiagnosis 对这些字段原为硬 cast（as String?），类型漂移
 //   抛 TypeError——而抛错点在 validateDiagnosisOutput 返回之前（:268 早于
 //   :273），连带丢掉已算好的 NL 清洗结果，导致 V-03 编号泄漏拦截失效、
-//   用户直接看到 P012 这类裸编号。
+//   用户直接看到 P010 这类裸编号。
 //
 // 本文件的核心断言不是「不崩」，而是「崩了之后 V-03 是否仍然生效」——
 // 后者才是这个缺陷对用户可见的后果。
@@ -15,7 +15,7 @@ import 'package:writingcoach/services/diagnosis_validator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 /// 正文含裸编号，用于验证 V-03 是否生效
-const String _kLeakyText = '这段正文泄漏了内部编号 P012，应当被替换';
+const String _kLeakyText = '这段正文泄漏了内部编号 P010，应当被替换';
 
 /// 顶层可选字段漂移点（ADR-C64 §2.2 #1-6）
 const List<String> _kTopLevelDriftFields = [
@@ -37,7 +37,7 @@ const List<String> _kTeachingPlanDriftFields = [
 Map<String, dynamic> _baseJson() => {
   'syndromes': [
     {
-      'syndrome_id': 'P012',
+      'syndrome_id': 'P010',
       'name': '铺垫缺失',
       'severity': 'L2',
       'evidence': ['证据一'],
@@ -69,7 +69,7 @@ void main() {
     });
 
     test('基线正文确实含裸编号（V-03 语料有效）', () {
-      expect(_kLeakyText, contains('P012'));
+      expect(_kLeakyText, contains('P010'));
       expect(_kLeakyText, isNot(contains('【症候】')));
     });
   });
@@ -140,7 +140,7 @@ void main() {
         );
         expect(
           r.displayContent,
-          isNot(contains('P012')),
+          isNot(contains('P010')),
           reason: '$field 漂移不得把裸编号泄漏给用户',
         );
       });
@@ -152,7 +152,7 @@ void main() {
         j['teaching_plan'] = {field: 12345};
         final r = validateDiagnosisOutput(_kLeakyText, j);
         expect(r.displayContent, contains('【症候】'));
-        expect(r.displayContent, isNot(contains('P012')));
+        expect(r.displayContent, isNot(contains('P010')));
       });
     }
 
@@ -161,13 +161,13 @@ void main() {
       (j['syndromes'] as List)[0]['reader_impact'] = {'nested': 1};
       final r = validateDiagnosisOutput(_kLeakyText, j);
       expect(r.displayContent, contains('【症候】'));
-      expect(r.displayContent, isNot(contains('P012')));
+      expect(r.displayContent, isNot(contains('P010')));
     });
 
     test('无漂移基线：V-03 同样生效（对照组）', () {
       final r = validateDiagnosisOutput(_kLeakyText, _baseJson());
       expect(r.displayContent, contains('【症候】'));
-      expect(r.displayContent, isNot(contains('P012')));
+      expect(r.displayContent, isNot(contains('P010')));
     });
 
     test('语料有效性：V-03 属真拦截，含裸编号时 passed 为 false', () {
@@ -177,7 +177,7 @@ void main() {
       expect(
         r.nlValidation.fixes.any((f) => f.type == 'V-03'),
         isTrue,
-        reason: '正文含 P012，必须触发 V-03，否则本组语料失效',
+        reason: '正文含 P010，必须触发 V-03，否则本组语料失效',
       );
       expect(
         r.passed,
@@ -240,7 +240,7 @@ void main() {
 
   // ── 组 5：零行为变更（无漂移输入必须逐字段不变）───────────────────
   group('组5 零行为变更', () {
-    // 注意：不断言 passed。本文件语料正文故意含 P012，会触发 V-03
+    // 注意：不断言 passed。本文件语料正文故意含 P010，会触发 V-03
     // 真拦截（_kBlockingFixTypes 含 'V-03'），故 passed 恒为 false。
     // passed 的语义断言放在组 3，不在本组。
     test('无漂移 → warnings 为空、valid 为真、诊断不丢', () {
@@ -258,11 +258,11 @@ void main() {
         ..['suggested_phase'] = 'P2_PRACTICE_LOOP'
         ..['suggested_beginner_level'] = 'N2_SCENE'
         ..['teaching_mode'] = 'socratic'
-        // N3-a（ADR-C65）：必须是本轮 syndromes 中的 id（此处 P012）。
+        // N3-a（ADR-C65）：必须是本轮 syndromes 中的 id（此处 P010）。
         // 原用 'F001'——类型合法但成员越界，加校验后会被置 null，
         // 就测不到「合法 String 不被误判为漂移」了。换合规值保留原意图。
         ..['teaching_plan'] = {
-          'current_teaching_focus_id': 'P012',
+          'current_teaching_focus_id': 'P010',
           'focus_reason': '原因',
         };
       final r = validateDiagnosisOutput(_kLeakyText, j);
@@ -275,7 +275,7 @@ void main() {
       expect(d.suggestedPhase, TeachingPhase.p2PracticeLoop);
       expect(d.suggestedBeginnerLevel, BeginnerLevel.n2Scene);
       expect(d.teachingMode, TeachingMode.socratic);
-      expect(d.currentTeachingFocusId, 'P012');
+      expect(d.currentTeachingFocusId, 'P010');
       expect(d.focusReason, '原因');
     });
 
@@ -340,7 +340,7 @@ void main() {
         expect(r.jsonValidation.errors, isEmpty);
         expect(r.jsonValidation.valid, isTrue);
         expect(r.diagnosis, isNotNull, reason: '漂移不得判为错误，否则整块诊断被丢弃');
-        // passed 由 V-03 决定（语料含 P012 → 真拦截 → false），
+        // passed 由 V-03 决定（语料含 P010 → 真拦截 → false），
         // 但漂移与否不得改变它——用基线做对照而非硬编码期望值
         expect(r.passed, baseline.passed, reason: '漂移不得改变整体判定结果');
       });

@@ -159,7 +159,7 @@ void main() {
     expect(ctx, isNotNull);
     expect(ctx, contains('因果链断裂观察'));
     expect(ctx, contains('第5章「阿禾决定去金陵」（决定类）缺触发事件'));
-    expect(ctx, contains('P021'));
+    expect(ctx, contains('P017'));
   });
 
   // ── C78 批次2b（§5.3）─────────────────────────────────────────

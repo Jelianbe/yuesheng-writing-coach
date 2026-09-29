@@ -114,7 +114,7 @@ const MethodChannel _kSecureStorageChannel = MethodChannel(
   'plugins.it_nomads.com/flutter_secure_storage',
 );
 
-/// 学员文本（平淡叙事 + 情绪标签，对齐 P003 试点）
+/// 学员文本（平淡叙事 + 情绪标签，对齐 P001 试点）
 const String _kStudentText = '''
 王建国站在巷口，夜色沉沉。他想起母亲临终前那句"不要报仇"，攥紧了拳头。
 王叔是他父亲的老部下，在这条巷子里守了三十年，左眼的一道疤从上到下。
@@ -442,7 +442,7 @@ void main() {
           'type': 'training',
           'syndromeId': activeProblems.isNotEmpty
               ? activeProblems.first.syndromeId
-              : 'P003',
+              : 'P001',
           'result': 'passed',
           'passed': true,
         });
@@ -519,7 +519,7 @@ void main() {
         'syndromes': [
           problemsForMigration.isNotEmpty
               ? problemsForMigration.first.syndromeId
-              : 'P003',
+              : 'P001',
         ],
         'action': 'confirmed',
         'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -548,7 +548,7 @@ void main() {
         chapterRepo: chapterRepo,
         manuscriptRepo: msRepo,
         llmClient: _MigrationTriggerLlmClient(
-          syndromeId: resolvedRef?.syndromeId ?? 'P003',
+          syndromeId: resolvedRef?.syndromeId ?? 'P001',
           syndromeName: resolvedRef?.syndromeName ?? '情绪直白',
           severity: resolvedRef?.severity ?? 'L2',
         ),
@@ -618,7 +618,7 @@ void main() {
           chapterRepo: ChapterRepository(db),
           teacherSuggestionRepo: TeacherSuggestionRepository(db),
           llmClient: _MigrationTriggerLlmClient(
-            syndromeId: resolvedRef?.syndromeId ?? 'P003',
+            syndromeId: resolvedRef?.syndromeId ?? 'P001',
             syndromeName: resolvedRef?.syndromeName ?? '情绪直白',
             severity: resolvedRef?.severity ?? 'L2',
           ),

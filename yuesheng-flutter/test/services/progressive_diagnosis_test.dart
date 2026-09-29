@@ -219,7 +219,7 @@ void main() {
           chunkIndex: 0,
           notes: [
             ChunkNote(
-              syndromeId: 'P003',
+              syndromeId: 'P001',
               description: '情绪标签化出现在开头',
               evidence: ['她非常愤怒'],
               severity: 'L1',
@@ -231,7 +231,7 @@ void main() {
           chunkIndex: 1,
           notes: [
             ChunkNote(
-              syndromeId: 'P003',
+              syndromeId: 'P001',
               description: '情绪标签化出现在结尾',
               evidence: ['他很激动'],
               severity: 'L2',
@@ -253,7 +253,7 @@ void main() {
       // 两个分片的分析结果都包含在 prompt 里
       expect(prompt, contains('分片 1'));
       expect(prompt, contains('分片 2'));
-      expect(prompt, contains('P003'));
+      expect(prompt, contains('P001'));
     });
 
     test('#4-3 FIX-1：prompt 要求自然语言正文 + suggested_actions/confidence 字段格式', () {
@@ -262,7 +262,7 @@ void main() {
           chunkIndex: 0,
           notes: [
             ChunkNote(
-              syndromeId: 'P003',
+              syndromeId: 'P001',
               description: '情绪标签化',
               evidence: ['她非常愤怒'],
               severity: 'L1',
@@ -288,7 +288,7 @@ void main() {
           chunkIndex: 0,
           notes: [
             ChunkNote(
-              syndromeId: 'P004',
+              syndromeId: 'P002',
               description: '',
               evidence: [],
               severity: 'L1',
@@ -297,14 +297,14 @@ void main() {
           success: true,
         ),
       ];
-      const ctx = '## 前次诊断上下文\n\n- P003 情绪标签化（当前严重度: L2）';
+      const ctx = '## 前次诊断上下文\n\n- P001 情绪标签化（当前严重度: L2）';
       final prompt = buildMergePrompt(chunkResults, diagnosisContext: ctx);
 
       // 上下文应出现在 SKILL 锚点之前
       final idxCtx = prompt.indexOf('前次诊断上下文');
       final idxSkill = prompt.indexOf('症候诊断手册');
       expect(idxCtx, lessThan(idxSkill), reason: '诊断上下文应位于 SKILL 之前');
-      expect(prompt, contains('P003 情绪标签化'));
+      expect(prompt, contains('P001 情绪标签化'));
     });
   });
 
@@ -361,7 +361,7 @@ void main() {
     }
 
     const validNotes =
-        '{"notes":[{"syndromeId":"P003","description":"情绪标签化","evidence":["她很愤怒"],"severity":"L1"}]}';
+        '{"notes":[{"syndromeId":"P001","description":"情绪标签化","evidence":["她很愤怒"],"severity":"L1"}]}';
 
     test('#8-1 尝试 1 空 → 换兜底参数重试一次（消息不变）→ 救回', () async {
       final fake = _FakeLlmClient(chatResponses: ['', validNotes]);
@@ -392,11 +392,11 @@ void main() {
         expect(fake.chatMessages[i].content, fake.chatMessages[i + 2].content);
       }
 
-      // 救回的 notes 真正进入 merge 阶段（端到端：P003 出现在合并 prompt）
+      // 救回的 notes 真正进入 merge 阶段（端到端：P001 出现在合并 prompt）
       expect(fake.streamMessages, hasLength(1));
       expect(
         fake.streamMessages.last.map((m) => m.content).join('\n'),
-        contains('P003'),
+        contains('P001'),
       );
     });
 
@@ -519,7 +519,7 @@ void main() {
       // 分块分析返回：一条合法（L1）+ 一条越界（L4）
       const notes =
           '{"notes":['
-          '{"syndromeId":"P003","description":"情绪标签化","evidence":["她很愤怒"],"severity":"L1"},'
+          '{"syndromeId":"P001","description":"情绪标签化","evidence":["她很愤怒"],"severity":"L1"},'
           '{"syndromeId":"P999","description":"伪造症候","evidence":["x"],"severity":"L4"}'
           ']}';
       final fake = _FakeLlmClient(chatResponses: [notes, '{"notes":[]}']);
@@ -532,11 +532,11 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.failedChunks, 0);
-      // merge 阶段 prompt：合法 P003 保留，越界 L4 条目被剔除
+      // merge 阶段 prompt：合法 P001 保留，越界 L4 条目被剔除
       final mergeText = fake.streamMessages.last
           .map((m) => m.content)
           .join('\n');
-      expect(mergeText, contains('P003'));
+      expect(mergeText, contains('P001'));
       expect(mergeText, isNot(contains('P999')));
       expect(mergeText, isNot(contains('L4')));
     });

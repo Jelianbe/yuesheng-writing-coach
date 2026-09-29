@@ -854,9 +854,9 @@ void main() {
       await store.loadChapter();
       store.updateContent('字' * 205);
       await store.saveNow();
-      final versions = await AppStateRepository(db).listChapterVersions(
-        chapterId,
-      );
+      final versions = await AppStateRepository(
+        db,
+      ).listChapterVersions(chapterId);
       expect(versions.length, 1);
       expect(versions.first.content, '字' * 205);
       expect(store.state.saveError, isNull);

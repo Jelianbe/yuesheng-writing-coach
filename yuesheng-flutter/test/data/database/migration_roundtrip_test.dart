@@ -496,7 +496,7 @@ String createV12LegacyDbFile() {
     INSERT INTO active_problem (id, session_id, syndrome_id, syndrome_name, severity, status, confirmation_status, confirmed_at, created_at, resolved_at)
 
 
-    VALUES ('ap1', 's1', 'P007', '句式单一', 'L2', 'active', 'suspected', NULL, 100, NULL)
+    VALUES ('ap1', 's1', 'P005', '句式单一', 'L2', 'active', 'suspected', NULL, 100, NULL)
 
 
   ''');
@@ -607,7 +607,7 @@ void main() {
           "SELECT syndrome_id, teaching_state, updated_at FROM active_problem WHERE id = 'ap1'",
         )
         .getSingle();
-    expect(ap.read<String>('syndrome_id'), 'P007');
+    expect(ap.read<String>('syndrome_id'), 'P005');
     expect(
       ap.read<String?>('teaching_state'),
       isNull,

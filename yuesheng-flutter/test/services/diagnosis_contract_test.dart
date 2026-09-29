@@ -27,14 +27,14 @@ const String _kValidDiagnosisJson = '''
 {
   "syndromes": [
     {
-      "syndrome_id": "P007",
+      "syndrome_id": "P005",
       "name": "句式单一",
       "severity": "L2",
       "evidence": ["他跑了", "她笑了"],
       "explanation": "句式重复缺乏变化"
     },
     {
-      "syndrome_id": "P010",
+      "syndrome_id": "P008",
       "name": "OC平面化",
       "severity": "L3",
       "evidence": ["两人对峙"],
@@ -44,7 +44,7 @@ const String _kValidDiagnosisJson = '''
   "suggested_actions": ["A003", "A004"],
   "confidence": 0.85,
   "root_cause_analysis": "结构层面缺乏变化",
-  "next_focus": "P007",
+  "next_focus": "P005",
   "feedback_summary": "建议先做句式练习",
   "suggested_phase": "P2_PRACTICE_LOOP",
   "suggested_beginner_level": "N2_SCENE",
@@ -68,7 +68,7 @@ void main() {
       expect(result.diagnosis, isNotNull);
       final d = result.diagnosis!;
       expect(d.syndromes.length, 2);
-      expect(d.syndromes[0].syndromeId, 'P007');
+      expect(d.syndromes[0].syndromeId, 'P005');
       expect(d.syndromes[0].severity, Severity.l2);
       expect(d.syndromes[0].evidence, ['他跑了', '她笑了']);
       expect(d.suggestedActions, ['A003', 'A004']);
@@ -135,7 +135,7 @@ void main() {
     test('confidence 越界 → 校验失败 diagnosis=null', () {
       const bad = '''
       {
-        "syndromes": [{"syndrome_id":"P007","name":"x","severity":"L2","evidence":["a"],"explanation":"e"}],
+        "syndromes": [{"syndrome_id":"P005","name":"x","severity":"L2","evidence":["a"],"explanation":"e"}],
         "suggested_actions": ["A003"],
         "confidence": 1.5
       }''';

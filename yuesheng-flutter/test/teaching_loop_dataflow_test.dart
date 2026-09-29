@@ -243,9 +243,9 @@ void main() {
   );
 
   group('教学闭环·数据流（真实 ChatService + 内存库 + 模拟 LLM 语料）', () {
-    test('主路径（P041/P012 冲突）：问→写→诊→教→练→评 全链路数据正确流转', () async {
+    test('主路径（P029/P010 冲突）：问→写→诊→教→练→评 全链路数据正确流转', () async {
       // ── 第 1 轮：问 + 写 + 诊 + 教 ──
-      final (diagResp, teacherResp) = splitFixture('corpus_B6_p041_p012.txt');
+      final (diagResp, teacherResp) = splitFixture('corpus_B6_p029_p010.txt');
       final service = build(SequenceFakeLlmClient([diagResp, teacherResp]));
 
       String? assistantContent;
@@ -260,16 +260,16 @@ void main() {
         defaultOptions,
       );
 
-      // ── 诊：诊断落库，主症 P041 排第一，无凭空症候 ──
+      // ── 诊：诊断落库，主症 P029 排第一，无凭空症候 ──
       final active = await diagRepo.listActiveProblems(sessionId);
       final hitIds = active.map((p) => p.syndromeId).toList();
       print('[诊] 活跃症候: ${hitIds.join(", ")}');
-      expect(hitIds, contains('P041'), reason: '应命中主症 P041');
-      expect(hitIds, contains('P012'), reason: '应命中次症 P012');
+      expect(hitIds, contains('P029'), reason: '应命中主症 P029');
+      expect(hitIds, contains('P010'), reason: '应命中次症 P010');
       expect(
         hitIds.first,
-        equals('P041'),
-        reason: 'P041 应排 syndromes[0]（冲突优先级裁决）',
+        equals('P029'),
+        reason: 'P029 应排 syndromes[0]（冲突优先级裁决）',
       );
       expect(hitIds.length, 2, reason: '不应凭空造症候（误诊/误报）');
 
@@ -304,8 +304,8 @@ void main() {
       expect(sug.teachingDecision, equals('train'), reason: 'L2 症候应决策为 train');
       expect(
         sug.targetSyndromeId,
-        equals('P041'),
-        reason: 'training_task 应锁定主症 P041（非次症 P012）',
+        equals('P029'),
+        reason: 'training_task 应锁定主症 P029（非次症 P010）',
       );
       expect(sug.taskType, equals('rewrite'), reason: 'B6 训练任务应为 rewrite');
       expect(sug.difficulty, equals('medium'));
@@ -351,7 +351,7 @@ void main() {
       );
       expect(trainEntry['result'], equals('passed'));
       expect(
-        ['P041', 'P012'].contains(trainEntry['syndromeId']),
+        ['P029', 'P010'].contains(trainEntry['syndromeId']),
         isTrue,
         reason: '训练应关联本会话活跃症候之一',
       );
@@ -362,9 +362,9 @@ void main() {
     });
 
     test(
-      '未达标分支（P003 单症候）：反馈轮未达标 → onTrainingResult(failed) 且历史 result=failed',
+      '未达标分支（P001 单症候）：反馈轮未达标 → onTrainingResult(failed) 且历史 result=failed',
       () async {
-        final (diagResp, teacherResp) = splitFixture('corpus_A1_p003.txt');
+        final (diagResp, teacherResp) = splitFixture('corpus_A1_p001.txt');
         final service = build(SequenceFakeLlmClient([diagResp, teacherResp]));
 
         await service.sendMessage(
@@ -378,14 +378,14 @@ void main() {
           defaultOptions,
         );
 
-        // 诊：P003 命中
+        // 诊：P001 命中
         final active = await diagRepo.listActiveProblems(sessionId);
-        expect(active.map((p) => p.syndromeId).toList(), contains('P003'));
-        // 教：train 锁定 P003
+        expect(active.map((p) => p.syndromeId).toList(), contains('P001'));
+        // 教：train 锁定 P001
         final sug = (await teacherSuggestionRepo.getActiveSuggestions(
           sessionId,
         )).first;
-        expect(sug.targetSyndromeId, equals('P003'));
+        expect(sug.targetSyndromeId, equals('P001'));
 
         // 反馈轮：未达标
         final feedbackService = build(

@@ -35,16 +35,7 @@ const Map<String, String> _personaMeta = {
 const Map<String, List<String>> _voiceHints = {
   'girl': ['呀', '呢', '哦', '好棒', '元气', '少女', '亮晶晶'],
   'old_man': ['当年', '稿纸', '煤油灯', '你们这代人', '老大爷', '蒲扇', '改稿'],
-  'chinese_teacher': [
-    '红笔',
-    '字眼',
-    '《说文',
-    '鲁迅',
-    '硌牙',
-    '病句',
-    '用词',
-    '摇头',
-  ],
+  'chinese_teacher': ['红笔', '字眼', '《说文', '鲁迅', '硌牙', '病句', '用词', '摇头'],
 };
 
 /// 一段刻意平淡、堆砌、telling-not-showing 的习作样本，给诊断留足发挥空间。
@@ -99,83 +90,102 @@ void main() {
 
   final key = const String.fromEnvironment('YS_TEST_KEY');
 
-  test('用各自人设跑真实诊断：少女/老大爷/中年语文老师', () async {
-    final cfg = LlmConfigValues(
-      apiKey: key,
-      baseUrl: 'https://api.deepseek.com',
-      model: 'deepseek-chat',
-    );
-    // 与生产 llmClientProvider 同构：LlmClient(null, null, loader)。
-    final client = LlmClient(null, null, () async => cfg);
-
-    final List<String> diags = <String>[];
-
-    for (final entry in _personaMeta.entries) {
-      final k = entry.key;
-      final label = entry.value;
-
-      final polished = _readPolished(k);
-
-      final persona = CoachPersona(
-        id: 'real_$k',
-        name: label,
-        label: '自定义教练',
-        isSystem: false,
-        attitudeLevel: AttitudeLevel.doubao,
-        systemPromptFragment: polished!,
+  test(
+    '用各自人设跑真实诊断：少女/老大爷/中年语文老师',
+    () async {
+      final cfg = LlmConfigValues(
+        apiKey: key,
+        baseUrl: 'https://api.deepseek.com',
+        model: 'deepseek-chat',
       );
+      // 与生产 llmClientProvider 同构：LlmClient(null, null, loader)。
+      final client = LlmClient(null, null, () async => cfg);
 
-      // 复刻生产 sendMessage：用 buildSystemPromptV2 组装带人设的诊断 prompt。
-      final ctx = SkillLoadContext(
-        phase: TeachingPhase.p2PracticeLoop,
-        attitude: AttitudeLevel.doubao,
-        subphase: TeachingSubphase.diagnosis,
-        activePersona: persona,
-      );
-      final r = buildSystemPromptV2(ctx, modeOverride: L2Mode.diagnosis);
+      final List<String> diags = <String>[];
 
-      // 1) 人设确实进入诊断 system prompt，且替代了默认态度档。
-      expect(r.systemPrompt, contains(polished),
-          reason: '[$k] 人设未注入诊断 system prompt');
-      expect(r.loadedSkillIds, contains('persona-real_$k'),
-          reason: '[$k] 未记录 persona 注入标记');
-      expect(r.loadedSkillIds, isNot(contains('attitude-doubao')),
-          reason: '[$k] 默认态度档未被人设替换');
+      for (final entry in _personaMeta.entries) {
+        final k = entry.key;
+        final label = entry.value;
 
-      // 2) 真实诊断调用（与生产同一 LlmClient.chatCompletion 链路）。
-      final diagnosis = await client.chatCompletion(
-        [
+        final polished = _readPolished(k);
+
+        final persona = CoachPersona(
+          id: 'real_$k',
+          name: label,
+          label: '自定义教练',
+          isSystem: false,
+          attitudeLevel: AttitudeLevel.doubao,
+          systemPromptFragment: polished!,
+        );
+
+        // 复刻生产 sendMessage：用 buildSystemPromptV2 组装带人设的诊断 prompt。
+        final ctx = SkillLoadContext(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.doubao,
+          subphase: TeachingSubphase.diagnosis,
+          activePersona: persona,
+        );
+        final r = buildSystemPromptV2(ctx, modeOverride: L2Mode.diagnosis);
+
+        // 1) 人设确实进入诊断 system prompt，且替代了默认态度档。
+        expect(
+          r.systemPrompt,
+          contains(polished),
+          reason: '[$k] 人设未注入诊断 system prompt',
+        );
+        expect(
+          r.loadedSkillIds,
+          contains('persona-real_$k'),
+          reason: '[$k] 未记录 persona 注入标记',
+        );
+        expect(
+          r.loadedSkillIds,
+          isNot(contains('attitude-doubao')),
+          reason: '[$k] 默认态度档未被人设替换',
+        );
+
+        // 2) 真实诊断调用（与生产同一 LlmClient.chatCompletion 链路）。
+        final diagnosis = await client.chatCompletion([
           ChatMessage(role: 'system', content: r.systemPrompt),
           ChatMessage(role: 'user', content: _sampleSubmission),
-        ],
-        maxTokens: 1500,
+        ], maxTokens: 1500);
+
+        // 3) 返回有效（非空、非免费占位、长度合理）。
+        expect(diagnosis, isNotEmpty, reason: '[$k] 诊断返回为空');
+        expect(
+          diagnosis,
+          isNot(contains('免费测试模式')),
+          reason: '[$k] 落入免费测试占位，说明 config 未生效/网络未通',
+        );
+        expect(diagnosis.length, greaterThan(30), reason: '[$k] 诊断过短，疑似异常');
+
+        diags.add(diagnosis);
+
+        // 4) 人设「声音」软观察（不判失败）：诊断技能强制结构化 JSON 输出，
+        //    口语语气词（呀/呢/哦…）通常不出现在 JSON 文本里——这是预期内的
+        //    真实现象，而非缺陷。仅记录命中情况，供人工核对。
+        final hints = _voiceHints[k]!;
+        final hit = hints.any((h) => diagnosis.contains(h));
+        final excerpt = diagnosis.length > 240
+            ? diagnosis.substring(0, 240)
+            : diagnosis;
+        debugPrint(
+          'DIAG[$k] name=$label hitVoiceHint=$hit '
+          'len=${diagnosis.length}\n---excerpt---\n$excerpt\n---',
+        );
+      }
+
+      // 5) 人设上下文确实改变了模型输出：同一习作、三人设的 diagnosis 不应
+      //    完全相同（至少出现两种不同诊断）。这是「人设影响诊断」的稳健判据，
+      //    避开「字面语气词」这种在 JSON 诊断里不可靠的断言。
+      expect(
+        diags.toSet().length,
+        greaterThan(1),
+        reason: '三个人设对同一习作的诊断完全相同，人设未对输出产生任何影响',
       );
-
-      // 3) 返回有效（非空、非免费占位、长度合理）。
-      expect(diagnosis, isNotEmpty, reason: '[$k] 诊断返回为空');
-      expect(diagnosis, isNot(contains('免费测试模式')),
-          reason: '[$k] 落入免费测试占位，说明 config 未生效/网络未通');
-      expect(diagnosis.length, greaterThan(30), reason: '[$k] 诊断过短，疑似异常');
-
-      diags.add(diagnosis);
-
-      // 4) 人设「声音」软观察（不判失败）：诊断技能强制结构化 JSON 输出，
-      //    口语语气词（呀/呢/哦…）通常不出现在 JSON 文本里——这是预期内的
-      //    真实现象，而非缺陷。仅记录命中情况，供人工核对。
-      final hints = _voiceHints[k]!;
-      final hit = hints.any((h) => diagnosis.contains(h));
-      final excerpt =
-          diagnosis.length > 240 ? diagnosis.substring(0, 240) : diagnosis;
-      debugPrint('DIAG[$k] name=$label hitVoiceHint=$hit '
-          'len=${diagnosis.length}\n---excerpt---\n$excerpt\n---');
-    }
-
-    // 5) 人设上下文确实改变了模型输出：同一习作、三人设的 diagnosis 不应
-    //    完全相同（至少出现两种不同诊断）。这是「人设影响诊断」的稳健判据，
-    //    避开「字面语气词」这种在 JSON 诊断里不可靠的断言。
-    expect(diags.toSet().length, greaterThan(1),
-        reason: '三个人设对同一习作的诊断完全相同，人设未对输出产生任何影响');
-  }, skip: (key.isEmpty || !_personaFilesPresent())
-      ? '需 --dart-define=YS_TEST_KEY 且 outputs/polish/persona_*.txt 存在'
-      : false);
+    },
+    skip: (key.isEmpty || !_personaFilesPresent())
+        ? '需 --dart-define=YS_TEST_KEY 且 outputs/polish/persona_*.txt 存在'
+        : false,
+  );
 }

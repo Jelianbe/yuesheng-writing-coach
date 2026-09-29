@@ -83,7 +83,7 @@ void main() {
     // D03 / ADR-C101：核心步骤失败必须向上抛出，由调用方中止下游并留痕。
     // 原实现为 catch 后 return —— 调用方无从知晓、仍继续落库（一致性缺口）。
     expect(
-      () => svc.commitDiagnosisWithHistory(input([syndrome('P003', 'L2')])),
+      () => svc.commitDiagnosisWithHistory(input([syndrome('P001', 'L2')])),
       throwsA(isA<Exception>()),
     );
 
@@ -97,7 +97,7 @@ void main() {
     Future<void> seedTraining({required String result, required int ts}) {
       return studentModelRepo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P003',
+        'syndromeId': 'P001',
         'result': result,
         'timestamp': ts,
       });
@@ -106,7 +106,7 @@ void main() {
     Future<void> seedDispute() {
       return studentModelRepo.appendTeachingHistory(sessionId, {
         'type': 'confirmation',
-        'syndromes': ['P003'],
+        'syndromes': ['P001'],
         'action': 'disputed',
         'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       });
@@ -117,7 +117,7 @@ void main() {
       await seedTraining(result: 'passed', ts: 200);
       await seedTraining(result: 'failed', ts: 300);
       await seedTraining(result: 'failed', ts: 400);
-      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P001');
       expect(u.shouldUnlock, isTrue);
       expect(u.consecutiveFailedTrainings, 2, reason: 'passed 中断后仅末尾 2 次失败');
       expect(u.reason, contains('连续 2 次训练无效'));
@@ -126,7 +126,7 @@ void main() {
     test('#U2 被质疑 ≥ 阈值（2）→ 解锁（反向解锁路径）', () async {
       await seedDispute();
       await seedDispute();
-      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P001');
       expect(u.shouldUnlock, isTrue);
       expect(u.disputeCount, 2);
       expect(u.reason, contains('被质疑 2 次'));
@@ -141,14 +141,14 @@ void main() {
           'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
         });
       }
-      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
-      expect(u.disputeCount, 0, reason: '他症候的质疑不应计入 P003');
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P001');
+      expect(u.disputeCount, 0, reason: '他症候的质疑不应计入 P001');
       expect(u.shouldUnlock, isFalse);
     });
     test('#U3 两条件均不足 → 不解锁 + 默认 reason', () async {
       await seedTraining(result: 'failed', ts: 100);
       await seedDispute();
-      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P001');
       expect(u.shouldUnlock, isFalse);
       expect(u.reason, '不满足解锁条件');
     });
@@ -167,29 +167,29 @@ void main() {
     // calculateEffectiveness 在 commitDiagnosisWithHistory 内于当前诊断落库后调用，
     // 单测时需先 commit 当前输入（对齐 RN 调用链），getAllDiagnoses 才含本次记录。
     test('#1 同症候 L2→L1 → improved', () async {
-      await diagRepo.commitDiagnosis(input([syndrome('P003', 'L2')]));
+      await diagRepo.commitDiagnosis(input([syndrome('P001', 'L2')]));
       await backdateFirstDiagnosis();
 
-      final second = input([syndrome('P003', 'L1')]);
+      final second = input([syndrome('P001', 'L1')]);
       await diagRepo.commitDiagnosis(second);
       final eff = await service.calculateEffectiveness(second);
       expect(eff, 'improved');
     });
 
     test('#2 同症候 L1→L3 → worsened', () async {
-      await diagRepo.commitDiagnosis(input([syndrome('P003', 'L1')]));
+      await diagRepo.commitDiagnosis(input([syndrome('P001', 'L1')]));
       await backdateFirstDiagnosis();
 
-      final second = input([syndrome('P003', 'L3')]);
+      final second = input([syndrome('P001', 'L3')]);
       await diagRepo.commitDiagnosis(second);
       final eff = await service.calculateEffectiveness(second);
       expect(eff, 'worsened');
     });
 
     test('#3 同症候同严重度（L2→L2）→ null（不写 no_change）', () async {
-      await diagRepo.commitDiagnosis(input([syndrome('P003', 'L2')]));
+      await diagRepo.commitDiagnosis(input([syndrome('P001', 'L2')]));
 
-      final second = input([syndrome('P003', 'L2')]);
+      final second = input([syndrome('P001', 'L2')]);
       await diagRepo.commitDiagnosis(second);
       final eff = await service.calculateEffectiveness(second);
       expect(eff, isNull);
@@ -198,7 +198,7 @@ void main() {
     test('#4 同症候历史仅 1 次（不足阈值 2）→ null', () async {
       // 无历史诊断，直接计算
       final eff = await service.calculateEffectiveness(
-        input([syndrome('P003', 'L2')]),
+        input([syndrome('P001', 'L2')]),
       );
       expect(eff, isNull);
     });
@@ -210,12 +210,12 @@ void main() {
 
     test('#6 多症候：其中一症候改善 → improved', () async {
       await diagRepo.commitDiagnosis(
-        input([syndrome('P003', 'L2'), syndrome('P007', 'L1')]),
+        input([syndrome('P001', 'L2'), syndrome('P005', 'L1')]),
       );
       await backdateFirstDiagnosis();
 
-      // P003 L2→L1（改善），P007 L1→L2（加重但 P003 先命中）
-      final second = input([syndrome('P003', 'L1'), syndrome('P007', 'L2')]);
+      // P001 L2→L1（改善），P005 L1→L2（加重但 P001 先命中）
+      final second = input([syndrome('P001', 'L1'), syndrome('P005', 'L2')]);
       await diagRepo.commitDiagnosis(second);
       final eff = await service.calculateEffectiveness(second);
       expect(eff, 'improved');
@@ -225,11 +225,11 @@ void main() {
   group('DiagnosisService.commitDiagnosisWithHistory', () {
     test('#7 effectiveness=improved 写入 teaching_history', () async {
       // 第一轮 L2（直接落库）
-      await diagRepo.commitDiagnosis(input([syndrome('P003', 'L2')]));
+      await diagRepo.commitDiagnosis(input([syndrome('P001', 'L2')]));
       await backdateFirstDiagnosis();
 
       // 第二轮 L1 → improved
-      await service.commitDiagnosisWithHistory(input([syndrome('P003', 'L1')]));
+      await service.commitDiagnosisWithHistory(input([syndrome('P001', 'L1')]));
 
       final history = await studentModelRepo.getTeachingHistory(sessionId);
       final last = history.last;
@@ -239,9 +239,9 @@ void main() {
     });
 
     test('#8 无变化 → 不写 effectiveness 字段', () async {
-      await diagRepo.commitDiagnosis(input([syndrome('P003', 'L2')]));
+      await diagRepo.commitDiagnosis(input([syndrome('P001', 'L2')]));
 
-      await service.commitDiagnosisWithHistory(input([syndrome('P003', 'L2')]));
+      await service.commitDiagnosisWithHistory(input([syndrome('P001', 'L2')]));
 
       final history = await studentModelRepo.getTeachingHistory(sessionId);
       final last = history.last;
@@ -250,7 +250,7 @@ void main() {
     });
 
     test('#9 teaching_mode 默认 socratic', () async {
-      await service.commitDiagnosisWithHistory(input([syndrome('P003', 'L2')]));
+      await service.commitDiagnosisWithHistory(input([syndrome('P001', 'L2')]));
 
       final history = await studentModelRepo.getTeachingHistory(sessionId);
       final last = history.last;

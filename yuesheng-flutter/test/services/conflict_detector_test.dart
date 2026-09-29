@@ -213,7 +213,7 @@ void main() {
     expect(ctx, contains('时序矛盾观察'));
     expect(ctx, contains('阿禾「独生子女状态」'));
     expect(ctx, contains('第3章「独生子」→ 第15章「妹妹」'));
-    expect(ctx, contains('P018'));
+    expect(ctx, contains('P015'));
   });
 
   // ── C78 批次2b（§5.3）─────────────────────────────────────────

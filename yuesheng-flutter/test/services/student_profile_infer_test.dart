@@ -151,7 +151,7 @@ void main() {
       final sessionId = await sessionRepo.createBlankSession();
       await studentModelRepo.appendTeachingHistory(
         sessionId,
-        record(mode: 'socratic', eff: 'improved', syndromes: ['P001']),
+        record(mode: 'socratic', eff: 'improved', syndromes: ['P002']),
       );
 
       final text = await buildStrategyEffectiveness(
@@ -165,18 +165,18 @@ void main() {
       final sessionId = await sessionRepo.createBlankSession();
       await studentModelRepo.appendTeachingHistory(
         sessionId,
-        record(mode: 'socratic', eff: 'improved', syndromes: ['P001']),
+        record(mode: 'socratic', eff: 'improved', syndromes: ['P002']),
       );
       await studentModelRepo.appendTeachingHistory(
         sessionId,
-        record(mode: 'socratic', eff: 'improved', syndromes: ['P001']),
+        record(mode: 'socratic', eff: 'improved', syndromes: ['P002']),
       );
 
       final text = await buildStrategyEffectiveness(
         studentModelRepo,
         sessionId,
       );
-      expect(text, contains('P001'));
+      expect(text, contains('P002'));
       expect(text, contains('苏格拉底追问 × 2 次（有效）'));
     });
 
@@ -184,11 +184,11 @@ void main() {
       final sessionId = await sessionRepo.createBlankSession();
       await studentModelRepo.appendTeachingHistory(
         sessionId,
-        record(mode: 'socratic', eff: 'worsened', syndromes: ['P001']),
+        record(mode: 'socratic', eff: 'worsened', syndromes: ['P002']),
       );
       await studentModelRepo.appendTeachingHistory(
         sessionId,
-        record(mode: 'socratic', eff: 'no_change', syndromes: ['P001']),
+        record(mode: 'socratic', eff: 'no_change', syndromes: ['P002']),
       );
 
       final text = await buildStrategyEffectiveness(
@@ -204,11 +204,11 @@ void main() {
       final sessionId = await sessionRepo.createBlankSession();
       await studentModelRepo.appendTeachingHistory(
         sessionId,
-        record(mode: 'mirror', eff: 'no_change', syndromes: ['P002']),
+        record(mode: 'mirror', eff: 'no_change', syndromes: ['P007']),
       );
       await studentModelRepo.appendTeachingHistory(
         sessionId,
-        record(mode: 'mirror', eff: 'no_change', syndromes: ['P002']),
+        record(mode: 'mirror', eff: 'no_change', syndromes: ['P007']),
       );
 
       final text = await buildStrategyEffectiveness(

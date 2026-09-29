@@ -43,6 +43,12 @@ class ChatDiagnosisController {
   /// 对齐 RN sendDiagnosisMessage：读章节 → 长度校验 → 超长走分块
   /// （runProgressiveDiagnosis + commitDiagnosisFromContent），否则回退
   /// 单次诊断 prompt（显式要求 [YS_DIAGNOSIS] 格式）。
+  ///
+  /// 上传即诊断修复：+号上传文本点「立即诊断」时，章节行/正文可能尚未对
+  /// 当前读连接可见（导入事务刚提交、provider 监听同步触发）。旧实现只读
+  /// 一次 getChapter，拿不到就静默 return → 用户看到「无内容返回」。现改为：
+  /// 先显示 loading，短暂轮询等待正文落盘可见；就绪才发诊断；超时给明确
+  /// 失败提示而不是静默吞掉。
   Future<void> handleAutoDiagnose(String chapterId) async {
     // 清空 pending，避免重复触发（对齐 RN diagnosisStartedRef）
     host.ref.read(pendingDiagnosisChapterProvider.notifier).state = null;
@@ -50,26 +56,49 @@ class ChatDiagnosisController {
     if (bootstrap == null) return;
 
     final db = host.ref.read(appDatabaseProvider);
-    final chapter = await ChapterRepository(db).getChapter(chapterId);
-    if (chapter == null || !host.mounted) return;
-
-    // 对齐 RN：内容过短提示先编辑（Alert 语义落为 SnackBar）
-    if (chapter.content.trim().length < UILimits.diagnosisWordThreshold) {
-      _showTooShortSnack();
-      return;
-    }
-
-    // 批次49：自动诊断阶段标签（分块/单次均适用）
+    // 先上屏 loading：等待落盘期间用户看到「正在准备诊断内容…」而非无响应。
     host.ref
         .read(chatStoreProvider.notifier)
-        .setStreaming(true, stageLabel: '正在诊断本章…');
+        .setStreaming(true, stageLabel: '正在准备诊断内容…');
     try {
+      final outcome = await _waitForDiagnosableChapter(db, chapterId);
+      if (!host.mounted) return;
+      final chapter = outcome.chapter;
+      if (chapter == null) {
+        // 轮询超时仍不可诊断——上传落盘未完成或正文不足，给明确提示而非静默。
+        host.ref.read(chatStoreProvider.notifier).cancelStreaming();
+        if (outcome.tooShort) {
+          _showTooShortSnack();
+        } else {
+          _showContentNotReadySnack();
+        }
+        return;
+      }
       await _runDiagnosis(chapter, bootstrap);
     } catch (_) {
       // 诊断失败不打断页面，错误由 sendMessage 的 onError / finally 复位处理
     } finally {
       if (host.mounted) await _finalizeDiagnosis(bootstrap.sessionId);
     }
+  }
+
+  /// 轮询等待章节正文落盘可见。上传即诊断时章节行可能刚由导入事务写入，
+  /// 首次 getChapter 可能拿不到或 content 为空。最多等 ~1s（10×100ms）。
+  /// 返回 (chapter: 就绪章节 / null, tooShort: 章节已在但正文不足门槛)。
+  Future<({Chapter? chapter, bool tooShort})> _waitForDiagnosableChapter(
+    AppDatabase db,
+    String chapterId,
+  ) {
+    return waitForDiagnosableChapter(
+      fetch: () => ChapterRepository(db).getChapter(chapterId),
+    );
+  }
+
+  /// 内容尚未就绪（上传落盘未完成）提示。
+  void _showContentNotReadySnack() {
+    ScaffoldMessenger.of(
+      host.context,
+    ).showSnackBar(const SnackBar(content: Text('章节内容尚未就绪，请稍候再试一次')));
   }
 
   /// 章节过短提示（对齐 RN 内容校验分支）。
@@ -219,4 +248,35 @@ class ChatDiagnosisController {
     ).removeProblem(bootstrap.sessionId, syndromeId);
     await loadActiveProblems(bootstrap.sessionId);
   }
+}
+
+/// 轮询等待章节正文落盘可见（可测纯逻辑，不依赖 host）。
+///
+/// 上传即诊断时，章节行/正文可能刚由导入事务写入，首次读取拿不到或为空。
+/// 这里最多轮询 [maxAttempts] 次、每次间隔 [delay]，直到读到正文达到
+/// [threshold] 字数的章节；仍不可诊断则返回 (chapter: null, tooShort: …)，
+/// 让调用方给可见提示而不是发空诊断。[fetch] 注入便于测试模拟「稍后才落盘」。
+Future<({Chapter? chapter, bool tooShort})> waitForDiagnosableChapter({
+  required Future<Chapter?> Function() fetch,
+  int threshold = UILimits.diagnosisWordThreshold,
+  int maxAttempts = 10,
+  Duration delay = const Duration(milliseconds: 100),
+}) async {
+  Chapter? lastSeen;
+  for (var i = 0; i < maxAttempts; i++) {
+    Chapter? chapter;
+    try {
+      chapter = await fetch();
+    } catch (_) {
+      chapter = null;
+    }
+    if (chapter != null) {
+      lastSeen = chapter;
+      if (chapter.content.trim().length >= threshold) {
+        return (chapter: chapter, tooShort: false);
+      }
+    }
+    await Future<void>.delayed(delay);
+  }
+  return (chapter: null, tooShort: lastSeen != null);
 }

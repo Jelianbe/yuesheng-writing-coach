@@ -83,7 +83,7 @@ void main() {
             messageId: 'msg1',
             syndromes: Value(
               jsonEncode([
-                {'syndrome_id': 'P003', 'severity': 'L2'},
+                {'syndrome_id': 'P001', 'severity': 'L2'},
               ]),
             ),
             suggestedActions: const Value('["rewrite"]'),
@@ -98,7 +98,7 @@ void main() {
           TrainingResultsCompanion.insert(
             id: 't1',
             sessionId: 's1',
-            syndromeId: 'P003',
+            syndromeId: 'P001',
             taskType: 'rewrite',
             userContent: '雨砸在瓦上，父亲的脸在雨里碎了。',
             result: 'passed',
@@ -172,7 +172,7 @@ void main() {
       final dxList = decoded['diagnoses'] as List;
       expect(dxList.length, 1);
       final dx = dxList[0] as Map;
-      expect(((dx['syndromes'] as List)[0] as Map)['syndrome_id'], 'P003');
+      expect(((dx['syndromes'] as List)[0] as Map)['syndrome_id'], 'P001');
       expect((dx['suggestedActions'] as List)[0], 'rewrite');
       expect(dx['feedbackSummary'], '情绪表达依赖直陈');
       expect(dx['confidence'], 0.82);

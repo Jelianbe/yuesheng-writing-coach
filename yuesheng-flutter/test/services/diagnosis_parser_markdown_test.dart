@@ -11,7 +11,7 @@ import 'package:writingcoach/services/diagnosis_parser.dart';
 const String _validDiagnosisJson =
     '{'
     '"syndromes": [{'
-    '"syndrome_id": "P019", '
+    '"syndrome_id": "P001", '
     '"name": "直白抒情", '
     '"severity": "L2", '
     '"evidence": ["She did not dare to move"], '

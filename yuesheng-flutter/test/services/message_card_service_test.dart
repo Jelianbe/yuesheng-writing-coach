@@ -37,7 +37,7 @@ void main() {
       final messageId = await insertPartialAgreementCard(
         sessRepo,
         sessionId,
-        'P001',
+        'P002',
         '视角跳跃症',
         'L2',
       );
@@ -52,7 +52,7 @@ void main() {
       final payload = PartialAgreementCardPayload.fromJson(
         jsonDecode(msg.content) as Map<String, dynamic>,
       );
-      expect(payload.syndromeId, 'P001');
+      expect(payload.syndromeId, 'P002');
       expect(payload.syndromeName, '视角跳跃症');
       expect(payload.severity, 'L2');
     },
@@ -73,12 +73,12 @@ void main() {
           trend: 'improving',
           syndromeChanges: const [
             SyndromeChangeItem(
-              syndromeId: 'P001',
+              syndromeId: 'P002',
               syndromeName: '视角跳跃症',
               trend: 'improving',
             ),
             SyndromeChangeItem(
-              syndromeId: 'P002',
+              syndromeId: 'P007',
               syndromeName: '对话生硬',
               trend: 'stable',
             ),
@@ -143,7 +143,7 @@ void main() {
           taskDescription: '改写 3 处情绪标签。',
           difficulty: 'medium',
           evaluationCriteria: const ['避免情绪词'],
-          targetSyndromeId: 'P003',
+          targetSyndromeId: 'P001',
           targetSyndromeName: '情绪标签化',
           source: 'diagnosis',
           locationMarks: const ['第2段：他低声说道……', '第5段：她看着窗外……'],
@@ -176,7 +176,7 @@ void main() {
         'taskDescription': '分析节奏',
         'difficulty': 'easy',
         'evaluationCriteria': ['标准1'],
-        'targetSyndromeId': 'P005',
+        'targetSyndromeId': 'P003',
         'targetSyndromeName': '视角漂移',
         'source': 'diagnosis',
       };

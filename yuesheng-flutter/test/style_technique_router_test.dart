@@ -135,10 +135,10 @@ void main() {
       expect(s.gatedBy, '');
     });
 
-    test('门控2：L3 内容层症候活跃（P006）→ 不抢占', () {
+    test('门控2：L3 内容层症候活跃（P004）→ 不抢占', () {
       final s = routeStyleTechniques(
         styleProfile: _profile(rhythm: RhythmPreference.long),
-        activeProblems: [_view('P006', '节奏停滞', Severity.l3)],
+        activeProblems: [_view('P004', '节奏停滞', Severity.l3)],
       );
       expect(s.isEmpty, isTrue);
       expect(s.gatedBy, 'content_priority');
@@ -147,45 +147,45 @@ void main() {
     test('门控2：L1 症候不拦截（轻症不阻塞文笔候选）', () {
       final s = routeStyleTechniques(
         styleProfile: _profile(rhythm: RhythmPreference.long),
-        activeProblems: [_view('P006', '节奏停滞', Severity.l1)],
+        activeProblems: [_view('P004', '节奏停滞', Severity.l1)],
       );
       expect(s.isEmpty, isFalse);
       expect(s.candidates.single.techniqueId, 'T023');
     });
 
-    test('门控2：L2 非文笔层症候（P006 节奏停滞）活跃 → 拦截', () {
+    test('门控2：L2 非文笔层症候（P004 节奏停滞）活跃 → 拦截', () {
       final s = routeStyleTechniques(
         styleProfile: _profile(rhythm: RhythmPreference.long),
-        activeProblems: [_view('P006', '节奏停滞', Severity.l2)],
+        activeProblems: [_view('P004', '节奏停滞', Severity.l2)],
       );
       expect(s.isEmpty, isTrue);
       expect(s.gatedBy, 'content_priority');
     });
 
-    test('门控2：L2 文笔层主导症候（P007 句式节奏）活跃 → 不拦截', () {
+    test('门控2：L2 文笔层主导症候（P005 句式节奏）活跃 → 不拦截', () {
       final s = routeStyleTechniques(
         styleProfile: _profile(sensory: SensoryPreference.visual),
-        activeProblems: [_view('P007', '句式节奏单一', Severity.l2)],
+        activeProblems: [_view('P005', '句式节奏单一', Severity.l2)],
       );
       expect(s.isEmpty, isFalse);
       expect(s.candidates.single.techniqueId, 'T002');
     });
 
-    test('门控3：焦点症候技法已含文笔层（P003）→ 不重复', () {
+    test('门控3：焦点症候技法已含文笔层（P001）→ 不重复', () {
       final s = routeStyleTechniques(
         styleProfile: _profile(rhythm: RhythmPreference.long),
         activeProblems: const [],
-        focusSyndromeId: 'P003',
+        focusSyndromeId: 'P001',
       );
       expect(s.isEmpty, isTrue);
       expect(s.gatedBy, 'focus_covers_prose');
     });
 
-    test('门控3：内容层焦点症候（P006）→ 旁路照常供给', () {
+    test('门控3：内容层焦点症候（P004）→ 旁路照常供给', () {
       final s = routeStyleTechniques(
         styleProfile: _profile(rhythm: RhythmPreference.long),
         activeProblems: const [],
-        focusSyndromeId: 'P006',
+        focusSyndromeId: 'P004',
       );
       expect(s.candidates.single.techniqueId, 'T023');
     });
@@ -224,25 +224,28 @@ void main() {
   });
 
   group('deriveMasteredTechniqueIds（症候级 mastered → 技法集合派生）', () {
-    test('mastered 症候 → 派生其全部映射技法（P007 → T019/T023/T025/T021，含原 P029 动静烘托法）', () {
-      final ids = deriveMasteredTechniqueIds([
-        _problem('P007', teachingState: TeachingState.mastered.value),
-      ]);
-      expect(ids, {'T019', 'T023', 'T025', 'T021'});
-    });
+    test(
+      'mastered 症候 → 派生其全部映射技法（P005 → T019/T023/T025/T021，含原 P005 动静烘托法）',
+      () {
+        final ids = deriveMasteredTechniqueIds([
+          _problem('P005', teachingState: TeachingState.mastered.value),
+        ]);
+        expect(ids, {'T019', 'T023', 'T025', 'T021'});
+      },
+    );
 
     test('非 mastered 状态（identified/in_progress/consolidating）→ 不派生', () {
       for (final s in TeachingState.values) {
         if (s == TeachingState.mastered) continue;
         final ids = deriveMasteredTechniqueIds([
-          _problem('P007', teachingState: s.value),
+          _problem('P005', teachingState: s.value),
         ]);
         expect(ids, isEmpty, reason: '${s.value} 不应派生技法');
       }
     });
 
     test('teachingState 为 null（历史症候未写教学态）→ 不派生', () {
-      final ids = deriveMasteredTechniqueIds([_problem('P007')]);
+      final ids = deriveMasteredTechniqueIds([_problem('P005')]);
       expect(ids, isEmpty);
     });
 
@@ -255,14 +258,14 @@ void main() {
 
     test('组合：mastered 派生的集合传入路由 → 候选被排除', () {
       final ids = deriveMasteredTechniqueIds([
-        _problem('P007', teachingState: TeachingState.mastered.value),
+        _problem('P005', teachingState: TeachingState.mastered.value),
       ]);
       final s = routeStyleTechniques(
         styleProfile: _profile(rhythm: RhythmPreference.long),
         activeProblems: const [],
         masteredTechniqueIds: ids,
       );
-      // rhythm=long 候选 T023 已被 P007 mastered 派生覆盖 → 无候选
+      // rhythm=long 候选 T023 已被 P005 mastered 派生覆盖 → 无候选
       expect(s.isEmpty, isTrue);
     });
   });
@@ -292,18 +295,18 @@ void main() {
   group('buildStructuredSyndromeContext 旁路段接入', () {
     test('传 styleTechniqueSection → 追加在症候段之后', () {
       final text = buildStructuredSyndromeContext([
-        _view('P007', '句式节奏单一', Severity.l1),
+        _view('P005', '句式节奏单一', Severity.l1),
       ], styleTechniqueSection: '### ✒️ 文笔精修候选（画像旁路）\n- T023 句速控制法');
-      expect(text, contains('P007'));
+      expect(text, contains('P005'));
       expect(text, contains('✒️ 文笔精修候选'));
-      expect(text.indexOf('P007'), lessThan(text.indexOf('✒️')));
+      expect(text.indexOf('P005'), lessThan(text.indexOf('✒️')));
     });
 
     test('不传（null）→ 行为与旧版一致，无旁路段', () {
       final text = buildStructuredSyndromeContext([
-        _view('P006', '节奏停滞', Severity.l2),
+        _view('P004', '节奏停滞', Severity.l2),
       ]);
-      expect(text, contains('P006'));
+      expect(text, contains('P004'));
       expect(text, isNot(contains('✒️')));
     });
   });

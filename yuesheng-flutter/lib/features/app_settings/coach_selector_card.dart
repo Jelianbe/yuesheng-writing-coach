@@ -150,9 +150,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
         title: const Text('删除自定义教练'),
         content: Text(
           '确认删除「${persona.name}」？此操作不可恢复。'
-          '${persona.id == _activeId
-              ? '\n\n当前正在使用，删除后将回退到系统预设「豆包」。'
-              : ''}',
+          '${persona.id == _activeId ? '\n\n当前正在使用，删除后将回退到系统预设「豆包」。' : ''}',
         ),
         actions: [
           TextButton(
@@ -263,8 +261,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               onEdit: persona.isSystem
                   ? null
                   : () => _openPersonaEditor(persona),
-              onDelete:
-                  persona.isSystem ? null : () => _confirmDeletePersona(persona),
+              onDelete: persona.isSystem
+                  ? null
+                  : () => _confirmDeletePersona(persona),
               onEditThreshold: persona.isSystem
                   ? () => _openThresholdEditor(persona)
                   : null,
@@ -430,11 +429,11 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     AppPalette palette,
     VoidCallback onEditThreshold,
   ) => _personaIconButton(
-        palette,
-        icon: Icons.tune,
-        onTap: onEditThreshold,
-        tooltip: '阈值调音',
-      );
+    palette,
+    icon: Icons.tune,
+    onTap: onEditThreshold,
+    tooltip: '阈值调音',
+  );
 
   Widget _personaIconButton(
     AppPalette palette, {
@@ -648,7 +647,8 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     ];
     _promptCtrl = TextEditingController(text: promptParts.join('\n'));
     _thresholdCtrl = TextEditingController(
-      text: (e?.directExplainThreshold ?? kDefaultDirectExplainThreshold).toString(),
+      text: (e?.directExplainThreshold ?? kDefaultDirectExplainThreshold)
+          .toString(),
     );
   }
 
@@ -670,7 +670,9 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       return;
     }
     final label = _labelCtrl.text.trim();
-    final threshold = int.tryParse(_thresholdCtrl.text.trim()) ?? kDefaultDirectExplainThreshold;
+    final threshold =
+        int.tryParse(_thresholdCtrl.text.trim()) ??
+        kDefaultDirectExplainThreshold;
     final e = widget.existing;
     final persona = CoachPersona(
       id: e?.id ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
@@ -683,16 +685,16 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       // 人设层已并入语气段，不再单独写值；旧数据读侧仍兼容。
       personaLayer: null,
       iconKey: e?.iconKey,
-      directExplainThreshold: threshold < 1 ? kDefaultDirectExplainThreshold : threshold,
+      directExplainThreshold: threshold < 1
+          ? kDefaultDirectExplainThreshold
+          : threshold,
     );
     Navigator.of(context).pop(persona);
   }
 
   void _snack(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   /// AI 润色：把用户粗糙的「名字 + 语气想法」发给独立模板，
@@ -721,13 +723,10 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     setState(() => _isPolishing = true);
     try {
       final client = ref.read(llmClientProvider);
-      final result = await client.chatCompletion(
-        [
-          const ChatMessage(role: 'system', content: _kCoachPolishSystemPrompt),
-          ChatMessage(role: 'user', content: _buildPolishUserMessage(name, tone)),
-        ],
-        maxTokens: 300,
-      );
+      final result = await client.chatCompletion([
+        const ChatMessage(role: 'system', content: _kCoachPolishSystemPrompt),
+        ChatMessage(role: 'user', content: _buildPolishUserMessage(name, tone)),
+      ], maxTokens: 300);
       if (!mounted) return;
       final polished = result.trim();
       if (polished.isEmpty) {

@@ -76,26 +76,26 @@ void main() {
   // ── 数据构造：典型诊断 payload ──
   final threeSyndromes = [
     const DiagnosisSyndromeCard(
-      syndromeId: 'P003',
+      syndromeId: 'P001',
       name: '情绪标签化',
       severity: 'L2',
       evidenceCount: 2,
     ),
     const DiagnosisSyndromeCard(
-      syndromeId: 'P005',
+      syndromeId: 'P003',
       name: '视角漂移',
       severity: 'L1',
       evidenceCount: 1,
     ),
     const DiagnosisSyndromeCard(
-      syndromeId: 'P012',
+      syndromeId: 'P010',
       name: '张力不足症',
       severity: 'L3',
       evidenceCount: 3,
     ),
   ];
 
-  final actions = ['先处理 P003 情绪标签化，把最刺眼的 3 处改成动作表达', '把视角切换的两处用分节符隔开，保持单视角叙事'];
+  final actions = ['先处理 P001 情绪标签化，把最刺眼的 3 处改成动作表达', '把视角切换的两处用分节符隔开，保持单视角叙事'];
 
   group('DiagnosisCard 基础结构', () {
     testWidgets('#1 渲染：问题数/标签行/矿物色严重度', (tester) async {
@@ -182,7 +182,7 @@ void main() {
       expect(find.text('证据：').hitTestable(), findsNWidgets(3));
       // 改写建议块（竹青品牌条）
       expect(find.text('改写建议').hitTestable(), findsOneWidget);
-      expect(find.textContaining('先处理 P003').hitTestable(), findsOneWidget);
+      expect(find.textContaining('先处理 P001').hitTestable(), findsOneWidget);
       // 症候名在 chip 行 + 详情块各出现一次 → 2 个
       expect(
         find.text('情绪标签化').hitTestable(),
@@ -384,9 +384,7 @@ void main() {
       expect(s001.confirmationStatus, 'confirmed');
     });
 
-    testWidgets('D5B-3 点击「不认同」→ 弹异议对话框 → 填理由提交 → 「已质疑」状态', (
-      tester,
-    ) async {
+    testWidgets('D5B-3 点击「不认同」→ 弹异议对话框 → 填理由提交 → 「已质疑」状态', (tester) async {
       await tester.pumpWidget(
         wrapWithSession(SingleChildScrollView(child: cardWithSession())),
       );
@@ -396,10 +394,7 @@ void main() {
       await tester.tap(find.text('不认同'));
       await tester.pumpAndSettle();
       // 新行为：先弹"提交异议"对话框，要求说明哪里不对
-      expect(
-        find.text('说明你觉得哪里不对（具体到哪一句 / 哪个判断）'),
-        findsOneWidget,
-      );
+      expect(find.text('说明你觉得哪里不对（具体到哪一句 / 哪个判断）'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), '这一句我觉得判断错了');
       await tester.tap(find.widgetWithText(TextButton, '提交异议'));
@@ -518,30 +513,31 @@ void main() {
       );
     });
 
-    testWidgets('D5B-7 不认同→填理由→提交异议落库失败 → SnackBar 告知 + 保持 pending + error_logs 留痕', (
-      tester,
-    ) async {
-      await pumpWithFailingService(tester);
-      await tester.tap(find.text('不认同'));
-      await tester.pump();
-      await tester.pumpAndSettle();
-      // 对话框出现，填理由并提交
-      await tester.enterText(find.byType(TextField), '这里判断有误');
-      await tester.tap(find.widgetWithText(TextButton, '提交异议'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 400));
+    testWidgets(
+      'D5B-7 不认同→填理由→提交异议落库失败 → SnackBar 告知 + 保持 pending + error_logs 留痕',
+      (tester) async {
+        await pumpWithFailingService(tester);
+        await tester.tap(find.text('不认同'));
+        await tester.pump();
+        await tester.pumpAndSettle();
+        // 对话框出现，填理由并提交
+        await tester.enterText(find.byType(TextField), '这里判断有误');
+        await tester.tap(find.widgetWithText(TextButton, '提交异议'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.text('提交异议失败，请稍后重试'), findsOneWidget);
-      expect(find.text('已质疑'), findsNothing);
+        expect(find.text('提交异议失败，请稍后重试'), findsOneWidget);
+        expect(find.text('已质疑'), findsNothing);
 
-      await tester.pumpAndSettle();
-      final logs = await ErrorLogRepository(db).queryErrorLogs();
-      expect(
-        logs.any((l) => l.message.contains('disputeDiagnosis')),
-        isTrue,
-        reason: '留痕缺失：质疑降级未落 error_logs',
-      );
-    });
+        await tester.pumpAndSettle();
+        final logs = await ErrorLogRepository(db).queryErrorLogs();
+        expect(
+          logs.any((l) => l.message.contains('disputeDiagnosis')),
+          isTrue,
+          reason: '留痕缺失：质疑降级未落 error_logs',
+        );
+      },
+    );
 
     // ── 交互批 #8：裁决态持久化（缺陷本体 = _status 硬编码 pending、从不 hydrate）。
     //    重复质疑会累积 shouldUnlockSyndrome 计数（≥2 反驳向解锁）⇒ 是教学态机
@@ -1105,7 +1101,7 @@ void main() {
             syndromeCount: 1,
             syndromes: const [
               DiagnosisSyndromeCard(
-                syndromeId: 'P003',
+                syndromeId: 'P001',
                 name: '情绪标签化',
                 severity: 'L2',
                 evidenceCount: 1,
@@ -1139,14 +1135,14 @@ void main() {
             syndromeCount: 2,
             syndromes: const [
               DiagnosisSyndromeCard(
-                syndromeId: 'P028',
+                syndromeId: 'P021',
                 name: '画面感缺失症',
                 severity: 'L2',
                 evidenceCount: 1,
                 explanation: '全段五句均为概括性叙述，没有一个具体可感的细节',
               ),
               DiagnosisSyndromeCard(
-                syndromeId: 'P003',
+                syndromeId: 'P001',
                 name: '情绪标签化',
                 severity: 'L1',
                 evidenceCount: 2,
@@ -1178,7 +1174,7 @@ void main() {
             syndromeCount: 1,
             syndromes: const [
               DiagnosisSyndromeCard(
-                syndromeId: 'P003',
+                syndromeId: 'P001',
                 name: '情绪标签化',
                 severity: 'L2',
                 evidenceCount: 1,
@@ -1207,7 +1203,7 @@ void main() {
             syndromeCount: 1,
             syndromes: const [
               DiagnosisSyndromeCard(
-                syndromeId: 'P003',
+                syndromeId: 'P001',
                 name: '情绪标签化',
                 severity: 'L2',
                 evidenceCount: 1,
@@ -1241,7 +1237,7 @@ void main() {
             syndromeCount: 1,
             syndromes: const [
               DiagnosisSyndromeCard(
-                syndromeId: 'P028',
+                syndromeId: 'P021',
                 name: '画面感缺失症',
                 severity: 'L2',
                 evidenceCount: 0, // 走「（无证据列表）」分支 = 同块参照物
@@ -1294,12 +1290,12 @@ void main() {
         syndromes: [],
         suggestedActions: ['a'],
         confidence: 0.7,
-        focusReason: '先处理 P003 因为它是连锁起点',
+        focusReason: '先处理 P001 因为它是连锁起点',
         diagnosisId: 'm1',
       );
-      expect(p.toJson()['focusReason'], '先处理 P003 因为它是连锁起点');
+      expect(p.toJson()['focusReason'], '先处理 P001 因为它是连锁起点');
       final back = DiagnosisResultCardPayload.fromJson(p.toJson());
-      expect(back.focusReason, '先处理 P003 因为它是连锁起点');
+      expect(back.focusReason, '先处理 P001 因为它是连锁起点');
       expect(back.syndromeCount, 1);
       expect(back.suggestedActions, ['a']);
       expect(back.confidence, 0.7);
@@ -1348,7 +1344,7 @@ void main() {
   group('批次 N10：DiagnosisSyndromeCard explanation 往返', () {
     test('N10-4 toJson 含 explanation / fromJson 读回', () {
       const card = DiagnosisSyndromeCard(
-        syndromeId: 'P028',
+        syndromeId: 'P021',
         name: '画面感缺失症',
         severity: 'L2',
         evidenceCount: 1,
@@ -1366,7 +1362,7 @@ void main() {
 
     test('N10-5 缺失 / 空串 / 非字符串 → null，且 toJson 省略该键（旧卡片兼容）', () {
       const noWhy = DiagnosisSyndromeCard(
-        syndromeId: 'P003',
+        syndromeId: 'P001',
         name: '情绪标签化',
         severity: 'L1',
         evidenceCount: 1,
@@ -1378,7 +1374,7 @@ void main() {
       );
 
       const blank = DiagnosisSyndromeCard(
-        syndromeId: 'P003',
+        syndromeId: 'P001',
         name: '情绪标签化',
         severity: 'L1',
         evidenceCount: 1,

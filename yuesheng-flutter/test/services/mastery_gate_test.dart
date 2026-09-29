@@ -23,7 +23,7 @@ TrainingResultRow mkRow({
     id: 'tr-test',
     sessionId: 's-test',
     suggestionId: null,
-    syndromeId: 'P003',
+    syndromeId: 'P001',
     taskType: 'rewrite',
     userContent: '作答',
     result: 'passed',

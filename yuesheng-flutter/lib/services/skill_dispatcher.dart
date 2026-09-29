@@ -125,10 +125,10 @@ const String _kD3DiagnosisGuidance = '''
 /// 此前它们只裹进「整条 system prompt 的 len+fnv」，改一块 = 全用例漂移且无法归因。
 @visibleForTesting
 Map<String, String> getDiagnosisConstSections() => {
-      'promptBoundary': _kPromptBoundary,
-      'positionGuidance': _kPositionGuidance,
-      'diagnosisSceneFirst': _kDiagnosisSceneFirst,
-    };
+  'promptBoundary': _kPromptBoundary,
+  'positionGuidance': _kPositionGuidance,
+  'diagnosisSceneFirst': _kDiagnosisSceneFirst,
+};
 
 // ─── V2 三级加载引擎（无状态）────────────────────────────────
 

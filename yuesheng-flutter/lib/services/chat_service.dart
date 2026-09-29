@@ -1123,7 +1123,8 @@ extension ChatServiceSend on ChatService {
   }) {
     // P1-4：当前消息措辞触发诊断协议但 l2Mode 非 diagnosis 阶段时，
     // 强制注入「先建现场」护栏（避免 P3 阶段裸奔诊断）。
-    final forceSceneFirst = content != null &&
+    final forceSceneFirst =
+        content != null &&
         isDiagnosisRequest(content, hasDiagnosisContext: false);
     final skillCtx = SkillLoadContext(
       phase: phase,
@@ -1370,7 +1371,7 @@ extension ChatServiceSend on ChatService {
       '用户明确请求诊断。除正文回复外，必须在回复**最末尾**附加结构化诊断块，'
       '严格使用协议标记：\n'
       '[YS_DIAGNOSIS]\n'
-      '{"syndromes": [{"syndrome_id": "P003", "name": "症候名称", "severity": "L2", '
+      '{"syndromes": [{"syndrome_id": "P001", "name": "症候名称", "severity": "L2", '
       '"evidence": ["原文片段"], "explanation": "判定理由"}], '
       '"suggested_actions": ["A009"], "confidence": 0.8, '
       '"root_cause_analysis": "根因（可选）", "next_focus": "下步焦点（可选）", '
@@ -1444,15 +1445,15 @@ extension ChatServiceSend on ChatService {
         ? ''
         : '\n\n## 待诊断全文\n\n$chapterFullText';
     final threshold = await _resolveDirectExplainThreshold();
-    // P0-1：全貌清单必须同时输出 [症候编号]（如「1. [P007] 对话生硬——落在哪句」），
+    // P0-1：全貌清单必须同时输出 [症候编号]（如「1. [P005] 对话生硬——落在哪句」），
     // 让 message_injector._parseUserFocusFromMessage 的 P00x 正则能命中学员选择——
-    // 否则学员回「先练 P007」会被静默丢弃，系统回退到 AI 自挑的顶优先级。
+    // 否则学员回「先练 P005」会被静默丢弃，系统回退到 AI 自挑的顶优先级。
     final directExplain =
         '\n\n【症候过多时的全貌呈现】\n'
         '（全貌模式临时覆盖密度约束——选完一条后回到常规密度「一次只抛一个点」。）\n'
         '若本次识别出的症候数量 ≥ $threshold：\n'
         '1. 用编号列出全部症候——每条格式为「序号. [症候编号] 症候名称——落在哪一句」，'
-        '如「1. [P007] 对话生硬——落在哪句」，**不要给改法**；\n'
+        '如「1. [P005] 对话生硬——落在哪句」，**不要给改法**；\n'
         '2. 末尾问一句"这些都在，你想先动哪个"，把选择权交给学员；\n'
         '3. 学员选定一条后，才对那一条展开"怎么改"（走正常教学流程）。\n'
         '若少于 $threshold，按正常教学方式聚焦讲解 1-2 条。';

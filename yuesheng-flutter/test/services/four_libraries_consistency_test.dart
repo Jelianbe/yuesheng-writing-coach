@@ -3,7 +3,7 @@
 //
 // 症候 / 技法 / 动作 / 训练四库所有 syndrome_id 双向存在；
 // 训练库每症候非空；互斥对引用 ID 存在；内容引用 ID 无悬空。
-// 为内容层扩容（P023+）提供防漂移基线。
+// 为内容层扩容（P013+）提供防漂移基线。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -21,20 +21,18 @@ void main() {
   final validSyndromes = kSyndromeIds.toSet();
 
   // 内容引用白名单（b11 派生化）：活跃 ∪ 退役 ∪ 合并映射旧 ID，全部来自注册表，无硬编码
-  final allowedIds = kAllSyndromeIds.toSet().union(
-    kSyndromeMergeMap.keys.toSet(),
-  );
+  final allowedIds = kSyndromeIds.toSet().union(kSyndromeMergeMap.keys.toSet());
 
   group('批次3（3.2）症候库基础', () {
     test('#1 权威集合由注册表派生（活跃共 ${kSyndromeIds.length} 个）', () {
       expect(validSyndromes.length, kSyndromeIds.length);
-      // ID 连续递增（按注册表原始顺序检查，退役记录保留原位，ID 永不复用）
+      // ID 连续递增（P001 起逐号递增，ID 永不复用）
       for (int i = 0; i < kSyndromeRegistry.length; i++) {
         expect(
           kSyndromeRegistry[i].id,
-          'P${(3 + i).toString().padLeft(3, '0')}',
+          'P${(1 + i).toString().padLeft(3, '0')}',
           reason:
-              '症候 ID 应连续递增，第 ${i + 1} 个应为 P${(3 + i).toString().padLeft(3, '0')}',
+              '症候 ID 应连续递增，第 ${i + 1} 个应为 P${(1 + i).toString().padLeft(3, '0')}',
         );
       }
     });
@@ -53,7 +51,7 @@ void main() {
 
     test('#12 症候库表格行由注册表渲染（双向逐字一致，b9 批次28）', () {
       // 正向：注册表（活跃） → 内容（渲染行必须逐字出现在对应库中）
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+      for (final s in kSyndromeRegistry) {
         final indexRow = '| ${s.id} | ${s.keyword} | ${s.oneLine} |';
         expect(
           kSyndromeIndexContent,
@@ -91,11 +89,7 @@ void main() {
         multiLine: true,
       ).allMatches(kSyndromeManualContent).map((m) => m.group(1)!).toList();
       // 0.3.6+9 聚类去重后：类型速查表只渲染活跃症候（退役记录定义保留但不进渲染）
-      expect(
-        typeRows.length,
-        kSyndromeIds.length,
-        reason: '类型速查表行数与活跃注册表不一致',
-      );
+      expect(typeRows.length, kSyndromeIds.length, reason: '类型速查表行数与活跃注册表不一致');
 
       final techRows = RegExp(
         r'^\| (P\d{3}) [^|]+ \| T\d{3} ',
@@ -104,7 +98,7 @@ void main() {
       expect(techRows, kSyndromeIds, reason: '技法映射表行数与注册表不一致');
 
       // 技法库 L2 症候→技法映射表（b9 批次29）
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+      for (final s in kSyndromeRegistry) {
         final t = s.techniques.first;
         expect(
           kTechniqueIndexContent,
@@ -124,7 +118,7 @@ void main() {
           getSkill('training-templates-index')?.content ?? '';
       expect(v2Content, isNotEmpty);
       expect(templatesIndex, isNotEmpty);
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+      for (final s in kSyndromeRegistry) {
         expect(
           v2Content,
           contains(
@@ -132,7 +126,7 @@ void main() {
           ),
           reason: 'v2 动作映射渲染行缺失 ${s.id}',
         );
-        final tName = s.id == 'P022' ? '重复用词/基础语病症' : s.shortName;
+        final tName = s.id == 'P018' ? '重复用词/基础语病症' : s.shortName;
         expect(
           templatesIndex,
           contains('| ${s.id} | $tName | ${s.trainingLine} |'),
@@ -142,7 +136,7 @@ void main() {
       final loopV2 = getSkill('training-loop-v2')?.content ?? '';
       for (final g in MaxAttemptsGroup.values) {
         final ids = kSyndromeRegistry
-            .where((s) => s.group == g && s.retired != true)
+            .where((s) => s.group == g)
             .map((s) => s.id)
             .join('/');
         expect(
@@ -281,18 +275,18 @@ void main() {
   });
 
   group('批次3（3.2）互斥对与内容引用', () {
-    test('#8 互斥对引用 ID 存在（P006/P021、P015/P012、P009/P018）', () {
+    test('#8 互斥对引用 ID 存在（P004/P017、P013/P010、P007/P015）', () {
       const pairs = [
-        ('P006', 'P021'), // 互斥校验（先排除对方）
-        ('P015', 'P012'), // 铺垫质量前置（无代价预期优先判 P012）
-        ('P009', 'P018'), // 触发信号差异化
-        ('P028', 'P003'), // 画面感缺失优先于情绪标签（先建画面再谈情绪词，批次23）
-        ('P030', 'P006'), // 节奏比例失衡优先于停滞（比例是根因，批次25）
-        ('P031', 'P018'), // 角色可信度先于世界观可信度（先修角色，批次26）
-        ('P032', 'P012'), // 金手指过强是冲突失效的根因（P032 优先，批次32）
-        ('P034', 'P009'), // 核心角色动机先于配角群像（P009 优先，批次34）
-        ('P040', 'P016'), // 先修可见的因果链，再挖角色动机（P016 优先，批次46）
-        ('P041', 'P012'), // 对手利益到位，张力自然恢复（P041 优先，批次47）
+        ('P004', 'P017'), // 互斥校验（先排除对方）
+        ('P013', 'P010'), // 铺垫质量前置（无代价预期优先判 P010）
+        ('P007', 'P015'), // 触发信号差异化
+        ('P021', 'P001'), // 画面感缺失优先于情绪标签（先建画面再谈情绪词，批次23）
+        ('P022', 'P004'), // 节奏比例失衡优先于停滞（比例是根因，批次25）
+        ('P023', 'P015'), // 角色可信度先于世界观可信度（先修角色，批次26）
+        ('P024', 'P010'), // 金手指过强是冲突失效的根因（P024 优先，批次32）
+        ('P025', 'P007'), // 核心角色动机先于配角群像（P007 优先，批次34）
+        ('P028', 'P014'), // 先修可见的因果链，再挖角色动机（P014 优先，批次46）
+        ('P029', 'P010'), // 对手利益到位，张力自然恢复（P029 优先，批次47）
       ];
       for (final (a, b) in pairs) {
         expect(validSyndromes.contains(a), true, reason: '互斥对引用非法症候 $a');
@@ -301,86 +295,71 @@ void main() {
 
       // 互斥关系在症候手册中有据可查（防内容漂移）
       final manual = kSyndromeManualContent;
-      expect(manual, contains('排除 P021'), reason: 'P006 互斥校验（排除 P021）缺失');
-      expect(manual, contains('排除 P006'), reason: 'P021 互斥校验（排除 P006）缺失');
-      expect(manual, contains('P012 张力不足'), reason: 'P015 铺垫质量前置（P012）缺失');
-      expect(manual, contains('区分 P018'), reason: 'P009/P018 触发信号差异化缺失');
-      expect(manual, contains('P028 优先'), reason: 'P028/P003 重叠优先级（P028 优先）缺失');
-      expect(manual, contains('P006 优先'), reason: 'P029/P006 重叠优先级（P006 优先）缺失');
-      expect(manual, contains('P030 优先'), reason: 'P030/P006 重叠优先级（P030 优先）缺失');
+      expect(manual, contains('排除 P017'), reason: 'P004 互斥校验（排除 P017）缺失');
+      expect(manual, contains('排除 P004'), reason: 'P017 互斥校验（排除 P004）缺失');
+      expect(manual, contains('P010 张力不足'), reason: 'P013 铺垫质量前置（P010）缺失');
+      expect(manual, contains('区分 P015'), reason: 'P007/P015 触发信号差异化缺失');
+      expect(manual, contains('P021 优先'), reason: 'P021/P001 重叠优先级（P021 优先）缺失');
+      expect(manual, contains('P004 优先'), reason: 'P005/P004 重叠优先级（P004 优先）缺失');
+      expect(manual, contains('P022 优先'), reason: 'P022/P004 重叠优先级（P022 优先）缺失');
       expect(
         manual,
-        contains('P031 设定矛盾 vs P018 人设崩塌'),
-        reason: 'P031/P018 重叠优先级（P018 优先）缺失',
+        contains('P023 设定矛盾 vs P015 人设崩塌'),
+        reason: 'P023/P015 重叠优先级（P015 优先）缺失',
       );
       expect(
         manual,
-        contains('P032 金手指失衡 vs P012 张力不足'),
-        reason: 'P032/P012 重叠优先级（P032 优先）缺失',
+        contains('P024 金手指失衡 vs P010 张力不足'),
+        reason: 'P024/P010 重叠优先级（P024 优先）缺失',
       );
       expect(
         manual,
-        contains('P033 升级节奏失衡 vs P030 节奏比例失衡'),
-        reason: 'P033/P030 重叠优先级（P030 优先）缺失',
+        contains('P024 金手指失衡 vs P022 节奏比例失衡'),
+        reason: 'P024/P022 重叠优先级（P022 优先）缺失',
       );
       expect(
         manual,
-        contains('P034 配角工具人 vs P009 角色空心化'),
-        reason: 'P034/P009 重叠优先级（P009 优先）缺失',
+        contains('P025 配角工具人 vs P007 角色空心化'),
+        reason: 'P025/P007 重叠优先级（P007 优先）缺失',
       );
       expect(
         manual,
-        contains('P035 对话注水 vs P011 对话疲劳'),
-        reason: 'P035/P011 重叠优先级（P011 优先）缺失',
+        contains('P004 节奏停滞 vs P017 跳跃叙事'),
+        reason: 'P004/P017 重叠优先级（P017 优先）缺失',
       );
       expect(
         manual,
-        contains('P036 流水账叙述 vs P006 节奏停滞'),
-        reason: 'P036/P006 重叠优先级（P006 优先）缺失',
+        contains('P007 角色空心化 vs P028 被动主角'),
+        reason: 'P007/P028 重叠优先级（P007 优先）缺失',
       );
       expect(
         manual,
-        contains('P036 流水账叙述 vs P021 跳跃叙事'),
-        reason: 'P036/P021 重叠优先级（P021 优先）缺失',
+        contains('P028 被动主角 vs P014 情节巧合过多'),
+        reason: 'P028/P014 重叠优先级（P014 优先）缺失',
       );
       expect(
         manual,
-        contains('P039 目标模糊 vs P040 被动主角'),
-        reason: 'P039/P040 重叠优先级（P039 优先）缺失',
-      );
-      expect(
-        manual,
-        contains('P040 被动主角 vs P016 情节巧合过多'),
-        reason: 'P040/P016 重叠优先级（P016 优先）缺失',
-      );
-      expect(
-        manual,
-        contains('P041 降智反派 vs P012 张力不足'),
-        reason: 'P041/P012 重叠优先级（P041 优先）缺失',
+        contains('P029 降智反派 vs P010 张力不足'),
+        reason: 'P029/P010 重叠优先级（P029 优先）缺失',
       );
     });
 
-    test('#8b 重叠优先级表覆盖 P022/P023/P024/P026（B9 补充）', () {
+    test('#8b 重叠优先级表覆盖 P018/P013/P019（B9 补充）', () {
       final manual = kSyndromeManualContent;
       expect(
         manual,
-        contains('P022 重复用词/基础语病 vs P008 语言堆砌'),
-        reason: 'P022/P008 重叠优先级缺失',
+        contains('P018 重复用词/基础语病 vs P006 语言堆砌'),
+        reason: 'P018/P006 重叠优先级缺失',
       );
       expect(
         manual,
-        contains('P023 爽点乏力 vs P012 张力不足'),
-        reason: 'P023/P012 重叠优先级缺失',
+        contains('P013 高潮疲软症 vs P010 张力不足'),
+        reason: 'P013/P010 重叠优先级缺失',
       );
       expect(
         manual,
-        contains('P024 期待感断裂 vs P026 章节钩子缺失'),
-        reason: 'P024/P026 重叠优先级缺失',
-      );
-      expect(
-        manual,
-        contains('P026 章节钩子缺失 vs P014 结尾乏力'),
-        reason: 'P026/P014 重叠优先级缺失',
+        contains('P019 章节钩子缺失 vs P012 结尾乏力'),
+        reason: 'P019/P012 重叠优先级缺失',
       );
     });
 
@@ -388,7 +367,7 @@ void main() {
       final content = getSkill('coaching-actions-v2')?.content ?? '';
       // v2 用「**适用**：<症候名>」格式；症候名 = shortName 去掉尾字「症」
       final nameToId = <String, String>{};
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+      for (final s in kSyndromeRegistry) {
         for (final key in [
           s.shortName,
           s.shortName.replaceAll(RegExp(r'症$'), ''),
@@ -404,7 +383,7 @@ void main() {
       final re = RegExp(r'### (A0\d\d)[\s\S]*?\*\*适用\*\*：([^\n]*)');
       final matches = re.allMatches(content);
       final expected = <String, Set<String>>{};
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+      for (final s in kSyndromeRegistry) {
         for (final a in s.actions) {
           expected.putIfAbsent(a, () => <String>{}).add(s.id);
         }
@@ -441,7 +420,7 @@ void main() {
       );
     });
 
-    test('#9 内容引用漂移：全库出现的症候 ID 均合法（防 P023+ 悬空引用）', () {
+    test('#9 内容引用漂移：全库出现的症候 ID 均合法（防 P013+ 悬空引用）', () {
       final allContent = [
         kSyndromeIndexContent,
         kSyndromeManualContent,

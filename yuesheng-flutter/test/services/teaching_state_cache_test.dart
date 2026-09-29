@@ -21,9 +21,9 @@ void main() {
       invalidateTeachingStates('s1');
       expect(readCachedTeachingStates('s1'), isNull);
 
-      writeCachedTeachingStates('s1', {'P001': TeachingState.identified});
+      writeCachedTeachingStates('s1', {'P002': TeachingState.identified});
       expect(readCachedTeachingStates('s1'), {
-        'P001': TeachingState.identified,
+        'P002': TeachingState.identified,
       });
 
       invalidateTeachingStates('s1');

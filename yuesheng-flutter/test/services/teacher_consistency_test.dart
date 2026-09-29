@@ -16,7 +16,7 @@ import 'package:writingcoach/services/teacher_validator.dart';
 
 TrainingTask _task() {
   return const TrainingTask(
-    targetSyndromeId: 'P003',
+    targetSyndromeId: 'P001',
     targetDimension: 'pacing_control',
     taskType: 'rewrite',
     taskDescription: '重写这段',
@@ -75,7 +75,7 @@ void main() {
         TeacherResult(
           teachingDecision: 'train',
           teachingReason: 'r',
-          naturalLanguage: '这里体现了 P003 的典型问题',
+          naturalLanguage: '这里体现了 P001 的典型问题',
           trainingTask: _task(),
         ),
       );

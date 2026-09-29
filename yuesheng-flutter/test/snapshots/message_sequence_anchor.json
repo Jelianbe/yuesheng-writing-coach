@@ -5,8 +5,8 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 30171,
-      "fnv": "277bdf921593a4e"
+      "len": 30057,
+      "fnv": "a5668802b07f35f"
     },
     {
       "role": "system",
@@ -27,8 +27,8 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 64523,
-      "fnv": "24ec1232c4dbe382"
+      "len": 64395,
+      "fnv": "1cc2e03c6fa4d10f"
     },
     {
       "role": "system",
@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 51690,
-      "fnv": "c2faf6800d6afc0"
+      "len": 51576,
+      "fnv": "76e5a95e70fee83"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 53473,
-      "fnv": "529861e967ae075"
+      "len": 53359,
+      "fnv": "21631a14cff9bce0"
     },
     {
       "role": "system",
@@ -93,8 +93,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 67578,
-      "fnv": "6a686349c358bb71"
+      "len": 67365,
+      "fnv": "520807bdc7a2cc92"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 53473,
-      "fnv": "529861e967ae075"
+      "len": 53359,
+      "fnv": "21631a14cff9bce0"
     },
     {
       "role": "system",
@@ -126,7 +126,7 @@
     {
       "role": "user",
       "len": 791,
-      "fnv": "67b2a573f5b6c1d8"
+      "fnv": "bee31e594fac9a0"
     },
     {
       "role": "system",
@@ -137,8 +137,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 46947,
-      "fnv": "71b83b92cac5fcb1"
+      "len": 46833,
+      "fnv": "43b5f9d23270bfc0"
     },
     {
       "role": "system",
@@ -159,8 +159,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 46804,
-      "fnv": "4a49fc56a291b142"
+      "len": 46690,
+      "fnv": "24ab00bb3642ef21"
     },
     {
       "role": "system",
@@ -181,8 +181,8 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 65997,
-      "fnv": "5fdf4765a2690ab5"
+      "len": 65869,
+      "fnv": "76bd83e8189b66f8"
     },
     {
       "role": "system",

@@ -613,7 +613,7 @@ void main() {
       expect(ctx, contains('灵气体系'));
       expect(ctx, contains('规则与例外'), reason: '缺了免责句式等于把机械判定当结论');
       expect(ctx, contains('这方天地灵气稀薄'));
-      expect(ctx, isNot(contains('P018')), reason: '设定层不挂 P 编号，注入文本不得引用人物侧症候');
+      expect(ctx, isNot(contains('P015')), reason: '设定层不挂 P 编号，注入文本不得引用人物侧症候');
     });
   });
 }

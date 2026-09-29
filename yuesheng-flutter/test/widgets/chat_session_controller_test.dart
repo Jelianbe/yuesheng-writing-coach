@@ -191,25 +191,32 @@ void main() {
     });
 
     // A4：切/建会话入口必须取消在途流式，并复位流式 UI（防旧会话串台）
-    testWidgets('resetSessionScopedState 取消旧流 + 复位流式 UI（A4）', (
-      tester,
-    ) async {
+    testWidgets('resetSessionScopedState 取消旧流 + 复位流式 UI（A4）', (tester) async {
       final host = await pumpHost(tester, database: db);
       // 模拟「上一会话正在流式」
-      host.ref.read(
-        chatStoreProvider.notifier,
-      ).setStreaming(true, stageLabel: '正在思考…');
+      host.ref
+          .read(chatStoreProvider.notifier)
+          .setStreaming(true, stageLabel: '正在思考…');
       host.ref.read(chatStoreProvider.notifier).appendStreamingContent('旧会话残留');
       expect(host.ref.read(chatStoreProvider).isStreaming, isTrue);
 
       host.controller.resetSessionScopedState();
 
-      expect(host.cancelGenerationCalls, greaterThanOrEqualTo(1),
-          reason: '复位会话状态必须先取消旧流');
-      expect(host.ref.read(chatStoreProvider).isStreaming, isFalse,
-          reason: '新会话不在生成中，ThinkingIndicator 不得残留');
-      expect(host.ref.read(chatStoreProvider).streamingContent, '',
-          reason: '旧会话流式文本不得串到新会话');
+      expect(
+        host.cancelGenerationCalls,
+        greaterThanOrEqualTo(1),
+        reason: '复位会话状态必须先取消旧流',
+      );
+      expect(
+        host.ref.read(chatStoreProvider).isStreaming,
+        isFalse,
+        reason: '新会话不在生成中，ThinkingIndicator 不得残留',
+      );
+      expect(
+        host.ref.read(chatStoreProvider).streamingContent,
+        '',
+        reason: '旧会话流式文本不得串到新会话',
+      );
     });
 
     testWidgets('handleSwitchSession 入口先取消在途流式（A4）', (tester) async {
@@ -229,10 +236,16 @@ void main() {
       await host.controller.handleSwitchSession(other);
       await tester.pump();
 
-      expect(host.cancelGenerationCalls, greaterThan(before),
-          reason: '切换会话必须先取消旧流，避免旧会话 chunk/完成/错误污染新会话 UI');
-      expect(host.ref.read(sessionBootstrapProvider).value?.sessionId, other,
-          reason: '切换后 bootstrap 应指向目标会话');
+      expect(
+        host.cancelGenerationCalls,
+        greaterThan(before),
+        reason: '切换会话必须先取消旧流，避免旧会话 chunk/完成/错误污染新会话 UI',
+      );
+      expect(
+        host.ref.read(sessionBootstrapProvider).value?.sessionId,
+        other,
+        reason: '切换后 bootstrap 应指向目标会话',
+      );
     });
   });
 

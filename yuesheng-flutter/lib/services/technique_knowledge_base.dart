@@ -222,13 +222,13 @@ const List<StyleTechniqueMapping> kStyleDimensionTechniques = [
     dimensionKey: 'toneTexture:poetic',
     dimensionLabel: '语调质感=诗意型',
     techniqueIds: ['T003'],
-    reason: '修辞密集有堆砌风险（关联 P008），可练删繁就简',
+    reason: '修辞密集有堆砌风险（关联 P006），可练删繁就简',
   ),
   StyleTechniqueMapping(
     dimensionKey: 'narrativeDistance:intimate',
     dimensionLabel: '叙事距离=贴身型',
     techniqueIds: ['T001'],
-    reason: '内心独白偏多（关联 P003），可练情绪外化',
+    reason: '内心独白偏多（关联 P001），可练情绪外化',
   ),
   StyleTechniqueMapping(
     dimensionKey: 'narrativeDistance:editorial',
@@ -240,7 +240,7 @@ const List<StyleTechniqueMapping> kStyleDimensionTechniques = [
     dimensionKey: 'structure:fragmented',
     dimensionLabel: '结构直觉=碎片型',
     techniqueIds: ['T029'],
-    reason: '跳跃无过渡（关联 P020），可练场景桥接',
+    reason: '跳跃无过渡（关联 P016），可练场景桥接',
     crossLayer: true, // T029 属 content 层，跨层调用显式声明
   ),
 ];
@@ -255,35 +255,33 @@ String _l2Primary(SyndromeRecord s) {
 
 /// 备选技法列：逐症候复现现有格式特例
 ///   - 无备选 → '—'
-///   - 斜杠组（P006/P007/P008/P009/P011）：`T017/T018/T022`（无技法名）
-///   - 带技法名组（P003/P004/P023-P031）：`T002 感官交织法、T020 借景抒情法`
+///   - 斜杠组（P004/P005/P006/P007/P009）：`T017/T018/T022`（无技法名）
+///   - 带技法名组（P001/P002/P013-P023）：`T002 感官交织法、T020 借景抒情法`
 ///   - 其余单值无技法名：`T007`
 String _l2AltColumn(SyndromeRecord s) {
   final alts = s.techniques.sublist(1);
   if (alts.isEmpty) return '—';
-  const slashGroup = {'P006', 'P007', 'P008', 'P009', 'P011'};
+  const slashGroup = {'P004', 'P005', 'P006', 'P007', 'P009'};
   if (slashGroup.contains(s.id)) return alts.join('/');
   const namedGroup = {
-    'P003',
-    'P004',
+    'P001',
+    'P002',
+    'P013',
+    'P019',
+    'P020',
+    'P021',
+    'P005',
+    'P022',
     'P023',
     'P024',
+    'P025',
+    'P009',
+    'P004',
     'P026',
     'P027',
+    'P007',
     'P028',
     'P029',
-    'P030',
-    'P031',
-    'P032',
-    'P033',
-    'P034',
-    'P035',
-    'P036',
-    'P037',
-    'P038',
-    'P039',
-    'P040',
-    'P041',
   };
   if (namedGroup.contains(s.id)) {
     return alts.map((t) => '$t ${techniqueNameOf(t) ?? ''}').join('、');
@@ -291,6 +289,6 @@ String _l2AltColumn(SyndromeRecord s) {
   return alts.join('、');
 }
 
-/// L2 症候→技法映射表行：`| P003 | T001 动态描写公式 | T002 感官交织法、T020 借景抒情法 |`
+/// L2 症候→技法映射表行：`| P001 | T001 动态描写公式 | T002 感官交织法、T020 借景抒情法 |`
 String _l2TechniqueMapRow(SyndromeRecord s) =>
     '| ${s.id} | ${_l2Primary(s)} | ${_l2AltColumn(s)} |';

@@ -279,7 +279,7 @@ void main() {
     final joined = llm.systemContents.join('\n');
     expect(joined, contains('因果链断裂观察'));
     expect(joined, contains('第5章「阿禾决定去金陵」（决定类）缺触发事件'));
-    expect(joined, contains('P021'));
+    expect(joined, contains('P017'));
     // 6.5 O11：正文反查事件名首现片段作触发原文摘录
     expect(joined, contains('（原文：「第5章，阿禾决定去金陵」）'));
   });
@@ -295,7 +295,7 @@ void main() {
     final joined = llm.systemContents.join('\n');
     expect(joined, contains('情节闭环观察'));
     expect(joined, contains('第3章引入的支线「钥匙的秘密」至今（第12章）未回收'));
-    expect(joined, contains('P014'));
+    expect(joined, contains('P012'));
     // 6.5 O11：正文反查支线名首现片段作触发原文摘录
     //（摘录以关键词为锚截断，可能含前文上下文，断言关键词所在句片段即可）
     expect(joined, contains('原文：「'));

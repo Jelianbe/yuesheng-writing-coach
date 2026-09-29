@@ -602,27 +602,27 @@ void main() {
       final sessionId = await sesRepo.createBlankSession();
       final msgId = await sesRepo.addMessage(sessionId, 'assistant', '诊断1');
 
-      // 第一轮：P001 L2
+      // 第一轮：P002 L2
       await diagRepo.commitDiagnosis(
         DiagnosisInput(
           sessionId: sessionId,
           messageId: msgId,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L2'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L2'},
           ],
           suggestedActions: [],
           confidence: 0.7,
         ),
       );
 
-      // 第二轮：P001 也是 L2 → NO_OP（跳过 INSERT）
+      // 第二轮：P002 也是 L2 → NO_OP（跳过 INSERT）
       final msgId2 = await sesRepo.addMessage(sessionId, 'assistant', '诊断2');
       await diagRepo.commitDiagnosis(
         DiagnosisInput(
           sessionId: sessionId,
           messageId: msgId2,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L2'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L2'},
           ],
           suggestedActions: [],
           confidence: 0.7,
@@ -638,7 +638,7 @@ void main() {
       // active_problem 仍更新（含 NO_OP）
       final problems = await diagRepo.listActiveProblems(sessionId);
       expect(problems.length, 1);
-      expect(problems.first.syndromeId, 'P001');
+      expect(problems.first.syndromeId, 'P002');
     });
 
     test('记忆合并：严重度变化 → 非 NO_OP，正常 INSERT', () async {
@@ -647,27 +647,27 @@ void main() {
       final sessionId = await sesRepo.createBlankSession();
       final msgId = await sesRepo.addMessage(sessionId, 'assistant', '诊断1');
 
-      // 第一轮：P001 L2
+      // 第一轮：P002 L2
       await diagRepo.commitDiagnosis(
         DiagnosisInput(
           sessionId: sessionId,
           messageId: msgId,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L2'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L2'},
           ],
           suggestedActions: [],
           confidence: 0.7,
         ),
       );
 
-      // 第二轮：P001 升级为 L3 → 非 NO_OP
+      // 第二轮：P002 升级为 L3 → 非 NO_OP
       final msgId2 = await sesRepo.addMessage(sessionId, 'assistant', '诊断2');
       await diagRepo.commitDiagnosis(
         DiagnosisInput(
           sessionId: sessionId,
           messageId: msgId2,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L3'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L3'},
           ],
           suggestedActions: [],
           confidence: 0.8,
@@ -690,28 +690,28 @@ void main() {
       final sessionId = await sesRepo.createBlankSession();
       final msgId = await sesRepo.addMessage(sessionId, 'assistant', '诊断1');
 
-      // 第一轮：P001 L2
+      // 第一轮：P002 L2
       await diagRepo.commitDiagnosis(
         DiagnosisInput(
           sessionId: sessionId,
           messageId: msgId,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L2'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L2'},
           ],
           suggestedActions: [],
           confidence: 0.7,
         ),
       );
 
-      // 第二轮：P001 同 L2（NO_OP）+ P002 全新症候（ADD）
+      // 第二轮：P002 同 L2（NO_OP）+ P007 全新症候（ADD）
       final msgId2 = await sesRepo.addMessage(sessionId, 'assistant', '诊断2');
       await diagRepo.commitDiagnosis(
         DiagnosisInput(
           sessionId: sessionId,
           messageId: msgId2,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L2'},
-            {'syndrome_id': 'P002', 'name': '视角跳跃', 'severity': 'L1'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L2'},
+            {'syndrome_id': 'P007', 'name': '视角跳跃', 'severity': 'L1'},
           ],
           suggestedActions: [],
           confidence: 0.7,
@@ -721,9 +721,9 @@ void main() {
       final history = await diagRepo.listDiagnosisHistory(sessionId);
       final latest = history.first;
       final latestSyndromes = jsonDecode(latest.syndromes) as List;
-      // 仅保留 ADD 的 P002
+      // 仅保留 ADD 的 P007
       expect(latestSyndromes.length, 1);
-      expect((latestSyndromes.first as Map)['syndrome_id'], 'P002');
+      expect((latestSyndromes.first as Map)['syndrome_id'], 'P007');
       // active_problem 含全部两个症候
       final problems = await diagRepo.listActiveProblems(sessionId);
       expect(problems.length, 2);
@@ -741,7 +741,7 @@ void main() {
           sessionId: sessionId,
           messageId: msgId,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L2'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L2'},
           ],
           suggestedActions: [],
           confidence: 0.7,
@@ -757,7 +757,7 @@ void main() {
           sessionId: sessionId,
           messageId: msgId2,
           syndromes: [
-            {'syndrome_id': 'P001', 'name': '逻辑跳跃', 'severity': 'L3'},
+            {'syndrome_id': 'P002', 'name': '逻辑跳跃', 'severity': 'L3'},
           ],
           suggestedActions: [],
           confidence: 0.8,
@@ -772,7 +772,7 @@ void main() {
       );
 
       // 解决后 updated_at 同步（resolveSyndromesBatch）
-      await diagRepo.resolveSyndromesBatch(sessionId, ['P001']);
+      await diagRepo.resolveSyndromesBatch(sessionId, ['P002']);
       final row3 = await (db.select(db.activeProblems)).getSingle();
       expect(row3.status, 'resolved');
       expect(row3.updatedAt, isNotNull);

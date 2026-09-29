@@ -106,7 +106,7 @@ void main() {
         return;
       }
 
-      // 1. 应用内构造教学场景（P2 诊断子阶段 + 活跃症候 P003 → 触发 L3 注入）
+      // 1. 应用内构造教学场景（P2 诊断子阶段 + 活跃症候 P001 → 触发 L3 注入）
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       try {
         final sessionRepo = SessionRepository(db);
@@ -115,10 +115,10 @@ void main() {
         await diagRepo.commitDiagnosis(
           DiagnosisInput(
             sessionId: sessionId,
-            messageId: 'live-msg-p003',
+            messageId: 'live-msg-p001',
             syndromes: [
               {
-                'syndrome_id': 'P003',
+                'syndrome_id': 'P001',
                 'name': '情绪标签化',
                 'severity': 'L2',
                 'evidence': <String>['他很累。他很无聊。他觉得很没意思。'],
@@ -296,7 +296,7 @@ void main() {
         print('[合规] 用户可见内容合规（无诊断块/编号泄漏）');
 
         // 4. 教学闭环证据：本次诊断已落库
-        // （预置 P003 1 条 + 本次模型诊断症候 ≥1 → 扁平列表应 >1）
+        // （预置 P001 1 条 + 本次模型诊断症候 ≥1 → 扁平列表应 >1）
         final results = await diagRepo.getAllDiagnoses(sessionId: sessionId);
         expect(results.length, greaterThan(1), reason: '本次诊断未落库');
         // ignore: avoid_print

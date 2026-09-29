@@ -125,12 +125,10 @@ final llmClientProvider = Provider<LlmClient>((ref) {
 /// 当前 LLM 配置（多账号优先，旧单键兼容）；null = 免费测试模式
 /// （未配置 API Key）。抽为 provider 便于 UI 在调用前判断「是否已配置」，
 /// 也便于测试 override（避免触碰 flutter_secure_storage）。
-final llmConfigResolvedProvider = FutureProvider<LlmConfigValues?>(
-  (ref) async {
-    final db = ref.watch(appDatabaseProvider);
-    return resolveLlmConfig(db);
-  },
-);
+final llmConfigResolvedProvider = FutureProvider<LlmConfigValues?>((ref) async {
+  final db = ref.watch(appDatabaseProvider);
+  return resolveLlmConfig(db);
+});
 
 /// 诊断提交编排器 Provider（ADR-C74 K-1）
 ///

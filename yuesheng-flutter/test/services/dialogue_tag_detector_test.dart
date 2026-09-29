@@ -78,7 +78,7 @@ void main() {
     final ctx = buildDialogueTagContext(issues);
     expect(ctx, isNotNull);
     expect(ctx, contains('对话标签观察'));
-    expect(ctx, contains('P011'));
+    expect(ctx, contains('P009'));
     expect(ctx, contains('只定位，不代改正文'));
   });
 }

@@ -82,7 +82,7 @@ class FakeLlmClient extends LlmClient {
 
 // ══════════════ N3-a：纯函数层语料 ══════════════
 
-const String _kInPoolId = 'P012';
+const String _kInPoolId = 'P010';
 const String _kOutOfPoolId = 'P099';
 
 /// 构造诊断块文本。focusId 为 null 时不写该字段

@@ -59,8 +59,8 @@ class StyleTechniqueSuggestion {
 
 /// 判定症候是否「文笔层主导」：其映射技法中 prose 层占多数。
 ///
-/// 例：P007（T019 content / T023 prose / T025 prose）→ 2/3 prose → 文笔主导；
-/// P006（T008/T017/T018/T022 全 content）→ 内容主导。
+/// 例：P005（T019 content / T023 prose / T025 prose）→ 2/3 prose → 文笔主导；
+/// P004（T008/T017/T018/T022 全 content）→ 内容主导。
 /// 无映射技法的症候视为非文笔主导（保守，不抢占）。
 bool _isProseDominantSyndrome(String syndromeId) {
   final techniques = kTechniquesBySyndrome[syndromeId];

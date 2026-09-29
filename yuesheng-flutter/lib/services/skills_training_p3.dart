@@ -23,7 +23,7 @@ const Skill _trainingEvaluationV2 = Skill(
 
 ```
 [训练评估（代码计算）]
-症候: P003
+症候: P001
 严重度变化: L2→L1
 趋势: improving
 综合判断: improving
@@ -91,7 +91,7 @@ const Skill _trainingEvaluationV2 = Skill(
 ```
 [EVALUATION]
 {
-  "syndrome_id": "P003",
+  "syndrome_id": "P001",
   "name": "情绪标签化",
   "current_severity": "L2",
   "previous_severity": "L2",

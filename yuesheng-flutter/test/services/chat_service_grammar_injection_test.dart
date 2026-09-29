@@ -223,7 +223,7 @@ void main() {
 
     final joined = llm.systemContents.join('\n');
     expect(joined, contains('基础文法观察'));
-    expect(joined, contains('P022'));
+    expect(joined, contains('P018'));
     expect(joined, contains('连续重复标点'));
     expect(joined, contains('只定位，不代改正文'));
   });

@@ -93,7 +93,7 @@ String createV31LegacyDbFile() {
   db.execute(
     "INSERT INTO training_results "
     "(id, session_id, syndrome_id, task_type, user_content, result) "
-    "VALUES ('tr1', 's1', 'P003', 'rewrite', '存量作答', 'passed')",
+    "VALUES ('tr1', 's1', 'P001', 'rewrite', '存量作答', 'passed')",
   );
   db.execute('PRAGMA user_version = 31');
   db.dispose();
@@ -161,7 +161,7 @@ void main() {
       "INSERT INTO training_results "
       "(id, session_id, syndrome_id, task_type, user_content, result, "
       " confidence_rating, explanation_text, transfer_text) "
-      "VALUES ('tr2', 's1', 'P003', 'rewrite', '新作答', 'passed', "
+      "VALUES ('tr2', 's1', 'P001', 'rewrite', '新作答', 'passed', "
       " 4, '因为主语要明确。', '换成对话形式我会先写动作。')",
     );
     final row = await db

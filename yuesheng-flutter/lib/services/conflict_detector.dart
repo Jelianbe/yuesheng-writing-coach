@@ -3,11 +3,11 @@
 //                     批次 E1-b：新增设定层判据（ADR-C93）
 //
 // 检测「同属性不同值」的时序矛盾（例：第3章「独生子」/ 第15章出现「妹妹」），
-// 观察项挂 F05（OOC 检测 / P018 人设崩塌症）补充：行为偏离已建立的模式。
+// 观察项挂 F05（OOC 检测 / P015 人设崩塌症）补充：行为偏离已建立的模式。
 // 纯函数、无 IO，输入输出均为不可变数据，便于单测。
 //
 // ★ 本文件现有**两个并列判据**，共用骨架、语义不同（ADR-C93 D3）：
-//   · [detectCharacterConflicts] —— 人物属性：个体事实不容两值并存 → 挂 F05/P018
+//   · [detectCharacterConflicts] —— 人物属性：个体事实不容两值并存 → 挂 F05/P015
 //   · [detectWorldConflicts]     —— 设定主题：**规则天然带例外**（「灵气稀薄」+
 //     「此地有灵脉」= 层次感，不是矛盾）→ 不挂 P 编号、不产症候、不进诊断面板
 //   两者的分组/取值骨架共用 [_groupActive] / [_earliestTwoDistinct]，
@@ -17,7 +17,7 @@
 
 import '../types/character_types.dart';
 
-/// 时序矛盾观察项（挂 F05/P018 补充输入）
+/// 时序矛盾观察项（挂 F05/P015 补充输入）
 class ConflictObservation {
   /// 人物名
   final String characterName;
@@ -104,7 +104,7 @@ typedef WorldFactInput = ({String name, List<CharacterAssertion> assertions});
 
 /// 设定不一致观察项（同一设定主题内、同一属性出现不同取值）。
 ///
-/// 与 [ConflictObservation] 并列而**不复用**：后者是 F05/P018 的专属载体
+/// 与 [ConflictObservation] 并列而**不复用**：后者是 F05/P015 的专属载体
 /// （见其字段名与文件头定位），复用它会让世界观调用方继承「人物属性」的
 /// 字段名与措辞。这与 E1-a 复用 [CharacterAssertion] 的取舍不同——后者自述是
 /// 「通用 TKG 时间维度节点」（character_types.dart:9-12），本就是通用载体。

@@ -2,8 +2,8 @@
 // 分块诊断路径的症候覆盖护栏（ADR-C69）
 //
 // 病因：长文本（>4000 字）走独立的 `kChunkSystemPrompt`，其症候清单是
-//   **硬编码的 19 条（P003-P021）**，而注册表已有 39 条（P003-P041）。
-//   缺失的 P022-P041 共 20 个症候在分块路径下**从未可用**。
+//   **硬编码的 19 条（P001-P017）**，而注册表已有 39 条（P001-P029）。
+//   缺失的 P018-P029 共 20 个症候在分块路径下**从未可用**。
 //
 // 因果链（ADR-C69 §5）：症候体系扩过两次（19 → 29 → 39），每次都同步了
 //   「四库」+ skill_registry + skill_layers，**唯独漏了本文件**；
@@ -14,13 +14,13 @@
 //   ① 覆盖一致性：kChunkSystemPrompt 必须含注册表**全部**非退役症候 ID
 //      ——逐条断言，不求和（V4.8）；总数判据允许「少一个、多一个重复的」蒙混
 //   ② 范围说明派生：buildMergePrompt 的范围串必须由同一真源算出
-//   ③ 无硬编码回退：源码中不得再现 P003-P027 / 硬编码清单行
+//   ③ 无硬编码回退：源码中不得再现 P001-P020 / 硬编码清单行
 //   ④ 兜底句存在：例外指引末条覆盖「未列出的症候」
 //   ⑤ 生效性：分块链路真的把 kChunkSystemPrompt 作为 system message 发出
 //
 // 变异验证（预期）：
-//   A 把清单改回硬编码 P003-P021      → ①③ 失败
-//   B 把范围改回 P003-P027            → ②③ 失败
+//   A 把清单改回硬编码 P001-P017      → ①③ 失败
+//   B 把范围改回 P001-P020            → ②③ 失败
 //   C 删掉兜底句                      → ④ 失败
 //   D 给 analyzeChunk 换成别的 prompt → ⑤ 失败
 //   E 注册表新增一个症候后不改代码     → ①②③ 应**仍通过**（派生的意义）
@@ -61,16 +61,11 @@ const String kProgressive = 'lib/services/progressive_diagnosis.dart';
 
 /// 注册表内全部未退役症候 ID（升序）——真源，与被测代码同源同法
 List<String> activeSyndromeIds() {
-  final ids =
-      kSyndromeRegistry
-          .where((s) => s.retired != true)
-          .map((s) => s.id)
-          .toList()
-        ..sort();
+  final ids = kSyndromeRegistry.map((s) => s.id).toList()..sort();
   return ids;
 }
 
-/// 期望的范围说明串，形如 `P003-P041`
+/// 期望的范围说明串，形如 `P001-P029`
 String expectedIdRange() {
   final ids = activeSyndromeIds();
   return '${ids.first}-${ids.last}';
@@ -101,7 +96,7 @@ void main() {
         isEmpty,
         reason:
             'kChunkSystemPrompt 缺少 ${missing.length} 个症候：${missing.join(', ')}\n'
-            '（ADR-C69 §4：原硬编码清单只到 P021，漏掉后段 20 个。\n'
+            '（ADR-C69 §4：原硬编码清单只到 P017，漏掉后段 20 个。\n'
             ' 逐条断言而非总数判据——总数允许「缺一个、别处重复一个」蒙混过关，'
             '见 AGENTS.md V4.8）',
       );
@@ -110,7 +105,7 @@ void main() {
     test('派生清单的行数与注册表规模一致（防多出重复行）', () {
       // 只取「症候类型参考」与「例外情况指引」之间的清单块。
       // 首版把 prompt 里所有 `- ` 开头的行都算了进来，把 16 条例外指引
-      // （形如 `- P003例外：…`）也算成清单行，于是每个 ID 都被判为「出现 2 次」
+      // （形如 `- P001例外：…`）也算成清单行，于是每个 ID 都被判为「出现 2 次」
       // ——与 V4.7 同类的判据过宽问题。
       final startIdx = kChunkSystemPrompt.indexOf('症候类型参考');
       final endIdx = kChunkSystemPrompt.indexOf('例外情况指引');
@@ -139,13 +134,13 @@ void main() {
         isTrue,
         reason:
             'buildMergePrompt 应含「症候编号 ${expectedIdRange()}」。\n'
-            '（ADR-C69 §4：原硬编码「P003-P027」与注册表不符，会压制后段症候输出）',
+            '（ADR-C69 §4：原硬编码「P001-P020」与注册表不符，会压制后段症候输出）',
       );
     });
 
     test('范围串不含任何过时的硬编码区间', () {
       final prompt = buildMergePrompt(const []);
-      for (final stale in ['P003-P027', 'P003-P021', 'P003-P031']) {
+      for (final stale in ['P001-P020', 'P001-P017', 'P001-P023']) {
         expect(
           prompt.contains(stale),
           isFalse,
@@ -160,8 +155,8 @@ void main() {
       final src = _readSrc(kProgressive);
       // 只盯**生效位置**：「症候编号」后面必须跟插值而非字面量。
       //
-      // 首版直接扫全文件里的 'P003-P027'，把 ADR 注释中记录历史的那一句
-      // （「原硬编码「P003-P027」」）也判为违规——注释不是代码，属假阳性。
+      // 首版直接扫全文件里的 'P001-P020'，把 ADR 注释中记录历史的那一句
+      // （「原硬编码「P001-P020」」）也判为违规——注释不是代码，属假阳性。
       // 改为锚定生效位置后，既拦得住回退，也不误伤史实注释。
       expect(
         _count(src, '症候编号 P'),
@@ -181,10 +176,10 @@ void main() {
       final src = _readSrc(kProgressive);
       // 原硬编码清单首行的特征串（RN 逐字移植时带入）
       expect(
-        _count(src, '- P003 情绪标签化'),
+        _count(src, '- P001 情绪标签化'),
         0,
         reason:
-            '$kProgressive 出现了硬编码清单行「- P003 情绪标签化」。\n'
+            '$kProgressive 出现了硬编码清单行「- P001 情绪标签化」。\n'
             '（ADR-C69 §6.2 方案 A：清单必须由注册表派生，'
             '手写清单会在下次扩容时再次漏同步）',
       );
@@ -198,7 +193,7 @@ void main() {
         isTrue,
         reason:
             '例外指引缺少兜底句。\n'
-            '（ADR-C69 §6.3：16 条例外只覆盖 P003-P021，注册表扩到 P041 后 '
+            '（ADR-C69 §6.3：16 条例外只覆盖 P001-P017，注册表扩到 P029 后 '
             '后段症候没有对应例外，需一句通用兜底避免「零例外」导致过度诊断）',
       );
     });
@@ -219,8 +214,8 @@ void main() {
     });
 
     test('清单确实比修复前更长（回归哨兵）', () {
-      // 修复前是 19 条（P003-P021）。派生后应显著更多，且含后段代表项。
-      for (final id in ['P022', 'P028', 'P034', 'P041']) {
+      // 修复前是 19 条（P001-P017）。派生后应显著更多，且含后段代表项。
+      for (final id in ['P018', 'P021', 'P025', 'P029']) {
         expect(
           kChunkSystemPrompt.contains(id),
           isTrue,

@@ -2,7 +2,7 @@
 // 症候注册表（SyndromeRegistry）合法性测试 — b9 批次27 基础设施
 //
 // 注册表是症候元数据唯一真源。本测试校验其自身合法性：
-//   - ID 升序连续（P003 起，逐号递增，ID 永不复用）
+//   - ID 升序连续（P001 起，逐号递增，ID 永不复用）
 //   - 字段非空 / 枚举合法 / 技法与动作 ID 在对应库存在
 // 各库与注册表的渲染一致性断言见 four_libraries_consistency_test。
 // ─────────────────────────────────────────────────────────────
@@ -15,19 +15,17 @@ import 'package:writingcoach/services/syndrome_skill_levels.dart';
 
 void main() {
   group('批次27（b9）注册表合法性', () {
-    test('#R1 注册表非空且 ID 升序连续（P003 起逐号递增，退役记录原位保留不删行）', () {
+    test('#R1 注册表非空且 ID 升序连续（P001 起逐号递增）', () {
       expect(kSyndromeRegistry, isNotEmpty);
-      // 连续性不变量作用于注册表数组本身（含退役记录原位保留）：P003..P049 逐号递增、ID 不复用。
-      // 活跃列表 kSyndromeIds 在聚类去重后会跳过退役 ID，kAllSyndromeIds 是 active+retired 拼接，
-      // 二者都不保持编号连续，故此处直接遍历 kSyndromeRegistry 的数组顺序。
+      // 连续性不变量：注册表数组本身 P001..P033 逐号递增、ID 不复用。
       final ids = kSyndromeRegistry.map((s) => s.id).toList();
       expect(ids.length, kSyndromeRegistry.length);
       for (int i = 0; i < ids.length; i++) {
         expect(
           ids[i],
-          'P${(3 + i).toString().padLeft(3, '0')}',
+          'P${(1 + i).toString().padLeft(3, '0')}',
           reason:
-              '注册表症候 ID 应连续递增，第 ${i + 1} 个应为 P${(3 + i).toString().padLeft(3, '0')}',
+              '注册表症候 ID 应连续递增，第 ${i + 1} 个应为 P${(1 + i).toString().padLeft(3, '0')}',
         );
       }
     });
@@ -106,8 +104,8 @@ void main() {
       );
       // 与既有 API 双写一致（kSyndromeSkillLevels 现由注册表派生）
       expect(kSyndromeSkillLevels, derived);
-      // skillLevelOf 逐个命中（退役记录不进派生层级表，仅校验活跃症候）
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+      // skillLevelOf 逐个命中
+      for (final s in kSyndromeRegistry) {
         expect(
           skillLevelOf(s.id),
           s.level,
@@ -125,47 +123,17 @@ void main() {
       expect(syndromeRecordOf(null), isNull);
     });
 
-    test('#R8 退役/合并机制自洽（b11）', () {
-      // 活跃与退役不重叠，且并集 = 全部 ID
+    test('#R8 legacy 归一映射自洽（彻底删除后无退役标记）', () {
       final active = kSyndromeIds.toSet();
-      final retired = kRetiredSyndromeIds.toSet();
-      expect(active.intersection(retired), isEmpty, reason: '活跃与退役集合重叠');
-      expect(
-        {...active, ...retired},
-        kAllSyndromeIds.toSet(),
-        reason: '活跃+退役应等于全部 ID 集合',
-      );
+      // 彻底删除后注册表无退役记录：注册表即活跃集合
+      expect(active.length, kSyndromeRegistry.length);
 
-      // retired=true 必须有退役原因；merged 必须有并入目标且指向活跃症候
-      for (final s in kSyndromeRegistry.where((s) => s.retired == true)) {
-        expect(s.retiredReason, isNotNull, reason: '${s.id} retired 但无退役原因');
-        if (s.retiredReason == SyndromeRetiredReason.merged) {
-          expect(s.mergedInto, isNotNull, reason: '${s.id} merged 但无并入目标');
-          expect(
-            active.contains(s.mergedInto),
-            true,
-            reason: '${s.id} mergedInto ${s.mergedInto} 非活跃症候',
-          );
-        } else {
-          expect(
-            s.mergedInto,
-            isNull,
-            reason: '${s.id} 非 merged 不应有 mergedInto',
-          );
-        }
-      }
-      // 活跃症候不应带退役标记
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
-        expect(s.retiredReason, isNull, reason: '${s.id} 活跃但有退役原因');
-        expect(s.mergedInto, isNull, reason: '${s.id} 活跃但有 mergedInto');
-      }
-
-      // 合并映射：value 均为活跃症候；effectiveSyndromeId 归一正确
+      // 归一映射：value 均为活跃症候；effectiveSyndromeId 归一正确
       for (final entry in kSyndromeMergeMap.entries) {
         expect(
           active.contains(entry.value),
           true,
-          reason: '合并映射 ${entry.key} → ${entry.value} 目标非活跃症候',
+          reason: '归一映射 ${entry.key} → ${entry.value} 目标非活跃症候',
         );
         expect(
           effectiveSyndromeId(entry.key),
@@ -173,7 +141,8 @@ void main() {
           reason: 'effectiveSyndromeId(${entry.key}) 未归一',
         );
       }
-      expect(effectiveSyndromeId('P034'), 'P034', reason: '非映射 ID 应原样返回');
+      // 未在映射表中的 ID 原样返回
+      expect(effectiveSyndromeId('P999'), 'P999', reason: '非映射 ID 应原样返回');
     });
   });
 }

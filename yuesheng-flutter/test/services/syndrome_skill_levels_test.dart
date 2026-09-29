@@ -17,7 +17,7 @@ void main() {
       // 0.3.6+9 聚类去重：技能层级表由活跃注册表派生（退役记录不进表）。
       expect(kSyndromeSkillLevels.length, kSyndromeIds.length);
       // 逐症候断言（b9 真源化：从注册表派生；退役记录不进派生表，仅校验活跃）
-      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+      for (final s in kSyndromeRegistry) {
         expect(
           skillLevelOf(s.id),
           s.level,
@@ -25,21 +25,21 @@ void main() {
         );
       }
       // 抽验分布
-      expect(skillLevelOf('P003'), SkillLevel.l1); // 情绪标签化 → 基础表达
-      expect(skillLevelOf('P006'), SkillLevel.l2); // 节奏停滞 → 叙事节奏
-      expect(skillLevelOf('P009'), SkillLevel.l3); // 角色空心化 → 角色塑造
-      expect(skillLevelOf('P013'), SkillLevel.l4); // 开篇无钩子 → 情节结构
-      expect(skillLevelOf('P014'), SkillLevel.l4); // 结尾乏力（含原 P017 伏笔失效）→ 情节结构
-      expect(skillLevelOf('P022'), SkillLevel.l1); // 重复用词/基础语病 → 基础表达（批次70）
-      // 批次15（7.1）：P026-P027 网文商业症候 → 情节结构（P023/P024/P025 已退役并入 P015/P026/P013）
-      expect(skillLevelOf('P026'), SkillLevel.l4);
-      expect(skillLevelOf('P027'), SkillLevel.l4);
-      // 批次23（叙事基础空缺）：P028 画面感缺失 → 叙事节奏
-      expect(skillLevelOf('P028'), SkillLevel.l2);
-      // 批次25（叙事基础空缺）：P030 节奏比例失衡 → 情节结构
-      expect(skillLevelOf('P030'), SkillLevel.l4);
-      // 批次26（叙事基础空缺）：P031 设定矛盾 → 情节结构
-      expect(skillLevelOf('P031'), SkillLevel.l4);
+      expect(skillLevelOf('P001'), SkillLevel.l1); // 情绪标签化 → 基础表达
+      expect(skillLevelOf('P004'), SkillLevel.l2); // 节奏停滞 → 叙事节奏
+      expect(skillLevelOf('P007'), SkillLevel.l3); // 角色空心化 → 角色塑造
+      expect(skillLevelOf('P011'), SkillLevel.l4); // 开篇无钩子 → 情节结构
+      expect(skillLevelOf('P012'), SkillLevel.l4); // 结尾乏力（含原 P012 伏笔失效）→ 情节结构
+      expect(skillLevelOf('P018'), SkillLevel.l1); // 重复用词/基础语病 → 基础表达（批次70）
+      // 批次15（7.1）：P019-P020 网文商业症候 → 情节结构（P013/P019/P011 已退役并入 P013/P019/P011）
+      expect(skillLevelOf('P019'), SkillLevel.l4);
+      expect(skillLevelOf('P020'), SkillLevel.l4);
+      // 批次23（叙事基础空缺）：P021 画面感缺失 → 叙事节奏
+      expect(skillLevelOf('P021'), SkillLevel.l2);
+      // 批次25（叙事基础空缺）：P022 节奏比例失衡 → 情节结构
+      expect(skillLevelOf('P022'), SkillLevel.l4);
+      // 批次26（叙事基础空缺）：P023 设定矛盾 → 情节结构
+      expect(skillLevelOf('P023'), SkillLevel.l4);
     });
 
     test('#S2 未知症候 → null', () {
@@ -310,40 +310,40 @@ void main() {
     }
 
     test('#S10 无层级注入 → 按 severity 选最高（原行为）', () {
-      // P013（L4 L1级？不：P013 是 L4）+ P003（L1）都 L1 严重度
+      // P011（L4 L1级？不：P011 是 L4）+ P001（L1）都 L1 严重度
       final out = resolve([
-        problem('P003', severity: Severity.l1),
-        problem('P013', severity: Severity.l2),
+        problem('P001', severity: Severity.l1),
+        problem('P011', severity: Severity.l2),
       ]);
-      expect(out.activatedFocusId, 'P013'); // L2 severity 最高
+      expect(out.activatedFocusId, 'P011'); // L2 severity 最高
     });
 
     test('#S11 学员 L1 → fallback 优先选层级≤L2 的症候（跳过越级）', () {
       final out = resolve([
-        problem('P003', severity: Severity.l3), // L1 基础表达
-        problem('P009', severity: Severity.l2), // L3 角色塑造（越级）
+        problem('P001', severity: Severity.l3), // L1 基础表达
+        problem('P007', severity: Severity.l2), // L3 角色塑造（越级）
       ], studentLevel: SkillLevel.l1);
-      // P003 虽严重度更低，但层级（L1 ≤ L1+1）合适 → 被优先
-      expect(out.activatedFocusId, 'P003');
+      // P001 虽严重度更低，但层级（L1 ≤ L1+1）合适 → 被优先
+      expect(out.activatedFocusId, 'P001');
     });
 
     test('#S12 全部越级 → 回退 severity 最高（不硬拦截）', () {
       final out = resolve([
-        problem('P012', severity: Severity.l1), // L4（越级）
-        problem('P009', severity: Severity.l2), // L3（越级）
+        problem('P010', severity: Severity.l1), // L4（越级）
+        problem('P007', severity: Severity.l2), // L3（越级）
       ], studentLevel: SkillLevel.l1);
-      // 全部越级 → 回退原逻辑，选 severity 最高的 P009
-      expect(out.activatedFocusId, 'P009');
+      // 全部越级 → 回退原逻辑，选 severity 最高的 P007
+      expect(out.activatedFocusId, 'P007');
     });
 
     test('#S13 层级+1 以内含候选 → 在合适子集中按 severity 选', () {
       final out = resolve([
-        problem('P006', severity: Severity.l1), // L2（≤ L1+1 合适）
-        problem('P003', severity: Severity.l3), // L1（合适）
-        problem('P015', severity: Severity.l3), // L4（越级）
+        problem('P004', severity: Severity.l1), // L2（≤ L1+1 合适）
+        problem('P001', severity: Severity.l3), // L1（合适）
+        problem('P013', severity: Severity.l3), // L4（越级）
       ], studentLevel: SkillLevel.l1);
-      // 合适子集 {P006, P003} 中 severity 最高为 P003
-      expect(out.activatedFocusId, 'P003');
+      // 合适子集 {P004, P001} 中 severity 最高为 P001
+      expect(out.activatedFocusId, 'P001');
     });
   });
 }

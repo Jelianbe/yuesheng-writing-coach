@@ -73,7 +73,7 @@ void main() {
           sessionId: 's1',
           timestamp: 1699000000,
           syndromesJson: jsonEncode([
-            {'syndrome_id': 'P003', 'name': '情绪标签化', 'severity': 'L2'},
+            {'syndrome_id': 'P001', 'name': '情绪标签化', 'severity': 'L2'},
           ]),
           suggestedActionsJson: jsonEncode(['rewrite', 'explain']),
           feedbackSummary: '情绪描写偏抽象',
@@ -97,7 +97,7 @@ void main() {
 
       final syndromes = dx['syndromes'] as List;
       expect(syndromes.length, 1);
-      expect((syndromes[0] as Map)['syndrome_id'], 'P003');
+      expect((syndromes[0] as Map)['syndrome_id'], 'P001');
 
       final actions = dx['suggestedActions'] as List;
       expect(actions.length, 2);
@@ -119,7 +119,7 @@ void main() {
             sessionId: 's1',
             timestamp: 1699000000,
             syndromesJson: jsonEncode([
-              {'syndrome_id': 'P005'},
+              {'syndrome_id': 'P003'},
             ]),
             suggestedActionsJson: jsonEncode(['rewrite']),
             confidence: 0.9,
@@ -129,7 +129,7 @@ void main() {
             sessionId: 's1',
             timestamp: 1699001000,
             syndromesJson: jsonEncode([
-              {'syndrome_id': 'P008'},
+              {'syndrome_id': 'P006'},
             ]),
             suggestedActionsJson: jsonEncode(['explain']),
             confidence: 0.75,

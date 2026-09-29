@@ -30,7 +30,7 @@ String buildSyndromeIndexContent([Set<String> disabled = const {}]) {
 |---------|--------------|-----------|
 ''' +
       kSyndromeRegistry
-          .where((s) => s.retired != true && !disabled.contains(s.id))
+          .where((s) => !disabled.contains(s.id))
           .map(_syndromeIndexRow)
           .join('\n') +
       r'''
@@ -80,7 +80,7 @@ String buildSyndromeIndexContent([Set<String> disabled = const {}]) {
   "root_cause_analysis": "可选：根因分析",
   "next_focus": "可选：下次聚焦点",
   "teaching_plan": {
-    "current_teaching_focus_id": "可选：当前教学焦点症候 ID（如 P003，必须从 syndromes 中选取）",
+    "current_teaching_focus_id": "可选：当前教学焦点症候 ID（如 P001，必须从 syndromes 中选取）",
     "focus_reason": "可选：为什么选这个 focus（一句话）",
     "next_step": "可选：训练目标/下一步动作（自然语言）"
   }
@@ -97,7 +97,7 @@ String buildSyndromeIndexContent([Set<String> disabled = const {}]) {
 /// [buildSyndromeIndexContent]）。
 final String kSyndromeIndexContent = buildSyndromeIndexContent();
 
-/// L3 完整手册：症候诊断手册（对应 RN content，含 P003-P041 完整定义）
+/// L3 完整手册：症候诊断手册（对应 RN content，含 P001-P029 完整定义）
 /// 头部「症候图谱」计数由注册表派生（b9 批次28），正文段落保留人工编写。
 final String kSyndromeManualContent =
     r'''# SKILL: 症候诊断手册
@@ -131,7 +131,7 @@ final String kSyndromeManualContent =
 
 1. **首选动作**：默认填入 `suggested_actions`。一个症候对应一个动作
 2. **备选动作**：当首选动作已完成、学员表示不适应、或你判断需要换方式时，替换为备选动作
-3. **多症候时**：每个症候各选一个动作，合并后去重。例如 P003（首选 A004）+ P005（首选 A002）= `["A004", "A002"]`
+3. **多症候时**：每个症候各选一个动作，合并后去重。例如 P001（首选 A004）+ P003（首选 A002）= `["A004", "A002"]`
 4. **动作编号**：suggested_actions 中写 A001-A015 编号，不写中文名称（系统端负责映射）
 
 ### 写作技巧提示（技法库）
@@ -143,10 +143,7 @@ final String kSyndromeManualContent =
 | 症候 | 推荐技法 |
 |------|---------|
 ''' +
-    kSyndromeRegistry
-        .where((s) => s.retired != true)
-        .map(_techniqueMapRow)
-        .join('\n') +
+    kSyndromeRegistry.map(_techniqueMapRow).join('\n') +
     r'''
 
 ---
@@ -163,8 +160,7 @@ final String kSyndromeManualContent =
 **数量原则**：不限制输出问题数量——识别到多少就报多少。候选较多时按以下优先级排序输出（排序而非截断）：
 1. 对读者体验影响最大的问题优先
 2. 学员最可能愿意改的问题优先
-3. 更基础的问题优先（如 P003 情绪标签化优先于 P008 语言堆砌）
+3. 更基础的问题优先（如 P001 情绪标签化优先于 P006 语言堆砌）
 
 **reader_impact 字段要求**：每条症候必须附上 reader_impact 字段，一句话说明"不改这段，读者会有什么体验影响"。示例："不改这段，读者会在前 200 字内走神，无法进入后续剧情。"
-
-<!-- T-010: H001/H002 已合并注释已移除（H001/H002→P013，迁移记录见 git history）-->''';
+''';

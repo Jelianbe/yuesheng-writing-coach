@@ -65,7 +65,7 @@ EditorResult _editorResult(List<EditorObservation> observations) {
 
 Syndrome _syndrome(Severity severity) {
   return Syndrome(
-    syndromeId: 'P001',
+    syndromeId: 'P002',
     name: '测试症候',
     severity: severity,
     evidence: const ['证据'],
@@ -75,7 +75,7 @@ Syndrome _syndrome(Severity severity) {
 
 TrainingTask _task() {
   return const TrainingTask(
-    targetSyndromeId: 'P001',
+    targetSyndromeId: 'P002',
     targetDimension: 'character_agency',
     taskType: 'rewrite',
     taskDescription: '重写这段',
@@ -301,7 +301,7 @@ void main() {
       final teacherB = _teacherResult(
         decision: 'guide',
         task: const TrainingTask(
-          targetSyndromeId: 'P002',
+          targetSyndromeId: 'P007',
           targetDimension: 'character_agency',
           taskType: 'analyze',
           taskDescription: '分析这段',
@@ -495,7 +495,7 @@ void main() {
 
     tearDown(() => db.close());
 
-    Future<String> insertSuggestion({String? syndromeId = 'P001'}) async {
+    Future<String> insertSuggestion({String? syndromeId = 'P002'}) async {
       return repo.insertTeacherSuggestion(
         InsertTeacherSuggestionParams(
           sessionId: sessionId,
@@ -513,13 +513,13 @@ void main() {
 
     test('#D1 窗口内未采纳同症候 → true（不再触发）', () async {
       await insertSuggestion();
-      expect(await repo.hasDuplicateSuggestion(sessionId, 'P001'), true);
+      expect(await repo.hasDuplicateSuggestion(sessionId, 'P002'), true);
     });
 
     test('#D2 窗口内已采纳未冷却 → true（冷却中）', () async {
       final id = await insertSuggestion();
       await repo.markAdopted(id);
-      expect(await repo.hasDuplicateSuggestion(sessionId, 'P001'), true);
+      expect(await repo.hasDuplicateSuggestion(sessionId, 'P002'), true);
     });
 
     test('#D3 窗口内已采纳过冷却 → false（可触发新反馈点）', () async {
@@ -528,7 +528,7 @@ void main() {
       expect(
         await repo.hasDuplicateSuggestion(
           sessionId,
-          'P001',
+          'P002',
           adoptedWindowSec: 0,
         ),
         false,
@@ -538,11 +538,11 @@ void main() {
     test('#D4 窗口内已跳过 → true（未采纳不再触发）', () async {
       final id = await insertSuggestion();
       await repo.markDismissed(id);
-      expect(await repo.hasDuplicateSuggestion(sessionId, 'P001'), true);
+      expect(await repo.hasDuplicateSuggestion(sessionId, 'P002'), true);
     });
 
     test('#D5 无记录 → false', () async {
-      expect(await repo.hasDuplicateSuggestion(sessionId, 'P001'), false);
+      expect(await repo.hasDuplicateSuggestion(sessionId, 'P002'), false);
     });
 
     test('#D6 syndromeId 为空 → false（维度型不去重）', () async {

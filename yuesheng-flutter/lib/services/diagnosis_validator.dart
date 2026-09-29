@@ -7,7 +7,6 @@
 // ─────────────────────────────────────────────────────────────
 
 import '../config/shared_constants.dart';
-import '../services/syndrome_registry.dart';
 import '../types/teaching_types.dart';
 import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'decode_guard.dart';
@@ -35,13 +34,13 @@ final RegExp _kDecisionRe = RegExp(diagnosisVerdictPhrases.join('|'));
 
 /// 批次4（4.1 O6）：症候互斥对（原为知识库软约束，迁移到代码层防漂移）。
 /// 与 syndrome_knowledge_base 手册中的互斥/前置/区分规则对齐：
-///   - P006/P021：互斥校验（先排除对方）
-///   - P015/P012：铺垫质量前置（无代价预期优先判 P012）
-///   - P009/P018：触发信号差异化
+///   - P004/P017：互斥校验（先排除对方）
+///   - P013/P010：铺垫质量前置（无代价预期优先判 P010）
+///   - P007/P015：触发信号差异化
 const List<List<String>> _kMutexSyndromePairs = [
-  ['P006', 'P021'],
-  ['P015', 'P012'],
-  ['P009', 'P018'],
+  ['P004', 'P017'],
+  ['P013', 'P010'],
+  ['P007', 'P015'],
 ];
 
 /// 批次4（4.1 O6）：症候互斥代码层校验——互斥对同时命中时返回 warning 提示。
@@ -100,15 +99,6 @@ void _validateSyndromeEntry(
     );
   } else {
     parsedSyndromeIds.add(s['syndrome_id'] as String);
-    // b11：退役症候不允许出现在诊断输出（预置校验，当前无退役症候不触发）
-    if (kRetiredSyndromeIds.contains(s['syndrome_id'])) {
-      errors.add(
-        ValidationError(
-          field: 'syndromes[$i].syndrome_id',
-          message: '退役症候 ${s['syndrome_id']} 不允许出现在诊断输出',
-        ),
-      );
-    }
   }
   if (s['name'] is! String || (s['name'] as String).isEmpty) {
     errors.add(
@@ -325,7 +315,7 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
   // 这些字段原本是硬 cast，模型把 next_focus 输出成数字即抛 TypeError；
   // 而抛错点在 validateDiagnosisOutput 返回之前（:268 早于 :273），
   // 会**连带丢掉 validateNaturalLanguage 已算好的清洗结果**——
-  // 后果是 V-03 编号泄漏拦截失效、用户直接看到 P012 这类裸编号
+  // 后果是 V-03 编号泄漏拦截失效、用户直接看到 P010 这类裸编号
   // （ADR-C64 §1.2 实测）。
   //
   // 改安全读取：非 String 一律按缺失处理。漂移本身不静默消失，

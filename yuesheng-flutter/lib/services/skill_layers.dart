@@ -226,7 +226,7 @@ L2Mode resolveL2Mode(SkillLoadContext ctx) {
 // ─── L3 检索层 ───────────────────────────────────────────────
 
 /// 症候 ID 列表（b9 真源化：由 syndrome_registry 派生，不再手写；
-/// H001/H002 已合并至 P013；批次15 加 P023-P027，批次23-26 加 P028-P031）
+/// 批次15 加 P013-P020，批次23-26 加 P021-P023）
 final List<String> syndromeIds = kSyndromeIds;
 
 /// L3 检索上下文：驱动按需检索特定症候/技法详细内容（类型定义已上移至 contracts/teaching_capability.dart）

@@ -21,24 +21,24 @@ import 'package:writingcoach/types/teaching_types.dart';
 void main() {
   group('validateSyndromeMutexWarnings（4.1 O6）', () {
     test('互斥对同时命中 → 返回对应 warning', () {
-      final warnings = validateSyndromeMutexWarnings(['P006', 'P021']);
+      final warnings = validateSyndromeMutexWarnings(['P004', 'P017']);
       expect(warnings, hasLength(1));
-      expect(warnings.first, contains('P006'));
-      expect(warnings.first, contains('P021'));
+      expect(warnings.first, contains('P004'));
+      expect(warnings.first, contains('P017'));
     });
 
-    test('三对互斥规则均生效（P015/P012、P009/P018）', () {
-      expect(validateSyndromeMutexWarnings(['P015', 'P012']), hasLength(1));
-      expect(validateSyndromeMutexWarnings(['P009', 'P018']), hasLength(1));
+    test('三对互斥规则均生效（P013/P010、P007/P015）', () {
+      expect(validateSyndromeMutexWarnings(['P013', 'P010']), hasLength(1));
+      expect(validateSyndromeMutexWarnings(['P007', 'P015']), hasLength(1));
     });
 
     test('非互斥组合 → 无 warning', () {
-      expect(validateSyndromeMutexWarnings(['P006', 'P003']), isEmpty);
-      expect(validateSyndromeMutexWarnings(['P006']), isEmpty);
+      expect(validateSyndromeMutexWarnings(['P004', 'P001']), isEmpty);
+      expect(validateSyndromeMutexWarnings(['P004']), isEmpty);
     });
 
     test('互斥对仅一侧命中 → 无 warning', () {
-      expect(validateSyndromeMutexWarnings(['P021', 'P004']), isEmpty);
+      expect(validateSyndromeMutexWarnings(['P017', 'P002']), isEmpty);
     });
   });
 
@@ -62,17 +62,17 @@ void main() {
 
     test('含互斥对 → valid=true 且 warnings 非空（不阻断落库）', () {
       final result = validateDiagnosisSchema(
-        validDiagnosis(['P006', 'P021', 'P003']),
+        validDiagnosis(['P004', 'P017', 'P001']),
       );
       expect(result.valid, isTrue);
       expect(result.errors, isEmpty);
       expect(result.warnings, isNotEmpty);
-      expect(result.warnings.first, contains('P006/P021'));
+      expect(result.warnings.first, contains('P004/P017'));
     });
 
     test('无互斥对 → valid=true 且 warnings 空', () {
       final result = validateDiagnosisSchema(
-        validDiagnosis(['P006', 'P003', 'P004']),
+        validDiagnosis(['P004', 'P001', 'P002']),
       );
       expect(result.valid, isTrue);
       expect(result.warnings, isEmpty);
@@ -102,7 +102,7 @@ void main() {
     });
 
     test('syndromes 为非数组（字符串）→ valid=false（类型守卫保留）', () {
-      final result = validateDiagnosisSchema(diagnosisWithSyndromes('P003'));
+      final result = validateDiagnosisSchema(diagnosisWithSyndromes('P001'));
       expect(result.valid, isFalse);
       expect(result.errors, isNotEmpty);
     });
@@ -132,8 +132,8 @@ void main() {
 
     group('validateNaturalLanguage V-01/V-03/V-04（R-019 批次二补判据边界）', () {
       test('#N1 V-03 编号泄漏 → 替换 + 记录 fix', () {
-        final result = validateNaturalLanguage('这里有 P001 与 A001 编号');
-        expect(result.cleaned.contains('P001'), isFalse);
+        final result = validateNaturalLanguage('这里有 P002 与 A001 编号');
+        expect(result.cleaned.contains('P002'), isFalse);
         expect(result.cleaned, contains('【症候】'));
         expect(result.cleaned, contains('【动作】'));
         expect(result.fixes.any((f) => f.type == 'V-03'), isTrue);

@@ -236,7 +236,10 @@ void main() {
       // UTC+8 下两者都落在「同一个 UTC 日」（今天 07:00=UTC 昨 23:00；
       // 昨天 23:00=UTC 昨 15:00）——旧 UTC 桶会并成 1 天，修复后按本地日=2 天。
       await insertChapter(wordCount: 500, updatedAt: m + 7 * 3600); // 本地今天
-      await insertChapter(wordCount: 300, updatedAt: m - 86400 + 23 * 3600); // 本地昨天
+      await insertChapter(
+        wordCount: 300,
+        updatedAt: m - 86400 + 23 * 3600,
+      ); // 本地昨天
 
       final o = await GrowthService(db).getGrowthOverview();
 
@@ -250,13 +253,13 @@ void main() {
       final modelRepo = StudentModelRepository(db);
       await modelRepo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P003',
+        'syndromeId': 'P001',
         'result': 'passed',
         'timestamp': t,
       });
       await modelRepo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P003',
+        'syndromeId': 'P001',
         'result': 'failed',
         'timestamp': t - 1800,
       });
@@ -498,21 +501,21 @@ void main() {
       final s3 = await SessionRepository(db).createBlankSession();
       await insertRecurrenceProblem(
         sessionId: s1,
-        syndromeId: 'P001',
+        syndromeId: 'P002',
         name: '情绪标签化',
         status: 'active',
         createdAt: t - 7200,
       );
       await insertRecurrenceProblem(
         sessionId: s2,
-        syndromeId: 'P001',
+        syndromeId: 'P002',
         name: '情绪标签化',
         status: 'resolved',
         createdAt: t - 3600,
       );
       await insertRecurrenceProblem(
         sessionId: s3,
-        syndromeId: 'P001',
+        syndromeId: 'P002',
         name: '情绪标签化',
         status: 'active',
         createdAt: t,
@@ -524,21 +527,21 @@ void main() {
       final s6 = await SessionRepository(db).createBlankSession();
       await insertRecurrenceProblem(
         sessionId: s4,
-        syndromeId: 'P002',
+        syndromeId: 'P007',
         name: '情节断裂',
         status: 'active',
         createdAt: t - 7200,
       );
       await insertRecurrenceProblem(
         sessionId: s5,
-        syndromeId: 'P002',
+        syndromeId: 'P007',
         name: '情节断裂',
         status: 'active',
         createdAt: t - 3600,
       );
       await insertRecurrenceProblem(
         sessionId: s6,
-        syndromeId: 'P002',
+        syndromeId: 'P007',
         name: '情节断裂',
         status: 'resolved',
         createdAt: t,
@@ -548,13 +551,13 @@ void main() {
 
       expect(result.length, 2);
       // 复发率降序：A(0.5) 在前
-      expect(result.first.syndromeId, 'P001');
+      expect(result.first.syndromeId, 'P002');
       expect(result.first.occurrences, 3);
       expect(result.first.recovered, 1);
       expect(result.first.recurrences, 1);
       expect(result.first.rate, closeTo(0.5, 1e-9));
       // B：未好转再出现不计复发
-      expect(result.last.syndromeId, 'P002');
+      expect(result.last.syndromeId, 'P007');
       expect(result.last.occurrences, 3);
       expect(result.last.recovered, 1);
       expect(result.last.recurrences, 0);
@@ -568,14 +571,14 @@ void main() {
       final s2 = await SessionRepository(db).createBlankSession();
       await insertRecurrenceProblem(
         sessionId: s1,
-        syndromeId: 'P003',
+        syndromeId: 'P001',
         name: '对话生硬',
         status: 'active',
         createdAt: t - 3600,
       );
       await insertRecurrenceProblem(
         sessionId: s2,
-        syndromeId: 'P003',
+        syndromeId: 'P001',
         name: '对话生硬',
         status: 'active',
         createdAt: t,
@@ -595,7 +598,7 @@ void main() {
       final t = todayUtcSec();
       await insertRecurrenceProblem(
         sessionId: sessionId,
-        syndromeId: 'P004',
+        syndromeId: 'P002',
         name: '用词重复',
         status: 'active',
         createdAt: t,

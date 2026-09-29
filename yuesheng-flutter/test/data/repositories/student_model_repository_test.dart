@@ -35,13 +35,13 @@ void main() {
     final sid = await sessionRepo.createBlankSession(title: '会话N2-1');
     await repo.appendTeachingHistory(sid, {
       'type': 'training',
-      'syndromeId': 'P001',
+      'syndromeId': 'P002',
       'result': 'passed',
       'timestamp': 1000,
     });
     await repo.appendTeachingHistory(sid, {
       'type': 'training',
-      'syndromeId': 'P001',
+      'syndromeId': 'P002',
       'result': 'passed',
       'timestamp': 2000,
     });
@@ -59,12 +59,12 @@ void main() {
     final sid = await sessionRepo.createBlankSession(title: '会话N2-2');
     await repo.appendTeachingHistory(sid, {
       'type': 'training',
-      'syndromeId': 'P001',
+      'syndromeId': 'P002',
       'result': 'passed',
     });
     await repo.appendTeachingHistory(sid, {
       'type': 'diagnosis',
-      'syndromeId': 'P001',
+      'syndromeId': 'P002',
     });
 
     final ok = await repo.updateLatestTrainingRating(sid, rating: 'hard');
@@ -79,7 +79,7 @@ void main() {
     final sid = await sessionRepo.createBlankSession(title: '会话N2-3');
     await repo.appendTeachingHistory(sid, {
       'type': 'training',
-      'syndromeId': 'P001',
+      'syndromeId': 'P002',
       'result': 'passed',
     });
 
@@ -98,7 +98,7 @@ void main() {
     final sid = await sessionRepo.createBlankSession(title: '会话N2-4');
     await repo.appendTeachingHistory(sid, {
       'type': 'diagnosis',
-      'syndromeId': 'P001',
+      'syndromeId': 'P002',
     });
 
     final ok = await repo.updateLatestTrainingRating(sid, rating: 'again');
@@ -121,7 +121,7 @@ void main() {
     final sid = await sessionRepo.createBlankSession(title: '会话N2-6');
     await repo.appendTeachingHistory(sid, {
       'type': 'training',
-      'syndromeId': 'P001',
+      'syndromeId': 'P002',
       'result': 'passed',
     });
 

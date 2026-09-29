@@ -264,7 +264,7 @@ void main() {
         // 有意分行的 JSON 拼接（相邻字面量在编译期合并，非漏逗号）
         // ignore: no_adjacent_strings_in_list
         '[YS_DIAGNOSIS]'
-            '{"syndromes":[{"syndrome_id":"P003","name":"情绪直白","severity":"L2",'
+            '{"syndromes":[{"syndrome_id":"P001","name":"情绪直白","severity":"L2",'
             '"evidence":["第3段"],"explanation":"情绪描写过于直白"}],'
             '"suggested_actions":[],"confidence":0.8}'
             '[/YS_DIAGNOSIS]',

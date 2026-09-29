@@ -48,8 +48,10 @@ void main() {
       test('「$label」润色文本注入并替换默认态度档', () {
         final polished = _readPolished(key);
         if (polished == null || polished.isEmpty) {
-          markTestSkipped('outputs/polish/persona_$key.txt 缺失，跳过'
-              '（先运行 outputs/polish/generate_personas.py）');
+          markTestSkipped(
+            'outputs/polish/persona_$key.txt 缺失，跳过'
+            '（先运行 outputs/polish/generate_personas.py）',
+          );
         }
 
         final persona = CoachPersona(
@@ -71,8 +73,11 @@ void main() {
         final r = buildSystemPromptV2(ctx);
 
         // 1. 润色文本确实进入诊断 system prompt
-        expect(r.systemPrompt, contains(polished),
-            reason: '润色文本未注入 system prompt');
+        expect(
+          r.systemPrompt,
+          contains(polished),
+          reason: '润色文本未注入 system prompt',
+        );
         // 2. 默认态度档被替换（不再出现 attitude-doubao 内容标记）
         expect(r.loadedSkillIds, contains('persona-real_$key'));
         expect(r.loadedSkillIds, isNot(contains('attitude-doubao')));

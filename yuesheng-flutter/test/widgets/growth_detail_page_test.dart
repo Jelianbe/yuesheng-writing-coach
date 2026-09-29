@@ -56,13 +56,13 @@ void main() {
             syndromes: Value(
               jsonEncode([
                 {
-                  'syndrome_id': 'P001',
+                  'syndrome_id': 'P002',
                   'name': '情绪标签化',
                   'severity': 'L2',
                   'evidence': ['例1', '例2'],
                 },
                 {
-                  'syndrome_id': 'P007',
+                  'syndrome_id': 'P005',
                   'name': '句式节奏单一',
                   'severity': 'L1',
                   'evidence': ['例3'],
@@ -81,7 +81,7 @@ void main() {
           ActiveProblemsCompanion.insert(
             id: generateUuid(),
             sessionId: sessionId,
-            syndromeId: 'P001',
+            syndromeId: 'P002',
             syndromeName: const Value('情绪标签化'),
             severity: const Value('L2'),
             status: const Value('active'),
@@ -95,7 +95,7 @@ void main() {
           ActiveProblemsCompanion.insert(
             id: generateUuid(),
             sessionId: sessionId,
-            syndromeId: 'P007',
+            syndromeId: 'P005',
             syndromeName: const Value('句式节奏单一'),
             severity: const Value('L1'),
             status: const Value('active'),
@@ -109,9 +109,9 @@ void main() {
   /// 的画像数据，验证症候分布按教学状态分组。
   ///
   /// 推断规则（student_profile_compute.inferTeachingState）：
-  /// - P001 [L2] ×1 → identified（occurrenceCount<=2 + trend unknown）
-  /// - P002 [L2,L2,L2] ×3 → in_progress（trend stable，非 identified 且未到 consolidating）
-  /// - P003 [L2,L3,L2,L1] ×4 → consolidating（trend improving + latest L1 + count>=3）
+  /// - P002 [L2] ×1 → identified（occurrenceCount<=2 + trend unknown）
+  /// - P007 [L2,L2,L2] ×3 → in_progress（trend stable，非 identified 且未到 consolidating）
+  /// - P001 [L2,L3,L2,L1] ×4 → consolidating（trend improving + latest L1 + count>=3）
   Future<void> seedMultiState() async {
     final base = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     Future<void> insertDiag(String sid, String name, List<String> sev) async {
@@ -157,9 +157,9 @@ void main() {
           );
     }
 
-    await insertDiag('P001', '情绪标签化', ['L2']);
-    await insertDiag('P002', '信息倾泻', ['L2', 'L2', 'L2']);
-    await insertDiag('P003', '视角漂移', ['L2', 'L3', 'L2', 'L1']);
+    await insertDiag('P002', '情绪标签化', ['L2']);
+    await insertDiag('P007', '信息倾泻', ['L2', 'L2', 'L2']);
+    await insertDiag('P001', '视角漂移', ['L2', 'L3', 'L2', 'L1']);
   }
 
   group('GrowthDetailPage 视觉规范（月色竹青）', () {
@@ -547,13 +547,13 @@ void main() {
               syndromes: Value(
                 jsonEncode([
                   {
-                    'syndrome_id': 'P001',
+                    'syndrome_id': 'P002',
                     'name': '情绪标签化',
                     'severity': 'L2',
                     'evidence': ['e1'],
                   },
                   {
-                    'syndrome_id': 'P002',
+                    'syndrome_id': 'P007',
                     'name': '信息倾泻',
                     'severity': 'L3',
                     'evidence': ['e2'],
@@ -577,31 +577,31 @@ void main() {
               syndromes: Value(
                 jsonEncode([
                   {
-                    'syndrome_id': 'P001',
+                    'syndrome_id': 'P002',
                     'name': '情绪标签化',
                     'severity': 'L1',
                     'evidence': ['e3'],
                   },
                   {
-                    'syndrome_id': 'P007',
+                    'syndrome_id': 'P005',
                     'name': '句式节奏单一',
                     'severity': 'L2',
                     'evidence': ['e4'],
                   },
                   {
-                    'syndrome_id': 'P010',
+                    'syndrome_id': 'P008',
                     'name': '逻辑断裂',
                     'severity': 'L2',
                     'evidence': ['e5'],
                   },
                   {
-                    'syndrome_id': 'P011',
+                    'syndrome_id': 'P009',
                     'name': '叙事拖沓',
                     'severity': 'L1',
                     'evidence': ['e6'],
                   },
                   {
-                    'syndrome_id': 'P012',
+                    'syndrome_id': 'P010',
                     'name': '视角飘移',
                     'severity': 'L3',
                     'evidence': ['e7'],
@@ -615,10 +615,10 @@ void main() {
             ),
           );
 
-      // active_problems：2 活跃 + 1 resolved（信息倾泻 P002）
+      // active_problems：2 活跃 + 1 resolved（信息倾泻 P007）
       await insertProblem(
         sid: s,
-        syndromeId: 'P001',
+        syndromeId: 'P002',
         syndromeName: '情绪标签化',
         severity: 'L1',
         status: 'active',
@@ -627,7 +627,7 @@ void main() {
       );
       await insertProblem(
         sid: s,
-        syndromeId: 'P007',
+        syndromeId: 'P005',
         syndromeName: '句式节奏单一',
         severity: 'L2',
         status: 'active',
@@ -636,7 +636,7 @@ void main() {
       );
       await insertProblem(
         sid: s,
-        syndromeId: 'P002',
+        syndromeId: 'P007',
         syndromeName: '信息倾泻',
         severity: 'L3',
         status: 'resolved',

@@ -981,7 +981,7 @@ void main() {
       final practice = container.read(practiceStoreProvider.notifier);
       practice.startPractice(
         PracticeTask(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           taskDescription: '针对性写作练习',
           taskGoal: '对照标准完成练习',
@@ -1053,7 +1053,7 @@ void main() {
         sid,
         'assistant',
         jsonEncode({
-          'syndromeId': 'P001',
+          'syndromeId': 'P002',
           'syndromeName': '视角跳跃症',
           'severity': 'L2',
         }),

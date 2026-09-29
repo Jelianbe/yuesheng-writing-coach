@@ -17,7 +17,7 @@ import 'package:writingcoach/theme/app_theme.dart'
 import 'package:writingcoach/widgets/syndrome_detail_modal.dart';
 
 SyndromeTracked _tracked(int now) => SyndromeTracked(
-  syndromeId: 'P003',
+  syndromeId: 'P001',
   name: '情绪标签化',
   currentSeverity: 'L3',
   firstSeen: now - 86400,

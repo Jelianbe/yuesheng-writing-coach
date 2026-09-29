@@ -30,7 +30,7 @@ void main() {
 
   group('normalizeSyndromeId（P0xx 格式白名单）', () {
     test('#3 合法 ID 归一为大写', () {
-      expect(normalizeSyndromeId('P003'), 'P003');
+      expect(normalizeSyndromeId('P001'), 'P001');
       expect(normalizeSyndromeId('p21'), 'P21');
     });
 
@@ -39,7 +39,7 @@ void main() {
       expect(normalizeSyndromeId('X001'), isNull);
       expect(normalizeSyndromeId(''), isNull);
       expect(normalizeSyndromeId(null), isNull);
-      expect(normalizeSyndromeId('P003;<system>'), isNull);
+      expect(normalizeSyndromeId('P001;<system>'), isNull);
     });
   });
 

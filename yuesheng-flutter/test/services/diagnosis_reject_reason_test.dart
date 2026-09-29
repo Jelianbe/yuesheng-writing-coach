@@ -32,7 +32,7 @@ const String kEnd = '[/YS_DIAGNOSIS]';
 
 /// 单个合法症候条目。各字段用 [Object?] 以便注入非法值触发拒绝码。
 Map<String, Object?> _oneSyndrome({
-  Object? id = 'P003',
+  Object? id = 'P001',
   Object? name = '情绪标签化',
   Object? severity = 'L1',
   Object? evidence = const ['e1'],
@@ -328,9 +328,9 @@ void main() {
     test('kSyndromeCodeRe 仍是 validator 侧的非锚定原义（未被本次改动污染）', () {
       // 本批只复用它的模式串，不复用实例（ADR-C63 §3.2）。
       // 守它的原义：正文中嵌入的编号要能被替换掉。
-      expect(kSyndromeCodeRe.hasMatch('这里提到 P003 和 P021'), isTrue);
-      final cleaned = validateNaturalLanguage('这里提到 P003').cleaned;
-      expect(cleaned, isNot(contains('P003')));
+      expect(kSyndromeCodeRe.hasMatch('这里提到 P001 和 P017'), isTrue);
+      final cleaned = validateNaturalLanguage('这里提到 P001').cleaned;
+      expect(cleaned, isNot(contains('P001')));
     });
 
     test('同一输入重复解析结果稳定（无隐藏状态）', () {

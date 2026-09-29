@@ -132,10 +132,7 @@ void main() {
     await tester.tap(find.widgetWithText(TextButton, 'AI 润色'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('先填个名字或几句语气，AI 才能帮你润色'),
-      findsOneWidget,
-    );
+    expect(find.text('先填个名字或几句语气，AI 才能帮你润色'), findsOneWidget);
   });
 
   testWidgets('#6b 未配 API Key 点 AI 润色 → 引导去设置', (tester) async {
@@ -162,14 +159,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // resolveLlmConfig 返回 null ⇒ 免费模式降级，给出引导
-    expect(
-      find.text('请先在「设置 → API 配置」填好 Key，才能用 AI 润色'),
-      findsOneWidget,
-    );
+    expect(find.text('请先在「设置 → API 配置」填好 Key，才能用 AI 润色'), findsOneWidget);
   });
 
   testWidgets('#7 配置齐全 → AI 润色回填语气设定', (tester) async {
-    const canned = '一位刀子嘴豆腐心的老编辑，开口就戳破你最想藏的破绽，'
+    const canned =
+        '一位刀子嘴豆腐心的老编辑，开口就戳破你最想藏的破绽，'
         '但从不空谈，句句带着具体的改法。';
     // 复用 setUp 的 db，避免新建第二个 AppDatabase 实例触发 drift 警告；
     // 用 provider override 模拟「已配置 API Key」，不触碰安全存储。

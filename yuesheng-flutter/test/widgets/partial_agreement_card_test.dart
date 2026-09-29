@@ -28,7 +28,7 @@ void main() {
     await tester.pumpWidget(
       buildCard(
         const PartialAgreementCard(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           severity: 'L2',
         ),
@@ -54,7 +54,7 @@ void main() {
     await tester.pumpWidget(
       buildCard(
         PartialAgreementCard(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           severity: 'L2',
           onSubmit: (feedback, quickOption) {
@@ -95,7 +95,7 @@ void main() {
     await tester.pumpWidget(
       buildCard(
         PartialAgreementCard(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           severity: 'L2',
           onSubmit: (feedback, quickOption) {
@@ -119,7 +119,7 @@ void main() {
     await tester.pumpWidget(
       buildCard(
         PartialAgreementCard(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           severity: 'L2',
           onSkip: () => skipped = true,
@@ -135,7 +135,7 @@ void main() {
 
   testWidgets('#5 fromMessageContent 合法 JSON → 解析渲染', (tester) async {
     final payload = PartialAgreementCardPayload(
-      syndromeId: 'P001',
+      syndromeId: 'P002',
       syndromeName: '视角跳跃症',
       severity: 'L3',
     );
@@ -161,7 +161,7 @@ void main() {
     await tester.pumpWidget(
       buildCard(
         const PartialAgreementCard(
-          syndromeId: 'P001',
+          syndromeId: 'P002',
           syndromeName: '视角跳跃症',
           severity: 'L2',
         ),

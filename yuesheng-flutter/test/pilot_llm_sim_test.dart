@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 // 试点：子代理模拟 LLM（读真实提示词）→ 产出协议回复 → 过真实解析/校验
 // 验证「子代理模拟」方法可行：输出能被 app 真实 parser/validator 吃进，
-// 且命中 ground truth（P006 L2 → train + rewrite），无任何硬约束违规。
+// 且命中 ground truth（P004 L2 → train + rewrite），无任何硬约束违规。
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -13,16 +13,16 @@ import 'package:writingcoach/types/teaching_types.dart';
 String _fix(String name) => File('test/fixtures/$name').readAsStringSync();
 
 void main() {
-  test('pilot P006: 子代理模拟诊断/教学 LLM → 真实解析+一致性校验通过', () {
-    final diagRaw = _fix('pilot_p006_diagnosis.txt');
-    final teacherRaw = _fix('pilot_p006_teacher.txt');
+  test('pilot P004: 子代理模拟诊断/教学 LLM → 真实解析+一致性校验通过', () {
+    final diagRaw = _fix('pilot_p004_diagnosis.txt');
+    final teacherRaw = _fix('pilot_p004_teacher.txt');
 
     // ── 诊断层 ──
     final diag = parseDiagnosis(diagRaw);
     expect(diag.diagnosis, isNotNull, reason: '诊断块应被解析');
     final d = diag.diagnosis!;
     final hit = d.syndromes
-        .where((s) => s.syndromeId == 'P006' && s.severity == Severity.l2)
+        .where((s) => s.syndromeId == 'P004' && s.severity == Severity.l2)
         .toList();
     print(
       '[诊断] 命中症候: '
@@ -32,7 +32,7 @@ void main() {
       '[诊断] confidence=${d.confidence}  '
       'suggested_actions=${d.suggestedActions.length}',
     );
-    expect(hit, isNotEmpty, reason: '应命中 P006 L2（ground truth）');
+    expect(hit, isNotEmpty, reason: '应命中 P004 L2（ground truth）');
 
     // ── 教学层 ──
     final tParse = parseTeacherDecision(teacherRaw);

@@ -93,7 +93,7 @@ void main() {
     final ctx = buildGrammarLexicalContext(issues);
     expect(ctx, isNotNull);
     expect(ctx, contains('基础文法观察'));
-    expect(ctx, contains('P022'));
+    expect(ctx, contains('P018'));
     expect(ctx, contains('只定位，不代改正文'));
   });
 }

@@ -225,7 +225,7 @@ void main() {
           id: 'm1',
           role: 'assistant',
           content: jsonEncode({
-            'syndromeId': 'P001',
+            'syndromeId': 'P002',
             'syndromeName': '视角跳跃症',
             'severity': 'L2',
           }),
@@ -254,7 +254,7 @@ void main() {
             'trend': 'improving',
             'syndromeChanges': [
               {
-                'syndromeId': 'P001',
+                'syndromeId': 'P002',
                 'syndromeName': '视角跳跃症',
                 'trend': 'improving',
               },
@@ -371,7 +371,7 @@ void main() {
             id: 'm1',
             role: 'assistant',
             content: jsonEncode({
-              'syndromeId': 'P001',
+              'syndromeId': 'P002',
               'syndromeName': '视角跳跃症',
               'severity': 'L2',
             }),

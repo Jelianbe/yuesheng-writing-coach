@@ -98,8 +98,7 @@ class ChatMessagesController {
       // 删除失败不阻断重试：新 user 行仍会写入，onComplete 整表回读时
       // 旧失败行即便残留也由后续清理入口处理，保证用户能把消息发出去。
     }
-    host.ref
-        .read(chatStoreProvider.notifier)
+    host.ref.read(chatStoreProvider.notifier)
       ..removeMessage(failedMessageId)
       ..clearMessageFailed(failedMessageId);
 

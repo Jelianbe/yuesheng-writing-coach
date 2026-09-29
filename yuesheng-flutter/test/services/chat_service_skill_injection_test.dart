@@ -173,7 +173,7 @@ void main() {
     );
   }
 
-  /// 种子：active 症候 P003（L1 基础表达）+ 学员水平 N1（→ L1）
+  /// 种子：active 症候 P001（L1 基础表达）+ 学员水平 N1（→ L1）
   Future<void> seedActiveProblem({int? trainingCount}) async {
     final ts = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await db
@@ -182,7 +182,7 @@ void main() {
           ActiveProblemsCompanion.insert(
             id: generateUuid(),
             sessionId: sessionId,
-            syndromeId: 'P003',
+            syndromeId: 'P001',
             syndromeName: const Value('情绪标签化'),
             severity: const Value('L2'),
             status: const Value('active'),
@@ -200,7 +200,7 @@ void main() {
       for (var i = 0; i < trainingCount; i++) {
         await repo.appendTeachingHistory(sessionId, {
           'type': 'training',
-          'syndromeId': 'P003',
+          'syndromeId': 'P001',
           'result': 'passed',
           'timestamp': ts + i,
         });
@@ -269,7 +269,7 @@ void main() {
           ActiveProblemsCompanion.insert(
             id: generateUuid(),
             sessionId: sessionId,
-            syndromeId: 'P003',
+            syndromeId: 'P001',
             syndromeName: const Value('情绪标签化'),
             severity: const Value('L2'),
             status: const Value('active'),
@@ -300,7 +300,7 @@ void main() {
   });
 
   test('#J4 批次16 表现差（4 次全未达标）→ 介入级别回退 I do + 注入回退原因', () async {
-    // 种子：P003 活跃 + N1 学员水平
+    // 种子：P001 活跃 + N1 学员水平
     final ts = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     await db
         .into(db.activeProblems)
@@ -308,7 +308,7 @@ void main() {
           ActiveProblemsCompanion.insert(
             id: generateUuid(),
             sessionId: sessionId,
-            syndromeId: 'P003',
+            syndromeId: 'P001',
             syndromeName: const Value('情绪标签化'),
             severity: const Value('L2'),
             status: const Value('active'),
@@ -325,7 +325,7 @@ void main() {
     for (var i = 0; i < 4; i++) {
       await repo.appendTeachingHistory(sessionId, {
         'type': 'training',
-        'syndromeId': 'P003',
+        'syndromeId': 'P001',
         'result': 'failed',
         'timestamp': ts + i,
       });
