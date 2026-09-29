@@ -42,7 +42,7 @@ import '../../theme/app_typography.dart';
 import 'coach_settings_page.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
-const String _appVersion = '0.1.0';
+const String _appVersion = '0.3.3';
 const String _packageName = 'com.yuesheng.writingcoach';
 const String _feedbackQQGroup = '470562649';
 

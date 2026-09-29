@@ -1103,7 +1103,46 @@ class _SyndromeConfirmationBarState
     }
   }
 
+  /// 质疑前置（2026-09-29 反馈修复）：必须先说明"哪里不对"再提交异议。
+  /// 裸"有异议"一键即拒会被想逃训练的学员滥用，绕开结构层诊断；
+  /// 要求补充信息能逼出具体判断，也留痕。
   Future<void> _dispute() async {
+    if (_submitting) return;
+    final reason = await _showDisputeReasonDialog();
+    if (reason == null || reason.trim().isEmpty) return; // 取消或不填 ⇒ 不提交
+    await _commitDispute();
+  }
+
+  Future<String?> _showDisputeReasonDialog() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('提交异议'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: '说明你觉得哪里不对（具体到哪一句 / 哪个判断）',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
+            child: const Text('提交异议'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _commitDispute() async {
     if (_submitting) return;
     setState(() => _submitting = true);
     final service = ref.read(diagnosisServiceProvider);

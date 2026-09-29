@@ -451,7 +451,7 @@ void main() {
     expect(find.text('维护'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
     expect(find.text('月笙写作教练'), findsOneWidget);
-    expect(find.text('v0.1.0'), findsOneWidget);
+    expect(find.text('v0.3.3'), findsOneWidget);
     expect(find.text('com.yuesheng.writingcoach'), findsOneWidget);
   });
 

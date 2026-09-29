@@ -383,7 +383,9 @@ void main() {
       expect(s001.confirmationStatus, 'confirmed');
     });
 
-    testWidgets('D5B-3 点击「不认同」→ 「已质疑」状态', (tester) async {
+    testWidgets('D5B-3 点击「不认同」→ 弹异议对话框 → 填理由提交 → 「已质疑」状态', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         wrapWithSession(SingleChildScrollView(child: cardWithSession())),
       );
@@ -391,6 +393,15 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('不认同'));
+      await tester.pumpAndSettle();
+      // 新行为：先弹"提交异议"对话框，要求说明哪里不对
+      expect(
+        find.text('说明你觉得哪里不对（具体到哪一句 / 哪个判断）'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(find.byType(TextField), '这一句我觉得判断错了');
+      await tester.tap(find.widgetWithText(TextButton, '提交异议'));
       await tester.pumpAndSettle();
 
       expect(find.text('已质疑'), findsOneWidget);
@@ -506,11 +517,16 @@ void main() {
       );
     });
 
-    testWidgets('D5B-7 不认同落库失败 → SnackBar 告知 + 保持 pending + error_logs 留痕', (
+    testWidgets('D5B-7 不认同→填理由→提交异议落库失败 → SnackBar 告知 + 保持 pending + error_logs 留痕', (
       tester,
     ) async {
       await pumpWithFailingService(tester);
       await tester.tap(find.text('不认同'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      // 对话框出现，填理由并提交
+      await tester.enterText(find.byType(TextField), '判断有误');
+      await tester.tap(find.widgetWithText(TextButton, '提交异议'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -538,6 +554,12 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text(button));
       await tester.pumpAndSettle();
+      // 不认同现在会弹"提交异议"对话框，需填理由再提交（认同无对话框）
+      if (button == '不认同') {
+        await tester.enterText(find.byType(TextField), '这一句判断有误');
+        await tester.tap(find.widgetWithText(TextButton, '提交异议'));
+        await tester.pumpAndSettle();
+      }
       // 销毁重建 = 退出会话再进（新 State 实例，本地内存态清零）
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
