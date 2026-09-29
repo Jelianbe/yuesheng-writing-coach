@@ -534,17 +534,29 @@ class MessageInjector {
       });
   }
 
-  /// P2-9 helper：末尾连续通过次数。
+  /// P2-9 helper：末尾连续通过次数（B2：按本地自然日去重）。
+  ///
+  /// 间隔阶梯（1/2/4/8/14 天）以「跨天回忆」为单位推进：同一自然日内的
+  /// 多次 passed 只记 1 次步进，防止一天内连刷把阶梯一日拉满到 14 天。
+  /// 遇到第一条非 passed 即断链（失败重置语义不变）。
   int _countTrailingPasses(List<Map<String, dynamic>> recs) {
     var passes = 0;
+    int? lastDay;
     for (final r in recs.reversed) {
-      if (r['result'] == 'passed') {
-        passes++;
-      } else {
-        break;
-      }
+      if (r['result'] != 'passed') break;
+      final ts = (r['timestamp'] as num?)?.toInt() ?? 0;
+      final day = _localDayKey(ts);
+      if (day == lastDay) continue; // 同一自然日的重复通过不累计步进
+      lastDay = day;
+      passes++;
     }
     return passes;
+  }
+
+  /// B2 helper：unix 秒 → 本地自然日键（yyyyMMdd），用于同日去重。
+  int _localDayKey(int tsSec) {
+    final d = DateTime.fromMillisecondsSinceEpoch(tsSec * 1000);
+    return d.year * 10000 + d.month * 100 + d.day;
   }
 
   /// 批1·N2 helper：**有效**连续通过次数（含用户回忆难度自评折算）。

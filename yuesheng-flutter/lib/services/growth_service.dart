@@ -140,7 +140,7 @@ class AbilityScore {
 
 /// 写作曲线数据点（复刻 RN WritingDataPoint）
 class WritingDataPoint {
-  final String date; // YYYY-MM-DD（UTC，对齐 RN toISOString）
+  final String date; // YYYY-MM-DD（本地自然日，B1：与用户本地日历对齐）
   final int timestamp;
   final int wordCount;
   final int diagnosisCount;
@@ -195,10 +195,16 @@ extension GrowthStatsExtension on GrowthService {
       'ORDER BY updated_at DESC LIMIT 1',
     )).getSingleOrNull();
 
-    final daysRow = await (_db.customSelect(
-      "SELECT COUNT(DISTINCT strftime('%Y-%m-%d', updated_at, 'unixepoch')) "
-      'AS days FROM chapters WHERE word_count > 0',
-    )).getSingleOrNull();
+    // B1：写作天数按用户本地自然日归并。本工程 sqlite 的 strftime('localtime')
+    // 不可用（恒返回 NULL），故取出全部时刻后在 Dart 侧按本地 y/m/d 去重计数，
+    // 避免 UTC+8 用户本地 00:00–08:00 的记录被并到前一个 UTC 日导致少算。
+    final writingDayRows = await (_db.customSelect(
+      'SELECT updated_at FROM chapters WHERE word_count > 0',
+    )).get();
+    final writingDays = writingDayRows
+        .map((r) => _localDateStr(r.read<int>('updated_at')))
+        .toSet()
+        .length;
 
     final timeRow = await (_db.customSelect(
       'SELECT MIN(updated_at) AS first, MAX(updated_at) AS last '
@@ -216,7 +222,7 @@ extension GrowthStatsExtension on GrowthService {
       wordRow: wordRow,
       diagRow: diagRow,
       phaseRow: phaseRow,
-      daysRow: daysRow,
+      writingDays: writingDays,
       timeRow: timeRow,
       diagTotal: diagTotal,
       trainingCount: trainingCount,
@@ -249,7 +255,7 @@ extension GrowthStatsExtension on GrowthService {
     required QueryRow? wordRow,
     required QueryRow? diagRow,
     required QueryRow? phaseRow,
-    required QueryRow? daysRow,
+    required int writingDays,
     required QueryRow? timeRow,
     required int diagTotal,
     required int trainingCount,
@@ -262,7 +268,7 @@ extension GrowthStatsExtension on GrowthService {
       currentPhase:
           TeachingPhase.fromString(phaseRow?.read<String?>('phase')) ??
           TeachingPhase.p0Engage,
-      writingDays: daysRow?.read<int>('days') ?? 0,
+      writingDays: writingDays,
       firstWritingAt: timeRow?.read<int?>('first'),
       lastWritingAt: timeRow?.read<int?>('last'),
       // AI 介入 = 诊断 + 训练（学员每次请求 AI 处理作品即一次介入）
@@ -272,10 +278,11 @@ extension GrowthStatsExtension on GrowthService {
 
   /// 最近 N 天写作曲线（复刻 RN getWritingCurve）
   ///
-  /// 按 UTC 日期聚合（对齐 RN toISOString().slice(0,10) 与 SQL unixepoch），
+  /// 按本地自然日聚合（B1：与用户本地日历日对齐；时间戳本身是时刻，
+  /// 桶化时按本地 y/m/d 归桶，不迁移历史数据），
   /// 返回完整的最近 [days] 天序列，从旧到新（RN Array.from(map.values) 插入序）
   Future<List<WritingDataPoint>> getWritingCurve({int days = 14}) async {
-    final nowUtc = DateTime.now().toUtc();
+    final nowLocal = DateTime.now();
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final cutoff = nowSec - days * 86400;
 
@@ -284,11 +291,12 @@ extension GrowthStatsExtension on GrowthService {
     // 新用户无写作和诊断记录时返回空数组，触发 UI 空态引导文案
     if (rows.chapterRows.isEmpty && rows.diagnosisRows.isEmpty) return const [];
 
-    // 初始化最近 days 天 UTC 日期序列（对齐 RN toISOString().slice(0,10)）
-    final byDate = _initCurveDateSequence(days, nowUtc);
+    // 初始化最近 days 天本地日期序列（B1：与本地自然日对齐）
+    final byDate = _initCurveDateSequence(days, nowLocal);
 
     for (final row in rows.chapterRows) {
-      final date = row.read<String>('date');
+      // B1：由时刻在 Dart 侧归到本地自然日（与 _initCurveDateSequence 同口径）。
+      final date = _localDateStr(row.read<int>('ts'));
       final point = byDate[date];
       if (point != null) {
         byDate[date] = WritingDataPoint(
@@ -301,7 +309,7 @@ extension GrowthStatsExtension on GrowthService {
     }
 
     for (final row in rows.diagnosisRows) {
-      final date = row.read<String>('date');
+      final date = _localDateStr(row.read<int>('ts'));
       final point = byDate[date];
       if (point != null) {
         byDate[date] = WritingDataPoint(
@@ -318,37 +326,41 @@ extension GrowthStatsExtension on GrowthService {
   }
 
   /// 拉取曲线原始行：章节省字数 + 诊断记录（R-019 拆出：getWritingCurve）。
+  ///
+  /// B1：SQL 只取原始时刻（本工程 sqlite 的 strftime('localtime') 不可用），
+  /// 本地自然日桶化在调用方用 [_localDateStr] 完成。
   Future<({List<QueryRow> chapterRows, List<QueryRow> diagnosisRows})>
   _fetchCurveRows(int cutoff) async {
     final chapterRows = await (_db.customSelect(
-      "SELECT strftime('%Y-%m-%d', updated_at, 'unixepoch') AS date, "
-      'updated_at AS ts, word_count AS words FROM chapters '
+      'SELECT updated_at AS ts, word_count AS words FROM chapters '
       'WHERE updated_at >= ? AND word_count > 0 ORDER BY updated_at ASC',
       variables: [Variable.withInt(cutoff)],
     )).get();
 
     final diagnosisRows = await (_db.customSelect(
-      "SELECT strftime('%Y-%m-%d', timestamp, 'unixepoch') AS date, "
-      'timestamp AS ts FROM diagnosis_results '
+      'SELECT timestamp AS ts FROM diagnosis_results '
       'WHERE timestamp >= ? ORDER BY timestamp ASC',
       variables: [Variable.withInt(cutoff)],
     )).get();
     return (chapterRows: chapterRows, diagnosisRows: diagnosisRows);
   }
 
-  /// 初始化最近 days 天 UTC 日期序列（R-019 拆出：getWritingCurve）。
+  /// 初始化最近 days 天本地日期序列（R-019 拆出：getWritingCurve）。
+  ///
+  /// B1：以本地今日 0 点为锚，逐天向前铺 [days] 个本地自然日；
+  /// timestamp 取该日本地 0 点的秒级时刻。
   Map<String, WritingDataPoint> _initCurveDateSequence(
     int days,
-    DateTime nowUtc,
+    DateTime nowLocal,
   ) {
     final byDate = <String, WritingDataPoint>{};
     for (var i = days - 1; i >= 0; i--) {
-      final d = nowUtc.subtract(Duration(days: i));
-      final dateStr = _formatUtcDate(d);
+      final d = nowLocal.subtract(Duration(days: i));
+      final dateStr = _formatLocalDate(d);
       byDate[dateStr] = WritingDataPoint(
         date: dateStr,
         timestamp:
-            DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 1000,
+            DateTime(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 1000,
         wordCount: 0,
         diagnosisCount: 0,
       );
@@ -356,10 +368,18 @@ extension GrowthStatsExtension on GrowthService {
     return byDate;
   }
 
-  static String _formatUtcDate(DateTime utc) {
-    return '${utc.year.toString().padLeft(4, '0')}-'
-        '${utc.month.toString().padLeft(2, '0')}-'
-        '${utc.day.toString().padLeft(2, '0')}';
+  static String _formatLocalDate(DateTime local) {
+    return '${local.year.toString().padLeft(4, '0')}-'
+        '${local.month.toString().padLeft(2, '0')}-'
+        '${local.day.toString().padLeft(2, '0')}';
+  }
+
+  /// B1：unix 秒 → 本地自然日 yyyy-MM-dd（DateTime 默认本地时区）。
+  ///
+  /// 历史时间戳本身是绝对时刻，这里仅做本地日历日归桶，不迁移历史数据。
+  static String _localDateStr(int tsSec) {
+    final d = DateTime.fromMillisecondsSinceEpoch(tsSec * 1000);
+    return _formatLocalDate(d);
   }
 
   /// 获取最新写作风格画像（批次53c：跨会话取 updated_at 最新的一条）

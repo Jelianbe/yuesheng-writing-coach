@@ -159,4 +159,35 @@ void main() {
 
     expect(messages, isEmpty);
   });
+
+  test('#B2-1 同一天连过 5 次 → 不把阶梯拉满到 14 天（同日只记 1 次步进）',
+      () async {
+    await seedSyndrome('P009', '节奏拖沓');
+    // 全部落在同一本地自然日（昨天）。修复前：5 条 passed → n=5 → 间隔 14 天，
+    // daysSince=1 < 14 → fresh 不注入；修复后：同日去重 → 有效通过=1 → 间隔 1 天，
+    // daysSince=1 ≥ 1 → due，且标签应为「间隔 1 天」而非「间隔 14 天」。
+    for (var i = 0; i < 5; i++) {
+      await studentModelRepo.appendTeachingHistory(sessionId, {
+        'type': 'training',
+        'syndromeId': 'P009',
+        'result': 'passed',
+        'timestamp': nowSec() - 86400,
+      });
+    }
+    final injector = buildInjector();
+    final messages = <ChatMessage>[];
+    await injector.injectReviewSchedule(
+      sessionId: sessionId,
+      phase: TeachingPhase.p3Training,
+      messages: messages,
+      markStage: (_) {},
+    );
+
+    expect(messages, isNotEmpty);
+    final content = messages.map((m) => m.content).join('\n');
+    expect(content, contains('到期需复习'));
+    expect(content, contains('P009'));
+    expect(content, contains('间隔 1 天'));
+    expect(content, isNot(contains('间隔 14 天')));
+  });
 }

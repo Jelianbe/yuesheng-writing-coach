@@ -45,6 +45,21 @@ void main() {
         1000;
   }
 
+  /// 今天 0 点（本地自然日）的秒级时间戳（B1：本地日桶口径）
+  int localMidnightSec() {
+    final now = DateTime.now();
+    final m = DateTime(now.year, now.month, now.day); // 本地
+    return m.millisecondsSinceEpoch ~/ 1000;
+  }
+
+  /// 本地今日 yyyy-MM-dd（B1：曲线最右柱应为本地今天）
+  String localTodayDateStr() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+  }
+
   Future<void> insertChapter({
     required int wordCount,
     required int updatedAt,
@@ -215,6 +230,19 @@ void main() {
       expect(o.aiInterventions, 2);
     });
 
+    test('#2b B1 本地日桶：跨 UTC 日界的两次写作仍记为 2 个写作天', () async {
+      final m = localMidnightSec();
+      // 本地今天 07:00 与 本地昨天 23:00。
+      // UTC+8 下两者都落在「同一个 UTC 日」（今天 07:00=UTC 昨 23:00；
+      // 昨天 23:00=UTC 昨 15:00）——旧 UTC 桶会并成 1 天，修复后按本地日=2 天。
+      await insertChapter(wordCount: 500, updatedAt: m + 7 * 3600); // 本地今天
+      await insertChapter(wordCount: 300, updatedAt: m - 86400 + 23 * 3600); // 本地昨天
+
+      final o = await GrowthService(db).getGrowthOverview();
+
+      expect(o.writingDays, 2); // 本地自然日 = 2（而非被 UTC 并成 1）
+    });
+
     test('#3 批次61 有训练历史 → AI 介入 = 诊断 + 训练', () async {
       final t = todayUtcSec();
       await insertDiagnosis(timestamp: t);
@@ -351,6 +379,18 @@ void main() {
       final today = points.last;
       expect(today.wordCount, 1200);
       expect(today.diagnosisCount, 2);
+    });
+
+    test('#7c B1 本地凌晨写作归入「今天」桶，最右柱日期=本地今天', () async {
+      final m = localMidnightSec();
+      // 本地今日 02:00 写作（UTC+8 下=UTC 昨日 18:00，旧 UTC 桶会错落到昨天柱）
+      await insertChapter(wordCount: 900, updatedAt: m + 2 * 3600);
+
+      final points = await GrowthService(db).getWritingCurve(days: 14);
+
+      expect(points, isNotEmpty);
+      expect(points.last.date, localTodayDateStr()); // 最右柱=本地今天
+      expect(points.last.wordCount, 900); // 该凌晨写作计入今天柱，而非昨天
     });
   });
 
