@@ -94,25 +94,40 @@ class ChatTeachingController {
     String sessionId,
     void Function(TrainingResult)? onTrainingResult,
   ) {
+    // A4：流式回调会话守卫。闭包捕获的 [sessionId] 必须仍是当前激活会话
+    // （bootstrap 指向的会话），否则说明用户已切走——该 chunk / 完成 / 错误
+    // 一律丢弃。DB 仍按原 sessionId 落库（不落库串台），这里只防止旧会话
+    // 把当前会话的消息列表/流式内容/失败标记覆盖掉。
+    bool isCurrentSession() =>
+        host.ref.read(sessionBootstrapProvider).valueOrNull?.sessionId ==
+        sessionId;
     return SendMessageCallbacks(
       // ADR-C84：用户消息落库即上屏（流式中断/失败也保证消息可见）
       onUserMessagePersisted: (message) {
         host.ref.read(chatStoreProvider.notifier).addMessage(message);
       },
       onStream: (delta) {
+        // A4：旧会话流的 chunk 不追加到当前会话流式气泡
+        if (!isCurrentSession()) return;
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },
       onComplete: (fullContent, messageId) async {
+        // A4：旧会话完成不得用其消息列表覆盖当前会话；listMessages 是异步
+        // 的，await 后再校验一次，覆盖 await 间隙里用户切走的竞态。
+        if (!isCurrentSession()) return;
         final sessionRepo = SessionRepository(
           host.ref.read(appDatabaseProvider),
         );
         final messages = await sessionRepo.listMessages(sessionId);
+        if (!isCurrentSession()) return;
         host.ref.read(chatStoreProvider.notifier).setMessages(messages);
         host.ref.read(chatStoreProvider.notifier).setStreaming(false);
         // 批次 12：发送完成后延迟检查态度建议（对齐 RN）
         host.scheduleAttitudeCheck();
       },
       onError: (error) {
+        // A4：旧会话失败不得把当前会话最后一条 user 消息误标为 failed
+        if (!isCurrentSession()) return;
         host.ref.read(chatStoreProvider.notifier).setError(error);
       },
       onCancelled: () {

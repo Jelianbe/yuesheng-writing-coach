@@ -157,10 +157,15 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   @override
   void setAttitude(AttitudeLevel value) {
     setState(() => _attitude = value);
-    // 全局记忆：用户切档 = 下次新 session 默认这个
+    // A6：态度档与教练人格收敛为单一真源（coach_persona_active）。
+    // 此前这里只写 coach_attitude，而读取端 getActiveCoachPersonaId 优先读
+    // coach_persona_active——一旦用户在教练设置里选过人格，头部切档 UI 变了
+    // 但注入语气没变。改走 setActiveCoachPersona：系统预设（value 即
+    // doubao/yuesheng/sensei）会同时双写 coach_persona_active + coach_attitude，
+    // 与教练设置页选人完全同路；旧用户只写过 coach_attitude 的读取回退不受影响。
     AppStateRepository(
       ref.read(appDatabaseProvider),
-    ).setCoachAttitude(value.name);
+    ).setActiveCoachPersona(value.name);
   }
 
   @override
@@ -204,6 +209,9 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
 
   @override
   void scheduleAttitudeCheck() => _attitudeController.scheduleAttitudeCheck();
+
+  @override
+  void cancelActiveGeneration() => _teaching.cancelGeneration();
 
   @override
   void initState() {

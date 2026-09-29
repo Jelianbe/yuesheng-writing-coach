@@ -105,6 +105,10 @@ abstract class ChatPageHost {
   /// 切换/新建会话时清空输入框与态度建议横幅
   void clearComposerState();
 
+  /// A4：取消当前进行中的流式生成（切/建/删会话入口先调用，避免旧会话流
+  /// 的 chunk/完成/错误回调污染刚切到的新会话 UI）。无在途流时为空操作。
+  void cancelActiveGeneration();
+
   /// 延迟检查态度建议（发送完成后调用，对齐 RN）
   void scheduleAttitudeCheck();
 }

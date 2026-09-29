@@ -189,6 +189,51 @@ void main() {
         reason: 'pending 诊断章节不得跨会话存活',
       );
     });
+
+    // A4：切/建会话入口必须取消在途流式，并复位流式 UI（防旧会话串台）
+    testWidgets('resetSessionScopedState 取消旧流 + 复位流式 UI（A4）', (
+      tester,
+    ) async {
+      final host = await pumpHost(tester, database: db);
+      // 模拟「上一会话正在流式」
+      host.ref.read(
+        chatStoreProvider.notifier,
+      ).setStreaming(true, stageLabel: '正在思考…');
+      host.ref.read(chatStoreProvider.notifier).appendStreamingContent('旧会话残留');
+      expect(host.ref.read(chatStoreProvider).isStreaming, isTrue);
+
+      host.controller.resetSessionScopedState();
+
+      expect(host.cancelGenerationCalls, greaterThanOrEqualTo(1),
+          reason: '复位会话状态必须先取消旧流');
+      expect(host.ref.read(chatStoreProvider).isStreaming, isFalse,
+          reason: '新会话不在生成中，ThinkingIndicator 不得残留');
+      expect(host.ref.read(chatStoreProvider).streamingContent, '',
+          reason: '旧会话流式文本不得串到新会话');
+    });
+
+    testWidgets('handleSwitchSession 入口先取消在途流式（A4）', (tester) async {
+      final a = await SessionRepository(db).createBlankSession(title: '甲');
+      final b = await SessionRepository(db).createBlankSession(title: '乙');
+      final host = await pumpHost(tester, database: db);
+      // harness 未 watch bootstrap ⇒ 主动 await future 触发其构建（懒加载）
+      await host.ref.read(sessionBootstrapProvider.future);
+      await tester.pump();
+
+      final current = host.ref.read(sessionBootstrapProvider).value?.sessionId;
+      expect(current, isNotNull);
+      // 切到「非当前」的那个会话（bootstrap 落点取决于 updated_at 顺序，不取假设）
+      final other = current == a ? b : a;
+
+      final before = host.cancelGenerationCalls;
+      await host.controller.handleSwitchSession(other);
+      await tester.pump();
+
+      expect(host.cancelGenerationCalls, greaterThan(before),
+          reason: '切换会话必须先取消旧流，避免旧会话 chunk/完成/错误污染新会话 UI');
+      expect(host.ref.read(sessionBootstrapProvider).value?.sessionId, other,
+          reason: '切换后 bootstrap 应指向目标会话');
+    });
   });
 
   group('降级路径（本地库不可用 ⇒ R-028 留痕契约）', () {
@@ -272,6 +317,9 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   List<ActiveProblemView> _activeProblems = const [];
   List<SessionWithPhase> _sessions = const [];
   int clearComposerCalls = 0;
+
+  /// A4：记录 cancelActiveGeneration 被调用次数（会话切换入口应取消旧流）
+  int cancelGenerationCalls = 0;
   final GlobalKey<ChatInputState> _chatInputKey = GlobalKey<ChatInputState>();
 
   @override
@@ -344,6 +392,11 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   @override
   void clearComposerState() {
     clearComposerCalls++;
+  }
+
+  @override
+  void cancelActiveGeneration() {
+    cancelGenerationCalls++;
   }
 
   @override

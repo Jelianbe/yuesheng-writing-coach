@@ -559,6 +559,126 @@ void main() {
       );
       expect(button.enabled, false);
     });
+    // A4：流式中途切会话——旧会话流的 chunk/onComplete 不得污染刚切到的新会话 UI。
+    // DB 仍按原 session 落库（不落库串台），此处只断言守卫丢弃了迟到回调。
+    // （切会话时 cancel+reset 流式 UI 的部分由 chat_session_controller_test 单元覆盖。）
+    testWidgets('#A4 流式中途切会话：旧流 chunk/完成不污染新会话', (tester) async {
+      final appStateRepo = AppStateRepository(db);
+      await appStateRepo.setQuestionnaireCompleted(true);
+      final repo = SessionRepository(db);
+
+      // 两个会话各埋一条专属历史（无论 bootstrap 落在哪边，切过去都能认出）
+      final s1 = await repo.createBlankSession(title: 'S1');
+      await repo.addMessage(s1, 'user', 'S1专属历史', messageType: 'chat');
+      final s2 = await repo.createBlankSession(title: 'S2');
+      await repo.addMessage(s2, 'user', 'S2专属历史', messageType: 'chat');
+
+      final fake = _PausableFakeChatService(db);
+      final container = ProviderContainer(overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        lastSessionStorageProvider.overrideWithValue(MemoryLastSessionStorage()),
+        chatServiceProvider.overrideWithValue(fake),
+      ]);
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: ChatPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final active = container.read(sessionBootstrapProvider).value?.sessionId;
+      expect(active, isNotNull);
+      final other = active == s1 ? s2 : s1;
+      final otherMarker = active == s1 ? 'S2专属历史' : 'S1专属历史';
+
+      // 在当前会话发起发送：fake 捕获回调后不自动完成（手动控制时序）
+      await tester.enterText(find.byType(TextField), '你好教练');
+      await tester.pump();
+      await tester.tap(find.widgetWithIcon(FilledButton, Icons.arrow_upward));
+      await tester.pump();
+      expect(fake.callbacks, isNotNull, reason: 'fake 应捕获到流式回调');
+
+      // 仍在当前会话：旧流 chunk 应上屏
+      fake.callbacks!.onStream('当前流式片段');
+      await tester.pump();
+      expect(find.textContaining('当前流式片段'), findsOneWidget);
+
+      // 切到另一边（bootstrap 指向 other）
+      await container.read(sessionBootstrapProvider.notifier).switchTo(other);
+      await tester.pumpAndSettle();
+      expect(container.read(sessionBootstrapProvider).value?.sessionId, other);
+      expect(find.text(otherMarker), findsOneWidget);
+
+      // 旧流迟到 chunk：守卫按闭包 sessionId != 当前 active 丢弃，不得追加到新会话
+      fake.callbacks!.onStream('迟到chunk');
+      await tester.pump();
+      expect(find.textContaining('迟到chunk'), findsNothing,
+          reason: '旧会话迟到 chunk 不得串到新会话流式气泡');
+
+      // 旧流迟到 onComplete：守卫丢弃，不得用旧会话消息列表覆盖新会话
+      final assistantId = await repo.addMessage(active!, 'assistant', '旧会话专属回复');
+      await fake.callbacks!.onComplete('旧会话专属回复', assistantId);
+      await tester.pump();
+      expect(find.text(otherMarker), findsOneWidget);
+      expect(find.text('旧会话专属回复'), findsNothing,
+          reason: '旧会话 onComplete 不得把其 assistant 灌进当前会话');
+    });
+
+    // A5：重试失败消息——重试前删除旧失败 user 行，保证只产生一条 user 气泡
+    // （旧行为：每点一次重试就多一条重复 user 消息，并被 listMessages 喂回上下文）。
+    testWidgets('#A5 重试失败消息：不产生重复 user 气泡', (tester) async {
+      final appStateRepo = AppStateRepository(db);
+      await appStateRepo.setQuestionnaireCompleted(true);
+      final repo = SessionRepository(db);
+      final fake = _RetryFakeChatService(db);
+
+      final container = ProviderContainer(overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        lastSessionStorageProvider.overrideWithValue(MemoryLastSessionStorage()),
+        chatServiceProvider.overrideWithValue(fake),
+      ]);
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: ChatPage()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // 发送 → 首轮失败（露出重试按钮）
+      await tester.enterText(find.byType(TextField), '我的问题');
+      await tester.pump();
+      await tester.tap(find.widgetWithIcon(FilledButton, Icons.arrow_upward));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.text('发送失败，点击重试'), findsOneWidget);
+
+      // 点重试 → 应成功
+      await tester.tap(find.text('发送失败，点击重试'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.text('重试后回复'), findsOneWidget);
+
+      // UI：内容为「我的问题」的 user 气泡只有一条
+      expect(find.text('我的问题'), findsOneWidget,
+          reason: '重试不得复制出第二条 user 气泡');
+
+      // DB：当前会话里内容为「我的问题」的 user 行也只有一条
+      final sessionId = container.read(sessionBootstrapProvider).value?.sessionId;
+      expect(sessionId, isNotNull);
+      final rows = await repo.listMessages(sessionId!);
+      final userRows = rows
+          .where((m) => m.role == 'user' && m.content == '我的问题')
+          .toList();
+      expect(userRows, hasLength(1),
+          reason: '旧失败 user 行应在重试前删除，不得残留重复问句污染上下文');
+    });
   });
 
   group('删除消息（T9 #14）', () {
@@ -2100,6 +2220,67 @@ class _FakeChatService extends ChatService {
       '你好，我是月笙。',
     );
     callbacks.onComplete('你好，我是月笙。', messageId);
+  }
+}
+
+/// A4 测试替身：捕获 sendMessage 回调后不自动完成，由测试手动触发 onStream/onComplete，
+/// 用于复现「流式中途切会话」的迟到回调场景。
+class _PausableFakeChatService extends _FakeChatService {
+  _PausableFakeChatService(AppDatabase db)
+    : _db = db,
+      super(db);
+
+  final AppDatabase _db;
+  SendMessageCallbacks? callbacks;
+  String? sessionId;
+
+  @override
+  Future<void> sendMessage(
+    String sessionId,
+    String content,
+    SendMessageCallbacks callbacks,
+    SendMessageOptions options, {
+    TeachingSubphase? subphase,
+  }) async {
+    this.sessionId = sessionId;
+    this.callbacks = callbacks;
+    // 模拟真实流程：user 消息落库并上屏（之后不再自动推流/完成）
+    final repo = SessionRepository(_db);
+    final id = await repo.addMessage(sessionId, 'user', content);
+    final msg = await repo.getMessage(id);
+    if (msg != null) callbacks.onUserMessagePersisted?.call(msg);
+  }
+}
+
+/// A5 测试替身：首次发送失败，重试成功。用于断言「重试只产生一条 user 气泡」。
+class _RetryFakeChatService extends _FakeChatService {
+  _RetryFakeChatService(AppDatabase db) : _db = db, super(db);
+
+  final AppDatabase _db;
+  int calls = 0;
+
+  @override
+  Future<void> sendMessage(
+    String sessionId,
+    String content,
+    SendMessageCallbacks callbacks,
+    SendMessageOptions options, {
+    TeachingSubphase? subphase,
+  }) async {
+    calls++;
+    final repo = SessionRepository(_db);
+    final id = await repo.addMessage(sessionId, 'user', content);
+    final msg = await repo.getMessage(id);
+    if (msg != null) callbacks.onUserMessagePersisted?.call(msg);
+
+    if (calls == 1) {
+      // 首轮失败：user 消息已落库上屏，随后报错（标记 failed，露出重试按钮）
+      callbacks.onError('network down');
+      return;
+    }
+    // 重试成功：assistant 落库并完成
+    final aid = await repo.addMessage(sessionId, 'assistant', '重试后回复');
+    await callbacks.onComplete('重试后回复', aid);
   }
 }
 

@@ -80,17 +80,28 @@ class ChatMessagesController {
     final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
     if (bootstrap == null) return;
 
-    // 从失败集合中移除
-    host.ref
-        .read(chatStoreProvider.notifier)
-        .clearMessageFailed(failedMessageId);
-
-    // 找到失败消息的内容，重新发送
+    // 先取出失败消息内容（删除旧行后还能凭它重发）
     final chatState = host.ref.read(chatStoreProvider);
     final failedMsg = chatState.messages
         .where((m) => m.id == failedMessageId)
         .firstOrNull;
     if (failedMsg == null) return;
+
+    // A5：重试前先删掉该轮失败的 user 消息（DB 行 + 内存气泡）。
+    // 否则 handleSend 会再走一遍 _writeUserMessage → insert 一条同内容新 user 行，
+    // 每点一次重试就多一条重复 user 气泡，且这些重复问句会被 listMessages
+    // 喂回上下文污染对话历史。删除后重发只产生一条 user 气泡。
+    final sessionRepo = SessionRepository(host.ref.read(appDatabaseProvider));
+    try {
+      await sessionRepo.deleteMessage(bootstrap.sessionId, failedMessageId);
+    } catch (_) {
+      // 删除失败不阻断重试：新 user 行仍会写入，onComplete 整表回读时
+      // 旧失败行即便残留也由后续清理入口处理，保证用户能把消息发出去。
+    }
+    host.ref
+        .read(chatStoreProvider.notifier)
+      ..removeMessage(failedMessageId)
+      ..clearMessageFailed(failedMessageId);
 
     await teaching.handleSend(failedMsg.content);
   }

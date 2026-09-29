@@ -147,10 +147,16 @@ class ChatSessionController {
 
   /// 切换/新建会话时清空上一会话的临时状态（对齐 RN 重置诊断/练习/模态 store）
   void resetSessionScopedState() {
+    // A4：入口先取消旧会话在途的流式生成（cancel dio 请求），
+    // 否则旧流 chunk/onComplete/onError 会污染刚切到的新会话 UI。
+    host.cancelActiveGeneration();
     host.ref.read(practiceStoreProvider.notifier).resetPractice();
     host.ref.read(evaluationReportsProvider.notifier).resetReports();
     host.clearComposerState();
     host.setPrimaryRefTitle(null);
     host.ref.read(pendingDiagnosisChapterProvider.notifier).state = null;
+    // A4：复位流式 UI（新会话不在生成中），清掉旧会话残留的 ThinkingIndicator /
+    // 流式文本 / 错误横幅。旧流回调即便晚到也会被 _buildCallbacks 的会话守卫丢弃。
+    host.ref.read(chatStoreProvider.notifier).cancelStreaming();
   }
 }
