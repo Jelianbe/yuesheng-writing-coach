@@ -33,9 +33,9 @@ void main() {
     test('#2 命中多个症候 → 拼接 + 分隔符', () {
       final result = getTrainingFewShot(['P003', 'P004']);
       expect(result, isNotEmpty);
-      // 出现两次好/坏对比块
-      expect('❌ 问题版'.allMatches(result).length, 2);
-      expect('✅ 改善版'.allMatches(result).length, 2);
+      // P003 已吸收原 P019 子类型（2 个对比块），P004 1 个 → 共 3 个好/坏对比块
+      expect('❌ 问题版'.allMatches(result).length, 3);
+      expect('✅ 改善版'.allMatches(result).length, 3);
       // 中间分隔符
       expect(result, contains('---'));
     });
@@ -53,8 +53,8 @@ void main() {
       expect(result, contains('晨曦的金色光辉')); // P008 问题版原文
       // P999 不应出现 ID 字样
       expect(result.contains('P999'), false);
-      // 两块命中 → 两次好/坏对比
-      expect('❌ 问题版'.allMatches(result).length, 2);
+      // P003 吸收原 P019（2 块）+ P008（1 块）→ 共 3 个好/坏对比
+      expect('❌ 问题版'.allMatches(result).length, 3);
     });
 
     test('#5 空入参 → 空字符串', () {
@@ -77,77 +77,71 @@ void main() {
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
     test(
-      '#7 覆盖 29 个高频症候（首批 5 + 第二批 5 + 第三批 3 + 第四批 3 + 第五批 3 + 第六批 3 + 第七批 3 + 第八批 4，全覆盖收官）',
+      '#7 覆盖高频症候（0.3.6+9 聚类去重后 23 条；原 P017/P019/P023/P024/P025/P029 示例块已并入其保留症候）',
       () {
-        // 首批 5 个
+        // 首批
         expect(kTrainingFewShotLibrary.keys, contains('P003'));
         expect(kTrainingFewShotLibrary.keys, contains('P004'));
         expect(kTrainingFewShotLibrary.keys, contains('P008'));
         expect(kTrainingFewShotLibrary.keys, contains('P011'));
-        expect(kTrainingFewShotLibrary.keys, contains('P019'));
-        // 第二批 5 个（2026-08-27 扩容）
+        // 第二批
         expect(kTrainingFewShotLibrary.keys, contains('P005'));
         expect(kTrainingFewShotLibrary.keys, contains('P006'));
         expect(kTrainingFewShotLibrary.keys, contains('P007'));
         expect(kTrainingFewShotLibrary.keys, contains('P009'));
         expect(kTrainingFewShotLibrary.keys, contains('P010'));
-        // 第三批 3 个（2026-08-27 扩容）
+        // 第三批
         expect(kTrainingFewShotLibrary.keys, contains('P012'));
         expect(kTrainingFewShotLibrary.keys, contains('P013'));
         expect(kTrainingFewShotLibrary.keys, contains('P014'));
-        // 第四批 3 个（2026-08-27 扩容）
+        // 第四批
         expect(kTrainingFewShotLibrary.keys, contains('P015'));
         expect(kTrainingFewShotLibrary.keys, contains('P016'));
-        expect(kTrainingFewShotLibrary.keys, contains('P017'));
-        // 第五批 3 个（2026-08-27 扩容）
+        // 第五批
         expect(kTrainingFewShotLibrary.keys, contains('P018'));
         expect(kTrainingFewShotLibrary.keys, contains('P020'));
         expect(kTrainingFewShotLibrary.keys, contains('P021'));
-        // 第六批 3 个（2026-08-27 扩容）
+        // 第六批
         expect(kTrainingFewShotLibrary.keys, contains('P022'));
-        expect(kTrainingFewShotLibrary.keys, contains('P023'));
-        expect(kTrainingFewShotLibrary.keys, contains('P024'));
-        // 第七批 3 个（2026-08-27 扩容）
-        expect(kTrainingFewShotLibrary.keys, contains('P025'));
+        // 第七批
         expect(kTrainingFewShotLibrary.keys, contains('P026'));
         expect(kTrainingFewShotLibrary.keys, contains('P027'));
-        // 第八批 4 个（2026-08-27 扩容，收官）
+        // 第八批
         expect(kTrainingFewShotLibrary.keys, contains('P028'));
-        expect(kTrainingFewShotLibrary.keys, contains('P029'));
         expect(kTrainingFewShotLibrary.keys, contains('P030'));
         expect(kTrainingFewShotLibrary.keys, contains('P031'));
-        expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(29));
+        expect(kTrainingFewShotLibrary.length, 23);
       },
     );
 
-    test('#7e 第六批 P022/P023/P024 few-shot 命中检索（独有原文片段）', () {
+    test('#7e P022/P015/P026 few-shot 命中检索（原 P023→P015、P024→P026）', () {
       // 用各症候独有原文片段断言命中
       expect(getTrainingFewShot(['P022']), contains('往事往事'));
       expect(getTrainingFewShot(['P022']), contains('。。'));
-      expect(getTrainingFewShot(['P023']), contains('保护费'));
-      expect(getTrainingFewShot(['P023']), contains('哪只手打断的'));
-      expect(getTrainingFewShot(['P024']), contains('改变一切'));
-      expect(getTrainingFewShot(['P024']), contains('母亲'));
+      expect(getTrainingFewShot(['P015']), contains('保护费'));
+      expect(getTrainingFewShot(['P015']), contains('哪只手打断的'));
+      expect(getTrainingFewShot(['P026']), contains('改变一切'));
+      expect(getTrainingFewShot(['P026']), contains('母亲'));
     });
 
-    test('#7f 第七批 P025/P026/P027 few-shot 命中检索（独有原文片段）', () {
+    test('#7f P013/P026/P027 few-shot 命中检索（原 P025→P013）', () {
       // 用各症候独有原文片段断言命中
-      expect(getTrainingFewShot(['P025']), contains('玄渊大陆'));
-      expect(getTrainingFewShot(['P025']), contains('碎瓷片'));
-      expect(getTrainingFewShot(['P025']), contains('四件套'));
+      expect(getTrainingFewShot(['P013']), contains('玄渊大陆'));
+      expect(getTrainingFewShot(['P013']), contains('碎瓷片'));
+      expect(getTrainingFewShot(['P013']), contains('四件套'));
       expect(getTrainingFewShot(['P026']), contains('大家早点休息'));
       expect(getTrainingFewShot(['P026']), contains('乱葬岗'));
       expect(getTrainingFewShot(['P027']), contains('四十章没提了'));
       expect(getTrainingFewShot(['P027']), contains('别找我'));
     });
 
-    test('#7g 第八批 P028/P029/P030/P031 few-shot 命中检索（独有原文片段，收官）', () {
+    test('#7g P028/P007/P030/P031 few-shot 命中检索（原 P029→P007）', () {
       // 用各症候独有原文片段断言命中
       expect(getTrainingFewShot(['P028']), contains('很悲伤地离开'));
       expect(getTrainingFewShot(['P028']), contains('豆腐摔了一地'));
       expect(getTrainingFewShot(['P028']), contains('碗边缺了一块瓷'));
-      expect(getTrainingFewShot(['P029']), contains('三百字无分段'));
-      expect(getTrainingFewShot(['P029']), contains('文字墙'));
+      expect(getTrainingFewShot(['P007']), contains('三百字无分段'));
+      expect(getTrainingFewShot(['P007']), contains('文字墙'));
       expect(getTrainingFewShot(['P030']), contains('铺垫十章'));
       expect(getTrainingFewShot(['P030']), contains('断流'));
       expect(getTrainingFewShot(['P030']), contains('跪在师父面前'));
@@ -181,12 +175,12 @@ void main() {
       expect(getTrainingFewShot(['P014']), contains('雨停了'));
     });
 
-    test('#7c 第四批 P015-P017 few-shot 命中检索（独有原文片段）', () {
+    test('#7c 第四批 P015-P016 few-shot 命中检索（原 P017→P014）', () {
       // 用各症候独有原文片段断言命中
       expect(getTrainingFewShot(['P015']), contains('停住'));
       expect(getTrainingFewShot(['P015']), contains('喂鸟'));
       expect(getTrainingFewShot(['P016']), contains('刚好'));
-      expect(getTrainingFewShot(['P017']), contains('兰花'));
+      expect(getTrainingFewShot(['P014']), contains('兰花'));
     });
 
     test('#8 每条示例必含好/坏对比 + 改善点说明', () {

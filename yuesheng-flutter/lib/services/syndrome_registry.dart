@@ -178,6 +178,21 @@ const Map<String, String> kSyndromeMergeMap = {
   'P002': 'P009', // 角色空心化（历史合并）
   'H001': 'P013', // 更早编号系统的合并（b6 设计稿记载）
   'H002': 'P013',
+  // ── 0.3.6+9 症候库聚类去重（14 组合并，记录退役保留）──
+  'P039': 'P009', // 目标模糊症 → 角色空心化（目标具体化子类型）
+  'P045': 'P009', // 驱动力套皮缺失症 → 角色空心化（欲望无锚点子类型）
+  'P025': 'P013', // 黄金三章失效症 → 开篇平庸症
+  'P044': 'P013', // 切入点选择偏差症 → 开篇平庸症
+  'P035': 'P011', // 对话注水症 → 对话疲劳症
+  'P024': 'P026', // 期待感断裂症 → 章节钩子缺失症
+  'P023': 'P015', // 爽点乏力症 → 高潮疲软症
+  'P036': 'P006', // 流水账叙述症 → 节奏停滞
+  'P047': 'P003', // 空评价词症 → 情绪标签化
+  'P029': 'P007', // 段落失控症 → 句式节奏单一
+  'P048': 'P022', // 语法层语病症 → 重复用词/基础语病
+  'P017': 'P014', // 伏笔失效症 → 结尾乏力症
+  'P033': 'P032', // 升级节奏失衡症 → 金手指失衡症
+  'P019': 'P003', // 情感失真症 → 情绪标签化
 };
 
 /// 归一后的有效症候 ID（读取聚合：mergeMap[id] ?? id）
@@ -210,18 +225,18 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   // ── L1 基础表达 ──────────────────────────────────────────
   SyndromeRecord(
     id: 'P003',
-    name: '情绪标签化',
+    name: '情绪标签化（含原 P047 空评价词、P019 情感失真子类型）',
     shortName: '情绪标签化',
     keyword: '情绪词替代描写',
-    oneLine: '用"愤怒/悲伤/害怕"等词直接告知情绪，无具体感官细节',
-    typeLine: '描写缺乏细节',
-    trainingLine: '用情绪词替代具体感官描写，读者被"告知"而非"感受到"',
+    oneLine: '用"愤怒/悲伤"等情绪词直接告知，或用"很美/太棒了"空评价词盖章代替具体描写，情感与情境像开关切换',
+    typeLine: '描写缺乏细节，情感与情境不匹配',
+    trainingLine: '用情绪词/空评价词替代具体感官描写，读者被"告知"而非"感受到"；情感反应与情境不匹配、像开关切换（含原 P019）',
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     position: 'global',
-    techniques: ['T001', 'T002', 'T020', 'T031'],
-    actions: ['A004', 'A006'],
+    techniques: ['T001', 'T002', 'T020', 'T031', 'T003'],
+    actions: ['A004', 'A006', 'A016', 'A014'],
   ),
   SyndromeRecord(
     id: 'P004',
@@ -257,33 +272,33 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   ),
   SyndromeRecord(
     id: 'P006',
-    name: '节奏停滞',
+    name: '节奏停滞（含原 P036 流水账叙述子类型）',
     shortName: '节奏停滞',
     keyword: '叙事停滞无推进',
-    oneLine: '连续多段无新事件/新冲突/新信息，故事原地打转',
-    typeLine: '叙事推进过慢',
-    trainingLine: '事件推进密度低，叙事静止，读者在想"然后呢"',
+    oneLine: '连续多段无新事件/新冲突，或按时间平铺罗列事件无聚焦无详略，故事原地打转',
+    typeLine: '叙事推进过慢，事件平铺无聚焦',
+    trainingLine: '事件推进密度低、叙事静止，读者在想"然后呢"；或按时间平铺直叙、无冲突聚焦与详略分配（原 P036），读者读不出重点',
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
     position: 'middle',
     techniques: ['T008', 'T017', 'T018', 'T022'],
-    actions: ['A003', 'A005', 'A009'],
+    actions: ['A003', 'A005', 'A009', 'A011'],
   ),
   SyndromeRecord(
     id: 'P007',
-    name: '句式节奏单一',
+    name: '句式节奏单一（含原 P029 段落失控子类型）',
     shortName: '句式节奏单一',
     keyword: '句式结构重复',
-    oneLine: '连续多句相同句式结构，缺乏长短/节奏变化',
-    typeLine: '句式缺乏变化',
-    trainingLine: '连续多句相同结构，读者在句法层面产生疲劳',
+    oneLine: '连续多句相同句式结构缺乏长短变化，或段落过长无呼吸感/碎片化断行，阅读节奏失衡',
+    typeLine: '句式缺乏变化，段落组织失衡',
+    trainingLine: '连续多句相同结构，读者在句法层面产生疲劳；段落过长无呼吸或碎片化断行破坏阅读节奏（原 P029）',
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     position: 'global',
-    techniques: ['T019', 'T023', 'T025'],
-    actions: ['A009', 'A003'],
+    techniques: ['T019', 'T023', 'T025', 'T021'],
+    actions: ['A009', 'A003', 'A011'],
     v2ActionName: '句式单一',
   ),
   SyndromeRecord(
@@ -303,19 +318,19 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   ),
   SyndromeRecord(
     id: 'P009',
-    name: '角色空心化（含原 P002 角色工具化症状）',
+    name: '角色空心化（含原 P002 角色工具化、P039 目标模糊、P045 驱动力套皮子类型）',
     shortName: '角色空心化',
     keyword: '角色无驱动力',
-    oneLine: '角色行为缺乏动机，换角色剧情依然成立',
-    typeLine: '角色缺乏行为驱动力',
-    trainingLine: '角色缺乏行为驱动力，动机不足、角色被工具化',
+    oneLine: '角色行为缺乏动机，欲望停在"想变强"标签层、目标无数量/期限/代价，换角色剧情依然成立',
+    typeLine: '角色缺乏行为驱动力，目标不可追踪',
+    trainingLine: '角色缺乏行为驱动力，动机不足、角色被工具化；欲望只停在标签层无锚点（原 P045），目标缺数量/期限/代价不可追踪（原 P039）',
     type: SyndromeType.motivationDeficit,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
     position: 'global',
     techniques: ['T009', 'T004', 'T005'],
     actions: ['A003', 'A007'],
-    v1ActionName: '角色空心化（含原 P002 子症状）',
+    v1ActionName: '角色空心化（含原 P002/P039/P045 子类型）',
   ),
   SyndromeRecord(
     id: 'P010',
@@ -335,18 +350,18 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   ),
   SyndromeRecord(
     id: 'P011',
-    name: '对话疲劳症',
+    name: '对话疲劳症（含原 P035 对话注水子类型）',
     shortName: '对话疲劳症',
     keyword: '对话无区分度',
-    oneLine: '对话占过多篇幅且无潜台词、无动作支撑',
-    typeLine: '对话缺乏表现力',
-    trainingLine: '对话占过多篇幅且无区分度、无潜台词、无动作支撑',
+    oneLine: '对话占过多篇幅且无潜台词、无动作支撑；或寒暄客套/重复确认无信息增量，看似推进实则灌水',
+    typeLine: '对话缺乏表现力，信息密度不足',
+    trainingLine: '对话占过多篇幅且无区分度、无潜台词、无动作支撑；寒暄客套、重复确认、明知故问等无信息增量对话灌水（原 P035）',
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     position: 'global',
-    techniques: ['T013', 'T014', 'T015', 'T016'],
-    actions: ['A008', 'A006'],
+    techniques: ['T013', 'T014', 'T015', 'T016', 'T008'],
+    actions: ['A008', 'A006', 'A009'],
   ),
   // ── L4 情节结构 ──────────────────────────────────────────
   SyndromeRecord(
@@ -367,50 +382,50 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   ),
   SyndromeRecord(
     id: 'P013',
-    name: '开篇平庸症',
+    name: '开篇平庸症（含原 P025 黄金三章失效、P044 切入点选择偏差子类型）',
     shortName: '开篇平庸症',
     keyword: '开篇无钩子',
-    oneLine: '前300字无冲突/悬念/反常，读者3秒内流失',
-    typeLine: '开篇缺乏钩子',
-    trainingLine: '前300字无冲突/悬念/反常，读者3秒内没有读下去的理由',
+    oneLine: '前300字无冲突/悬念/反常，或切入点从最无聊处起笔绕大圈，前三章未建立代入/目标，读者3秒流失',
+    typeLine: '开篇缺乏钩子，阅读契约未建立',
+    trainingLine: '前300字无冲突/悬念/反常，读者3秒内没有读下去的理由；不从最有戏处起笔（原 P044），前三章未建立代入/冲突/金手指/目标（原 P025）',
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     position: 'beginning',
-    techniques: ['T024'],
+    techniques: ['T024', 'T008', 'T017'],
     actions: ['A007', 'A001'],
     v2ActionName: '开篇平庸',
   ),
   SyndromeRecord(
     id: 'P014',
-    name: '结尾乏力症',
+    name: '结尾乏力症（含原 P017 伏笔失效子类型）',
     shortName: '结尾乏力症',
     keyword: '结尾仓促/烂尾',
-    oneLine: '收束无满足感，机械降神或伏笔不回收',
-    typeLine: '结尾缺少收束满足感',
-    trainingLine: '收束仓促或机械降神，读者没有满足感',
+    oneLine: '收束无满足感，机械降神；或伏笔裸露/烂尾/解释式回收',
+    typeLine: '结尾缺少收束满足感，伏笔回收失控',
+    trainingLine: '收束仓促或机械降神，读者没有满足感；伏笔裸露、烂尾、解释式回收（原 P017）',
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     position: 'end',
-    techniques: ['T025', 'T026'],
-    actions: ['A007', 'A003'],
+    techniques: ['T025', 'T026', 'T017'],
+    actions: ['A007', 'A003', 'A012'],
     v2ActionName: '结尾乏力',
   ),
   SyndromeRecord(
     id: 'P015',
-    name: '高潮疲软症',
+    name: '高潮疲软症（含原 P023 爽点乏力子类型）',
     shortName: '高潮疲软症',
     keyword: '高潮执行不到位',
-    oneLine: '铺垫做好了但高潮段落无冲击力',
-    typeLine: '高潮执行不到位',
-    trainingLine: '铺垫做好了但高潮段落本身没有执行到位',
+    oneLine: '铺垫做好了但高潮段落无冲击力；关键胜利/优势展示无情绪回报，读者不"爽"',
+    typeLine: '高潮执行不到位，情绪回报缺失',
+    trainingLine: '铺垫做好了但高潮段落本身没有执行到位；关键胜利/优势展示无情绪回报（原 P023），读者不"爽"',
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     position: 'middle',
     techniques: ['T027', 'T018'],
-    actions: ['A007', 'A009'],
+    actions: ['A007', 'A009', 'A005', 'A013'],
     v2ActionName: '高潮疲软',
   ),
 ];
@@ -448,6 +463,9 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     techniques: ['T026', 'T017'],
     actions: ['A012', 'A003'],
     v2ActionName: '伏笔失效',
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P014',
   ),
   // ── L3 角色塑造 ──────────────────────────────────────────
   SyndromeRecord(
@@ -481,6 +499,9 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     techniques: ['T001', 'T020'],
     actions: ['A014', 'A004'],
     v2ActionName: '情感失真',
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P003',
   ),
   // ── L2 叙事节奏 ──────────────────────────────────────────
   SyndromeRecord(
@@ -517,12 +538,12 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   ),
   SyndromeRecord(
     id: 'P022',
-    name: '重复用词/基础语病',
+    name: '重复用词/基础语病（含原 P048 语法层语病症）',
     shortName: '重复用词/基础语病',
     keyword: '重复用词/基础语病',
-    oneLine: '相邻字重复/连续标点/高频词反复，基础文法问题',
-    typeLine: '表达不够精炼',
-    trainingLine: '相邻字重复/连续标点/高频词反复，基础文法问题分散注意力',
+    oneLine: '相邻字重复/连续标点/高频词反复；主谓搭配不当、指代混乱、成分残缺等基础文法问题',
+    typeLine: '表达不够精炼，基础语法失稳',
+    trainingLine: '相邻字重复/连续标点/高频词反复；主谓搭配不当、指代不清、时态跳脱、成分残缺（原 P048）等基础文法问题分散注意力',
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
@@ -545,6 +566,9 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'chapter',
     techniques: ['T027', 'T018'],
     actions: ['A005', 'A013'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P015',
   ),
   SyndromeRecord(
     id: 'P024',
@@ -560,6 +584,9 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'serial',
     techniques: ['T017', 'T026'],
     actions: ['A012', 'A003'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P026',
   ),
   SyndromeRecord(
     id: 'P025',
@@ -575,21 +602,24 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'global',
     techniques: ['T024'],
     actions: ['A007', 'A001'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P013',
   ),
   SyndromeRecord(
     id: 'P026',
-    name: '章节钩子缺失症',
+    name: '章节钩子缺失症（含原 P024 期待感断裂子类型）',
     shortName: '章节钩子缺失症',
     keyword: '章节钩子缺失',
-    oneLine: '章末无悬念/反转/冲击，无翻页动力',
-    typeLine: '章末悬念设计缺失，无翻页动力',
-    trainingLine: '章末无悬念/反转/冲击，无翻页动力',
+    oneLine: '章末无悬念/反转/冲击无翻页动力；或钩子不兑现/提前剧透，读者期待落空',
+    typeLine: '章末悬念设计缺失，承诺管理失衡',
+    trainingLine: '章末无悬念/反转/冲击，无翻页动力；章末钩子不兑现、提前剧透等期待管理失衡（原 P024）',
     type: SyndromeType.commercialAppeal,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     position: 'chapter',
-    techniques: ['T017', 'T027'],
-    actions: ['A012', 'A009'],
+    techniques: ['T017', 'T027', 'T026'],
+    actions: ['A012', 'A009', 'A003'],
   ),
   SyndromeRecord(
     id: 'P027',
@@ -640,6 +670,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'chapter',
     techniques: ['T021', 'T019'],
     actions: ['A011', 'A009'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P007',
   ),
   SyndromeRecord(
     id: 'P030',
@@ -674,17 +707,17 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   // ── 批次32（b10 三症候扩容：网文商业）：P032 ───────────────
   SyndromeRecord(
     id: 'P032',
-    name: '金手指失衡症',
+    name: '金手指失衡症（含原 P033 升级节奏失衡子类型）',
     shortName: '金手指失衡症',
     keyword: '金手指使用失衡',
-    oneLine: '金手指迟迟不亮相/过强消灭冲突/规则前后崩坏，读者失去代入与期待',
-    typeLine: '金手指设定或使用失衡，机制压过叙事',
-    trainingLine: '金手指设定与使用失衡——亮相时机、强度上限、规则一致性至少一处出问题',
+    oneLine: '金手指迟迟不亮相/过强消灭冲突/规则崩坏；升级过快力量通胀或过慢失去期待，成长弧线失衡',
+    typeLine: '金手指设定或使用失衡，成长节奏失控',
+    trainingLine: '金手指设定与使用失衡——亮相时机、强度上限、规则一致性至少一处出问题；升级过快力量通胀或过慢失去期待（原 P033）',
     type: SyndromeType.commercialAppeal,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     position: 'serial',
-    techniques: ['T017', 'T024', 'T026'],
+    techniques: ['T017', 'T024', 'T026', 'T027', 'T008'],
     actions: ['A013', 'A009'],
   ),
   // ── 批次33（b10 三症候扩容：网文商业）：P033 ───────────────
@@ -702,6 +735,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'serial',
     techniques: ['T027', 'T008', 'T017'],
     actions: ['A009', 'A013'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P032',
   ),
   // ── 批次34（b10 三症候扩容：配角群像）：P034 ───────────────
   SyndromeRecord(
@@ -734,6 +770,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'chapter',
     techniques: ['T013', 'T008', 'T016'],
     actions: ['A008', 'A009'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P011',
   ),
   // ── 批次41（b12 四症候扩容：叙事效率与结构硬伤）：P036 ──
   SyndromeRecord(
@@ -750,6 +789,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'chapter',
     techniques: ['T022', 'T008', 'T018'],
     actions: ['A009', 'A011'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P006',
   ),
   // ── 批次42（b12 四症候扩容：叙事效率与结构硬伤）：P037 ──
   SyndromeRecord(
@@ -798,6 +840,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T009', 'T004', 'T005'],
     actions: ['A003', 'A007'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P009',
   ),
   // ── 批次46（b13 角色驱动层扩容）：P040 ──
   SyndromeRecord(
@@ -878,6 +923,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'serial',
     techniques: ['T008', 'T017'],
     actions: ['A007', 'A001'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P013',
   ),
   // ── 阶段三：P045 ──
   SyndromeRecord(
@@ -894,6 +942,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T009', 'T004', 'T005'],
     actions: ['A003', 'A007'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P009',
   ),
   // ── 阶段三（档2 通用规范·翻译腔）：P046 ──
   SyndromeRecord(
@@ -926,6 +977,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'chapter',
     techniques: ['T003', 'T002'],
     actions: ['A006', 'A016'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P003',
   ),
   // ── 阶段三（档2 通用规范·语法层）：P048 ──
   SyndromeRecord(
@@ -942,6 +996,9 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'chapter',
     techniques: ['T019', 'T003'],
     actions: ['A016', 'A011'],
+    retired: true,
+    retiredReason: SyndromeRetiredReason.merged,
+    mergedInto: 'P022',
   ),
   // ── 阶段三（档2 通用规范·冲突未升级/模式重复）：P049 ──
   SyndromeRecord(

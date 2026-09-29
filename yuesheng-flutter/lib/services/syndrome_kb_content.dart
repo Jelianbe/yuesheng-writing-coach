@@ -80,7 +80,7 @@ String buildSyndromeIndexContent([Set<String> disabled = const {}]) {
   "root_cause_analysis": "可选：根因分析",
   "next_focus": "可选：下次聚焦点",
   "teaching_plan": {
-    "current_teaching_focus_id": "可选：当前教学焦点症候 ID（如 P019，必须从 syndromes 中选取）",
+    "current_teaching_focus_id": "可选：当前教学焦点症候 ID（如 P003，必须从 syndromes 中选取）",
     "focus_reason": "可选：为什么选这个 focus（一句话）",
     "next_step": "可选：训练目标/下一步动作（自然语言）"
   }

@@ -15,16 +15,19 @@ import 'package:writingcoach/services/syndrome_skill_levels.dart';
 
 void main() {
   group('批次27（b9）注册表合法性', () {
-    test('#R1 注册表非空且 ID 升序连续（P003 起逐号递增）', () {
+    test('#R1 注册表非空且 ID 升序连续（P003 起逐号递增，退役记录原位保留不删行）', () {
       expect(kSyndromeRegistry, isNotEmpty);
-      final ids = kSyndromeIds;
+      // 连续性不变量作用于注册表数组本身（含退役记录原位保留）：P003..P049 逐号递增、ID 不复用。
+      // 活跃列表 kSyndromeIds 在聚类去重后会跳过退役 ID，kAllSyndromeIds 是 active+retired 拼接，
+      // 二者都不保持编号连续，故此处直接遍历 kSyndromeRegistry 的数组顺序。
+      final ids = kSyndromeRegistry.map((s) => s.id).toList();
       expect(ids.length, kSyndromeRegistry.length);
       for (int i = 0; i < ids.length; i++) {
         expect(
           ids[i],
           'P${(3 + i).toString().padLeft(3, '0')}',
           reason:
-              '症候 ID 应连续递增，第 ${i + 1} 个应为 P${(3 + i).toString().padLeft(3, '0')}',
+              '注册表症候 ID 应连续递增，第 ${i + 1} 个应为 P${(3 + i).toString().padLeft(3, '0')}',
         );
       }
     });
@@ -103,8 +106,8 @@ void main() {
       );
       // 与既有 API 双写一致（kSyndromeSkillLevels 现由注册表派生）
       expect(kSyndromeSkillLevels, derived);
-      // skillLevelOf 逐个命中
-      for (final s in kSyndromeRegistry) {
+      // skillLevelOf 逐个命中（退役记录不进派生层级表，仅校验活跃症候）
+      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
         expect(
           skillLevelOf(s.id),
           s.level,

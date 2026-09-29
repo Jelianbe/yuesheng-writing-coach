@@ -13,10 +13,11 @@ import 'package:writingcoach/types/teaching_types.dart';
 
 void main() {
   group('批次60a: 症候技能层级表', () {
-    test('#S1 全部症候（注册表 ${kSyndromeRegistry.length} 个）有技能层级', () {
-      expect(kSyndromeSkillLevels.length, kSyndromeRegistry.length);
-      // 逐症候断言（b9 真源化：从注册表派生）
-      for (final s in kSyndromeRegistry) {
+    test('#S1 全部活跃症候（注册表 ${kSyndromeIds.length} 个）有技能层级', () {
+      // 0.3.6+9 聚类去重：技能层级表由活跃注册表派生（退役记录不进表）。
+      expect(kSyndromeSkillLevels.length, kSyndromeIds.length);
+      // 逐症候断言（b9 真源化：从注册表派生；退役记录不进派生表，仅校验活跃）
+      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
         expect(
           skillLevelOf(s.id),
           s.level,
@@ -28,18 +29,13 @@ void main() {
       expect(skillLevelOf('P006'), SkillLevel.l2); // 节奏停滞 → 叙事节奏
       expect(skillLevelOf('P009'), SkillLevel.l3); // 角色空心化 → 角色塑造
       expect(skillLevelOf('P013'), SkillLevel.l4); // 开篇无钩子 → 情节结构
-      expect(skillLevelOf('P017'), SkillLevel.l4); // 伏笔失效 → 情节结构
+      expect(skillLevelOf('P014'), SkillLevel.l4); // 结尾乏力（含原 P017 伏笔失效）→ 情节结构
       expect(skillLevelOf('P022'), SkillLevel.l1); // 重复用词/基础语病 → 基础表达（批次70）
-      // 批次15（7.1）：P023-P027 网文商业症候 → 情节结构
-      expect(skillLevelOf('P023'), SkillLevel.l4);
-      expect(skillLevelOf('P024'), SkillLevel.l4);
-      expect(skillLevelOf('P025'), SkillLevel.l4);
+      // 批次15（7.1）：P026-P027 网文商业症候 → 情节结构（P023/P024/P025 已退役并入 P015/P026/P013）
       expect(skillLevelOf('P026'), SkillLevel.l4);
       expect(skillLevelOf('P027'), SkillLevel.l4);
       // 批次23（叙事基础空缺）：P028 画面感缺失 → 叙事节奏
       expect(skillLevelOf('P028'), SkillLevel.l2);
-      // 批次24（叙事基础空缺）：P029 段落失控 → 叙事节奏
-      expect(skillLevelOf('P029'), SkillLevel.l2);
       // 批次25（叙事基础空缺）：P030 节奏比例失衡 → 情节结构
       expect(skillLevelOf('P030'), SkillLevel.l4);
       // 批次26（叙事基础空缺）：P031 设定矛盾 → 情节结构

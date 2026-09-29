@@ -224,11 +224,11 @@ void main() {
   });
 
   group('deriveMasteredTechniqueIds（症候级 mastered → 技法集合派生）', () {
-    test('mastered 症候 → 派生其全部映射技法（P007 → T019/T023/T025）', () {
+    test('mastered 症候 → 派生其全部映射技法（P007 → T019/T023/T025/T021，含原 P029 动静烘托法）', () {
       final ids = deriveMasteredTechniqueIds([
         _problem('P007', teachingState: TeachingState.mastered.value),
       ]);
-      expect(ids, {'T019', 'T023', 'T025'});
+      expect(ids, {'T019', 'T023', 'T025', 'T021'});
     });
 
     test('非 mastered 状态（identified/in_progress/consolidating）→ 不派生', () {

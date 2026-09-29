@@ -80,13 +80,15 @@ void main() {
   final ids = activeSyndromeIds();
 
   group('① 覆盖一致性：分块 prompt 含注册表全部症候 ID', () {
-    test('注册表自身非空且无退役（判据前提）', () {
+    test('注册表自身非空（判据前提，0.3.6+9 聚类去重后活跃 33 条）', () {
+      // 0.3.6+9 聚类去重：14 个症候按 b11 退役（记录保留、mergedInto 指向保留症候），
+      // 活跃症候由 47 收敛为 33。此处只要求活跃集合非空且维持在合理规模。
       expect(
         ids.length,
-        greaterThanOrEqualTo(39),
+        greaterThanOrEqualTo(30),
         reason:
-            '注册表非退役症候数应 ≥ 39（ADR-C69 登记时为 39）。\n'
-            '当前 ${ids.length} 个。若数量下降，先确认是否有症候被误标退役。',
+            '注册表活跃症候数应 ≥ 30。\n'
+            '当前 ${ids.length} 个。聚类去重后若再骤降，先确认是否有误标退役。',
       );
     });
 

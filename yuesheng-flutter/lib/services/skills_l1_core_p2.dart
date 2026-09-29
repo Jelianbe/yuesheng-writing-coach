@@ -116,7 +116,7 @@ const String _teachingStrategyBody2 = '''
 - suggested_beginner_level (string): **可选**。零基础教学路径阶段迁移建议。仅当学员处于 N0-N2 阶段且检测到推进信号时填（如 N0→N1 学员完成首个三句话练习；N1→N2 学员完成单元5段落形成；N2→N3 学员完成单元10完整小场景）。N3/N4 阶段不填此字段（由 suggested_phase 驱动 P 系迁移）。取值 N0_ENGAGE / N1_ELEMENTS / N2_SCENE / N3_DIAGNOSE / N4_INDEPENDENT。首次检测到零基础学员（学员说"从没写过"/"不知道怎么写"）时填 N0_ENGAGE 激活零基础路径。
 - teaching_mode (string): **可选**。声明本轮诊断采用的教学方式，用于闭环教学循环的策略效果追踪。取值 socratic / mirror / conflict / direct。系统会根据历史诊断严重度变化自动推断效果（improved / no_change / worsened）并注入到下一轮对话上下文，用于帮助你决定是否切换教学方式。
 - teaching_plan (object|null): **可选**。结构化教学计划子对象，用于驱动代码侧的 focus 激活与 L3 分级注入。包含三个字段：
-  - current_teaching_focus_id (string|null): 当前教学焦点的症候 ID（如 P019）。必须从本轮 syndromes 中选取，且应为最值得优先训练的问题。代码会以此字段驱动 L3 完整定义+技法注入；缺失时走 fallback 优先级表。
+  - current_teaching_focus_id (string|null): 当前教学焦点的症候 ID（如 P003）。必须从本轮 syndromes 中选取，且应为最值得优先训练的问题。代码会以此字段驱动 L3 完整定义+技法注入；缺失时走 fallback 优先级表。
   - focus_reason (string|null): 为什么选这个 focus（一句话）。下一轮会被注入到 system prompt 帮助你保持教学连贯。
   - next_step (string|null): 训练目标/下一步动作（自然语言）。是原 next_focus 字段的进化版，与 current_teaching_focus_id 形成 3 元组。
   

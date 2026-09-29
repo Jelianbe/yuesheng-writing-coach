@@ -2,7 +2,7 @@
   "meta": {
     "caseCount": 47,
     "note": "教学闭环结构化决策基线（话术文案不进快照，详见批次96-17/96-18）",
-    "generatedAt": "2026-09-27T13:06:31.863284"
+    "generatedAt": "2026-09-29T20:38:33.943196"
   },
   "cases": {
     "A1": {
@@ -487,18 +487,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P017"
+          "P014"
         ],
         "l2SyndromeIds": [
-          "P017"
+          "P014"
         ],
-        "primarySyndromeId": "P017",
+        "primarySyndromeId": "P014",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P017",
+        "taskTargetSyndromeId": "P014",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -543,18 +543,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P019"
+          "P003"
         ],
         "l2SyndromeIds": [
-          "P019"
+          "P003"
         ],
-        "primarySyndromeId": "P019",
+        "primarySyndromeId": "P003",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P019",
+        "taskTargetSyndromeId": "P003",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -599,18 +599,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P023"
+          "P015"
         ],
         "l2SyndromeIds": [
-          "P023"
+          "P015"
         ],
-        "primarySyndromeId": "P023",
+        "primarySyndromeId": "P015",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P023",
+        "taskTargetSyndromeId": "P015",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -627,18 +627,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P024"
+          "P026"
         ],
         "l2SyndromeIds": [
-          "P024"
+          "P026"
         ],
-        "primarySyndromeId": "P024",
+        "primarySyndromeId": "P026",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P024",
+        "taskTargetSyndromeId": "P026",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -655,18 +655,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P025"
+          "P013"
         ],
         "l2SyndromeIds": [
-          "P025"
+          "P013"
         ],
-        "primarySyndromeId": "P025",
+        "primarySyndromeId": "P013",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P025",
+        "taskTargetSyndromeId": "P013",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -739,18 +739,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P029"
+          "P007"
         ],
         "l2SyndromeIds": [
-          "P029"
+          "P007"
         ],
-        "primarySyndromeId": "P029",
+        "primarySyndromeId": "P007",
         "confidence": 0.91
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P029",
+        "taskTargetSyndromeId": "P007",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -851,18 +851,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P033"
+          "P032"
         ],
         "l2SyndromeIds": [
-          "P033"
+          "P032"
         ],
-        "primarySyndromeId": "P033",
+        "primarySyndromeId": "P032",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P033",
+        "taskTargetSyndromeId": "P032",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -907,18 +907,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P035"
+          "P011"
         ],
         "l2SyndromeIds": [
-          "P035"
+          "P011"
         ],
-        "primarySyndromeId": "P035",
+        "primarySyndromeId": "P011",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P035",
+        "taskTargetSyndromeId": "P011",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -935,18 +935,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P036"
+          "P006"
         ],
         "l2SyndromeIds": [
-          "P036"
+          "P006"
         ],
-        "primarySyndromeId": "P036",
+        "primarySyndromeId": "P006",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P036",
+        "taskTargetSyndromeId": "P006",
         "taskType": "rewrite"
       },
       "consistency": {
@@ -1019,18 +1019,18 @@
       "diagnosis": {
         "parsed": true,
         "syndromeIds": [
-          "P039"
+          "P009"
         ],
         "l2SyndromeIds": [
-          "P039"
+          "P009"
         ],
-        "primarySyndromeId": "P039",
+        "primarySyndromeId": "P009",
         "confidence": 0.9
       },
       "teacher": {
         "teachingDecision": "train",
         "hasTask": true,
-        "taskTargetSyndromeId": "P039",
+        "taskTargetSyndromeId": "P009",
         "taskType": "rewrite"
       },
       "consistency": {

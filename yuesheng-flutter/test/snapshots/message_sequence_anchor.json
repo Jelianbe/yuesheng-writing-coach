@@ -5,8 +5,8 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 30261,
-      "fnv": "17f13df5e23d43d4"
+      "len": 30171,
+      "fnv": "277bdf921593a4e"
     },
     {
       "role": "system",
@@ -27,8 +27,8 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 64598,
-      "fnv": "35a9fbaa7b79fabb"
+      "len": 64523,
+      "fnv": "24ec1232c4dbe382"
     },
     {
       "role": "system",
@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 52798,
-      "fnv": "d4631a2955fbc9"
+      "len": 51690,
+      "fnv": "c2faf6800d6afc0"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 54581,
-      "fnv": "1910935bd0810ad2"
+      "len": 53473,
+      "fnv": "529861e967ae075"
     },
     {
       "role": "system",
@@ -93,8 +93,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 69140,
-      "fnv": "36d96e6d2da3f950"
+      "len": 67578,
+      "fnv": "6a686349c358bb71"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 54581,
-      "fnv": "1910935bd0810ad2"
+      "len": 53473,
+      "fnv": "529861e967ae075"
     },
     {
       "role": "system",
@@ -137,8 +137,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 47676,
-      "fnv": "6982b52140663a93"
+      "len": 46947,
+      "fnv": "71b83b92cac5fcb1"
     },
     {
       "role": "system",
@@ -159,8 +159,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 47533,
-      "fnv": "2938c9e8821fd986"
+      "len": 46804,
+      "fnv": "4a49fc56a291b142"
     },
     {
       "role": "system",
@@ -181,8 +181,8 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 66072,
-      "fnv": "7d984e43122db424"
+      "len": 65997,
+      "fnv": "5fdf4765a2690ab5"
     },
     {
       "role": "system",
