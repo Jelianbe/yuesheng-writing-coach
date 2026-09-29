@@ -1438,10 +1438,12 @@ extension ChatServiceSend on ChatService {
         : '\n\n## 待诊断全文\n\n$chapterFullText';
     final threshold = await _resolveDirectExplainThreshold();
     final directExplain =
-        '\n\n【症候过多直接说明】\n'
-        '若本次识别出的症候数量 ≥ $threshold，正文请直接逐条说明全部症候'
-        '（每条简明给出：是什么、为什么、怎么改），不要只挑一个讲解；'
-        '若少于 $threshold，按正常教学方式聚焦讲解。';
+        '\n\n【症候过多时的全貌呈现】\n'
+        '若本次识别出的症候数量 ≥ $threshold：\n'
+        '1. 用编号列出全部症候——每条只写「名称 + 落在哪一句」，**不要给改法**；\n'
+        '2. 末尾问一句"这些都在，你想先动哪个"，把选择权交给学员；\n'
+        '3. 学员选定一条后，才对那一条展开"怎么改"（走正常教学流程）。\n'
+        '若少于 $threshold，按正常教学方式聚焦讲解 1-2 条。';
     messages[lastUser] = ChatMessage(
       role: m.role,
       content:

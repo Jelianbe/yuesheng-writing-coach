@@ -151,7 +151,7 @@ void main() {
       );
 
       expect(text, contains('认知风格：'));
-      expect(text, contains('关键词使用频率推断'));
+      expect(text, contains('关键词粗略推断'));
       expect(text, isNot(contains('教学方式约束')));
     });
 
@@ -260,8 +260,7 @@ void main() {
       );
       expect(note, isNotNull);
       expect(note, contains('认知风格：'));
-      expect(note, contains('65%'));
-      expect(note, contains('关键词使用频率推断'));
+      expect(note, contains('关键词粗略推断'));
     });
 
     test('onboarding 存在：返回 null（与学习偏好同源去重）', () {

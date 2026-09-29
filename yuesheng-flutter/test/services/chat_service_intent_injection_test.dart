@@ -486,7 +486,7 @@ void main() {
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('[YS_DIAGNOSIS]'));
       expect(sent, contains('症候数量 ≥ 5'));
-      expect(sent, contains('直接逐条说明全部症候'));
+      expect(sent, contains('编号列出全部症候'));
     });
 
     test('#14 自定义人格阈值生效（激活人格 threshold=7 → 注入 ≥ 7）', () async {

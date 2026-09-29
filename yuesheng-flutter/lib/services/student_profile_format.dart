@@ -221,8 +221,8 @@ String? buildCognitiveStyleNote(
       : style.style == CognitiveStyle.intuitive
       ? '直觉型'
       : '混合型';
-  return '认知风格：$styleLabel（置信度 ${(style.confidence * 100).toStringAsFixed(0)}%）\n'
-      '依据：基于用户历史 $styleBasis 关键词使用频率推断';
+  return '认知风格：$styleLabel（仅供参考，学员说不合适时优先往另一边换）\n'
+      '依据：基于近期消息关键词粗略推断，不是确定性判断';
 }
 
 /// 认知风格段（R-019 拆出：_appendProficiencyAssessment）。
