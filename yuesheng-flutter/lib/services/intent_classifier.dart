@@ -263,10 +263,12 @@ String? buildIntentInstruction(UserIntent intent, List<String> recentIntents) {
   }
 }
 
-/// 诊断请求信号（ADR-C82）：**明确**请求评价/诊断的措辞 —— 强信号。
+/// 诊断请求信号（ADR-C82）：**明确**请求评价/诊断的中文措辞 —— 强信号。
 ///
 /// 这些措辞语义上就是「请评价/诊断」，与教学语汇重合度低 ⇒ 任何场景均触发。
 /// 与教学语汇重合的通用措辞另见 [_contextualDiagnosisSignals]。
+/// P1-5：英文强信号（improve/review/feedback/comment）在中文对话里常作普通
+/// 学习诉求（「我想 improve 一下节奏」），降级为需 hasDiagnosisContext 佐证。
 const List<String> _diagnosisSignals = [
   // 中文
   '诊断',
@@ -277,9 +279,14 @@ const List<String> _diagnosisSignals = [
   '分析一下',
   '提提意见',
   '看看有什么问题',
-  // 英文
+  // 英文（diagnose/diagnosis 是「诊断」本身，无歧义，保留强信号）
   'diagnose',
   'diagnosis',
+];
+
+/// 英文诊断信号——需会话级诊断上下文佐证才触发（P1-5 降级）。
+/// analyze/review/improve/feedback/comment 在中文对话里常作普通学习诉求。
+const List<String> _englishDiagnosisSignals = [
   'analyze',
   'analysis',
   'review',
@@ -301,6 +308,21 @@ const List<String> _diagnosisSignals = [
 /// 被措辞误命中的代价是**真实 API 花费 + 诊断数据污染**，而非仅措辞偏差。
 const List<String> _contextualDiagnosisSignals = ['怎么改', '哪里不好', '怎么改进'];
 
+/// P1-5：否定前缀——这些词紧邻信号词出现时，该信号不算诊断请求。
+/// 「别诊断了直接教我」「我不想评价这段」含信号词但语义是**取消**诊断。
+const List<String> _negationPrefixes = ['别', '不要', '不想', '取消', '停止', '不用'];
+
+/// 扫描 text 中是否有信号词被否定前缀紧邻修饰（返回 true = 该信号应跳过）。
+bool _hasNegationBeforeSignal(String lower, String signal) {
+  final idx = lower.indexOf(signal);
+  if (idx <= 0) return false;
+  // 检查信号词前 1-2 个字符是否是否定前缀
+  for (final neg in _negationPrefixes) {
+    if (lower.startsWith(neg, (idx - neg.length).clamp(0, idx))) return true;
+  }
+  return false;
+}
+
 /// 检测是否为明确诊断请求（纯函数，无副作用）。
 ///
 /// 命中返回 true → 发送链在 user 消息侧注入诊断协议（ADR-C82）。
@@ -312,7 +334,16 @@ bool isDiagnosisRequest(String text, {bool hasDiagnosisContext = false}) {
   final t = text.trim();
   if (t.isEmpty) return false;
   final lower = t.toLowerCase();
-  if (_diagnosisSignals.any(lower.contains)) return true;
-  if (!hasDiagnosisContext) return false;
-  return _contextualDiagnosisSignals.any(lower.contains);
+  // P1-5：中文强信号，跳过被否定前缀修饰的命中。
+  for (final sig in _diagnosisSignals) {
+    if (lower.contains(sig) && !_hasNegationBeforeSignal(lower, sig)) return true;
+  }
+  // P1-5：英文信号降级为需上下文佐证。
+  if (hasDiagnosisContext) {
+    for (final sig in _englishDiagnosisSignals) {
+      if (lower.contains(sig) && !_hasNegationBeforeSignal(lower, sig)) return true;
+    }
+    return _contextualDiagnosisSignals.any(lower.contains);
+  }
+  return false;
 }

@@ -55,6 +55,11 @@ class SkillLoadContext {
   ///   替代默认态度档位内容（用户人格 = 用户选择的固定声音）。
   final CoachPersona? activePersona;
 
+  /// P1-4：当前消息措辞触发了诊断协议注入，但 l2Mode 并非 diagnosis 阶段时，
+  /// 强制注入「先建现场再归类」护栏（否则 P3 阶段裸奔诊断：协议要求 JSON 输出，
+  /// 却拿不到症候字典和现场引导）。
+  final bool forceDiagnosisSceneFirst;
+
   const SkillLoadContext({
     required this.phase,
     required this.attitude,
@@ -64,6 +69,7 @@ class SkillLoadContext {
     this.isOutlineContext = false,
     this.disabledSyndromeIds = const {},
     this.activePersona,
+    this.forceDiagnosisSceneFirst = false,
   });
 }
 

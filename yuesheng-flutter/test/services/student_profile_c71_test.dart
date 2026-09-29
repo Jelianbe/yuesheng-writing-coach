@@ -261,6 +261,10 @@ void main() {
       expect(note, isNotNull);
       expect(note, contains('认知风格：'));
       expect(note, contains('关键词粗略推断'));
+      // P1-8：去置信度删了正向断言却没加负向断言——将来谁手滑把百分比加回来，
+      // 测试照样绿。补负向断言：不允许出现 % 或「置信度」字样。
+      expect(note, isNot(contains('%')), reason: '认知风格注文不得出现百分比');
+      expect(note, isNot(contains('置信度')), reason: '认知风格注文不得出现「置信度」');
     });
 
     test('onboarding 存在：返回 null（与学习偏好同源去重）', () {

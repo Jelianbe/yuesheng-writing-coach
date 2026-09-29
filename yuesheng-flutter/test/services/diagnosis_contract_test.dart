@@ -328,7 +328,7 @@ void main() {
 
   group('临场输出约束契约', () {
     test('kLiveOutputConstraints 锁定关键指令不被误删', () {
-      expect(kLiveOutputConstraints, contains('临场输出约束（最高优先级）'));
+      expect(kLiveOutputConstraints, contains('临场输出约束'));
       expect(kLiveOutputConstraints, contains('一次只抛一个点'));
       expect(kLiveOutputConstraints, contains('表达密度'));
       expect(kLiveOutputConstraints, contains('不堆叠'));

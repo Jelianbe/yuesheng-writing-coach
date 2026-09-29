@@ -213,11 +213,14 @@ void main() {
       expect(isDiagnosisRequest('这段怎么改更好，请分析一下'), isTrue);
     });
 
-    test('#23 英文诊断请求 → true（大小写不敏感）', () {
+    test('#23 英文诊断请求 → true（大小写不敏感；P1-5: analyze/feedback 需上下文）', () {
       expect(isDiagnosisRequest('diagnose it'), isTrue);
       expect(isDiagnosisRequest('Please DIAGNOSE this paragraph'), isTrue);
-      expect(isDiagnosisRequest('analyze my writing'), isTrue);
-      expect(isDiagnosisRequest('give me feedback'), isTrue);
+      // P1-5：analyze/feedback/improve/review/comment 降级为需 hasDiagnosisContext 佐证
+      expect(isDiagnosisRequest('analyze my writing'), isFalse);
+      expect(isDiagnosisRequest('give me feedback'), isFalse);
+      expect(isDiagnosisRequest('analyze my writing', hasDiagnosisContext: true), isTrue);
+      expect(isDiagnosisRequest('give me feedback', hasDiagnosisContext: true), isTrue);
     });
 
     test('#24 非诊断内容 → false（不误触发）', () {

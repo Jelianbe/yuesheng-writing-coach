@@ -244,6 +244,14 @@ Map<String, Object> _buildCurrent() {
     l3Anchors[c.name] = _textAnchor(injectL3(c.ctx));
   }
 
+  // P1-9：三块非注册 prompt const 的独立分节指纹（promptBoundary /
+  // positionGuidance / diagnosisSceneFirst）——改其中一块能在 driftSummary 里
+  // 直接点名是哪块漂移，而不是只看到整条 system prompt 全变。
+  final constSections = <String, Object>{};
+  for (final entry in getDiagnosisConstSections().entries) {
+    constSections[entry.key] = _textAnchor(entry.value);
+  }
+
   return {
     'meta': {
       'note': 'Phase 3 行为锚点基线（字节级：长度 + FNV-1a 指纹）',
@@ -253,6 +261,7 @@ Map<String, Object> _buildCurrent() {
     'prompt': promptAnchors,
     'skillContent': skillAnchors,
     'l3Inject': l3Anchors,
+    'constSections': constSections,
   };
 }
 
@@ -338,6 +347,7 @@ void main() {
       ..._diff('prompt', stored['prompt'], current['prompt']),
       ..._diff('skillContent', stored['skillContent'], current['skillContent']),
       ..._diff('l3Inject', stored['l3Inject'], current['l3Inject']),
+      ..._diff('constSections', stored['constSections'], current['constSections']),
     ];
 
     if (diffs.isNotEmpty) {
