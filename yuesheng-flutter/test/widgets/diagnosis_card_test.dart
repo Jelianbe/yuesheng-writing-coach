@@ -65,8 +65,9 @@ class _ThrowingDiagnosisService extends DiagnosisService {
   Future<void> disputeDiagnosis(
     String sessionId,
     String syndromeId,
-    String syndromeName,
-  ) async {
+    String syndromeName, {
+    String? reason,
+  }) async {
     throw StateError('test-dispute-diagnosis-fail');
   }
 }
@@ -525,7 +526,7 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
       // 对话框出现，填理由并提交
-      await tester.enterText(find.byType(TextField), '判断有误');
+      await tester.enterText(find.byType(TextField), '这里判断有误');
       await tester.tap(find.widgetWithText(TextButton, '提交异议'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -975,7 +976,7 @@ void main() {
       expect(find.text('文本分析'), findsOneWidget);
       expect(find.textContaining('6 处问题片段'), findsOneWidget);
       expect(find.textContaining('情绪标签化、视角漂移、张力不足症'), findsOneWidget);
-      expect(find.text('严重度评估'), findsOneWidget);
+      expect(find.text('各问题相对轻重'), findsOneWidget);
       expect(find.textContaining('张力不足症（严重）'), findsOneWidget);
       expect(find.text('建议生成'), findsOneWidget);
       expect(find.textContaining('2 条改写建议'), findsOneWidget);

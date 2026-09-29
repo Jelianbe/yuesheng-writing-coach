@@ -6,81 +6,81 @@
   },
   "prompt": {
     "none_p0_yuesheng": {
-      "len": 30242,
-      "fnv": "363e82edb70bdc97",
-      "tokens": 30242,
+      "len": 30261,
+      "fnv": "7ab120c573fdf5e",
+      "tokens": 30261,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic"
     },
     "beginner_doubao": {
-      "len": 64593,
-      "fnv": "16fcca7a7f4af3c",
-      "tokens": 64593,
+      "len": 64612,
+      "fnv": "35277403678bc95b",
+      "tokens": 64612,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-doubao,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "beginner_yuesheng": {
-      "len": 64579,
-      "fnv": "4a65353fa703220e",
-      "tokens": 64579,
+      "len": 64598,
+      "fnv": "52fd36c03d25431",
+      "tokens": 64598,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "beginner_sensei": {
-      "len": 64436,
-      "fnv": "7f87558f174d21e1",
-      "tokens": 64436,
+      "len": 64455,
+      "fnv": "13fd59be4986758c",
+      "tokens": 64455,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-sensei,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "beginner_p1_yuesheng": {
-      "len": 64270,
-      "fnv": "7e4d46845944e392",
-      "tokens": 64270,
+      "len": 64289,
+      "fnv": "7e6a4c93ef545f15",
+      "tokens": 64289,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "beginner_p3_yuesheng": {
-      "len": 66053,
-      "fnv": "6733bb58047a37d3",
-      "tokens": 66053,
+      "len": 66072,
+      "fnv": "4739dc39bb70f9da",
+      "tokens": 66072,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "beginner_p4_yuesheng": {
-      "len": 66053,
-      "fnv": "6733bb58047a37d3",
-      "tokens": 66053,
+      "len": 66072,
+      "fnv": "4739dc39bb70f9da",
+      "tokens": 66072,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "diagnosis_p1_yuesheng": {
-      "len": 52652,
-      "fnv": "2a19a208e281c6a9",
-      "tokens": 52652,
+      "len": 52671,
+      "fnv": "511ea9656fd85474",
+      "tokens": 52671,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "diagnosis_yuesheng": {
-      "len": 54435,
-      "fnv": "1b1b335fed9465ce",
-      "tokens": 54435,
+      "len": 54454,
+      "fnv": "7d7883de418d1f1",
+      "tokens": 54454,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "training_yuesheng": {
-      "len": 68923,
-      "fnv": "3abf95fb5ff7631d",
-      "tokens": 68923,
+      "len": 68942,
+      "fnv": "5b6caca311096238",
+      "tokens": 68942,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,technique-library-index,training-loop-v2,training-templates-index,training-evaluation-v2,text-surgery-v2,demonstration,comparison,timed-rewrite,model-rewrite,revision-methodology,reader-awareness,writer-psychology"
     },
     "advanced_sensei": {
-      "len": 47440,
-      "fnv": "219b5da9dfa8a45c",
-      "tokens": 47440,
+      "len": 47459,
+      "fnv": "35d28ede89f1f63b",
+      "tokens": 47459,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-sensei,teaching-mode-socratic,advanced-phases,training-loop-v2,coaching-actions-v2,revision-methodology,reader-awareness,writing-style"
     },
     "advanced_p4_yuesheng": {
-      "len": 47361,
-      "fnv": "4516bb83a02e751d",
-      "tokens": 47361,
+      "len": 47380,
+      "fnv": "5c73ad650a2b2038",
+      "tokens": 47380,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,advanced-phases,training-loop-v2,coaching-actions-v2,revision-methodology,reader-awareness,writing-style"
     },
     "outline_yuesheng": {
-      "len": 59187,
-      "fnv": "3c97272e19401499",
-      "tokens": 59187,
+      "len": 59206,
+      "fnv": "276b51d8f2125f24",
+      "tokens": 59206,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,plot-design,narrative-design,outline-diagnosis,coaching-actions-v2,reader-awareness"
     }
   },
@@ -254,6 +254,20 @@
     "empty": {
       "len": 0,
       "fnv": "4bf29ce484222325"
+    }
+  },
+  "constSections": {
+    "promptBoundary": {
+      "len": 510,
+      "fnv": "299c9d9ff62965ef"
+    },
+    "positionGuidance": {
+      "len": 618,
+      "fnv": "53f6260c0fa016bc"
+    },
+    "diagnosisSceneFirst": {
+      "len": 282,
+      "fnv": "5a8b3b270010821e"
     }
   }
 }

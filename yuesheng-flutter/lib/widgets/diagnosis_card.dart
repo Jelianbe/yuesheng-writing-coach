@@ -286,6 +286,9 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       children: [
         _buildHeader(),
         _buildTagRow(),
+        // P1-7：常驻弱提示——条目≠总评（prompt 里只写给模型听，UI 反而渲染成
+        // 「严重度评估」让学员当成整篇总评）。
+        _buildNotOverallHint(),
         SizeTransition(
           sizeFactor: CurvedAnimation(
             parent: _expandAnim,
@@ -390,7 +393,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         detail: syndromes.isEmpty ? '未匹配到已知症候' : '匹配 $names',
       ),
       ThinkingStep(
-        label: '严重度评估',
+        label: '各问题相对轻重',
         detail: severitySummary.isEmpty ? '—' : severitySummary,
       ),
       ThinkingStep(
@@ -464,6 +467,25 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           ),
         ),
       ],
+    );
+  }
+
+  /// P1-7：常驻弱提示——「逐条问题点，不是整篇总评」。
+  Widget _buildNotOverallHint() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        4,
+        AppSpacing.lg,
+        0,
+      ),
+      child: Text(
+        '以下是逐条问题点，不是对整篇的总评',
+        style: context.text.caption?.copyWith(
+          color: context.palette.textTertiary,
+          fontSize: 11,
+        ),
+      ),
     );
   }
 
@@ -633,25 +655,59 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       );
     }
 
-    return Column(
-      children: [
-        for (var i = 0; i < widget.syndromes.length; i++) ...[
-          _SyndromeBlock(
-            syndrome: widget.syndromes[i],
-            tracked: _trends[widget.syndromes[i].syndromeId],
-          ),
-          // D5-B：sessionId 非空时每个症候块底部渲染确认栏（对齐 RN）
-          if (widget.sessionId != null) ...[
-            const SizedBox(height: 8),
-            _SyndromeConfirmationBar(
-              syndrome: widget.syndromes[i],
-              sessionId: widget.sessionId!,
+    // 附加项：结构层（L2/L3）与笔误/用词层（L1）分组——结构问题在前，
+    // 表面问题在后，中间加视觉分隔。无 category 字段时按 severity 粗分。
+    final structure = widget.syndromes
+        .where((s) => s.severity == 'L2' || s.severity == 'L3')
+        .toList();
+    final surface = widget.syndromes
+        .where((s) => s.severity == 'L1')
+        .toList();
+
+    Widget buildBlock(s) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SyndromeBlock(
+              syndrome: s,
+              tracked: _trends[s.syndromeId],
             ),
+            if (widget.sessionId != null) ...[
+              const SizedBox(height: 8),
+              _SyndromeConfirmationBar(
+                syndrome: s,
+                sessionId: widget.sessionId!,
+              ),
+            ],
           ],
-          if (i < widget.syndromes.length - 1) const SizedBox(height: 12),
-        ],
-      ],
-    );
+        );
+
+    final children = <Widget>[];
+    for (var i = 0; i < structure.length; i++) {
+      children.add(buildBlock(structure[i]));
+      if (i < structure.length - 1) children.add(const SizedBox(height: 12));
+    }
+    if (structure.isNotEmpty && surface.isNotEmpty) {
+      children.add(const SizedBox(height: 16));
+      children.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(children: [
+          Expanded(child: Divider(height: 1, color: context.palette.border)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text('笔误 / 用词类', style: TextStyle(
+              fontSize: 11, color: context.palette.textTertiary)),
+          ),
+          Expanded(child: Divider(height: 1, color: context.palette.border)),
+        ]),
+      ));
+      children.add(const SizedBox(height: 12));
+    }
+    for (var i = 0; i < surface.length; i++) {
+      children.add(buildBlock(surface[i]));
+      if (i < surface.length - 1) children.add(const SizedBox(height: 12));
+    }
+
+    return Column(children: children);
   }
 
   // ── 改写建议块：品牌竹青 #E8F0EE 底 + 左竹青 #2D5A52 条 ──
@@ -1110,7 +1166,12 @@ class _SyndromeConfirmationBarState
     if (_submitting) return;
     final reason = await _showDisputeReasonDialog();
     if (reason == null || reason.trim().isEmpty) return; // 取消或不填 ⇒ 不提交
-    await _commitDispute();
+    // P0-3：最小长度校验——「不对」二字即过等于没填，逼不出具体判断也无留痕价值。
+    if (reason.trim().length < 5) {
+      _showFailureSnack('请写具体一些（至少 5 个字），说明哪里不对');
+      return;
+    }
+    await _commitDispute(reason.trim());
   }
 
   Future<String?> _showDisputeReasonDialog() {
@@ -1142,7 +1203,7 @@ class _SyndromeConfirmationBarState
     );
   }
 
-  Future<void> _commitDispute() async {
+  Future<void> _commitDispute(String reason) async {
     if (_submitting) return;
     setState(() => _submitting = true);
     final service = ref.read(diagnosisServiceProvider);
@@ -1151,6 +1212,7 @@ class _SyndromeConfirmationBarState
         widget.sessionId,
         widget.syndrome.syndromeId,
         widget.syndrome.name,
+        reason: reason,
       );
       if (mounted) setState(() => _status = 'disputed');
     } catch (e, st) {
@@ -1162,10 +1224,39 @@ class _SyndromeConfirmationBarState
     }
   }
 
+  /// P1-1：二次确认弹窗——明示永久静音语义 + 恢复路径（成长页）。
+  /// 此前是零理由一键暗门，现加确认；定位为「类型声明」操作，不需要理由。
+  Future<bool> _confirmDismissForever() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('永久静音此问题？'),
+        content: const Text(
+          '将不再主动报这个问题（跨会话生效）。\n'
+          '这是你的写作类型声明，不需要写理由。\n'
+          '以后想恢复，可在「成长」页重新开启。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('以后都别报'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
   /// 诊断编辑器：「不适用，以后别报」——把症候 ID 写入全局 disabledIds，
   /// 同时把当前这条标 disputed。用户不是惩罚症候，是声明自己的写作类型。
   Future<void> _dismissForever() async {
     if (_submitting) return;
+    final confirmed = await _confirmDismissForever();
+    if (!confirmed) return;
     setState(() => _submitting = true);
     try {
       final repo = AppStateRepository(ref.read(appDatabaseProvider));

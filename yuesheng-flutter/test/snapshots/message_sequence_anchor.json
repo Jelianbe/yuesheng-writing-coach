@@ -5,13 +5,13 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 30242,
-      "fnv": "363e82edb70bdc97"
+      "len": 30261,
+      "fnv": "7ab120c573fdf5e"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
@@ -27,13 +27,13 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 64579,
-      "fnv": "4a65353fa703220e"
+      "len": 64598,
+      "fnv": "52fd36c03d25431"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
@@ -49,13 +49,13 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 52652,
-      "fnv": "2a19a208e281c6a9"
+      "len": 52671,
+      "fnv": "511ea9656fd85474"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
@@ -71,13 +71,13 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 54435,
-      "fnv": "1b1b335fed9465ce"
+      "len": 54454,
+      "fnv": "7d7883de418d1f1"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
@@ -93,13 +93,13 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 68923,
-      "fnv": "3abf95fb5ff7631d"
+      "len": 68942,
+      "fnv": "5b6caca311096238"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
@@ -112,16 +112,38 @@
       "fnv": "4711fab4233ed44b"
     }
   ],
-  "p3_yuesheng_advanced": [
+  "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 47583,
-      "fnv": "4c14321fb6cfefa3"
+      "len": 54454,
+      "fnv": "7d7883de418d1f1"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
+    },
+    {
+      "role": "user",
+      "len": 791,
+      "fnv": "67b2a573f5b6c1d8"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p3_yuesheng_advanced": [
+    {
+      "role": "system",
+      "len": 47602,
+      "fnv": "66c758b45b02afaa"
+    },
+    {
+      "role": "system",
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
@@ -137,13 +159,13 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 47440,
-      "fnv": "219b5da9dfa8a45c"
+      "len": 47459,
+      "fnv": "35d28ede89f1f63b"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
@@ -159,13 +181,13 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 66053,
-      "fnv": "6733bb58047a37d3"
+      "len": 66072,
+      "fnv": "4739dc39bb70f9da"
     },
     {
       "role": "system",
-      "len": 154,
-      "fnv": "1f5d4395eb54f6f7"
+      "len": 147,
+      "fnv": "5941cf32771c6373"
     },
     {
       "role": "user",
