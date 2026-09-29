@@ -644,6 +644,9 @@ class DiagnosisFlowHandler {
     required SendMessageCallbacks callbacks,
     required SendMessageOptions options,
     bool diagnosisOnly = false,
+    // P0-1：directExplain 模式下，症候数 ≥ 阈值时跳过 Teacher 二次调用——
+    // 全貌模式要求"列名不给改法、等学员选"，Teacher 独立 LLM 调用会抢先给改法。
+    int? directExplainThreshold,
   }) async {
     final parsed = await _parseAndValidate(
       sessionId: sessionId,
@@ -660,6 +663,7 @@ class DiagnosisFlowHandler {
             options: options,
             callbacks: callbacks,
             diagnosisOnly: diagnosisOnly,
+            directExplainThreshold: directExplainThreshold,
           )
         : (displayContent: '', teacher: null);
     return _persistParsedOutput(
@@ -804,11 +808,17 @@ class DiagnosisFlowHandler {
     required SendMessageOptions options,
     required SendMessageCallbacks callbacks,
     required bool diagnosisOnly,
+    int? directExplainThreshold,
   }) async {
     String teacherDisplayContent = '';
     TeacherResult? teacherResult;
+    // P0-1：全貌呈现模式（症候数 ≥ directExplainThreshold）下，本轮只列名+问先动哪个，
+    // 不触发 Teacher 给改法——等学员下一轮选定症候（userFocusOverride）后再展开。
+    final inDirectExplain = directExplainThreshold != null &&
+        diagnosis.syndromes.length >= directExplainThreshold;
     if (shouldTriggerTeacherForDiagnosis(diagnosis.syndromes) &&
-        !diagnosisOnly) {
+        !diagnosisOnly &&
+        !inDirectExplain) {
       // 批次 D-Stage：Teacher 阶段开始 → UI 切换到「正在生成教学建议…」，
       // 避免「回复显示完但界面仍在等待」被误判为卡住（两段式流透明化）。
       callbacks.onTeacherPhase?.call(true);

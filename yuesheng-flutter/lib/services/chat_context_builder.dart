@@ -106,12 +106,16 @@ class ActiveSyndromeView {
   final String syndromeName;
   final Severity severity;
   final ConfirmationStatus? confirmationStatus;
+  /// P0-3：学员最近一次质疑此症候时填写的理由（来自 teaching_history.disputeReason）。
+  /// 非空时在症候段标注「学员已质疑，勿再主动展开」，并把理由带给 LLM。
+  final String? disputeReason;
 
   const ActiveSyndromeView({
     required this.syndromeId,
     required this.syndromeName,
     required this.severity,
     this.confirmationStatus,
+    this.disputeReason,
   });
 }
 
@@ -192,9 +196,23 @@ String buildStructuredSyndromeContext(
   final skippedIds = <String>[];
 
   for (final p in sortedProblems) {
-    final confirmLabel = p.confirmationStatus == ConfirmationStatus.confirmed
-        ? '已确认'
-        : '待确认';
+    // P1-3：rejected/ignored 不再落「待确认」——与 focus_resolver 候选池口径对齐。
+    // rejected 标注「学员已质疑，勿再主动展开」（理由见 disputeReason）。
+    String confirmLabel;
+    switch (p.confirmationStatus) {
+      case ConfirmationStatus.confirmed:
+        confirmLabel = '已确认';
+      case ConfirmationStatus.rejected:
+        confirmLabel = '学员已质疑·勿再主动展开';
+      case ConfirmationStatus.ignored:
+        confirmLabel = '已忽略';
+      default:
+        confirmLabel = '待确认';
+    }
+    // P0-3：把学员质疑理由带给 LLM（拼到非 focus 摘要行尾）。
+    final disputeNote = (p.disputeReason != null && p.disputeReason!.isNotEmpty)
+        ? '（学员理由：${p.disputeReason}）'
+        : '';
     final isFocus = focusEnabled && p.syndromeId == focusId;
 
     if (isFocus) {
@@ -284,7 +302,10 @@ String _buildFullSyndromeSummary(
       ? _truncateToOneLine(evidence!.explanation, 80)
       : '';
   final reasonText = reason.isNotEmpty ? '：$reason' : '';
-  return '- ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]$reasonText';
+  final disputeSuffix = (p.disputeReason != null && p.disputeReason!.isNotEmpty)
+      ? '（学员理由：${p.disputeReason}）'
+      : '';
+  return '- ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]$reasonText$disputeSuffix';
 }
 
 /// 非 focus 极简列表行（R-019 拆出）。

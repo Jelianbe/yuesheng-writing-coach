@@ -1036,6 +1036,7 @@ extension ChatServiceSend on ChatService {
       isOutlineContext: loaded.isOutlineContext,
       options: options,
       activePersona: activePersona,
+      content: content,
     );
     // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据）
     final stageIndexes = <String, List<int>>{};
@@ -1118,7 +1119,12 @@ extension ChatServiceSend on ChatService {
     bool isOutlineContext = false,
     required SendMessageOptions options,
     CoachPersona? activePersona,
+    String? content,
   }) {
+    // P1-4：当前消息措辞触发诊断协议但 l2Mode 非 diagnosis 阶段时，
+    // 强制注入「先建现场」护栏（避免 P3 阶段裸奔诊断）。
+    final forceSceneFirst = content != null &&
+        isDiagnosisRequest(content, hasDiagnosisContext: false);
     final skillCtx = SkillLoadContext(
       phase: phase,
       attitude: attitude,
@@ -1128,6 +1134,7 @@ extension ChatServiceSend on ChatService {
       isOutlineContext: isOutlineContext,
       disabledSyndromeIds: disabledSyndromeIds,
       activePersona: activePersona,
+      forceDiagnosisSceneFirst: forceSceneFirst,
     );
     final rawMode = _teaching.resolveL2Mode(skillCtx);
     final override = _routeHysteresis.overrideFor(sessionId, rawMode);
@@ -1173,10 +1180,10 @@ extension ChatServiceSend on ChatService {
   /// not user-editable via the coach card UI).
   Future<int> _resolveDirectExplainThreshold() async {
     final repo = _appStateRepo;
-    if (repo == null) return 5;
+    if (repo == null) return kDefaultDirectExplainThreshold;
     try {
       final activeId = await repo.getActiveCoachPersonaId();
-      if (activeId == null) return 5;
+      if (activeId == null) return kDefaultDirectExplainThreshold;
       final builtIn = builtInCoachPersonaById(activeId);
       if (builtIn != null) {
         final override = await repo.getCoachPersonaDirectThreshold(activeId);
@@ -1186,9 +1193,9 @@ extension ChatServiceSend on ChatService {
       for (final p in customs) {
         if (p.id == activeId) return p.directExplainThreshold;
       }
-      return 5;
+      return kDefaultDirectExplainThreshold;
     } catch (_) {
-      return 5;
+      return kDefaultDirectExplainThreshold;
     }
   }
 
@@ -1437,10 +1444,15 @@ extension ChatServiceSend on ChatService {
         ? ''
         : '\n\n## 待诊断全文\n\n$chapterFullText';
     final threshold = await _resolveDirectExplainThreshold();
+    // P0-1：全貌清单必须同时输出 [症候编号]（如「1. [P007] 对话生硬——落在哪句」），
+    // 让 message_injector._parseUserFocusFromMessage 的 P00x 正则能命中学员选择——
+    // 否则学员回「先练 P007」会被静默丢弃，系统回退到 AI 自挑的顶优先级。
     final directExplain =
         '\n\n【症候过多时的全貌呈现】\n'
+        '（全貌模式临时覆盖密度约束——选完一条后回到常规密度「一次只抛一个点」。）\n'
         '若本次识别出的症候数量 ≥ $threshold：\n'
-        '1. 用编号列出全部症候——每条只写「名称 + 落在哪一句」，**不要给改法**；\n'
+        '1. 用编号列出全部症候——每条格式为「序号. [症候编号] 症候名称——落在哪一句」，'
+        '如「1. [P007] 对话生硬——落在哪句」，**不要给改法**；\n'
         '2. 末尾问一句"这些都在，你想先动哪个"，把选择权交给学员；\n'
         '3. 学员选定一条后，才对那一条展开"怎么改"（走正常教学流程）。\n'
         '若少于 $threshold，按正常教学方式聚焦讲解 1-2 条。';
@@ -1523,6 +1535,9 @@ extension ChatServiceSend on ChatService {
   }) async {
     // FT-22：检测「只诊断不要建议」边界声明，命中则跳过 teacher stream
     final diagnosisOnly = _resolveDiagnosisOnly(content);
+    // P0-1：解析 directExplain 阈值透传给 Teacher 门控——症候数 ≥ 阈值时本轮
+    // 只列名+问先动哪个，跳过 Teacher 抢先给改法（等学员选定后再展开）。
+    final directExplainThreshold = await _resolveDirectExplainThreshold();
     return _diagnosisFlowHandler.parseAndPersist(
       sessionId: sessionId,
       fullContent: fullContent,
@@ -1532,6 +1547,7 @@ extension ChatServiceSend on ChatService {
       callbacks: callbacks,
       options: options,
       diagnosisOnly: diagnosisOnly,
+      directExplainThreshold: directExplainThreshold,
     );
   }
 

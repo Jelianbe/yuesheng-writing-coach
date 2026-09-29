@@ -11,6 +11,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:writingcoach/config/shared_constants.dart';
 
 import '../../config/app_palette.dart';
 import '../../widgets/yue_sheet.dart';
@@ -647,7 +648,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     ];
     _promptCtrl = TextEditingController(text: promptParts.join('\n'));
     _thresholdCtrl = TextEditingController(
-      text: (e?.directExplainThreshold ?? 5).toString(),
+      text: (e?.directExplainThreshold ?? kDefaultDirectExplainThreshold).toString(),
     );
   }
 
@@ -669,7 +670,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       return;
     }
     final label = _labelCtrl.text.trim();
-    final threshold = int.tryParse(_thresholdCtrl.text.trim()) ?? 5;
+    final threshold = int.tryParse(_thresholdCtrl.text.trim()) ?? kDefaultDirectExplainThreshold;
     final e = widget.existing;
     final persona = CoachPersona(
       id: e?.id ?? 'custom_${DateTime.now().millisecondsSinceEpoch}',
@@ -682,7 +683,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       // 人设层已并入语气段，不再单独写值；旧数据读侧仍兼容。
       personaLayer: null,
       iconKey: e?.iconKey,
-      directExplainThreshold: threshold < 1 ? 5 : threshold,
+      directExplainThreshold: threshold < 1 ? kDefaultDirectExplainThreshold : threshold,
     );
     Navigator.of(context).pop(persona);
   }

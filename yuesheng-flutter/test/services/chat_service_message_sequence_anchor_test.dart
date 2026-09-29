@@ -93,13 +93,19 @@ class _Case {
   final AttitudeLevel attitude;
   final TeachingSubphase? subphase;
   final bool isBeginner;
+  /// 用户消息正文；默认中性 compose 正文（不触发诊断）。
+  final String content;
+  /// 待诊断全文；默认 null（不触发诊断协议注入）。
+  final String? chapterFullText;
   const _Case(
     this.name,
     this.phase,
     this.attitude,
     this.subphase,
-    this.isBeginner,
-  );
+    this.isBeginner, {
+    this.content = _kContent,
+    this.chapterFullText,
+  });
 }
 
 /// 覆盖 5 个可达 L2Mode（none/beginner/diagnosis/training/advanced）
@@ -139,6 +145,19 @@ const List<_Case> _kCases = [
     AttitudeLevel.yuesheng,
     TeachingSubphase.practice,
     false,
+  ),
+  // P0-2：user 侧诊断注入（协议后缀 + 全貌呈现）此前不在任何锚点网内——
+  // 用例带 chapterFullText 非空 + 诊断强信号措辞，把 user 侧注入纳入有序指纹。
+  _Case(
+    'p2_yuesheng_diagnosis_fulltext',
+    TeachingPhase.p2PracticeLoop,
+    AttitudeLevel.yuesheng,
+    TeachingSubphase.diagnosis,
+    false,
+    content: '请诊断我这段文字',
+    chapterFullText:
+        '少年推开门，风灌了进来。桌上的信纸被吹落在地，他捡起来读了一遍。'
+        '窗外的雨越下越大，他决定今天就出发。',
   ),
   _Case(
     'p3_yuesheng_advanced',
@@ -244,13 +263,17 @@ Future<List<Map<String, Object>>> _captureOne(_Case c) async {
     final service = _buildChatService(db, llm);
     await service.sendMessage(
       sessionId,
-      _kContent,
+      c.content,
       SendMessageCallbacks(
         onStream: (_) {},
         onComplete: (_, _) {},
         onError: (_) {},
       ),
-      SendMessageOptions(phase: c.phase, attitude: c.attitude),
+      SendMessageOptions(
+        phase: c.phase,
+        attitude: c.attitude,
+        chapterFullText: c.chapterFullText,
+      ),
       subphase: c.subphase,
     );
     return _sequence(llm.captured);

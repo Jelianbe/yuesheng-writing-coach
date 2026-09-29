@@ -487,6 +487,15 @@ void main() {
       expect(sent, contains('[YS_DIAGNOSIS]'));
       expect(sent, contains('症候数量 ≥ 5'));
       expect(sent, contains('编号列出全部症候'));
+      // P0-2：0.3.3 三条新行为此前只守了一行，现逐条补断言——
+      // 1. 全貌清单不给改法（负向约束）
+      expect(sent, contains('不要给改法'), reason: '全貌模式必须明确不给改法');
+      // 2. 末尾把选择权交给学员
+      expect(sent, contains('你想先动哪个'), reason: '末尾必须反问先动哪个');
+      // 3. 选定后才展开改法
+      expect(sent, contains('学员选定一条后，才对那一条展开'), reason: '选定后才展开改法');
+      // P0-1：清单必须同时输出症候编号，让 P00x 解析器命中学员选择
+      expect(sent, contains('[P007]'), reason: '全貌清单须带症候编号示例');
     });
 
     test('#14 自定义人格阈值生效（激活人格 threshold=7 → 注入 ≥ 7）', () async {
@@ -524,6 +533,32 @@ void main() {
 
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('症候数量 ≥ 8'));
+    });
+
+    // P0-4：静默兜底路径——repo 存在但无 activeCoachPersonaId → 回退默认值 5。
+    // 此前这两条 fallback（repo null / activeId null）连单测都没走到。
+    test('#16 兜底：repo 存在但无 activeCoachPersonaId → 回退默认阈值 5', () async {
+      final llm = _CaptureLlmClient();
+      // 装配 repo 但从不 setActiveCoachPersona → getActiveCoachPersonaId 返回 null
+      final appState = AppStateRepository(db);
+      final service = buildChatService(llm, appStateRepo: appState);
+
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('症候数量 ≥ 5'),
+          reason: '无激活人格时必须回退默认阈值 kDefaultDirectExplainThreshold');
+    });
+
+    // P0-4：repo 完全为 null（不传 appStateRepo）→ 也回退默认 5。
+    // #13 已覆盖此路径（buildChatService(llm) 不传 repo），这里再显式断言常量值。
+    test('#17 兜底：repo 为 null → 回退默认阈值 5', () async {
+      final llm = _CaptureLlmClient();
+      // 不传 appStateRepo → _appStateRepo == null → 第一条 return 兜底
+      final service = buildChatService(llm);
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('症候数量 ≥ 5'));
     });
   });
 }

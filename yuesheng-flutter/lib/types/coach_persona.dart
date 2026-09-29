@@ -12,6 +12,7 @@
 //    skill_dispatcher 叠加注入（见 .ai/reports/2026-09-27-D-vision-design.md §2）。
 // ─────────────────────────────────────────────────────────────
 
+import 'package:writingcoach/config/shared_constants.dart';
 import 'teaching_types.dart';
 
 class CoachPersona {
@@ -50,7 +51,7 @@ class CoachPersona {
     required this.systemPromptFragment,
     this.personaLayer,
     this.iconKey,
-    this.directExplainThreshold = 5,
+    this.directExplainThreshold = kDefaultDirectExplainThreshold,
   });
 
   Map<String, dynamic> toJson() => {

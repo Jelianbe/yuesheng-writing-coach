@@ -270,6 +270,11 @@ class TeacherGate {
   static const int diagnosisSyndromeCountThreshold = 3;
 }
 
+/// P0-4：directExplain（全貌呈现）默认阈值——症候数 ≥ 此值时全貌列名、不给改法、等学员选。
+/// 单点常量：此前在 coach_persona / chat_service / coach_selector_card 硬编码 8 处，
+/// 调阈值时漏改任一处会出现「设置显示 7、实际注入 5」的 UI/逻辑漂移。
+const int kDefaultDirectExplainThreshold = 5;
+
 /// 焦点切换阈值
 class FocusSwitch {
   const FocusSwitch._();
@@ -472,7 +477,7 @@ bool isSafetyWordRequest(String text) {
 /// ② 供合约测试锁定其关键指令（「一次只抛一个点」「表达密度」「不堆叠」）
 /// 不被后续重构误删。
 const String kLiveOutputConstraints =
-    '# 临场输出约束（最高优先级）\n\n'
+    '# 临场输出约束\n\n'
     '以上注入的教学知识、症候定义、训练素材是你的内部参考，不是让你一次性念给学员听。\n'
     '每次回复遵守当前态度档位的「表达密度」规则：一次只抛一个点，示范按档位执行（豆包/月笙可给最小示范一例，Sensei 不给示范只指方向），删掉所有铺垫。\n'
     '学员问题多时按优先级分轮展开，不堆叠。';

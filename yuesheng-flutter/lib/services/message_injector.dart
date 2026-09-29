@@ -1905,6 +1905,8 @@ class MessageInjector {
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
+    // P0-3：从 teaching_history 读最近质疑理由，带给 LLM（避免系统按同样依据再报同一条）。
+    final disputeReasons = await _loadRecentDisputeReasons(sessionId);
     final activeSyndromeViews = activeProblems
         .map(
           (p) => ActiveSyndromeView(
@@ -1914,6 +1916,7 @@ class MessageInjector {
             confirmationStatus:
                 ConfirmationStatus.fromString(p.confirmationStatus) ??
                 ConfirmationStatus.suspected,
+            disputeReason: disputeReasons[p.syndromeId],
           ),
         )
         .toList();
@@ -1944,6 +1947,29 @@ class MessageInjector {
     markStage(BudgetStageNames.l3Structure);
     messages.add(ChatMessage(role: 'system', content: structuredContext));
     await _injectSyndromeHistory(sessionId, messages);
+  }
+
+  /// P0-3：读 teaching_history 最近 N 条 disputed 记录，提取 disputeReason 按 syndromeId 映射。
+  /// 失败静默降级（不影响主注入链）。
+  Future<Map<String, String>> _loadRecentDisputeReasons(String sessionId) async {
+    try {
+      final history = await _studentModelRepo.getTeachingHistory(sessionId);
+      final result = <String, String>{};
+      for (final rec in history) {
+        if (rec['action'] != 'disputed') continue;
+        final reason = rec['disputeReason'];
+        if (reason is! String || reason.isEmpty) continue;
+        final ids = rec['syndromes'];
+        if (ids is List) {
+          for (final id in ids) {
+            if (id is String && id.isNotEmpty) result[id] = reason;
+          }
+        }
+      }
+      return result;
+    } catch (_) {
+      return <String, String>{};
+    }
   }
 
   /// B 档：注入跨轮次症候历史（出现次数/趋势），让 AI 在回复中引用

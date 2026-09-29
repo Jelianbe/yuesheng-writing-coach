@@ -244,17 +244,24 @@ class DiagnosisService {
   Future<void> disputeDiagnosis(
     String sessionId,
     String syndromeId,
-    String syndromeName,
-  ) async {
+    String syndromeName, {
+    // P0-3：学员质疑理由透传落库（teaching_history.disputeReason），
+    // 下一轮诊断注入时带给 LLM，避免系统按同样依据再报同一条。
+    String? reason,
+  }) async {
     await _diagnosisRepo.disputeDiagnosis(sessionId, syndromeId, syndromeName);
-    await _studentModelRepo.appendTeachingHistory(sessionId, {
+    final history = <String, dynamic>{
       'type': 'confirmation',
       'syndromes': [syndromeId],
       'syndromeName': syndromeName,
       'action': 'disputed',
       'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'sessionId': sessionId,
-    });
+    };
+    if (reason != null && reason.isNotEmpty) {
+      history['disputeReason'] = reason;
+    }
+    await _studentModelRepo.appendTeachingHistory(sessionId, history);
   }
 
   /// 计算诊断效果（improved / worsened）
