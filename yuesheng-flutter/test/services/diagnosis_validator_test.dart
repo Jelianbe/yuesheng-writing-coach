@@ -16,6 +16,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/services/diagnosis_validator.dart';
+import 'package:writingcoach/services/skill_registry.dart';
+import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 void main() {
@@ -131,11 +133,13 @@ void main() {
     });
 
     group('validateNaturalLanguage V-01/V-03/V-04（R-019 批次二补判据边界）', () {
-      test('#N1 V-03 编号泄漏 → 替换 + 记录 fix', () {
+      test('#N1 V-03 编号泄漏 → 回填名称（不再抹成空壳，P0\'-3）', () {
         final result = validateNaturalLanguage('这里有 P002 与 A001 编号');
         expect(result.cleaned.contains('P002'), isFalse);
-        expect(result.cleaned, contains('【症候】'));
-        expect(result.cleaned, contains('【动作】'));
+        expect(result.cleaned.contains('【症候】'), isFalse);
+        expect(result.cleaned, contains('信息倾泻症')); // P002 名
+        expect(result.cleaned.contains('【动作】'), isFalse);
+        expect(result.cleaned, contains('缩小范围')); // A001 名
         expect(result.fixes.any((f) => f.type == 'V-03'), isTrue);
       });
 
@@ -167,6 +171,79 @@ void main() {
         final result = validateNaturalLanguage(longPara);
         expect(result.fixes.any((f) => f.type == 'V-01'), isTrue);
       });
+    });
+  });
+
+  // ── P0'-3（2026-09-30）：V-03 由「抹成空壳」改为「回填名称」──────
+  //
+  // 病因：`_applyCodeReplacement` 把 LLM 输出里的 P0xx 抹成 【症候】，但全仓
+  // 没有反向渲染器 ⇒ 用户直接读到占位符（取证实测 68 处）。
+  // 变异验证：把 `_applyCodeReplacement` 改回 `return '【症候】'`（无条件抹除）
+  //   → 下面第 1、2 条必红（残留空壳 + 未回填名字）。
+  group('P0\'-3 V-03 编号回填（全注册表覆盖）', () {
+    test('全部注册症候 ID → 回填为名字：无【症候】空壳、无编号泄漏', () {
+      final bad = <String>[];
+      for (final id in kSyndromeIds) {
+        final r = validateNaturalLanguage('问题 $id 出现在这里');
+        final name = syndromeNameOf(id);
+        if (r.cleaned.contains('【症候】')) bad.add('$id 仍残留【症候】空壳');
+        if (name == null || !r.cleaned.contains(name)) {
+          bad.add('$id 未回填为「$name」');
+        }
+        if (r.cleaned.contains(id)) bad.add('$id 编号原文泄漏未清除');
+      }
+      expect(bad, isEmpty, reason: '未正确回填的症候编号:\n${bad.join('\n')}');
+    });
+
+    test('全部动作编号 → 回填为动作名', () {
+      final bad = <String>[];
+      for (final entry in kActionShortNames.entries) {
+        final r = validateNaturalLanguage('动作 ${entry.key} 出现在这里');
+        if (r.cleaned.contains('【动作】')) {
+          bad.add('${entry.key} 仍残留【动作】空壳');
+        }
+        if (!r.cleaned.contains(entry.value)) {
+          bad.add('${entry.key} 未回填为「${entry.value}」');
+        }
+        if (r.cleaned.contains(entry.key)) bad.add('${entry.key} 编号原文泄漏');
+      }
+      expect(bad, isEmpty, reason: bad.join('\n'));
+    });
+
+    test('覆盖度自检：注册表/动作表非空（防循环空过造成假绿）', () {
+      expect(kSyndromeIds.length, greaterThanOrEqualTo(30));
+      expect(kActionShortNames.length, greaterThanOrEqualTo(10));
+    });
+
+    test('当前编号优先于 legacy 归一：P001 不得被写成 P002 的名', () {
+      // mergeMap['P001'] = 'P002' 是**历史 ghost**语义（世界观膨胀）；
+      // 当前 P001 是「情绪标签化」。回填必须精确匹配优先，否则名会错。
+      final r = validateNaturalLanguage('这里有 P001 的问题');
+      expect(r.cleaned, contains('情绪标签化'));
+      expect(r.cleaned.contains('信息倾泻症'), isFalse);
+    });
+
+    test('LLM 偶发旧编号 → 经 mergeMap 回填吸收方名字', () {
+      final r = validateNaturalLanguage('这里有 P048 的问题'); // 语法层语病症 → P018
+      expect(r.cleaned.contains('P048'), isFalse);
+      expect(r.cleaned, contains('重复用词/基础语病'));
+    });
+
+    test('越界编号 → 退化为占位符（底线：编号不外泄）', () {
+      final r = validateNaturalLanguage('这里有 P099 的问题');
+      expect(r.cleaned.contains('P099'), isFalse);
+      expect(r.cleaned, contains('【症候】'));
+    });
+  });
+
+  group('syndromeNameOf（P0\'-3 新增解析器）', () {
+    test('精确匹配优先、legacy 归一兜底、未知返回 null', () {
+      expect(syndromeNameOf('P002'), '信息倾泻症');
+      expect(syndromeNameOf('P048'), '重复用词/基础语病'); // legacy → P018
+      expect(syndromeNameOf('P001'), '情绪标签化'); // 当前语义，不被 ghost 归一改写
+      expect(syndromeNameOf('P099'), isNull);
+      expect(syndromeNameOf(''), isNull);
+      expect(syndromeNameOf(null), isNull);
     });
   });
 }

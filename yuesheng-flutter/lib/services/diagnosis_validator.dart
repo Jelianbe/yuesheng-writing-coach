@@ -10,6 +10,8 @@ import '../config/shared_constants.dart';
 import '../types/teaching_types.dart';
 import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'decode_guard.dart';
+import 'skill_registry.dart';
+import 'syndrome_registry.dart';
 
 export 'package:writingcoach/contracts/diagnosis_capability.dart';
 
@@ -180,7 +182,7 @@ NlValidationResult validateNaturalLanguage(
       NlFix(
         type: 'V-03',
         original: codeResult.codes.join(', '),
-        replacement: '【症候】/【动作】',
+        replacement: '已回填症候/动作名',
       ),
     );
   }
@@ -195,16 +197,28 @@ NlValidationResult validateNaturalLanguage(
   );
 }
 
-/// V-03 编号泄漏替换（R-019 拆出：validateNaturalLanguage）。
+/// V-03 编号泄漏回填（R-019 拆出：validateNaturalLanguage）。
+///
+/// P0'-3（2026-09-30）：原实现把编号抹成 `【症候】/【动作】` 空壳，而**全仓没有
+/// 反向渲染器**（`【症候】` 的出现点只有本文件这一处产生它）⇒ 用户直接读到占位符
+/// （2026-09-30 取证实测 68 处，见 docs/audits/2026-09-30-0.3.5诊断质量取证.md §6）。
+/// 改为**回填名称**：
+///   `P007` → `「角色空心化」`（精确匹配优先；LLM 偶发旧编号经 mergeMap 归一）
+///   `A001` → `「缩小范围」`
+/// 查不到名的编号（越界/拼错，如 P099）仍退化为占位符——"编号不外泄"这条底线不破。
 ({String text, List<String> codes}) _applyCodeReplacement(String cleaned) {
   final codes = <String>[];
   var out = cleaned.replaceAllMapped(kSyndromeCodeRe, (match) {
-    codes.add(match.group(0)!);
-    return '【症候】';
+    final code = match.group(0)!;
+    codes.add(code);
+    final name = syndromeNameOf(code);
+    return name == null ? '【症候】' : '「$name」';
   });
   out = out.replaceAllMapped(kActionCodeRe, (match) {
-    codes.add(match.group(0)!);
-    return '【动作】';
+    final code = match.group(0)!;
+    codes.add(code);
+    final name = actionNameOf(code);
+    return name == null ? '【动作】' : '「$name」';
   });
   return (text: out, codes: codes);
 }

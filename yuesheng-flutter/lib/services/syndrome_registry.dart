@@ -217,6 +217,22 @@ SyndromeRecord? syndromeRecordOf(String? id) {
   return null;
 }
 
+/// 症候 ID → 显示名（**精确匹配优先，legacy 归一兜底**；未知 → null）。
+///
+/// ⚠️ 刻意**不**直接用 [effectiveSyndromeId]：mergeMap 是给**历史 DB 行**做归一的
+/// （`'P001' -> 'P002'` 指的是早年 ghost 编号"世界观膨胀"，而**当前** P001 是
+/// "情绪标签化"）。对**新输出**里的编号先归一，会把当前 P001 改写成 P002 的名。
+/// 故此处先精确查注册表，查不到才回退 mergeMap——后者只覆盖"LLM 偶发旧编号"
+/// （如 P048 语法层语病症 → P018），两者语义不冲突。
+///
+/// 消费方：diagnosis_validator 的 V-03 编号回填（P0'-3，2026-09-30）。
+String? syndromeNameOf(String? id) {
+  if (id == null || id.isEmpty) return null;
+  final exact = syndromeRecordOf(id);
+  if (exact != null) return exact.name;
+  return syndromeRecordOf(kSyndromeMergeMap[id])?.name;
+}
+
 /// kSyndromeRegistry 数据段（P001-P011，11 条）
 const List<SyndromeRecord> _syndromeRegistryP1 = [
   // ── L1 基础表达 ──────────────────────────────────────────

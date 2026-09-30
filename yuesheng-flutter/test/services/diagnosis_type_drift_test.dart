@@ -9,13 +9,22 @@
 //
 // 本文件的核心断言不是「不崩」，而是「崩了之后 V-03 是否仍然生效」——
 // 后者才是这个缺陷对用户可见的后果。
+//
+// P0'-3（2026-09-30）：V-03 的处置由「抹成 【症候】 空壳」改为「**回填症候名**」
+//   （空壳无渲染器 ⇒ 用户直接读到占位符）。故组 3 的「清洗生效」判据随之改为
+//   「正文里的裸编号被换成了**该症候的名字**」——「不得泄漏裸编号」这条核心意图不变。
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/diagnosis_validator.dart';
+import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 /// 正文含裸编号，用于验证 V-03 是否生效
 const String _kLeakyText = '这段正文泄漏了内部编号 P010，应当被替换';
+
+/// P010 回填后的显示名（P0'-3）。不写死字面量，避免注册表改名时本护栏误红——
+/// 判据只锚定「编号被换成了名字」这件事本身。
+final String _kP010Name = syndromeNameOf('P010')!;
 
 /// 顶层可选字段漂移点（ADR-C64 §2.2 #1-6）
 const List<String> _kTopLevelDriftFields = [
@@ -135,8 +144,8 @@ void main() {
         final r = validateDiagnosisOutput(_kLeakyText, j);
         expect(
           r.displayContent,
-          contains('【症候】'),
-          reason: '$field 漂移不得让 V-03 失效',
+          contains(_kP010Name),
+          reason: '$field 漂移不得让 V-03 失效（P0\'-3：编号应被回填为名字）',
         );
         expect(
           r.displayContent,
@@ -151,7 +160,7 @@ void main() {
         final j = _baseJson();
         j['teaching_plan'] = {field: 12345};
         final r = validateDiagnosisOutput(_kLeakyText, j);
-        expect(r.displayContent, contains('【症候】'));
+        expect(r.displayContent, contains(_kP010Name));
         expect(r.displayContent, isNot(contains('P010')));
       });
     }
@@ -160,13 +169,13 @@ void main() {
       final j = _baseJson();
       (j['syndromes'] as List)[0]['reader_impact'] = {'nested': 1};
       final r = validateDiagnosisOutput(_kLeakyText, j);
-      expect(r.displayContent, contains('【症候】'));
+      expect(r.displayContent, contains(_kP010Name));
       expect(r.displayContent, isNot(contains('P010')));
     });
 
     test('无漂移基线：V-03 同样生效（对照组）', () {
       final r = validateDiagnosisOutput(_kLeakyText, _baseJson());
-      expect(r.displayContent, contains('【症候】'));
+      expect(r.displayContent, contains(_kP010Name));
       expect(r.displayContent, isNot(contains('P010')));
     });
 
