@@ -352,8 +352,11 @@ void main() {
     });
 
     test('#7b 仅诊断无写作（chapterRows 空）→ 仍返回近 N 天序列', () async {
-      final t = todayUtcSec();
-      await insertDiagnosis(timestamp: t);
+      // B1 本地日桶口径：诊断须落在「本地今天」桶（points.last）。
+      // 用 localMidnightSec() 锚点；旧 todayUtcSec()（UTC 0 点）在本地 00:00–08:00
+      // 会把「今天」插到本地昨天桶，导致 points.last.diagnosisCount=0。
+      final m = localMidnightSec();
+      await insertDiagnosis(timestamp: m);
 
       final points = await GrowthService(db).getWritingCurve(days: 3);
 
@@ -361,13 +364,17 @@ void main() {
       expect(points.last.diagnosisCount, 1);
     });
     test('#7 近 N 天序列完整 + 每日字数/诊断聚合', () async {
-      final t = todayUtcSec();
+      // B1 本地日桶口径：插数锚点用 localMidnightSec()（本地今天 0 点），
+      // 昨天 = m - 86400。断言语义逐字不变（昨天 800 字/1 诊断，今天 1200 字/2 诊断）。
+      // 旧 todayUtcSec() 锚点在本地 00:00–08:00 会把「今天/昨天」整体前移一个本地日，
+      // 导致 1200 字落到 points[length-2]、800 字落到 points[length-3]。
+      final m = localMidnightSec();
       // 昨天：800 字 + 1 诊断；今天：1200 字 + 2 诊断
-      await insertChapter(wordCount: 800, updatedAt: t - 86400);
-      await insertChapter(wordCount: 1200, updatedAt: t);
-      await insertDiagnosis(timestamp: t - 86400 + 3600);
-      await insertDiagnosis(timestamp: t);
-      await insertDiagnosis(timestamp: t + 3600);
+      await insertChapter(wordCount: 800, updatedAt: m - 86400);
+      await insertChapter(wordCount: 1200, updatedAt: m);
+      await insertDiagnosis(timestamp: m - 86400 + 3600);
+      await insertDiagnosis(timestamp: m);
+      await insertDiagnosis(timestamp: m + 3600);
 
       final points = await GrowthService(db).getWritingCurve(days: 14);
 
