@@ -38,11 +38,7 @@ void main() {
   testWidgets('on-device AI polish: real DeepSeek call for 3 personas', (
     tester,
   ) async {
-    expect(
-      key,
-      isNotEmpty,
-      reason: '必须传 --dart-define=YS_TEST_KEY=<真实Key>',
-    );
+    expect(key, isNotEmpty, reason: '必须传 --dart-define=YS_TEST_KEY=<真实Key>');
 
     final cfg = LlmConfigValues(
       apiKey: key,
@@ -63,16 +59,10 @@ void main() {
 
     for (final entry in cases.entries) {
       final (name, tone) = entry.value;
-      final result = await client.chatCompletion(
-        [
-          const ChatMessage(
-            role: 'system',
-            content: _kCoachPolishSystemPrompt,
-          ),
-          ChatMessage(role: 'user', content: _buildUser(name, tone)),
-        ],
-        maxTokens: 300,
-      );
+      final result = await client.chatCompletion([
+        const ChatMessage(role: 'system', content: _kCoachPolishSystemPrompt),
+        ChatMessage(role: 'user', content: _buildUser(name, tone)),
+      ], maxTokens: 300);
 
       debugPrint('POLISH[${entry.key}] name=$name => $result');
 
@@ -82,11 +72,7 @@ void main() {
         isNot(contains('免费测试模式')),
         reason: '${entry.key} 落入免费测试占位，说明 config 未生效',
       );
-      expect(
-        result.length,
-        greaterThan(10),
-        reason: '${entry.key} 返回过短，疑似异常',
-      );
+      expect(result.length, greaterThan(10), reason: '${entry.key} 返回过短，疑似异常');
     }
   });
 }
