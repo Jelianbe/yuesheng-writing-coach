@@ -71,6 +71,45 @@ class _CaptureLlmClient extends LlmClient {
   }
 }
 
+/// G4（ADR-C113）：getActiveCoachPersonaId 抛错 → 触发
+/// `_resolveDirectExplainThreshold` 的 catch 兜底（chat_service.dart:1268-1269）。
+class _ThrowingAppStateRepo extends AppStateRepository {
+  _ThrowingAppStateRepo(super.db);
+
+  @override
+  Future<String?> getActiveCoachPersonaId() async {
+    throw StateError('test-active-id-throw');
+  }
+}
+
+/// G1-a（ADR-C113）：固定返回 5 条 L2 症候诊断 JSON 的可计数 Fake。
+/// callCount == 流式调用次数：1 = 仅主诊断流（Teacher 被短路）；2 = 主诊断 + Teacher。
+class _FiveSyndromeLlmClient extends LlmClient {
+  int callCount = 0;
+
+  static const String _response =
+      '你的文本问题较多。\n[YS_DIAGNOSIS]\n'
+      '{"syndromes":['
+      '{"syndrome_id":"s1","name":"n1","severity":"L2","evidence":[],"explanation":"t"},'
+      '{"syndrome_id":"s2","name":"n2","severity":"L2","evidence":[],"explanation":"t"},'
+      '{"syndrome_id":"s3","name":"n3","severity":"L2","evidence":[],"explanation":"t"},'
+      '{"syndrome_id":"s4","name":"n4","severity":"L2","evidence":[],"explanation":"t"},'
+      '{"syndrome_id":"s5","name":"n5","severity":"L2","evidence":[],"explanation":"t"}'
+      '],"suggested_actions":[],"confidence":0.8}\n[/YS_DIAGNOSIS]';
+
+  @override
+  Future<void> streamChat(
+    List<ChatMessage> messages,
+    void Function(LlmStreamResponse response) callback, {
+    CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
+  }) async {
+    callCount++;
+    callback(const LlmStreamResponse(content: _response, isDone: false));
+    callback(const LlmStreamResponse(content: '', isDone: true));
+  }
+}
+
 void main() {
   late AppDatabase db;
   late SessionRepository sessionRepo;
@@ -562,6 +601,117 @@ void main() {
       await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('症候数量 ≥ 5'));
+    });
+
+    // G4（ADR-C113）：仍未覆盖的两条兜底分支——
+    //   #18 = chat_service.dart:1267（activeId 既非 builtin、也不在 customs 列表里落空）
+    //   #19 = chat_service.dart:1268-1269（catch 兜底）。
+    // （:1254 repo==null 已被 #13/#17 守；:1257 activeId==null 已被 #16 守；
+    //   builtin 分支已被 #15 守；customs 循环已被 #14 守——勿重复造。）
+    test('#18 兜底：activeId 既非内置也不在自定义列表 → 落空回退默认阈值 5', () async {
+      final llm = _CaptureLlmClient();
+      final appState = AppStateRepository(db);
+      // 写一个既非 builtin(doubao/yuesheng/sensei)、也未 save 成 custom 的 id：
+      // builtInCoachPersonaById → null；getCustomCoachPersonas → []；循环不命中 ⇒ 落空分支。
+      await appState.setActiveCoachPersona('no_such_persona_xyz');
+      final service = buildChatService(llm, appStateRepo: appState);
+
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(
+        sent,
+        contains('症候数量 ≥ 5'),
+        reason: '未知 activeId 落空分支必须回退默认阈值 kDefaultDirectExplainThreshold',
+      );
+    });
+
+    test('#19 兜底：读 activeId 抛异常 → catch 回退默认阈值 5 且不向上冒泡', () async {
+      final llm = _CaptureLlmClient();
+      final appState = _ThrowingAppStateRepo(db);
+      final service = buildChatService(llm, appStateRepo: appState);
+
+      // getActiveCoachPersonaId 抛错 ⇒ 必须被内部 catch 吞掉，sendMessage 不冒泡、注入仍为默认 5。
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('症候数量 ≥ 5'), reason: 'catch 兜底分支必须回退默认阈值且不向上抛');
+    });
+  });
+
+  // G1-a（ADR-C113）：Teacher 短路护栏——inDirectExplain 时「跳过本轮教师」，
+  // 不替学员选一条直接讲（R-009）。用可计数 Fake 验证 callCount：
+  //   Case 1 正向：默认阈值 5 + 5 症候 ≥ 5 ⇒ inDirectExplain ⇒ Teacher 0 次（callCount=1）
+  //   Case 2 反面对照：阈值 99 + 5 症候 < 99 ⇒ 非全貌 ⇒ Teacher 1 次（callCount=2）
+  //   Case 3 诊断边界：阈值 99（非全貌）+ 「只诊断」声明 ⇒ diagnosisOnly 独立阻断（callCount=1）
+  group('G1-a Teacher directExplain 短路（ADR-C113）', () {
+    test('Case1 默认阈值 5 + 5 条 L2 ⇒ inDirectExplain ⇒ Teacher 0 次', () async {
+      final llm = _FiveSyndromeLlmClient();
+      final service = buildChatService(llm); // appStateRepo=null → 阈值 5
+      final phases = <bool>[];
+      await service.sendMessage(
+        sessionId,
+        '帮我分析这段。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+          onTeacherPhase: (a) => phases.add(a),
+        ),
+        options(),
+      );
+      expect(
+        llm.callCount,
+        1,
+        reason: '5 症候 ≥ 阈值 5 ⇒ inDirectExplain ⇒ 必须跳过本轮教师（只主诊断流 1 次）',
+      );
+      expect(phases, isEmpty, reason: 'Teacher 未触发 ⇒ onTeacherPhase 不应出现 true');
+    });
+
+    test('Case2 反向对照：阈值 99 + 5 条 L2 < 99 ⇒ 非全貌 ⇒ Teacher 1 次', () async {
+      final llm = _FiveSyndromeLlmClient();
+      final appState = AppStateRepository(db);
+      await appState.setActiveCoachPersona('doubao');
+      await appState.setCoachPersonaDirectThreshold('doubao', 99);
+      final service = buildChatService(llm, appStateRepo: appState);
+      await service.sendMessage(
+        sessionId,
+        '帮我分析这段。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        options(),
+      );
+      expect(
+        llm.callCount,
+        2,
+        reason: '5 < 99 ⇒ 非全貌 ⇒ Teacher 应触发一次（主诊断 + 教师共 2 次）',
+      );
+    });
+
+    test('Case3 边界：阈值 99（非全貌）+「只诊断」⇒ diagnosisOnly 独立阻断 Teacher', () async {
+      final llm = _FiveSyndromeLlmClient();
+      final appState = AppStateRepository(db);
+      await appState.setActiveCoachPersona('doubao');
+      await appState.setCoachPersonaDirectThreshold('doubao', 99);
+      final service = buildChatService(llm, appStateRepo: appState);
+      await service.sendMessage(
+        sessionId,
+        '只诊断，帮我分析这段。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        options(),
+      );
+      expect(
+        llm.callCount,
+        1,
+        reason: 'diagnosisOnly=true 必须独立阻断 Teacher（即使非全貌、症候够多）',
+      );
     });
   });
 }

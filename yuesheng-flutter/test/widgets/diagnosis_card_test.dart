@@ -72,6 +72,29 @@ class _ThrowingDiagnosisService extends DiagnosisService {
   }
 }
 
+/// 交互批 C113 G3-a：记录型 disputeDiagnosis fake——捕获 reason 实参与调用次数，
+/// 用于守「≥5 字闸」与「理由透传」两条此前零覆盖的 UI 护栏。
+class _RecordingDiagnosisService extends DiagnosisService {
+  _RecordingDiagnosisService({
+    required super.diagnosisRepo,
+    required super.studentModelRepo,
+  });
+
+  final List<String?> disputeReasons = [];
+  int disputeCallCount = 0;
+
+  @override
+  Future<void> disputeDiagnosis(
+    String sessionId,
+    String syndromeId,
+    String syndromeName, {
+    String? reason,
+  }) async {
+    disputeCallCount++;
+    disputeReasons.add(reason);
+  }
+}
+
 void main() {
   // ── 数据构造：典型诊断 payload ──
   final threeSyndromes = [
@@ -627,6 +650,98 @@ void main() {
         );
       },
     );
+
+    // ── C113 G3-a：dispute reason UI 护栏（此前 fake 是抛错 fake，无人断言理由实参/字数闸）。──
+    Future<void> pumpWithRecordingService(
+      WidgetTester tester,
+      _RecordingDiagnosisService recording,
+    ) async {
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          diagnosisServiceProvider.overrideWithValue(recording),
+        ],
+      );
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(child: cardWithSession()),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('G3-a：填 ≥5 字理由 → disputeDiagnosis 被调且 reason 实参 == 所填文本', (
+      tester,
+    ) async {
+      final recording = _RecordingDiagnosisService(
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+      );
+      await pumpWithRecordingService(tester, recording);
+
+      await tester.tap(find.text('不认同'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '第三句我觉得抢话了');
+      await tester.tap(find.widgetWithText(TextButton, '提交异议'));
+      await tester.pumpAndSettle();
+
+      expect(recording.disputeCallCount, 1, reason: '≥5 字理由必须真正提交一次');
+      expect(
+        recording.disputeReasons.single,
+        '第三句我觉得抢话了',
+        reason: 'reason 实参必须等于学员所填文本（trim 后）',
+      );
+      expect(find.text('已质疑'), findsOneWidget);
+    });
+
+    testWidgets('G3-a：填 <5 字理由 → disputeDiagnosis 未被调 + 失败 snack', (
+      tester,
+    ) async {
+      final recording = _RecordingDiagnosisService(
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+      );
+      await pumpWithRecordingService(tester, recording);
+
+      await tester.tap(find.text('不认同'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '不对');
+      await tester.tap(find.widgetWithText(TextButton, '提交异议'));
+      // SnackBar 4s 生命期：先推入场动画再断言（pumpAndSettle 会快进掉它）
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(
+        recording.disputeCallCount,
+        0,
+        reason: '<5 字闸（diagnosis_card.dart:1210）必须拦下，不得调用 disputeDiagnosis',
+      );
+      expect(find.text('请写具体一些（至少 5 个字），说明哪里不对'), findsOneWidget);
+      expect(find.text('已质疑'), findsNothing);
+    });
+
+    testWidgets('G3-a：空串提交 → disputeDiagnosis 未被调', (tester) async {
+      final recording = _RecordingDiagnosisService(
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+      );
+      await pumpWithRecordingService(tester, recording);
+
+      await tester.tap(find.text('不认同'));
+      await tester.pumpAndSettle();
+      // 不输入任何文本直接提交 → reason.trim().isEmpty 拦（diagnosis_card.dart:1208）
+      await tester.tap(find.widgetWithText(TextButton, '提交异议'));
+      await tester.pumpAndSettle();
+
+      expect(recording.disputeCallCount, 0, reason: '空串必须拦下，不得落库');
+    });
 
     // ── 交互批 #8：裁决态持久化（缺陷本体 = _status 硬编码 pending、从不 hydrate）。
     //    重复质疑会累积 shouldUnlockSyndrome 计数（≥2 反驳向解锁）⇒ 是教学态机

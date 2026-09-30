@@ -257,4 +257,38 @@ void main() {
       expect(last['teaching_mode'], 'socratic');
     });
   });
+
+  // P0-3 / ADR-C113 G3-b：disputeReason 必须随 disputeDiagnosis 落进 teaching_history
+  // （chat_service 注入侧下一轮再读回注给 LLM）。此前 grep `disputeReason` 在 test/ 零命中。
+  group('disputeDiagnosis reason 落库（P0-3 / C113 G3-b）', () {
+    test('带 reason → teaching_history 行带 disputeReason == 所填文本', () async {
+      await service.disputeDiagnosis(
+        sessionId,
+        'P001',
+        '情绪标签化',
+        reason: '第三句对话里两个人抢话',
+      );
+
+      final history = await studentModelRepo.getTeachingHistory(sessionId);
+      final disputed = history.lastWhere((h) => h['action'] == 'disputed');
+      expect(
+        disputed['disputeReason'],
+        '第三句对话里两个人抢话',
+        reason:
+            'disputeDiagnosis(reason:) 必须把理由写进 teaching_history.disputeReason',
+      );
+    });
+
+    test('不带 reason → teaching_history 行不含 disputeReason key', () async {
+      await service.disputeDiagnosis(sessionId, 'P001', '情绪标签化');
+
+      final history = await studentModelRepo.getTeachingHistory(sessionId);
+      final disputed = history.lastWhere((h) => h['action'] == 'disputed');
+      expect(
+        disputed.containsKey('disputeReason'),
+        isFalse,
+        reason: '未传 reason 时不应写入 disputeReason key',
+      );
+    });
+  });
 }

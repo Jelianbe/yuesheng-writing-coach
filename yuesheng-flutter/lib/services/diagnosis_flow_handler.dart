@@ -421,6 +421,15 @@ class DiagnosisFlowHandler {
   /// 长文为批处理提交、主回复流式已结束，故直调 [callTeacherStream] 并传
   /// no-op onStream（不触发流式 UI）。仅在 [shouldTriggerTeacherForDiagnosis]
   /// 命中时触发，结果经 [_persistTeacherSuggestionIfAny] 落库为建议卡。
+  ///
+  /// C113（G1-b）：此处**有意不做 directExplain 短路**（即不判
+  /// `directExplainThreshold` / `inDirectExplain`）。长链入口
+  /// [commitDiagnosisFromContent]（progressive / 超长分块诊断）不经
+  /// `ChatService._applyDiagnosisInjection`，**从不向学员注入「编号清单先选哪条」
+  /// 的全貌呈现 prompt**——学员没有「先选一条」的交互，教师建议卡是该批处理路径的
+  /// 正常产物。短链 [_triggerTeacherForDiagnosis] 的 `!inDirectExplain` 门控
+  /// （diagnosis_flow_handler.dart:866）因此**不需要**对称透传到这里；若未来长链
+  /// 也改为「先给编号清单、等学员选」，则须同步补短路。
   Future<void> _triggerTeacherForLongPath({
     required String sessionId,
     required String messageId,
