@@ -1098,6 +1098,8 @@ extension ChatServiceSend on ChatService {
       (stageIndexes[stage] ??= []).add(messages.length);
     }
 
+    final priorUserTexts = _collectPriorUserTexts(loaded);
+
     final injected = await _injectContext(
       sessionId: sessionId,
       content: content,
@@ -1107,6 +1109,7 @@ extension ChatServiceSend on ChatService {
       currentSubphase: loaded.currentSubphase,
       beginnerLevel: loaded.beginnerLevel,
       phase: loaded.effectivePhase,
+      priorUserTexts: priorUserTexts,
     );
     return (
       messages: messages,
@@ -1116,6 +1119,26 @@ extension ChatServiceSend on ChatService {
       stageIndexes: stageIndexes,
       markStage: markStage,
     );
+  }
+
+  /// ADR-C106 A7：热度所需历史 user 文本（时间正序，R-019 拆出）。
+  ///
+  /// loaded.history 在 _writeUserMessage 之后取、已含本轮 user 消息，故倒序取
+  /// user 时跳过末条（本轮 content），避免 [content, ...priorUserTexts]
+  /// double-count。再反序回填为时间正序。
+  List<String> _collectPriorUserTexts(_LoadedContext loaded) {
+    final priorUserTexts = <String>[];
+    var skippedCurrent = false;
+    for (var i = loaded.history.length - 1; i >= 0; i--) {
+      final m = loaded.history[i];
+      if (m.role != 'user') continue;
+      if (!skippedCurrent) {
+        skippedCurrent = true;
+        continue;
+      }
+      priorUserTexts.add(m.content);
+    }
+    return priorUserTexts.reversed.toList();
   }
 
   /// P2 收尾：写用户消息（会话存在性校验 + 落库 + 快照）。R-019 拆出。
@@ -1263,12 +1286,14 @@ extension ChatServiceSend on ChatService {
     required TeachingSubphase? currentSubphase,
     required BeginnerLevel? beginnerLevel,
     required TeachingPhase phase,
+    List<String> priorUserTexts = const [],
   }) async {
     final base = await _injectBaseContext(
       sessionId: sessionId,
       content: content,
       messages: messages,
       markStage: markStage,
+      priorUserTexts: priorUserTexts,
     );
     // P2-9：FSRS 复习调度（P3 档，activeProblems 数据与注入同源）
     await _messageInjector.injectReviewSchedule(
@@ -1300,6 +1325,7 @@ extension ChatServiceSend on ChatService {
     required String content,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
+    List<String> priorUserTexts = const [],
   }) async {
     await _messageInjector.injectProfileAndIntents(
       sessionId: sessionId,
@@ -1320,6 +1346,7 @@ extension ChatServiceSend on ChatService {
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
+      priorUserTexts: priorUserTexts,
     );
     await _messageInjector.injectOutlineFactsAndFiles(
       content: content,
@@ -1563,6 +1590,11 @@ extension ChatServiceSend on ChatService {
         ' > ${(TokenEstimate.maxBudget * TokenEstimate.warningRatio).round()}',
       );
     }
+    // C17：release 下 debugPrint 不可见 ⇒ 旁路落 error_logs，事后可查「本轮
+    // 是否触发降级、裁了哪几段」。只放 stage 名/token 数，绝不放 prompt 正文。
+    if (guardReport.triggered || guardReport.overWarning) {
+      recordBudgetOutcomeLog(guardReport);
+    }
     if (guardReport.dropped) {
       // S1（R2）：素材/观察段缺失提示生成迁入 StageDropNotice（ADR-C74
       // 三步法，chat_service 零净增）。X-040 素材文案逐字不变（回归测试
@@ -1737,4 +1769,28 @@ extension ChatServiceSend on ChatService {
       stack: s.toString(),
     );
   }
+}
+
+/// C17：预算降级 / 超警告线的旁路留痕（可单测接缝）。
+///
+/// release 下 debugPrint 无效 ⇒ 仅 debugPrint 会让「本轮是否触发降级、裁了哪
+/// 几段」在发布版完全不可观测。这里旁路写一条 info/api 行，`event='llm_budget'`
+/// （查询侧据 C14 三态分派把它从调用统计里排除）。只放 stage 名 / token 数，
+/// **绝不放 prompt 正文**（R-029）；captureError 自身做 A12 脱敏。
+@visibleForTesting
+void recordBudgetOutcomeLog(BudgetGuardReport r) {
+  ErrorHandler.instance.captureError(
+    level: 'info',
+    category: 'api',
+    message: '[budget] triggered=${r.triggered} overWarning=${r.overWarning}',
+    context: <String, dynamic>{
+      'event': 'llm_budget',
+      'triggered': r.triggered,
+      'overWarning': r.overWarning,
+      'totalBefore': r.totalBefore,
+      'totalAfter': r.totalAfter,
+      'droppedStages': r.droppedStages,
+      'droppedMessageCount': r.droppedMessageCount,
+    },
+  );
 }

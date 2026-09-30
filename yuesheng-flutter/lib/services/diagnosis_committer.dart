@@ -52,7 +52,7 @@ import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/conflict_detector.dart'
     show WorldConflictObservation;
 import 'package:writingcoach/services/chat_context_builder.dart'
-    show ReferenceItem;
+    show ReferenceItem, worldConflictObservationLine;
 import 'package:writingcoach/services/phase_mapper_resolver.dart';
 import 'package:writingcoach/services/phase_transition.dart';
 import 'package:writingcoach/data/database/utils.dart';
@@ -1268,9 +1268,11 @@ String? buildWorldHitContext({
     lines.add('- 主题「$name」：${assertions.join('；')}');
   }
   final hitSet = hitNames.toSet();
+  // ADR-C106 B1：冲突行改走公开 helper——附带原文 excerpt（此前手拼无 excerpt，
+  // 与人物侧矛盾行格式分裂）。格式/截断口径全部复用 chat_context_builder。
   final conflictLines = conflicts
       .where((o) => hitSet.contains(o.themeName))
-      .map((o) => '- 「${o.themeName}」${o.attribute}：${o.description}')
+      .map(worldConflictObservationLine)
       .toList();
   final cold = worlds.length - hitNames.length;
   final parts = <String>[];

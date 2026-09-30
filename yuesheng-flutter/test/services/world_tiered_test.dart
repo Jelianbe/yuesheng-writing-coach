@@ -166,5 +166,32 @@ void main() {
       expect(ctx, isNotNull);
       expect(ctx, contains('未提及的设定主题共 3 条'));
     });
+
+    // B1（ADR-C106）：世界侧冲突行必须附带原文 excerpt，与人物侧
+    // buildConflictObservationsContext 的「（原文：「…」）」格式逐字一致。
+    test('#10 B1：命中主题冲突行附带原文摘录（与人物侧格式一致）', () {
+      final conflicts = [
+        WorldConflictObservation(
+          themeName: '灵气体系',
+          attribute: '灵气',
+          orderedValues: const [_confirmed],
+          description: '「稀薄」与「浓郁」并存',
+          excerpt: '山间灵气稀薄，凡人难以修行',
+        ),
+      ];
+      final ctx = buildWorldHitContext(
+        hitNames: const ['灵气体系'],
+        worlds: worlds,
+        conflicts: conflicts,
+      )!;
+      // 冲突行 = 「主题」属性：描述（原文：「摘录」）——与人物侧逐字同格式
+      expect(
+        ctx,
+        contains(
+          '- 「灵气体系」灵气：「稀薄」与「浓郁」并存'
+          '（原文：「山间灵气稀薄，凡人难以修行」）',
+        ),
+      );
+    });
   });
 }

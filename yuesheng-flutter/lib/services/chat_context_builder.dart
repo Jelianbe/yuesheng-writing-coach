@@ -464,6 +464,18 @@ String _excerptSuffix(String? excerpt) {
   return '（原文：「$excerpt」）';
 }
 
+/// 世界冲突观察行（ADR-C106 B1/C1）：把世界侧不一致观察格式化为单行，
+/// 与人物侧 [buildConflictObservationsContext] 的矛盾行逐字同口径——
+/// 「主题」属性：描述（原文：「…」）。世界侧 excerpt 先过 120 字截断
+/// （[kWorldObservationExcerptMaxChars]），再拼摘录后缀。
+///
+/// 抽为公开 helper 的原因：活路径 [buildWorldHitContext]（diagnosis_committer）
+/// 此前手拼无 excerpt 的行，与人物侧分裂；私有 `_excerptSuffix`/`_truncateExcerpt`
+/// 跨库不可见，故经此公开函数复用同一格式（DRY，不再复制拼法）。
+String worldConflictObservationLine(WorldConflictObservation o) =>
+    '- 「${o.themeName}」${o.attribute}：${o.description}'
+    '${_excerptSuffix(_truncateExcerpt(o.excerpt, kWorldObservationExcerptMaxChars))}';
+
 /// 时序矛盾观察上下文（批次66 B62i，A6 首步，挂 F05/P015 补充）
 ///
 /// 输入 conflict_detector 输出的观察项（同属性不同值，带章节/时间维度）。
@@ -495,48 +507,6 @@ String? buildConflictObservationsContext(
       '以下是作品中已记录的人物属性前后不一致（同属性不同值，按出现章节标注）。'
       '若这些矛盾确属事实性错误（而非角色刻意隐瞒或剧情转折），请结合 P015 人设崩塌症'
       '的判断原则提示学员，温和指出矛盾位置与前后差异（只定位，不代改正文）。\n\n'
-      '${budgeted.kept.join('\n')}$notice';
-}
-
-/// 设定不一致观察上下文（批次 E1-b · ADR-C93 D5）
-///
-/// 与 [buildConflictObservationsContext] 并列而**刻意不共用**：措辞、归属、去向
-/// 三者都不同——本函数**不挂 P 编号**、不产出症候、不进诊断面板（ADR-C93 Q4），
-/// 只把「同一设定主题内前后取值不一致」的线索交给 AI 复核。
-///
-/// 措辞必须内置**规则与例外**的免责句式：世界观是规则，天然带例外
-/// （「灵气稀薄」+「此地有灵脉」是层次感，不是矛盾）。AI 有这句兜底才不会把
-/// 层次报成错误——这是本判据不得复用 F05 的用户侧配套，缺了它就等于把机械
-/// 判定直接当结论（D3 / §1.1）。
-///
-/// excerpt 恒非空（判据门槛 [_hasEvidence] 保证），仍走 `_excerptSuffix`
-/// 以保持与人物侧逐字一致的摘录格式。
-String? buildWorldSettingObservationsContext(
-  List<WorldConflictObservation> observations,
-) {
-  if (observations.isEmpty) return null;
-
-  // S3（R1）：摘录先过 120 字截断（与 character 侧同口径）；
-  // S2（R3/R4）：再过两级预算（条数 → 字符），未超限输出逐字节不变。
-  final budgeted = ObservationBudget.apply(
-    observations
-        .map(
-          (o) =>
-              '- 「${o.themeName}」${o.attribute}：${o.description}'
-              '${_excerptSuffix(_truncateExcerpt(o.excerpt, kWorldObservationExcerptMaxChars))}',
-        )
-        .toList(),
-    section: '设定不一致观察',
-  );
-  if (budgeted.kept.isEmpty) return null;
-  final notice = budgeted.dropped > 0
-      ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
-      : '';
-
-  return '## 设定不一致观察（设定层）\n\n'
-      '以下是作品中同一设定主题（世界规则 / 体系 / 势力）在不同章节的取值记录。'
-      '若确属**规则与例外**（同一主题在不同范围或时期下的层次，如整体灵气稀薄但'
-      '某地有灵脉），请忽略；若确属设定漂移，请温和提示学员（只定位，不代改正文）。\n\n'
       '${budgeted.kept.join('\n')}$notice';
 }
 

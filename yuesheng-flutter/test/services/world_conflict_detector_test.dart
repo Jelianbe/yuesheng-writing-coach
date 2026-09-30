@@ -20,9 +20,8 @@
 // 适配入口 detectConflictsForWorlds（world_setting.dart）：
 //  14. 端到端：upsertWorld 写入 → 入口检出（验证 evidence 经合并逻辑保真）
 //
-// 注入文本 buildWorldSettingObservationsContext：
-//  15. 空 → null（零 token 成本）
-//  16. 非空 → 含设定层标题、主题名、「规则与例外」免责句式
+// 注入行格式 worldConflictObservationLine（ADR-C106 B1/C1）：
+//  15. 非空观察 → 行含主题名、属性、描述与原文摘录（不挂 P 编号）
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/native.dart';
@@ -585,13 +584,9 @@ void main() {
     });
   });
 
-  group('buildWorldSettingObservationsContext（注入文本）', () {
-    test('#15 空 → null（零 token 成本）', () {
-      expect(buildWorldSettingObservationsContext(const []), isNull);
-    });
-
-    test('#16 非空 → 含设定层标题、主题名与「规则与例外」免责句式', () {
-      final ctx = buildWorldSettingObservationsContext([
+  group('worldConflictObservationLine（注入行格式，ADR-C106 B1/C1）', () {
+    test('#15 非空观察 → 行含主题名、属性、描述与原文摘录', () {
+      final line = worldConflictObservationLine(
         WorldConflictObservation(
           themeName: '灵气体系',
           attribute: '灵气浓度',
@@ -606,14 +601,14 @@ void main() {
           description: '第3章「稀薄」→ 第20章「充沛」',
           excerpt: '这方天地灵气稀薄',
         ),
-      ]);
+      );
 
-      expect(ctx, isNotNull);
-      expect(ctx, contains('设定不一致观察（设定层）'));
-      expect(ctx, contains('灵气体系'));
-      expect(ctx, contains('规则与例外'), reason: '缺了免责句式等于把机械判定当结论');
-      expect(ctx, contains('这方天地灵气稀薄'));
-      expect(ctx, isNot(contains('P015')), reason: '设定层不挂 P 编号，注入文本不得引用人物侧症候');
+      expect(line, contains('「灵气体系」'));
+      expect(line, contains('灵气浓度'));
+      expect(line, contains('第3章「稀薄」→ 第20章「充沛」'));
+      // 行尾必须带原文摘录（B1：活路径 buildWorldHitContext 此前丢 excerpt）
+      expect(line, contains('（原文：「这方天地灵气稀薄」）'));
+      expect(line, isNot(contains('P015')), reason: '设定层不挂 P 编号，不得引用人物侧症候');
     });
   });
 }

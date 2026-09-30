@@ -35,43 +35,45 @@ WorldConflictObservation _world(String theme, String excerpt) =>
 
 void main() {
   group('S3：world 摘录 120 字截断（R1）', () {
+    // ADR-C106 C1：死函数 buildWorldSettingObservationsContext 已删，其行格式
+    // 断言平移到公开 helper worldConflictObservationLine（活路径 buildWorldHitContext 复用）。
     test('R1-AC1：evidence > 120 字 → 摘录 = 前 119 字 + 「…」，总长 ≤ 120', () {
       final long = '甲' * 140;
-      final ctx = buildWorldSettingObservationsContext([_world('灵气体系', long)])!;
+      final line = worldConflictObservationLine(_world('灵气体系', long));
       final expectedHead = '${'甲' * 119}…';
-      expect(ctx, contains('（原文：「$expectedHead」）'));
+      expect(line, contains('（原文：「$expectedHead」）'));
       // 摘录总长 = 119 + 1（省略号）= 120
       expect(expectedHead.length, 120);
       // 原文第 120 字起（被截掉的部分）不得出现
-      expect(ctx, isNot(contains('「${'甲' * 120}')));
+      expect(line, isNot(contains('「${'甲' * 120}')));
     });
 
     test('R1-AC1 边界：121 字 → 截断为 120（含省略号）', () {
       final s121 = '乙' * 121;
-      final ctx = buildWorldSettingObservationsContext([_world('灵气体系', s121)])!;
-      expect(ctx, contains('（原文：「${'乙' * 119}…」）'));
-      expect(ctx, contains('${'乙' * 119}…'));
+      final line = worldConflictObservationLine(_world('灵气体系', s121));
+      expect(line, contains('（原文：「${'乙' * 119}…」）'));
+      expect(line, contains('${'乙' * 119}…'));
     });
 
     test('R1-AC2：evidence 恰 120 字 → 原样保留（不截断）', () {
       final s120 = '丙' * 120;
-      final ctx = buildWorldSettingObservationsContext([_world('灵气体系', s120)])!;
-      expect(ctx, contains('（原文：「$s120」）'));
+      final line = worldConflictObservationLine(_world('灵气体系', s120));
+      expect(line, contains('（原文：「$s120」）'));
     });
 
     test('R1-AC2：evidence ≤ 120 字（119）→ 原样保留', () {
       final s119 = '丁' * 119;
-      final ctx = buildWorldSettingObservationsContext([_world('灵气体系', s119)])!;
-      expect(ctx, contains('（原文：「$s119」）'));
+      final line = worldConflictObservationLine(_world('灵气体系', s119));
+      expect(line, contains('（原文：「$s119」）'));
     });
 
     test('R1-AC4：截断后仍走 _excerptSuffix，与 character 侧格式逐字一致', () {
       final long = '戊' * 200;
-      final ctx = buildWorldSettingObservationsContext([_world('灵气体系', long)])!;
+      final line = worldConflictObservationLine(_world('灵气体系', long));
       // 与 F05 侧同款格式「（原文：「…」）」（R1-AC4 / §7-5）
-      expect(ctx, contains('（原文：「${'戊' * 119}…」）'));
+      expect(line, contains('（原文：「${'戊' * 119}…」）'));
       // 省略号必须是单字符 …（U+2026），不是三点 ...
-      expect(ctx, isNot(contains('${'戊' * 119}...')));
+      expect(line, isNot(contains('${'戊' * 119}...')));
     });
   });
 
@@ -97,16 +99,12 @@ void main() {
       );
     });
 
-    test('buildWorldSettingObservationsContext：单条短摘录输出逐字节一致', () {
-      final ctx = buildWorldSettingObservationsContext([
+    test('worldConflictObservationLine：单条短摘录行逐字节一致', () {
+      final line = worldConflictObservationLine(
         _world('灵气体系', '山间灵气稀薄，凡人难以修行'),
-      ]);
+      );
       expect(
-        ctx,
-        '## 设定不一致观察（设定层）\n\n'
-        '以下是作品中同一设定主题（世界规则 / 体系 / 势力）在不同章节的取值记录。'
-        '若确属**规则与例外**（同一主题在不同范围或时期下的层次，如整体灵气稀薄但'
-        '某地有灵脉），请忽略；若确属设定漂移，请温和提示学员（只定位，不代改正文）。\n\n'
+        line,
         '- 「灵气体系」灵气浓度：第1章「稀薄」→ 第20章「充沛」'
         '（原文：「山间灵气稀薄，凡人难以修行」）',
       );
@@ -175,9 +173,6 @@ void main() {
           excerpt: '摘录${'字' * excerptLen}$i',
         );
 
-    WorldConflictObservation worldShort(int i) =>
-        _world('灵气体系${i.toString().padLeft(2, '0')}', '短依据$i');
-
     test('R3-AC1/AC2：20 条 character 观察 → 恰 12 条注入 + 提示「另有 8 条」', () {
       final ctx = buildConflictObservationsContext(
         List.generate(20, conflict),
@@ -189,15 +184,6 @@ void main() {
       expect(ctx, isNot(contains('- 角色13「性情」')));
       // 知情截断：提示数 == 实际丢弃数（20 − 12）
       expect(ctx, contains('另有 8 条观察未列出'));
-    });
-
-    test('R3：world 观察 14 条 → 12 条 + 「另有 2 条」', () {
-      final ctx = buildWorldSettingObservationsContext(
-        List.generate(14, worldShort),
-      )!;
-      final keptLines = ctx.split('\n').where((l) => l.startsWith('- '));
-      expect(keptLines, hasLength(12));
-      expect(ctx, contains('另有 2 条观察未列出'));
     });
 
     test('R4-AC3 叠加态：条数砍尾后字符预算继续生效（causality 长摘录）', () {

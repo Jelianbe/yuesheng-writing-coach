@@ -25,6 +25,7 @@ import '../data/repositories/outline_repository.dart';
 import '../data/repositories/reference_repository.dart';
 import '../data/repositories/subplot_fact_repository.dart';
 import '../data/repositories/world_fact_repository.dart';
+import '../data/repositories/setting_entry_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/editor_observation_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
@@ -187,6 +188,9 @@ final messageInjectorProvider = Provider<MessageInjector>((ref) {
     outlineRepo: OutlineRepository(db),
     // 批次 E1-b-2：设定层观察项（ADR-C93 Q4：只进 AI 上下文）
     worldFactRepo: WorldFactRepository(db),
+    // ADR-C106 A3：「参与诊断」开关接线——此前唯一生产装配点漏传，
+    // 用户勾选的自定义设定永不进 AI 上下文（UI 撒谎）。
+    settingEntryRepo: SettingEntryRepository(db),
   );
 });
 

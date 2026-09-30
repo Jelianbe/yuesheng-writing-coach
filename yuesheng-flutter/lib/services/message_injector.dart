@@ -321,6 +321,9 @@ class MessageInjector {
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
+    // ADR-C106 A7：近轮热度所需的历史 user 文本（生产侧从 loaded.history
+    // 下传，已排除本轮 content 防 double-count）。默认 const [] = 仅本轮进热度。
+    List<String> priorUserTexts = const [],
   }) async {
     await _injectFactTableObservations(
       sessionId: sessionId,
@@ -328,6 +331,7 @@ class MessageInjector {
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
+      priorUserTexts: priorUserTexts,
     );
     await _injectTextObservations(
       content: content,
@@ -339,6 +343,34 @@ class MessageInjector {
 
   /// R-019 编排 helper：事实表驱动观察（声线漂移 / F05 / 设定层 / F07 / F11）。
   Future<void> _injectFactTableObservations({
+    required String sessionId,
+    required String content,
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+    List<String> priorUserTexts = const [],
+  }) async {
+    await _injectCoreFactObservations(
+      sessionId: sessionId,
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+    // R-019 拆分（2026-09-17）：设定类观察独立成方法防超 50 行。
+    await _injectSettingObservations(
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+      priorUserTexts: priorUserTexts,
+    );
+  }
+
+  /// 事实表核心五类观察：声线漂移 / 冲突 / 世界观设定 / 因果 / 支线收束。
+  ///
+  /// 五者参数口径一致、顺序串行注入（R-019 从 _injectFactTableObservations 拆出）。
+  Future<void> _injectCoreFactObservations({
     required String sessionId,
     required String content,
     required ReferenceItem? primaryRef,
@@ -380,13 +412,6 @@ class MessageInjector {
       messages: messages,
       markStage: markStage,
     );
-    // R-019 拆分（2026-09-17）：设定类观察独立成方法防超 50 行。
-    await _injectSettingObservations(
-      content: content,
-      primaryRef: primaryRef,
-      messages: messages,
-      markStage: markStage,
-    );
   }
 
   /// 设定类观察注入（第二批）：命中展开 →（无命中退化）钉选名片 +
@@ -396,6 +421,7 @@ class MessageInjector {
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
+    List<String> priorUserTexts = const [],
   }) async {
     final hit = await _injectHitSettings(
       content: content,
@@ -406,22 +432,27 @@ class MessageInjector {
     if (!hit) {
       // L2 退化层：先用户显式钉选，再近轮热度（都不退化为空上下文）。
       await _injectPinnedCards(
+        content: content,
         primaryRef: primaryRef,
         messages: messages,
         markStage: markStage,
       );
       await _injectHotCards(
+        content: content,
         primaryRef: primaryRef,
         messages: messages,
         markStage: markStage,
+        priorUserTexts: priorUserTexts,
       );
     }
     await _injectParticipatingSettings(
+      content: content,
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
     );
     await _injectNegativeAssertions(
+      content: content,
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
@@ -1190,10 +1221,10 @@ class MessageInjector {
   /// 去向**只有 AI 上下文**（ADR-C93 Q4）：不挂 P 编号、不产症候、不进诊断
   /// 面板——判据未经实测，先让 AI 复核兜底，可见化等误报率数据。
   ///
-  /// **通路现状**：`world_fact` 当前无生产写入方（E1-b-3 协议抽取 或 批次 B
-  /// 手动录入才产生数据），故本方法现阶段恒在 `worlds.isEmpty` 处早退。
-  /// 先建通路是为了让写入侧落地时**零改动即生效**；代价是每次诊断请求多
-  /// 一次空表 SELECT（表为空时开销可忽略）。
+  /// **通路现状**（C3 订正：旧注释「world_fact 当前无生产写入方、恒在
+  /// `worlds.isEmpty` 早退」已过时）：world_fact 现已有生产写入方 ——
+  /// `WorldEditorService.upsertWorld`、详情页「＋追加设定」、设定正文提炼。
+  /// 故本方法**有数据时会真出观察项**，不再恒空；空稿仍在 `worlds.isEmpty` 早退。
   Future<void> _injectWorldSettingObservation({
     required String sessionId,
     required String content,
@@ -1212,7 +1243,10 @@ class MessageInjector {
       // 分级供给 L1（世界观侧，2026-09-17）：命中主题展开 + 命中矛盾 +
       // 冷元信息，替代原「每轮全量检测」——成本随对话复杂度而非库容增长
       // （母备忘 §2.3 成本模型）。
-      final userText = _lastUserText(messages);
+      // ADR-C106 A7：本轮用户消息即入参 content。注入发生在历史追加之前
+      //（chat_service._finalizeSendContext），此刻 messages 里没有任何 user
+      // 消息，故 _lastUserText(messages) 恒空——L1 用户点名匹配因此静默失效。
+      final userText = content;
       final hits = matchHitWorlds(
         chapterContent: chapter.content,
         userText: userText,
@@ -1241,10 +1275,14 @@ class MessageInjector {
   /// 用户逐条勾选 participate 后才注入（默认零注入）；克制预算
   /// （5 条封顶 + 每条正文 120 字截断，见 buildParticipatingSettingsContext）。
   Future<void> _injectParticipatingSettings({
+    required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
+    // ADR-C106 C4：与 hit/world 同类守卫——「参与诊断」段只在诊断轮注入，
+    // 纯教学轮不进（语义即诊断语境，且每轮注入徒增 token、扰动缓存前缀）。
+    if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
     final repo = _settingEntryRepo;
     if (repo == null) return;
@@ -1292,7 +1330,9 @@ class MessageInjector {
       if (chapter == null) return false;
       final characters = await repo.listCharacters(chapter.manuscriptId);
       if (characters.isEmpty) return false;
-      final userText = _lastUserText(messages);
+      // ADR-C106 A7：同 _injectWorldSettingObservation——本轮 userText=content
+      //（历史在注入后才追加，messages 此刻无 user 消息）。
+      final userText = content;
       final hits = matchHitEntities(
         chapterContent: chapter.content,
         userText: userText,
@@ -1313,24 +1353,18 @@ class MessageInjector {
     return false;
   }
 
-  /// 分级供给 L1 helper：取最后一条用户消息正文（无则空串）。
-  String _lastUserText(List<ChatMessage> messages) {
-    for (var i = messages.length - 1; i >= 0; i--) {
-      final m = messages[i];
-      if (m.role == 'user') return m.content;
-    }
-    return '';
-  }
-
   /// 分级供给 L2（用户钉选）：L1 无命中时的退化层。
   ///
   /// 学员钉住角色的核心断言名片注入（母备忘 §2.3：实体识别失败时
   /// 退到这里，不退化为空上下文）。仅 active 角色；降级不阻断。
   Future<void> _injectPinnedCards({
+    required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
+    // ADR-C106 C4：诊断轮守卫（与 hit/world 同类）。
+    if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
     final repo = _characterFactRepo;
     if (repo == null) return;
@@ -1353,10 +1387,14 @@ class MessageInjector {
   ///
   /// 热度**无状态推导**（历史 user 消息即历史正文）；降级不阻断。
   Future<void> _injectHotCards({
+    required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
+    List<String> priorUserTexts = const [],
   }) async {
+    // ADR-C106 C4：诊断轮守卫（与 hit/world 同类）。
+    if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
     final repo = _characterFactRepo;
     if (repo == null) return;
@@ -1365,17 +1403,13 @@ class MessageInjector {
       if (chapter == null) return;
       final characters = await repo.listCharacters(chapter.manuscriptId);
       if (characters.isEmpty) return;
-      final recent = <String>[];
-      for (
-        var i = messages.length - 1;
-        i >= 0 && recent.length < kHotWindowMessages;
-        i--
-      ) {
-        final m = messages[i];
-        if (m.role == 'user' && m.content.trim().isNotEmpty) {
-          recent.add(m.content);
-        }
-      }
+      // ADR-C106 A7：热度不再从 messages 扫 user（注入时刻 messages 无 user，
+      // 历史在注入后才追加）。改为「本轮 content + 下传的历史 user 文本」，
+      // 仍按 kHotWindowMessages 截断（recent[0]=本轮，其后为更早历史）。
+      final recent = <String>[
+        if (content.trim().isNotEmpty) content,
+        ...priorUserTexts.where((t) => t.trim().isNotEmpty),
+      ].take(kHotWindowMessages).toList();
       final hotNames = computeHotEntities(
         recentUserTexts: recent,
         characters: characters,
@@ -1400,10 +1434,13 @@ class MessageInjector {
   /// 学员在角色标签页勾选「参与诊断」的拒绝断言 → 以「这扇门不能开」形态
   /// 注入诊断上下文（防矛盾）。默认零注入，勾选才注入。
   Future<void> _injectNegativeAssertions({
+    required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
+    // ADR-C106 C4：诊断轮守卫（与 hit/world 同类）。
+    if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
     final repo = _characterFactRepo;
     if (repo == null) return;
@@ -1499,22 +1536,24 @@ class MessageInjector {
         chapter.manuscriptId,
       );
       if (subplots.isEmpty) return;
-      final inputs = _subplotInputs(subplots);
+      // A8：现存章节 sortOrder 集合 —— 引入章已被删的「幽灵支线」先剔除，
+      // 否则其 introducedKey 指向不存在的章，被误算成「引入后 N 章未回收」。
+      final existingChapters = await _chapterRepo.listChapters(
+        chapter.manuscriptId,
+      );
+      final existingSortOrders = existingChapters
+          .map((c) => c.sortOrder)
+          .toSet();
+      final inputs = dropGhostIntroducedSubplots(
+        _subplotInputs(subplots),
+        existingSortOrders,
+      );
+      if (inputs.isEmpty) return;
       final raw = detectUnclosedSubplots(
         inputs,
         currentChapter: chapter.sortOrder,
       );
-      final observations = raw
-          .map(
-            (o) => UnclosedSubplotObservation(
-              name: o.name,
-              introducedChapter: o.introducedChapter,
-              currentChapter: o.currentChapter,
-              description: o.description,
-              excerpt: findKeywordExcerpt(chapter.content, o.name),
-            ),
-          )
-          .toList();
+      final observations = _attachSubplotExcerpts(raw, chapter.content);
       final ctx = buildSubplotClosureContext(observations);
       if (ctx != null) {
         markStage(BudgetStageNames.ruleDetectors);
@@ -1523,6 +1562,24 @@ class MessageInjector {
     } catch (e, st) {
       _logSafeRun('情节闭环检测失败不阻断主流程', e, st);
     }
+  }
+
+  /// 检测器输出补「关键词摘录」→ 最终观察列表（R-019 拆出）。
+  List<UnclosedSubplotObservation> _attachSubplotExcerpts(
+    List<UnclosedSubplotObservation> raw,
+    String chapterContent,
+  ) {
+    return raw
+        .map(
+          (o) => UnclosedSubplotObservation(
+            name: o.name,
+            introducedChapter: o.introducedChapter,
+            currentChapter: o.currentChapter,
+            description: o.description,
+            excerpt: findKeywordExcerpt(chapterContent, o.name),
+          ),
+        )
+        .toList();
   }
 
   /// 支线行 → F11 检测器输入（`N12-F3b` / `ADR-C96`）。
