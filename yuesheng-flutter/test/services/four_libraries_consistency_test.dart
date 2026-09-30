@@ -14,6 +14,7 @@ import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
+import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 
 void main() {
@@ -436,6 +437,106 @@ void main() {
       ).allMatches(allContent).map((m) => m.group(0)!).toSet();
       final illegal = foundIds.difference(allowedIds);
       expect(illegal, isEmpty, reason: '内容引用非法/悬空症候 ID: $illegal');
+    });
+  });
+
+  group('重编号残留护栏（0.3.6 症候去重重编号回归）', () {
+    // 全库生效内容（注入路径上的常量，不含文件头注释）
+    final allKb = [
+      kSyndromeIndexContent,
+      kSyndromeManualContent,
+      kTechniqueIndexContent,
+      kTechniqueLibraryContent,
+      kTrainingFullKnowledge,
+      kTrainingFewShotLibrary.values.join('\n'),
+      getSkill('coaching-actions-v2')?.content ?? '',
+    ].join('\n');
+
+    test('#13 症候「ID↔名字」一致性：全库 P0XX 后的名字必须匹配注册表', () {
+      final nameById = {for (final s in kSyndromeRegistry) s.id: s.name};
+      final aliases = <String, Set<String>>{
+        for (final s in kSyndromeRegistry)
+          s.id: {
+            s.name,
+            s.shortName,
+            s.name.replaceAll(RegExp(r'症$'), ''),
+            s.shortName.replaceAll(RegExp(r'症$'), ''),
+          },
+      };
+      // 只认「P0XX + 以“症”结尾的名字 + 边界」；跳过「P018 为基础症候」
+      // 「P001-P023 全部症候」这类范围/叙述文本（其后不是边界）。
+      final re = RegExp(
+        r'(P\d{3})\s*[（(]?\s*([\u4e00-\u9fff][\u4e00-\u9fffA-Za-z0-9/·]{1,11}?症)'
+        r'(?=[、，,。；;）)|:：\s]|$)',
+        multiLine: true,
+      );
+      final bad = <String>[];
+      for (final m in re.allMatches(allKb)) {
+        final id = m.group(1)!;
+        final tok = m.group(2)!;
+        final al = aliases[id];
+        if (al == null) continue; // 非法 ID 由 #9 兜底
+        if (!al.contains(tok)) bad.add('$id +「$tok」（应为「${nameById[id]}」）');
+      }
+      expect(
+        bad,
+        isEmpty,
+        reason: '症候 ID 与名字不一致（0.3.6 重编号残留）:\n${bad.join('\n')}',
+      );
+    });
+
+    test('#14 手写「技法索引」表行内症候 ID 不重复（0.3.6 去重回归）', () {
+      // 0.3.6 把 14 个被删症候的旧 ID 重映射到幸存者，使同行
+      // 「适用症候」列出现重复 ID（如 P007、P007 / P004、P004）。
+      final rowRe = RegExp(
+        r'^\|\s*(T\d{3})\s*\|([^|]*)\|\s*([^|]*)\|\s*([^|]*)\|\s*$',
+        multiLine: true,
+      );
+      final bad = <String>[];
+      for (final (label, content) in [
+        ('technique-index(L2)', kTechniqueIndexContent),
+        ('technique-library(L3)', kTechniqueLibraryContent),
+      ]) {
+        final idx = content.indexOf('## 技法索引');
+        expect(idx, isNot(-1), reason: '$label 未找到「## 技法索引」表（判据前提）');
+        for (final m in rowRe.allMatches(content.substring(idx))) {
+          final ids = RegExp(
+            r'P\d{3}',
+          ).allMatches(m.group(4)!).map((x) => x.group(0)!).toList();
+          if (ids.length != ids.toSet().length) {
+            bad.add('$label ${m.group(1)} -> ${ids.join('、')}');
+          }
+        }
+      }
+      expect(bad, isEmpty, reason: '技法索引表行内出现重复症候 ID:\n${bad.join('\n')}');
+    });
+
+    test('#15 症候段标题唯一：手册 ### / 训练 ## 每个 ID 恰 1 次', () {
+      final bad = <String>[];
+      for (final (label, content, re) in [
+        ('手册', kSyndromeManualContent, RegExp(r'###\s+(P\d{3})\s')),
+        ('训练', kTrainingFullKnowledge, RegExp(r'##\s+(P\d{3})\s')),
+      ]) {
+        final count = <String, int>{};
+        for (final m in re.allMatches(content)) {
+          count.update(m.group(1)!, (v) => v + 1, ifAbsent: () => 1);
+        }
+        for (final id in kSyndromeIds) {
+          final n = count[id] ?? 0;
+          if (n != 1) bad.add('$label $id 段数=$n（应为 1）');
+        }
+      }
+      expect(bad, isEmpty, reason: '症候段标题重复/缺失:\n${bad.join('\n')}');
+    });
+
+    test('#16 few-shot 库键均为合法症候 ID（防旧编号键残留）', () {
+      final ids = kSyndromeIds.toSet();
+      final bad = <String>[
+        for (final k in kTrainingFewShotLibrary.keys)
+          if (!ids.contains(k)) '非法键 $k',
+      ];
+      expect(bad, isEmpty, reason: 'few-shot 库存在非注册表键:\n${bad.join('\n')}');
+      expect(kTrainingFewShotLibrary, isNotEmpty, reason: 'few-shot 库为空');
     });
   });
 
