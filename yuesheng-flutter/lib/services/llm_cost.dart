@@ -45,45 +45,6 @@ const Duration kCstOffset = Duration(hours: 8);
 /// 私有：只供求周起点使用，不外泄以免被误当真实 UTC。
 DateTime _cstWallClock(DateTime atUtc) => atUtc.toUtc().add(kCstOffset);
 
-/// 一次调用的用量（**客观 token 计数**，不含任何金额）。
-///
-/// 不可变。字段全部来自厂商 response 的 `usage` 帧，无一由本机推算。
-class LlmTokenUsage {
-  /// 输入中**命中缓存**的 token（通常单价更低，但本类不涉及单价）
-  final int cachedTokens;
-
-  /// 输入中**未命中缓存**的 token
-  final int missTokens;
-
-  /// 输出 token（**已含推理**，勿再加 `reasoningTokens`）
-  final int completionTokens;
-
-  /// 推理 token（**拆解视图**：已含在 [completionTokens] 内，仅用于展示）
-  final int reasoningTokens;
-
-  const LlmTokenUsage({
-    this.cachedTokens = 0,
-    this.missTokens = 0,
-    this.completionTokens = 0,
-    this.reasoningTokens = 0,
-  });
-
-  /// 输入侧总 token
-  int get promptTokens => cachedTokens + missTokens;
-
-  /// 总 token（输入 + 输出）
-  int get totalTokens => promptTokens + completionTokens;
-
-  /// 缓存命中率（0.0–1.0）；无输入 token 时 0.0（不除零）
-  double get cacheHitRate =>
-      promptTokens > 0 ? cachedTokens / promptTokens : 0.0;
-
-  @override
-  String toString() =>
-      'LlmTokenUsage(hit=$cachedTokens, miss=$missTokens, '
-      'out=$completionTokens, reasoning=$reasoningTokens)';
-}
-
 /// 「本周」起点 = 北京时间**本周一 00:00**，返回其 **UTC epoch 秒**
 /// （与 `error_logs.created_at` 同一标度，可直接进 SQL 比较）。
 ///

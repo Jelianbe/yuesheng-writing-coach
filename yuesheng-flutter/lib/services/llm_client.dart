@@ -125,6 +125,20 @@ class LlmClient {
   /// 待消费的一次性链路标记（见 [markCallContext]）。
   LlmCallContext? _pendingCallContext;
 
+  /// C15：本次逻辑调用是否已上报过**真实 usage 帧**。
+  ///
+  /// 两闸门入口（[streamChat] / [chatCompletionWithMeta]）每次开始即复位；
+  /// [_reportUsage] 真实写出后置位；[_reportEmptyStreamAttempt] /
+  /// [_reportStreamAborted] 据此早退 ⇒ 同一次调用既收到真实 usage、又因
+  /// 零 content 触发补零时，不重复产生补零行（修复重复记账）。
+  bool _realUsageReported = false;
+
+  /// C16：本次逻辑调用是否已向用户投递过 content token。
+  ///
+  /// 取消路径据此只在「已 emit」时补 [LlmCallPurpose.streamAborted]，
+  /// 避免把建连阶段的零 token 取消误记为「半输出后断流」。
+  bool _streamContentEmitted = false;
+
   /// 标注**紧随其后的一次** LLM 调用所属业务链路（TH 九批）。
   ///
   /// 调用点用法：`client.markCallContext(ctx); await client.streamChat(...);`
@@ -223,12 +237,7 @@ class LlmClient {
       );
 
       final latencyMs = DateTime.now().difference(startTime).inMilliseconds;
-      // M 批：连通性测试同样计费（5 token 级），为保持「用量口径零遗漏」
-      // 一并采集；响应体非 JSON 对象时静默跳过。
-      final body = _asJsonMap(response.data);
-      if (body != null) {
-        _reportUsage(body['usage'], LlmUsageKind.chat, model: body['model']);
-      }
+      _reportTestUsage(response.data);
       if (response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300) {
@@ -248,6 +257,20 @@ class LlmClient {
     } catch (_) {
       return TestConnectionResult(success: false, message: '未知错误');
     }
+  }
+
+  /// 连通性测试同样计费（5 token 级），为保持「用量口径零遗漏」一并采集；
+  /// 响应体非 JSON 对象时静默跳过。本路径不走闸门、_activeCallContext 恒为 null
+  /// ⇒ 通过 contextOverride 显式传 purpose=connection（R-019 拆出）。
+  void _reportTestUsage(Object? data) {
+    final body = _asJsonMap(data);
+    if (body == null) return;
+    _reportUsage(
+      body['usage'],
+      LlmUsageKind.chat,
+      model: body['model'],
+      contextOverride: const LlmCallContext(purpose: LlmCallPurpose.connection),
+    );
   }
 
   /// 构建测试连通性请求 options（R-019 拆出）。
@@ -357,6 +380,9 @@ class LlmClient {
   }) async {
     // TH 九批：入口即消费一次性标记（免费模式提前 return 也不残留）。
     final callCtx = _consumePendingContext();
+    // C15/C16：每次逻辑调用开始即复位「已记真实 usage / 已投 content」。
+    _realUsageReported = false;
+    _streamContentEmitted = false;
     final cfg = await _loadConfig();
     if (cfg == null) {
       // 批次 E-1 免费测试模式：未配置 API Key 自动启用（无开关、无次数限制），
@@ -507,6 +533,9 @@ class LlmClient {
   }) async {
     // TH 九批：入口即消费一次性标记（免费模式提前 return 也不残留）。
     final callCtx = _consumePendingContext();
+    // C15/C16：每次逻辑调用开始即复位「已记真实 usage / 已投 content」。
+    _realUsageReported = false;
+    _streamContentEmitted = false;
     final cfg = await _loadConfig();
     if (cfg == null) {
       // 批次 E-1 免费测试模式：模拟流式回调（教学文案分块推送 + DONE）。
@@ -514,10 +543,30 @@ class LlmClient {
       return;
     }
 
-    // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
+    await _runGatedStream(
+      cfg,
+      callCtx,
+      messages,
+      callback,
+      cancelToken,
+      extraBody,
+    );
+  }
+
+  /// 在并发闸门内执行一次真实流式请求：端点准备 + 重试循环 + 异常分派。
+  ///
+  /// 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放
+  /// （免费模式本地模拟不占闸门）；闸门内设置链路上下文（请求互斥 ⇒ 无串扰），
+  /// finally 清理；并入本次请求的推理档位（归一 key）⇒ 档位可事后回溯。
+  Future<void> _runGatedStream(
+    LlmConfigValues cfg,
+    LlmCallContext? callCtx,
+    List<ChatMessage> messages,
+    void Function(LlmStreamResponse response) callback,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
+  ) async {
     _gate.enter();
-    // TH 九批：闸门内设置链路上下文（请求互斥 ⇒ 无串扰），finally 清理；
-    // TH-2：并入本次请求的推理档位（归一 key）⇒ 档位可事后回溯。
     _activeCallContext = _withTier(callCtx, cfg);
     try {
       final endpoints = await _prepareEndpoints(
@@ -537,9 +586,17 @@ class LlmClient {
         });
         _breaker.onSuccess();
       } on LlmNonRetryableException catch (wrapped) {
+        // C16：本异常只在「已 emit content」后抛出（见 _consumeSseStream）⇒
+        // usage 帧随末帧不再到达，补一条全零 streamAborted 计数行；守卫防重复。
+        _reportStreamAborted();
         // 解包：原始错误原样冒泡——其**具体类型**即调用方分派依据（已有处理链路）
         _reportStreamFailure(wrapped.cause);
         throw wrapped.cause; // ignore: only_throw_errors
+      } on LlmRequestCancelledException catch (_) {
+        // C16：用户取消。仅当已向用户投递过 content 时补 streamAborted；
+        // 建连阶段零 token 取消不计（_streamContentEmitted 为 false）。
+        if (_streamContentEmitted) _reportStreamAborted();
+        rethrow;
       } on DioException catch (e) {
         if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
         throw Exception(_buildDioError(e));
@@ -873,6 +930,10 @@ class LlmClient {
     } else {
       body['temperature'] = LlmConfig.streamTemperature;
     }
+    // B3：对所有 provider 统一索要 usage 帧（OpenAI 标准 stream_options）。
+    // 放在 extraBody 合并之前：兜底参数（thinking:disabled）与现有 caller
+    // extraBody 均不含此键 ⇒ 逐 provider 稳定携带，修复非 deepseek 端点流式零埋点。
+    body['stream_options'] = {'include_usage': true};
     if (extraBody != null) {
       body.addAll(
         Map<String, dynamic>.from(extraBody)
@@ -942,6 +1003,7 @@ class LlmClient {
         final content = delta?['content'];
         if (content is String && content.isNotEmpty) {
           _logFirstToken(ttftWatch, firstTokenLogged);
+          _streamContentEmitted = true; // C16：取消/断流时据此判定是否已投递
           callback(LlmStreamResponse(content: content, isDone: false));
           return true;
         }
@@ -992,6 +1054,7 @@ class LlmClient {
     LlmUsageKind kind, {
     Object? model,
     int? latencyMs,
+    LlmCallContext? contextOverride,
   }) {
     if (rawUsage == null) return;
     try {
@@ -999,12 +1062,14 @@ class LlmClient {
         rawUsage,
         model: model is String ? model : null,
       );
-      // TH 九批：链路上下文取自入口设置的实例字段（见 [_activeCallContext]）。
-      // ⚠️ testLlmConnection 不走闸门、且已到 R-019 上限（50 行），故不加
-      // 标记 ⇒ 其记录恒为 unknown（本批诚实边界，见审计报告）。
+      // 链路上下文：默认取入口设置的实例字段（见 [_activeCallContext]）；
+      // contextOverride 供 testLlmConnection 等不走闸门的路径显式指定
+      // （B2：其记录 purpose=connection，不再落 unknown）。
       if (usage != null) {
-        final ctx = _activeCallContext;
+        final ctx = contextOverride ?? _activeCallContext;
         _usageSink(usage.withContext(ctx?.withLatency(latencyMs)), kind);
+        // C15：真实 usage 已写出 ⇒ 后续空流/断流补零不再重复记账。
+        _realUsageReported = true;
       }
     } catch (_) {
       // 观测失败静默：绝不影响请求结果
@@ -1018,7 +1083,12 @@ class LlmClient {
   /// 构造零 token [LlmUsage] 补记：token 全 0 = 未知（不是真实用量），
   /// `purpose=streamEmptyFallback` 供审计侧计数；`reasoning_tokens=0`
   /// 与 A-1b 事后判据互证。任何异常静默吞掉，不得阻断主流程。
+  ///
+  /// C15 守卫：若本次逻辑调用已上报过真实 usage 帧（[ _realUsageReported]），
+  /// 说明端点其实回落了 usage，只是零 content 触发了降级 ⇒ 不再补零，
+  /// 避免同一次调用产生「真实行 + 补零行」两行。
   void _reportEmptyStreamAttempt(String model) {
+    if (_realUsageReported) return;
     try {
       final ctx = _activeCallContext;
       _usageSink(
@@ -1036,6 +1106,38 @@ class LlmClient {
                   purpose: LlmCallPurpose.streamEmptyFallback,
                   sessionId: ctx.sessionId,
                   // TH-2：空流补记同样带上档位（否则同一次调用的两笔记录口径分叉）
+                  reasoningTier: ctx.reasoningTier,
+                ),
+        ),
+        LlmUsageKind.stream,
+      );
+    } catch (_) {
+      // 观测失败静默：绝不影响请求结果
+    }
+  }
+
+  /// C16：已 emit content 后断流 / 用户取消的**零 usage 补记**（旁路，永不抛出）。
+  ///
+  /// 与 [_reportEmptyStreamAttempt] 对称：这类调用已向用户投递过 content，
+  /// 但 usage 帧随末帧下发、而末帧因断流/取消不再到达 ⇒ [_reportUsage] 不可达。
+  /// 构造全零行（token 全 0 = 未知，非免费），purpose=[LlmCallPurpose.streamAborted]。
+  /// C15 守卫：若末帧 usage 恰在断流前到达（[ _realUsageReported] 已置位），
+  /// 不再重复补零。
+  void _reportStreamAborted() {
+    if (_realUsageReported) return;
+    try {
+      final ctx = _activeCallContext;
+      _usageSink(
+        LlmUsage(
+          promptTokens: 0,
+          completionTokens: 0,
+          cachedTokens: 0,
+          reasoningTokens: 0,
+          context: ctx == null
+              ? const LlmCallContext(purpose: LlmCallPurpose.streamAborted)
+              : LlmCallContext(
+                  purpose: LlmCallPurpose.streamAborted,
+                  sessionId: ctx.sessionId,
                   reasoningTier: ctx.reasoningTier,
                 ),
         ),

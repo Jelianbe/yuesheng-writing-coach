@@ -212,16 +212,17 @@ void main() {
     });
   });
 
-  group('诚实计数：坏行计 skipped，不当 0 token 吞掉', () {
-    test('context 为 null ⇒ skipped', () async {
+  group('诚实计数：坏行归类，不当 0 token 吞掉', () {
+    test('context 为 null ⇒ 归 nonCallApiRows（API 告警行），不计 skipped', () async {
       await insertLog(id: 'bad1', at: sec(at8));
       final r = await loadWeekLlmUsage(db, nowUtc: now);
       expect(r.calls, 0);
-      expect(r.skippedRows, 1);
+      expect(r.nonCallApiRows, 1);
+      expect(r.skippedRows, 0);
       expect(r.totalTokens, 0);
     });
 
-    test('event 不是 llm_call ⇒ skipped', () async {
+    test('event 不是 llm_call ⇒ 归 nonCallApiRows（非调用埋点）', () async {
       await insertLog(
         id: 'bad2',
         at: sec(at8),
@@ -229,10 +230,26 @@ void main() {
       );
       final r = await loadWeekLlmUsage(db, nowUtc: now);
       expect(r.calls, 0);
-      expect(r.skippedRows, 1);
+      expect(r.nonCallApiRows, 1);
+      expect(r.skippedRows, 0);
     });
 
-    test('缺 miss_tokens / 类型不对 ⇒ skipped（不补零）', () async {
+    test(
+      'C14：event=llm_budget（预算降级旁路）⇒ nonCallApiRows，不计 skipped/calls',
+      () async {
+        await insertLog(
+          id: 'budget1',
+          at: sec(at8),
+          ctx: {'event': 'llm_budget', 'triggered': true, 'totalBefore': 90000},
+        );
+        final r = await loadWeekLlmUsage(db, nowUtc: now);
+        expect(r.calls, 0);
+        expect(r.nonCallApiRows, 1);
+        expect(r.skippedRows, 0);
+      },
+    );
+
+    test('缺 miss_tokens / 类型不对 ⇒ skipped（event=llm_call 而字段坏，不补零）', () async {
       final missing = llmCtx(cached: 10, miss: 10, completion: 10)
         ..remove('miss_tokens');
       await insertLog(id: 'bad3', at: sec(at8), ctx: missing);
@@ -245,18 +262,20 @@ void main() {
       final r = await loadWeekLlmUsage(db, nowUtc: now);
       expect(r.calls, 0);
       expect(r.skippedRows, 2);
+      expect(r.nonCallApiRows, 0);
     });
 
-    test('好事与坏事并存：只计好的，坏的单列', () async {
+    test('好事与 API 告警行并存：只计好的调用，告警单列 nonCallApi', () async {
       await insertLog(
         id: 'ok',
         at: sec(at8),
         ctx: llmCtx(cached: 0, miss: 1000, completion: 0),
       );
-      await insertLog(id: 'bad', at: sec(at8));
+      await insertLog(id: 'bad', at: sec(at8)); // context=null ⇒ API 告警
       final r = await loadWeekLlmUsage(db, nowUtc: now);
       expect(r.calls, 1);
-      expect(r.skippedRows, 1);
+      expect(r.skippedRows, 0);
+      expect(r.nonCallApiRows, 1);
       expect(r.totalTokens, 1000);
     });
   });

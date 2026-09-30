@@ -19,6 +19,7 @@ import 'dart:convert';
 
 import '../types/character_types.dart';
 import 'llm_client.dart';
+import 'llm_usage.dart';
 
 /// 提炼服务：正文 → 断言（pending）。
 class SettingAssertionExtractor {
@@ -35,6 +36,10 @@ class SettingAssertionExtractor {
     required String text,
     int? chapterIdentity,
   }) async {
+    // C13：标注设定断言提炼链路（在 chatCompletionWithContinuation 入口消费）。
+    _llmClient.markCallContext(
+      const LlmCallContext(purpose: LlmCallPurpose.settingExtract),
+    );
     final completion = await _llmClient.chatCompletionWithContinuation(
       _buildMessages(entityName, text),
       maxTokens: 2048,

@@ -14,8 +14,10 @@
 //     （五组：beginner 31,415 / diagnosis 44,042 / training 38,329 /
 //      advanced 28,773 / outline 24,677）
 //   - 各模式整 prompt：none 30,424 ～ diagnosis 74,571 字符
-// 本表 worstCaseTokens 是运行时闸门输入，E 批只改注释、不改数值；如需按实测
-// 重标定，应另行立项并评估 TokenBudgetGuard 行为变化。
+// ⚠️【C17 纠偏】下列 worstCaseTokens **不进入运行时闸门**——TokenBudgetGuard
+// 运行时只按「实际消息长度」与本表的 degradePriority 顺序裁剪，**从不读取
+// worstCaseTokens 数值**。它只是历史「同时最坏」的审计上界（供人工判断
+// 预算量级），E 批只改注释、不改数值；如需重标定应另行立项。
 //
 // 2026-08-11 token/检索体检修订（0.4 口径旧值，静态合计仍为"所有阶段
 // 同时最坏"的审计上界——超限提示需要降级机制，而非实际运行常态）：
@@ -80,7 +82,8 @@ abstract final class BudgetStageNames {
 class TokenBudgetStage {
   final String name;
 
-  /// 最坏情形 token 估算
+  /// 最坏情形 token 估算（**仅审计上界，不进入运行时**——运行时闸门按实际
+  /// 消息长度 + [degradePriority] 裁剪，从不读本字段数值；C17 纠偏）。
   final int worstCaseTokens;
 
   /// 溢出降级优先级：1=最先裁；[TokenBudgetTable.kBottomLinePriority]=保底不裁

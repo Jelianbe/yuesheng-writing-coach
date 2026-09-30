@@ -25,6 +25,7 @@ import 'package:writingcoach/services/editor_validator.dart';
 import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_retry.dart';
+import 'package:writingcoach/services/llm_usage.dart';
 
 /// 失败阶段（error_logs.context.stage）
 const String _stageApi = 'api';
@@ -48,6 +49,12 @@ class EditorStreamResult {
   });
 }
 
+/// 统一兜底结果：API/解析异常时返回给用户（不 throw；取消除外）。
+const _kEditorFallbackResult = EditorStreamResult(
+  displayContent: '审稿通过，但生成编辑观察失败，请稍后重试',
+  observation: null,
+);
+
 /// 调用 Editor Agent 对文本做叙事层编辑观察。
 ///
 /// 真源：editor-service.ts callEditorStream
@@ -69,6 +76,10 @@ Future<EditorStreamResult> callEditorStream(
   // 已实测可用），且 [YS_EDITOR] 块本就拦截不转发，流式展示无收益。
   // onStream 不再回调（签名保留兼容既有调用方）。
   try {
+    // C13：标注写作实时观察链路（在 chatCompletionWithContinuation 入口消费）。
+    llmClient.markCallContext(
+      const LlmCallContext(purpose: LlmCallPurpose.editorObservation),
+    );
     final completion = await llmClient.chatCompletionWithContinuation(
       _buildEditorMessages(text, extraSystemMessages),
       cancelToken: cancelToken,
@@ -86,10 +97,7 @@ Future<EditorStreamResult> callEditorStream(
     if (e.type == DioExceptionType.cancel) rethrow; // 用户取消向上传播
     // F1：API/网络错误（原静默，仅一句兜底文案，error_logs 为零）
     _logObserveFailure(stage: _stageApi, reason: 'api_error', error: e);
-    return const EditorStreamResult(
-      displayContent: '审稿通过，但生成编辑观察失败，请稍后重试',
-      observation: null,
-    );
+    return _kEditorFallbackResult;
   } catch (e, stack) {
     // F1：其他异常（配置缺失/网络不可用/JSON 解码等）同样留痕，不抛出
     _logObserveFailure(
@@ -98,10 +106,7 @@ Future<EditorStreamResult> callEditorStream(
       error: e,
       stack: stack,
     );
-    return const EditorStreamResult(
-      displayContent: '审稿通过，但生成编辑观察失败，请稍后重试',
-      observation: null,
-    );
+    return _kEditorFallbackResult;
   }
 }
 

@@ -16,11 +16,14 @@
 //
 // ## 诚实计数（刻意保留的「不好看但不撒谎」字段）
 //
-// - [skippedRows]：`category='api'` 但 `context` 缺失 / 不是 `llm_call` /
-//   关键字段缺失或类型不对 ⇒ **不猜、不补零**，只计数。
-//   理由：本仓反复吃亏的「零命中 vs 没跑起来外观完全相同」——
-//   把坏行静默当 0 token 计入，会让「本周调用统计」在埋点出问题时**显示一个
-//   偏小的数**而看不出异常。
+// - [skippedRows]：`context.event=='llm_call'` 但关键字段缺失或类型不对
+//   ⇒ 埋点缺明细，**不猜、不补零**，只计数。
+// - [nonCallApiRows]：`category='api'` 但 `context` 缺失 / `event`≠'llm_call'
+//   ⇒ 这类是 **API 层告警行**（模型输出解析降级 / API 失败兜底 /
+//   event='llm_budget' 等），**不是**调用埋点；单列以免与「埋点缺明细」混淆。
+//   理由：本仓反复吃亏的「零命中 vs 没跑起来外观完全相同」——把坏行静默当
+//   0 token 计入，会让「本周调用统计」在埋点出问题时**显示一个偏小的数**而
+//   看不出异常。
 // ─────────────────────────────────────────────────────────────
 
 import '../data/database/database.dart';
@@ -44,8 +47,11 @@ class LlmUsageReport {
   /// 推理 token（**拆解视图**，已含于 [completionTokens]；仅用于展示）
   final int reasoningTokens;
 
-  /// 有 `category='api'` 行但**无法计入**的条数（见文件头「诚实计数」）
+  /// 有 `category='api'` 行但**无法计入**的条数（event=llm_call 而字段坏；见文件头「诚实计数」）
   final int skippedRows;
+
+  /// `category='api'` 但**不是调用埋点**的 API 告警行数（context 缺失 / event≠llm_call；见文件头）
+  final int nonCallApiRows;
 
   /// 统计窗口起点（UTC epoch 秒）
   final int sinceEpochSec;
@@ -57,6 +63,7 @@ class LlmUsageReport {
     required this.completionTokens,
     required this.reasoningTokens,
     required this.skippedRows,
+    required this.nonCallApiRows,
     required this.sinceEpochSec,
   });
 
@@ -68,6 +75,7 @@ class LlmUsageReport {
     completionTokens: 0,
     reasoningTokens: 0,
     skippedRows: 0,
+    nonCallApiRows: 0,
     sinceEpochSec: sinceEpochSec,
   );
 
@@ -85,15 +93,14 @@ class LlmUsageReport {
   String toString() =>
       'LlmUsageReport(calls=$calls, hit=$cachedTokens, miss=$missTokens, '
       'out=$completionTokens, total=$totalTokens, '
-      'skipped=$skippedRows, since=$sinceEpochSec)';
+      'skipped=$skippedRows, nonCallApi=$nonCallApiRows, since=$sinceEpochSec)';
 }
 
-/// 单行埋点 → 四类 token；不可解析返回 null（调用方计入 [LlmUsageReport.skippedRows]）。
-({int cached, int miss, int completion, int reasoning})? _parseLlmCallRow(
-  Map<String, dynamic>? ctx,
+/// 单行 llm_call 埋点 → 四类 token；字段坏返回 null（调用方计入
+/// [LlmUsageReport.skippedRows]）。调用方已保证 `ctx['event']=='llm_call'`。
+({int cached, int miss, int completion, int reasoning})? _parseLlmCallFields(
+  Map<String, dynamic> ctx,
 ) {
-  if (ctx == null) return null;
-  if (ctx['event'] != 'llm_call') return null;
   int? asInt(Object? v) => v is int ? v : (v is num ? v.toInt() : null);
   final cached = asInt(ctx['cached_tokens']);
   final miss = asInt(ctx['miss_tokens']);
@@ -118,10 +125,19 @@ class _UsageAccumulator {
   int completion = 0;
   int reasoning = 0;
   int skipped = 0;
+  int nonCallApi = 0;
 
-  /// 累加一行。无法解析的行只计 [skipped]，**不猜、不补零**。
+  /// 累加一行（C14 三态分派）：
+  ///  · context 缺失 / event≠'llm_call' ⇒ API 层告警行 → [nonCallApi]；
+  ///  · event=='llm_call' 但字段坏 ⇒ 埋点缺明细 → [skipped]；
+  ///  · 正常 → 累加 token。不猜、不补零。
   void add(ErrorLogEntry row) {
-    final parsed = _parseLlmCallRow(row.context);
+    final ctx = row.context;
+    if (ctx == null || ctx['event'] != 'llm_call') {
+      nonCallApi++;
+      return;
+    }
+    final parsed = _parseLlmCallFields(ctx);
     if (parsed == null) {
       skipped++;
       return;
@@ -140,6 +156,7 @@ class _UsageAccumulator {
     completionTokens: completion,
     reasoningTokens: reasoning,
     skippedRows: skipped,
+    nonCallApiRows: nonCallApi,
     sinceEpochSec: sinceEpochSec,
   );
 }

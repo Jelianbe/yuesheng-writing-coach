@@ -5,13 +5,9 @@
 // 峰闲判档与单价折算**已被整体移除**（理由见 `llm_cost.dart` 文件头：
 // 「峰时 ×2」只对 DeepSeek 成立，套其它厂商会捏造费用）。
 //
-// 本文件保留的钉子：
-// ① [LlmTokenUsage] 的**派生量**必须自洽（total = prompt + completion；
-//    prompt = cached + miss）—— 这是「总消耗」主读数的算术基座。
-// ② **推理 token 不得被重复计入总量**（协议层 completion 已含 reasoning）——
-//    一个「total = prompt + completion + reasoning」的实现会在这里红。
-// ③ 缓存命中率的**除零保护**（无输入 token 时 0.0，不是 NaN）。
-// ④ 周起点必须按**北京时间**（非设备本地时）—— 见末组。
+// C18（2026-09-30）：死类 LlmTokenUsage 已删（无写入方，真路径 =
+// llm_usage.dart LlmUsage）；其派生量/命中率钉子随之删除。本文件现只保留：
+// ① 周起点必须按**北京时间**（非设备本地时）—— 见下组。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -22,69 +18,6 @@ DateTime cst(int y, int m, int d, int h, [int min = 0]) =>
     DateTime.utc(y, m, d, h, min).subtract(kCstOffset);
 
 void main() {
-  group('LlmTokenUsage — 派生量自洽', () {
-    test('prompt = cached + miss；total = prompt + completion', () {
-      const u = LlmTokenUsage(
-        cachedTokens: 36000,
-        missTokens: 22533,
-        completionTokens: 16000,
-      );
-      expect(u.promptTokens, 36000 + 22533);
-      expect(u.totalTokens, 36000 + 22533 + 16000);
-    });
-
-    test('★ 推理 token 不得重复计入总量（completion 已含 reasoning）', () {
-      const withReasoning = LlmTokenUsage(
-        cachedTokens: 0,
-        missTokens: 0,
-        completionTokens: 1000,
-        reasoningTokens: 800,
-      );
-      const withoutReasoning = LlmTokenUsage(
-        cachedTokens: 0,
-        missTokens: 0,
-        completionTokens: 1000,
-      );
-      // 推理 token 是拆解视图 ⇒ 总量必须**完全相同**
-      expect(withReasoning.totalTokens, withoutReasoning.totalTokens);
-      expect(withReasoning.totalTokens, 1000);
-      // 但拆解值本身要保留（供展示）
-      expect(withReasoning.reasoningTokens, 800);
-    });
-
-    test('全零 ⇒ 各派生量 0，且命中率不产生 NaN', () {
-      const u = LlmTokenUsage();
-      expect(u.promptTokens, 0);
-      expect(u.totalTokens, 0);
-      expect(u.cacheHitRate, 0.0);
-      expect(u.cacheHitRate.isNaN, isFalse);
-    });
-  });
-
-  group('LlmTokenUsage — 缓存命中率', () {
-    test('半命中 = 0.5', () {
-      const u = LlmTokenUsage(cachedTokens: 500, missTokens: 500);
-      expect(u.cacheHitRate, closeTo(0.5, 1e-12));
-    });
-
-    test('全命中 = 1.0', () {
-      const u = LlmTokenUsage(cachedTokens: 1000, missTokens: 0);
-      expect(u.cacheHitRate, 1.0);
-    });
-
-    test('零命中 = 0.0', () {
-      const u = LlmTokenUsage(cachedTokens: 0, missTokens: 1000);
-      expect(u.cacheHitRate, 0.0);
-    });
-
-    test('★ 只有输出 token 时（无输入）⇒ 0.0，不除零', () {
-      const u = LlmTokenUsage(completionTokens: 5000);
-      expect(u.promptTokens, 0);
-      expect(u.cacheHitRate, 0.0);
-      expect(u.cacheHitRate.isNaN, isFalse);
-    });
-  });
-
   group('weekStartEpochSecCst — 周一起点（北京时间）', () {
     // 期望值在测试内**独立构造**（不硬编 epoch 数字）
     // 2026-09-14 是周一 ⇒ CST 00:00 = UTC 09-13 16:00

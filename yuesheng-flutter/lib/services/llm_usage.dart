@@ -55,6 +55,23 @@ enum LlmCallPurpose {
   /// reasoning_tokens=0 事后判据互证。
   streamEmptyFallback,
 
+  /// 写作实时观察（editor_service `callEditorStream`）——C13 补标
+  editorObservation,
+
+  /// 设定断言提炼（setting_assertion_extractor `extractFromText`）——C13 补标
+  settingExtract,
+
+  /// 教练人格 AI 润色（coach_selector_card AI polish）——C13 补标
+  coachPolish,
+
+  /// 角色断言 AI 比对（character_detail_page `_aiCompare`）——C13 补标
+  assertionCompare,
+
+  /// C16：已 emit content 后断流 / 用户取消——usage 帧随末帧下发而末帧不再
+  /// 到达 ⇒ 正常流式埋点不可达。补全零行（token 全 0 = 未知，非免费），
+  /// 与 [streamEmptyFallback] 对称的异常出口。
+  streamAborted,
+
   /// 未标注（默认，缺省不写 purpose 字段）
   unknown,
 }

@@ -21,6 +21,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../services/llm_client.dart';
 import '../../services/llm_config_storage.dart';
+import '../../services/llm_usage.dart';
 import '../../types/coach_persona.dart';
 import '../../types/coach_persona_seed.dart';
 import '../../types/teaching_types.dart';
@@ -722,28 +723,37 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     }
     setState(() => _isPolishing = true);
     try {
-      final client = ref.read(llmClientProvider);
-      final result = await client.chatCompletion([
-        const ChatMessage(role: 'system', content: _kCoachPolishSystemPrompt),
-        ChatMessage(role: 'user', content: _buildPolishUserMessage(name, tone)),
-      ], maxTokens: 300);
-      if (!mounted) return;
-      final polished = result.trim();
-      if (polished.isEmpty) {
-        _snack('AI 未返回内容，请重试或手动填写');
-      } else {
-        _promptCtrl
-          ..text = polished
-          ..selection = TextSelection.fromPosition(
-            TextPosition(offset: polished.length),
-          );
-        _snack('已填好「语气设定」，可继续修改后保存');
-      }
+      await _runPolish(name, tone);
     } catch (_) {
       if (!mounted) return;
       _snack('AI 润色失败，请稍后重试或手动填写');
     } finally {
       if (mounted) setState(() => _isPolishing = false);
+    }
+  }
+
+  /// 真正发起 AI 润色请求并把结果回填 _promptCtrl（R-019 拆出）。
+  Future<void> _runPolish(String name, String tone) async {
+    final client = ref.read(llmClientProvider);
+    // C13：标注教练人格 AI 润色链路（在 chatCompletion 入口消费）。
+    client.markCallContext(
+      const LlmCallContext(purpose: LlmCallPurpose.coachPolish),
+    );
+    final result = await client.chatCompletion([
+      const ChatMessage(role: 'system', content: _kCoachPolishSystemPrompt),
+      ChatMessage(role: 'user', content: _buildPolishUserMessage(name, tone)),
+    ], maxTokens: 300);
+    if (!mounted) return;
+    final polished = result.trim();
+    if (polished.isEmpty) {
+      _snack('AI 未返回内容，请重试或手动填写');
+    } else {
+      _promptCtrl
+        ..text = polished
+        ..selection = TextSelection.fromPosition(
+          TextPosition(offset: polished.length),
+        );
+      _snack('已填好「语气设定」，可继续修改后保存');
     }
   }
 

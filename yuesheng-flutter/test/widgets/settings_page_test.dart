@@ -983,7 +983,8 @@ void main() {
       miss: 100,
       completion: 100,
     );
-    // 负例②：category 对但 event 不是 llm_call ⇒ 只计 skipped，不吞成 0 token
+    // 负例②：category 对但 event 不是 llm_call ⇒ 归 nonCallApiRows（API 告警行），
+    // 不吞成 0 token、也不计 skipped（C14 三态分派）
     await db
         .into(db.errorLogs)
         .insert(
@@ -1021,8 +1022,9 @@ void main() {
     await scrollToUsage(tester);
 
     expect(find.text('1 次调用'), findsOneWidget);
-    // ②③两类坏行**都**要进同一条提示（2 条）
-    expect(find.textContaining('另有 2 条调用埋点缺少 token 明细'), findsOneWidget);
+    // C14：② event≠llm_call ⇒ API 告警提示（1 条）；③ 字段坏 ⇒ 缺明细提示（1 条）
+    expect(find.textContaining('另有 1 条调用埋点缺少 token 明细'), findsOneWidget);
+    expect(find.textContaining('另有 1 条 API 层告警'), findsOneWidget);
     // 坏行**没有**被当成 0 消耗增计次数
     expect(find.text('2 次调用'), findsNothing);
   });

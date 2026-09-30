@@ -71,6 +71,22 @@ ResponseBody _json(String raw) => ResponseBody(
   },
 );
 
+/// C16：先投一帧 content，随后流中途报错（模拟已输出后断流）。
+ResponseBody _sseThenError() => ResponseBody(
+  _contentThenError(),
+  200,
+  headers: {
+    'content-type': ['text/event-stream'],
+  },
+);
+
+Stream<Uint8List> _contentThenError() async* {
+  yield Uint8List.fromList(
+    utf8.encode('data: {"choices":[{"delta":{"content":"你好"}}]}\n\n'),
+  );
+  throw Exception('连接中断');
+}
+
 /// 采集器：记录 (kind, usage) 序列
 class _Sink {
   final List<(LlmUsageKind, LlmUsage)> received = [];
@@ -473,6 +489,111 @@ void main() {
 
       expect(sink.received.single.$2.context?.reasoningTier, 'off');
       expect(adapter.requestBodies.single['thinking'], {'type': 'disabled'});
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // ADR-C109：成本埋点与口径修复（B2/B3/C13/C15/C16）
+  // ─────────────────────────────────────────────────────────────
+  group('C109 成本埋点修复', () {
+    test('B2：testLlmConnection ⇒ purpose=connection（不再落 unknown）', () async {
+      final adapter = _ScriptAdapter([
+        _json('{"model":"deepseek-flash","usage":$_kUsageJson,"choices":[]}'),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call);
+
+      await client.testLlmConnection();
+
+      expect(
+        sink.received.single.$2.context?.purpose,
+        LlmCallPurpose.connection,
+      );
+    });
+
+    test('B3：流式请求体统一带 stream_options.include_usage=true', () async {
+      final adapter = _ScriptAdapter([_sse(_kStreamNoUsage)]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call);
+
+      await client.streamChat([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ], (_) {});
+
+      expect(adapter.requestBodies.single['stream_options'], {
+        'include_usage': true,
+      });
+    });
+
+    test('C13：4 个新 purpose 经 markCallContext 正确落库', () async {
+      for (final p in const [
+        LlmCallPurpose.editorObservation,
+        LlmCallPurpose.settingExtract,
+        LlmCallPurpose.coachPolish,
+        LlmCallPurpose.assertionCompare,
+      ]) {
+        final adapter = _ScriptAdapter([
+          _json(
+            '{"choices":[{"message":{"role":"assistant","content":"a"},'
+            '"finish_reason":"stop"}],"usage":$_kUsageJson}',
+          ),
+        ]);
+        final sink = _Sink();
+        final client = _client(adapter, sink.call);
+        client.markCallContext(LlmCallContext(purpose: p));
+        await client.chatCompletionWithMeta([
+          const ChatMessage(role: 'user', content: 'hi'),
+        ]);
+        expect(
+          sink.received.single.$2.context?.purpose,
+          p,
+          reason: 'purpose=$p 未正确落库',
+        );
+      }
+    });
+
+    test('C15：已报真实 usage 后空流补零不再重复记账', () async {
+      // 尝试 1：带 usage 帧但零 content（真实 usage 已记）；尝试 2：正常内容。
+      final adapter = _ScriptAdapter([
+        _sse(
+          'data: {"choices":[{"delta":{"content":""}}],"usage":$_kUsageJson}\n\n'
+          'data: [DONE]\n\n',
+        ),
+        _sse(_kStreamNoUsage),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call); // deepseek-chat ⇒ 空流触发降级
+      await client.streamChat([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ], (_) {});
+      // 有守卫：只 1 行真实 usage；无守卫会多 1 行 streamEmptyFallback 补零
+      expect(sink.received, hasLength(1), reason: '真实 usage 已记 ⇒ 空流补零应早退');
+      expect(sink.received.single.$2.promptTokens, 120);
+      expect(
+        sink.received.single.$2.context?.purpose,
+        isNot(LlmCallPurpose.streamEmptyFallback),
+      );
+    });
+
+    test('C16：已 emit content 后断流 ⇒ 补 streamAborted 全零行', () async {
+      final adapter = _ScriptAdapter([_sseThenError()]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call);
+
+      await expectLater(
+        client.streamChat([
+          const ChatMessage(role: 'user', content: 'hi'),
+        ], (_) {}),
+        throwsA(isA<Exception>()),
+      );
+
+      expect(sink.received, hasLength(1));
+      final (kind, usage) = sink.received.single;
+      expect(kind, LlmUsageKind.stream);
+      expect(usage.context?.purpose, LlmCallPurpose.streamAborted);
+      expect(usage.promptTokens, 0);
+      expect(usage.completionTokens, 0);
+      expect(usage.cachedTokens, 0);
     });
   });
 }

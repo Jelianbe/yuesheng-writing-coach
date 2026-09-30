@@ -31,6 +31,7 @@ import '../../theme/theme_registry.dart';
 import '../../router/app_routes.dart';
 import '../../features/onboarding/onboarding_flow.dart';
 import '../../services/error_handler.dart';
+import '../../services/llm_call_log_sink.dart';
 import '../../services/llm_client.dart';
 import '../../services/llm_config_storage.dart';
 import '../../services/llm_cost.dart';
@@ -129,7 +130,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   void initState() {
     super.initState();
     _configStorage = widget.configStorage ?? LlmConfigStorage();
-    _llmClient = widget.llmClient ?? LlmClient(_configStorage);
+    // B2：设置页自建的 LlmClient 同样接持久 sink ⇒ 连通性测试用量落 error_logs
+    // （此前这里是 new LlmClient(storage) 未接 sink ⇒ 连通性调用零记录）。
+    _llmClient =
+        widget.llmClient ??
+        LlmClient(
+          _configStorage,
+          null,
+          null,
+          null,
+          null,
+          LlmCallLogSink().call,
+        );
     _accountRepo = AIAccountRepository(ref.read(appDatabaseProvider));
     _loadApiConfig();
     _loadProgressSummary();
@@ -936,6 +948,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       const SizedBox(height: 8),
       Text(
         '另有 ${report.skippedRows} 条调用埋点缺少 token 明细，未计入（不是 0 消耗）',
+        style: _usageNoteStyle,
+      ),
+    ],
+    if (report.nonCallApiRows > 0) ...[
+      const SizedBox(height: 8),
+      Text(
+        '另有 ${report.nonCallApiRows} 条 API 层告警（模型输出解析降级等），未计入调用统计',
         style: _usageNoteStyle,
       ),
     ],

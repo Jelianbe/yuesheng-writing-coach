@@ -173,6 +173,7 @@ void main() {
           {'role': 'user', 'content': 'hi'},
         ],
         'stream': true,
+        'stream_options': {'include_usage': true}, // B3：统一索要 usage 帧
         'temperature': LlmConfig.streamTemperature,
       });
       // 尝试 2：仅追加兜底参数（C80 §1.2 探针唯一生效参数）
@@ -256,6 +257,7 @@ void main() {
           {'role': 'user', 'content': 'hi'},
         ],
         'stream': true,
+        'stream_options': {'include_usage': true}, // B3：统一索要 usage 帧
         'thinking': {'type': 'disabled'},
         'temperature': LlmConfig.streamTemperature,
       });

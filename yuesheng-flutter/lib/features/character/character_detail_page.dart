@@ -33,6 +33,7 @@ import '../../providers/session_providers.dart';
 import '../../router/app_routes.dart';
 import '../../services/character_editor_service.dart';
 import '../../services/llm_client.dart';
+import '../../services/llm_usage.dart';
 import '../../services/character_identity.dart';
 import '../../services/chat_context_builder.dart';
 import '../../services/conflict_detector.dart';
@@ -397,7 +398,12 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       b: pair.b,
     );
     try {
-      return await ref.read(llmClientProvider).chatCompletion([
+      // C13：先取同一 client 引用再 mark，避免两次 read 拿到不同实例。
+      final client = ref.read(llmClientProvider);
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.assertionCompare),
+      );
+      return await client.chatCompletion([
         ChatMessage(role: 'system', content: prompt),
       ]);
     } catch (_) {
