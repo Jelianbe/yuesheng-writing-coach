@@ -113,6 +113,10 @@ class SystemPromptResult {
   ///
   /// 调用方在确定了活跃症候/聚焦技法后调用此函数，
   /// 返回应追加到 system prompt 末尾的详细内容。
+  ///
+  /// ★ 当前生产未接线：`focusedTechniqueIds` 无生产构造点，本函数仅由
+  /// `skill_prompt_anchor_test.dart` 锚定；生产技法注入真源 =
+  /// `chat_context_builder.dart` → `getTechniquesBySyndrome`。勿删该真路径。
   final String Function(L3RetrievalContext ctx) injectL3;
 
   const SystemPromptResult({

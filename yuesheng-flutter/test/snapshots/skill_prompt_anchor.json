@@ -60,9 +60,9 @@
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "training_yuesheng": {
-      "len": 67340,
-      "fnv": "687714a4e4de259e",
-      "tokens": 67340,
+      "len": 67380,
+      "fnv": "61c8e6ac463a7b74",
+      "tokens": 67380,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,technique-library-index,training-loop-v2,training-templates-index,training-evaluation-v2,text-surgery-v2,demonstration,comparison,timed-rewrite,model-rewrite,revision-methodology,reader-awareness,writer-psychology"
     },
     "advanced_sensei": {
@@ -198,8 +198,8 @@
       "fnv": "6d998fc31f900483"
     },
     "technique-library-index": {
-      "len": 2699,
-      "fnv": "687148e176f20af1"
+      "len": 2739,
+      "fnv": "3c98b1f4cf35e9ab"
     },
     "text-surgery-v2": {
       "len": 660,

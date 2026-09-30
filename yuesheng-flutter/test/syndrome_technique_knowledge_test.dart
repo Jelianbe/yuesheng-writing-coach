@@ -170,7 +170,8 @@ void main() {
       // L3 技法（P001 → T001 动态描写公式 + T002 感官交织法）
       expect(text, contains('### T001'));
       expect(text, contains('### T002'));
-      // 训练侧完整教学知识不注入（严格对齐 RN 生产路径：getTrainingContent 未被生产调用）
+      // 训练知识由 message_injector 独立注入；本断言仅守护
+      // buildStructuredSyndromeContext 自身不拼训练知识，不代表训练知识整体不进 prompt。
       expect(text, isNot(contains('当前教学焦点的完整训练知识')));
       // 非 focus 简化注入不受影响
       final simplified = buildStructuredSyndromeContext(

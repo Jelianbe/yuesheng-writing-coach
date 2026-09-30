@@ -315,6 +315,8 @@ String _buildL3Injection(L3RetrievalContext l3Ctx) {
   }
 
   // 技法详情
+  // ★ 生产未接线：focusedTechniqueIds 仅锚点测试构造，生产不进此分支；
+  //   真路径 = chat_context_builder.dart → getTechniquesBySyndrome。勿据此删真路径。
   if (l3Ctx.focusedTechniqueIds != null &&
       l3Ctx.focusedTechniqueIds!.isNotEmpty) {
     final techniqueDetail = _getTechniqueContent(l3Ctx.focusedTechniqueIds!);

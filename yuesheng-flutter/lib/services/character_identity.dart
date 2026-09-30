@@ -45,6 +45,10 @@ List<CharacterFactInput> groupByIdentity(List<CharacterFact> facts) =>
 /// 「主名 ∪ 别名」匹配时别名侧反而命中不到（ADR §5.3 勘误 2）。
 /// 故别名上下文在此**单独**暴露，与 [groupByIdentity] 同源于 [_groupRows]，
 /// 两者不可能分叉出「检测算一组、关联算另一组」的错位。
+///
+/// ★ 当前 lib 生产侧 **0 调用**：§5.4 事件关联由调用方自行构造称呼集
+/// （见 [filterEventsByIdentity]，称呼集合是入参，并未走本 helper）。
+/// 本函数保留为「主名 ∪ 别名」口径的真源文档与纯函数参考，勿据此假设有接线。
 Map<String, Set<String>> identityAliases(List<CharacterFact> facts) => {
   for (final group in _groupRows(facts))
     _primaryOf(group).name: {for (final f in group) ..._identityNames(f)},

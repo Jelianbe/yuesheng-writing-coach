@@ -3,8 +3,8 @@
 // 内容 100% 逐字保留（2026-08-08 批次 22 步骤② 补充）
 //   kTrainingFullKnowledge → L3 检索源（按症候 ID 提取完整教学知识）
 //   getTrainingContent     → L3 检索函数（按症候 ID）
-// 生产路径（2026-08-11 校验）：chat_service.sendMessage 已按当前教学焦点
-//   调用 getTrainingContent 注入（L3 检索，见 chat_service.dart ~L917）。
+// 生产路径（2026-10-01 复核）：由 message_injector._injectTrainingKnowledge
+//   （message_injector.dart）按当前教学焦点症候调用 getTrainingContent 注入（L3 检索）。
 //   本文件为训练知识唯一真源，随知识库内容同步维护。
 // ─────────────────────────────────────────────────────────────
 
