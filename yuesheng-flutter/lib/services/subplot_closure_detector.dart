@@ -92,3 +92,29 @@ List<UnclosedSubplotObservation> detectUnclosedSubplots(
   );
   return observations;
 }
+
+/// A8：前置过滤「引入章已被删除」的幽灵支线。
+///
+/// 支线行的 `introduced*` 是**历史身份/标称号**，不会因章节被删而级联清空
+/// （R1′ + 历史章节可被删/重排）。于是：用户删了支线引入的那章后，它的
+/// `introducedSortOrder` 仍指向一个**已不存在**的 sortOrder，
+/// `currentChapter - introducedKey` 算出一个超大正数 ⇒ 每次诊断都被误报成
+/// 「引入后 N 章未回收」——可该引入章本身都不存在了，无从回收。
+///
+/// [existingChapterSortOrders] = 该作品现存（非回收站）章节的 `sortOrder` 集合。
+/// 丢弃「引入章身份不在此集合内」的支线。引入章为空 ⇒ 保守保留（无锚点本就不检测）。
+List<SubplotFactInput> dropGhostIntroducedSubplots(
+  List<SubplotFactInput> inputs,
+  Set<int> existingChapterSortOrders,
+) {
+  return [
+    for (final s in inputs)
+      if (_introducedChapterStillExists(s, existingChapterSortOrders)) s,
+  ];
+}
+
+bool _introducedChapterStillExists(SubplotFactInput s, Set<int> existing) {
+  final introduced = s.introducedSortOrder ?? s.introducedChapter;
+  if (introduced == null) return true; // 无锚点 ⇒ 保守保留，不误杀存量
+  return existing.contains(introduced);
+}

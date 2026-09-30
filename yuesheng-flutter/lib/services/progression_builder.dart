@@ -25,6 +25,7 @@
 
 import '../data/database/database.dart';
 import '../types/character_types.dart';
+import 'conflict_detector.dart' show isActiveAssertion;
 
 /// 单个时间轴节点（一个章节）。
 class ProgressionPoint {
@@ -49,6 +50,7 @@ List<ProgressionPoint> buildProgressions({
   required List<CharacterAssertion> assertions,
   List<EventFact> events = const [],
   int? firstSeenChapter,
+  bool activeOnly = true,
 }) {
   final byChapter = <int, List<String>>{};
 
@@ -58,6 +60,10 @@ List<ProgressionPoint> buildProgressions({
   for (final a in assertions) {
     final ch = a.chapterSortOrder;
     if (ch == null) continue;
+    // B8：时间轴只收「活跃断言」（confirmed 且非 stale）——
+    // rejected / superseded / pending / stale 都是已被用户裁决或已过期的历史，
+    // 不应作为「角色在某章变成了什么」的节点渲染（与 isActiveAssertion 同口径）。
+    if (activeOnly && !isActiveAssertion(a)) continue;
     byChapter.putIfAbsent(ch, () => []).add('${a.attribute}: ${a.value}');
   }
   for (final e in events) {

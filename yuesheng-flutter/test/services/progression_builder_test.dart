@@ -134,4 +134,76 @@ void main() {
     );
     expect(points, isEmpty, reason: '位置有序视图里「无位序」≡「无章节」；塞进「未知」桶会伪造「同章」语义');
   });
+
+  // ── B8（ADR-C107）：时间轴只收「活跃断言」（confirmed 且非 stale）────────────
+  //
+  // 同一 _assertions 列表：瓦片视图按状态分级，时间轴此前把 rejected/superseded/
+  // stale/pending 当普通条目无标注列出 ⇒ 与同页瓦片、诊断信任口径（isActiveAssertion）
+  // 不一致。默认 activeOnly=true 时这些态必须不进时间轴。
+  CharacterAssertion active(String attr, String val, int order) =>
+      CharacterAssertion(
+        attribute: attr,
+        value: val,
+        chapterSortOrder: order,
+        timestamp: 1000,
+        status: 'confirmed',
+      );
+
+  test('#7 B8：rejected/superseded/pending/stale 不进时间轴；confirmed 进', () {
+    final points = buildProgressions(
+      assertions: [
+        active('出身', '临安', 0),
+        CharacterAssertion(
+          attribute: '被拒',
+          value: '某值',
+          chapterSortOrder: 0,
+          timestamp: 1001,
+          status: 'rejected',
+        ),
+        CharacterAssertion(
+          attribute: '被取代',
+          value: '旧值',
+          chapterSortOrder: 0,
+          timestamp: 1002,
+          status: 'superseded',
+        ),
+        CharacterAssertion(
+          attribute: '待裁决',
+          value: '新值',
+          chapterSortOrder: 0,
+          timestamp: 1003,
+          status: 'pending',
+        ),
+        CharacterAssertion(
+          attribute: '已过期',
+          value: '旧版',
+          chapterSortOrder: 0,
+          timestamp: 1004,
+          status: 'confirmed',
+          stale: true,
+        ),
+      ],
+    );
+    expect(points.length, 1, reason: '全部归到身份 0 一个桶');
+    expect(points.single.items, [
+      '出身: 临安',
+    ], reason: '只有活跃（confirmed && !stale）进时间轴');
+  });
+
+  test('#8 B8 关闭 activeOnly（activeOnly:false）⇒ 全部进桶（兜底兼容）', () {
+    final points = buildProgressions(
+      activeOnly: false,
+      assertions: [
+        active('出身', '临安', 0),
+        CharacterAssertion(
+          attribute: '被拒',
+          value: '某值',
+          chapterSortOrder: 0,
+          timestamp: 1001,
+          status: 'rejected',
+        ),
+      ],
+    );
+    expect(points.single.items, containsAll(['出身: 临安', '被拒: 某值']));
+  });
 }

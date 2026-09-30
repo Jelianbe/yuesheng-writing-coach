@@ -201,4 +201,58 @@ void main() {
     expect(result.length, 1);
     expect(result.first.description, '第3章引入的支线「存量支线」至今（第12章）未回收');
   });
+
+  // ── A8（ADR-C107）：删章后「引入章已不存在」的幽灵支线先过滤 ──────────────
+  //
+  // 支线行的 introduced* 是历史身份/标称号，删章不清空。于是用户删了引入章后，
+  // 它仍被算成「引入后 N 章未回收」——可引入章本身都没了，无从回收。
+  group('A8 幽灵支线过滤 dropGhostIntroducedSubplots', () {
+    SubplotFactInput sub({
+      required String name,
+      int? introducedChapter,
+      int? introducedSortOrder,
+    }) => (
+      name: name,
+      introducedChapter: introducedChapter,
+      resolvedChapter: null,
+      introducedSortOrder: introducedSortOrder,
+    );
+
+    test('引入章身份已被删（不在现存集合）⇒ 丢弃', () {
+      final out = dropGhostIntroducedSubplots(
+        [sub(name: '幽灵', introducedChapter: 3, introducedSortOrder: 3)],
+        {5, 7, 9}, // 现存章节身份里没有 3
+      );
+      expect(out, isEmpty, reason: '引入章 sortOrder=3 已不存在 ⇒ 不得参与闭环检测');
+    });
+
+    test('引入章身份仍在 ⇒ 保留', () {
+      final out = dropGhostIntroducedSubplots(
+        [sub(name: '正常', introducedChapter: 3, introducedSortOrder: 5)],
+        {5, 7, 9},
+      );
+      expect(out.single.name, '正常');
+    });
+
+    test('存量行退回旧列：旧列不在集合 ⇒ 丢弃；在集合 ⇒ 保留', () {
+      final dropped = dropGhostIntroducedSubplots(
+        [sub(name: '旧列幽灵', introducedChapter: 2, introducedSortOrder: null)],
+        {5, 7, 9},
+      );
+      expect(dropped, isEmpty);
+      final kept = dropGhostIntroducedSubplots(
+        [sub(name: '旧列正常', introducedChapter: 7, introducedSortOrder: null)],
+        {5, 7, 9},
+      );
+      expect(kept.single.name, '旧列正常');
+    });
+
+    test('无引入章 ⇒ 保守保留（不误杀存量）', () {
+      final out = dropGhostIntroducedSubplots(
+        [sub(name: '无锚点', introducedChapter: null, introducedSortOrder: null)],
+        {5, 7, 9},
+      );
+      expect(out.single.name, '无锚点');
+    });
+  });
 }

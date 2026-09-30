@@ -243,11 +243,10 @@ class CharacterEditorService {
     return true;
   }
 
-  /// 断言同一性：三元组 + timestamp（见类头注释）。
+  /// 断言同一性：三元组 + timestamp（见类头注释；判据唯一实现在
+  /// [FactStaleService.sameAssertion]，与确认卡裁决路径共用，A5 收口）。
   bool _sameAssertion(CharacterAssertion a, CharacterAssertion target) {
-    return FactStaleService.tripleKey(a) ==
-            FactStaleService.tripleKey(target) &&
-        a.timestamp == target.timestamp;
+    return FactStaleService.sameAssertion(a, target);
   }
 
   /// 状态改写（拒绝 / 修正留痕共用）。其余字段原样保留。

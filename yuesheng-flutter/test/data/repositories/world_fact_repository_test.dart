@@ -376,4 +376,60 @@ void main() {
     final got = await repo.getWorld(manuscriptId, '炼器');
     expect(got!.description, '');
   });
+
+  // ── A4（ADR-C107）：世界观侧 listPendingAssertions（镜像人物侧，详情页确认/拒绝瓦片数据源）
+  test('#14 A4：listPendingAssertions 只收 pending 且非 stale，跨主题聚合', () async {
+    await repo.upsertWorld(
+      manuscriptId: manuscriptId,
+      name: '大梁王朝',
+      assertions: [
+        CharacterAssertion(
+          attribute: '政体',
+          value: '郡县制',
+          chapter: 1,
+          timestamp: 1000,
+          status: 'pending',
+        ),
+        CharacterAssertion(
+          attribute: '政体',
+          value: '分封制',
+          chapter: 2,
+          timestamp: 1001,
+          status: 'confirmed',
+        ),
+        CharacterAssertion(
+          attribute: '军制',
+          value: '府兵',
+          chapter: 3,
+          timestamp: 1002,
+          status: 'pending',
+          stale: true, // 已过期 ⇒ 不再值得裁决
+        ),
+      ],
+    );
+    await repo.upsertWorld(
+      manuscriptId: manuscriptId,
+      name: '灵气体系',
+      assertions: [
+        CharacterAssertion(
+          attribute: '浓度',
+          value: '稀薄',
+          chapter: 1,
+          timestamp: 999,
+          status: 'pending',
+        ),
+      ],
+    );
+
+    final pending = await repo.listPendingAssertions(manuscriptId);
+    expect(
+      pending.length,
+      2,
+      reason: '大梁 pending(郡县制) + 灵气 pending(稀薄)；confirmed 与 stale pending 不收',
+    );
+    final attrs = pending.map((p) => p.$2.attribute).toList();
+    expect(attrs, containsAll(['政体', '浓度']));
+    // 返回 (WorldFact, assertion) 对：瓦片要取主题名与断言
+    expect(pending.every((p) => p.$1.id.isNotEmpty), isTrue);
+  });
 }

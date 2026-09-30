@@ -168,11 +168,18 @@ class SettingLinkRepository {
   }
 
   /// 按 kind 解析对方实体名（不存在返回 null）。
-  Future<String?> _resolveName(
+  ///
+  /// C9：实体名解析唯一真源。[includeArchived]：
+  ///   - `true`（默认，互链侧用）：**归档/合并的实体仍解析出名字** —— 互链是历史关系，
+  ///     目标被归档不应让链接文案塌成「已删除」，那会把「软归档」误显示成「硬删除」；
+  ///   - `false`（标签总览侧用）：仅解析**活跃**实体（character.status=='active' /
+  ///     world.status=='active'）；归档/合并的返回 null，由调用方计数「未显示」条数。
+  Future<String?> resolveSettingEntityName(
     String manuscriptId,
     SettingEntityKind kind,
-    String id,
-  ) async {
+    String id, {
+    bool includeArchived = true,
+  }) async {
     switch (kind) {
       case SettingEntityKind.character:
         final row =
@@ -180,14 +187,18 @@ class SettingLinkRepository {
                   (t) => t.id.equals(id) & t.manuscriptId.equals(manuscriptId),
                 ))
                 .getSingleOrNull();
-        return row?.name;
+        if (row == null) return null;
+        if (!includeArchived && row.status != 'active') return null;
+        return row.name;
       case SettingEntityKind.world:
         final row =
             await (_db.select(_db.worldFacts)..where(
                   (t) => t.id.equals(id) & t.manuscriptId.equals(manuscriptId),
                 ))
                 .getSingleOrNull();
-        return row?.name;
+        if (row == null) return null;
+        if (!includeArchived && row.status != 'active') return null;
+        return row.name;
       case SettingEntityKind.outline:
         final row =
             await (_db.select(_db.outlineEntities)..where(
@@ -204,6 +215,13 @@ class SettingLinkRepository {
         return row?.name;
     }
   }
+
+  /// 互链侧名称解析（保留归档实体名，见 [resolveSettingEntityName]）。
+  Future<String?> _resolveName(
+    String manuscriptId,
+    SettingEntityKind kind,
+    String id,
+  ) => resolveSettingEntityName(manuscriptId, kind, id, includeArchived: true);
 
   /// 作品全部互链（后续批：标签 / 注入 / Progressions 用）。
   Future<List<SettingLink>> listAll(String manuscriptId) async {

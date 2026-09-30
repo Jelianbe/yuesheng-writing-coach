@@ -120,6 +120,7 @@ class PendingConfirmCard extends ConsumerWidget {
                 name: row.name,
                 attribute: a.attribute,
                 value: a.value,
+                target: a,
               );
               onChanged();
             },
@@ -131,6 +132,7 @@ class PendingConfirmCard extends ConsumerWidget {
                 attribute: a.attribute,
                 value: a.value,
                 reason: reason,
+                target: a,
               );
               onChanged();
             },

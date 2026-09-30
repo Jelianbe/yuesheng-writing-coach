@@ -260,11 +260,25 @@ void main() {
   }
 
   /// 预置 F11 数据：第3章引入的支线未回收（当前12章，已超阈值）
+  ///
+  /// A8（ADR-C107）：引入章 sortOrder=3 必须真实存在，否则该支线会被
+  /// 「幽灵支线过滤」前置丢弃（引入章已删的支线不再参与闭环检测）。
+  /// 此前夹具只建了 sortOrder=12 一章，introducedChapter=3 指向不存在的章，
+  /// 恰好是 A8 要止报的幽灵形态 ⇒ 补一章让本用例继续代表「真实未回收支线」。
   Future<void> seedUnclosedSubplot() async {
+    final chRepo = ChapterRepository(db);
+    final introChapterId = await chRepo.createChapter(
+      manuscriptId,
+      title: '第三章',
+      content: '钥匙在这里出现。',
+    );
+    await (db.update(db.chapters)..where((t) => t.id.equals(introChapterId)))
+        .write(const ChaptersCompanion(sortOrder: Value(3)));
     await subplotRepo.upsertSubplot(
       manuscriptId: manuscriptId,
       name: '钥匙的秘密',
       introducedChapter: 3,
+      introducedChapterSortOrder: 3,
     );
   }
 

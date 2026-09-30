@@ -630,6 +630,38 @@ void main() {
       final events = await eventRepo.listEvents(manuscriptId);
       expect(events.map((e) => e.name).toList(), ['第3章新事件', '第4章旧事件']);
     });
+
+    // A6（ADR-C107）：计数侧 `_staleByChapter` 早已排除 rejected，唯独物理删除侧
+    // 把 rejected 的 stale 断言一并删了 ⇒ 「拒绝记忆」被清空，下章改写后 AI 又把用户
+    // 拒绝过的值当新断言报出来（不可逆）。本用例钉死：清除动作必须保留 rejected 行。
+    test('#21b A6：清除本章旧版时，rejected 的 stale 断言必须保留（拒绝记忆本体）', () async {
+      await seedCharacter('阿禾', [
+        assertion('性格', '冷静', chapter: 3, chapterHash: hashA, staleFlag: true),
+        assertion(
+          '职业',
+          '捕快',
+          chapter: 3,
+          chapterHash: hashA,
+          staleFlag: true,
+          status: 'rejected',
+        ),
+      ]);
+
+      await stale.clearStaleChapter(
+        manuscriptId: manuscriptId,
+        chapterNo: 3,
+        chapterHash: hashA,
+      );
+
+      final list = await readAssertions('阿禾');
+      expect(
+        list.map((a) => a.attribute).toList(),
+        ['职业'],
+        reason: '普通 stale「性格」被删；rejected 的 stale「职业」必须留下（拒绝记忆）',
+      );
+      expect(list.single.status, 'rejected');
+      expect(list.single.stale, isTrue, reason: '保留时连 stale 标记一起留，不改写已存值');
+    });
   });
 
   // ─────────────────────────────────────────────────────────────

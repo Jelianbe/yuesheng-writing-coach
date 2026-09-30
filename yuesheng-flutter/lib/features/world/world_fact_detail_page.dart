@@ -238,6 +238,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
           onEdit: _editDescription,
         ),
         _buildExtractBar(row),
+        _bodyChangedHint(),
         ..._assertionWidgets(chapterNoMap),
         _buildProgressionsSection(chapterNoMap),
         _buildTagsSection(),
@@ -273,10 +274,74 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
         ),
       ];
     }
+    final row = _row;
     return [
       for (final a in _assertions)
-        _WorldAssertionTile(assertion: a, chapterNoMap: chapterNoMap),
+        _WorldAssertionTile(
+          assertion: a,
+          chapterNoMap: chapterNoMap,
+          // A4：pending 断言才有「确认/拒绝」入口（用户裁决，不代写）。
+          // confirmed/rejected/superseded 态不传回调 ⇒ 瓦片保持只读。
+          onConfirm: a.status == 'pending' && row != null
+              ? () => _confirmWorldAssertion(a)
+              : null,
+          onReject: a.status == 'pending' && row != null
+              ? () => _rejectWorldAssertion(a)
+              : null,
+        ),
     ];
+  }
+
+  /// C10：正文/断言联动轻提示（零 DB 写）。
+  ///
+  /// 行 `updatedAt` 晚于本主题**所有**断言的时间戳 ⇒ 正文很可能在最近一次提炼
+  /// 之后又被改过，旁挂一条「建议重新提炼」提示。纯展示，不改断言 / 不写库。
+  Widget _bodyChangedHint() {
+    final row = _row;
+    if (row == null || _assertions.isEmpty) return const SizedBox.shrink();
+    var maxTs = 0;
+    for (final a in _assertions) {
+      if (a.timestamp > maxTs) maxTs = a.timestamp;
+    }
+    if (row.updatedAt <= maxTs) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Text('正文有改动，建议重新提炼设定', style: context.text.caption),
+    );
+  }
+
+  /// A4：确认一条 pending 世界观断言 → confirmed（接既有 SettingLibraryService）。
+  Future<void> _confirmWorldAssertion(CharacterAssertion a) async {
+    final row = _row;
+    if (row == null) return;
+    await ref
+        .read(settingLibraryServiceProvider)
+        .confirmWorld(
+          manuscriptId: widget.manuscriptId,
+          name: row.name,
+          attribute: a.attribute,
+          value: a.value,
+          target: a,
+        );
+    if (!mounted) return;
+    unawaited(_load());
+  }
+
+  /// A4：拒绝一条 pending 世界观断言 → rejected（拒绝记忆本体）。
+  Future<void> _rejectWorldAssertion(CharacterAssertion a) async {
+    final row = _row;
+    if (row == null) return;
+    await ref
+        .read(settingLibraryServiceProvider)
+        .rejectWorld(
+          manuscriptId: widget.manuscriptId,
+          name: row.name,
+          attribute: a.attribute,
+          value: a.value,
+          target: a,
+        );
+    if (!mounted) return;
+    unawaited(_load());
   }
 }
 
@@ -327,17 +392,24 @@ class _WorldHeaderCard extends StatelessWidget {
   }
 }
 
-/// 单条断言（只读，R3）：属性 / 取值 / 章节 / 是否有依据。
-/// 本批**无**改写 / 删除按钮（O-2）。
+/// 单条断言：属性 / 取值 / 章节 / 是否有依据。
+/// pending 态（A4）在瓦片底部给出「确认 / 拒绝」按钮 —— 这是**用户对 AI 抽取的裁决入口**，
+/// 不是系统改写或代写（R-009）；其余态（confirmed/rejected/superseded）保持只读。
 class _WorldAssertionTile extends StatelessWidget {
   final CharacterAssertion assertion;
 
   /// 章号映射（`sortOrder → 展示序位`）。`N12-F3c` 起章标**只吃身份载体**。
   final Map<int, int> chapterNoMap;
 
+  /// A4：pending 断言的确认 / 拒绝回调；非 pending 态为 null（瓦片只读）。
+  final VoidCallback? onConfirm;
+  final VoidCallback? onReject;
+
   const _WorldAssertionTile({
     required this.assertion,
     required this.chapterNoMap,
+    this.onConfirm,
+    this.onReject,
   });
 
   @override
@@ -351,16 +423,49 @@ class _WorldAssertionTile extends StatelessWidget {
     final chapterText =
         chapterLabel(chapterNoMap, assertion.chapterSortOrder) ?? '章节未知';
     final hasEvidence = (assertion.evidence ?? '').isNotEmpty;
+    final pending = assertion.status == 'pending';
     return Card(
-      child: ListTile(
-        title: Text(
-          '${assertion.attribute}：${assertion.value}',
-          style: context.text.title,
-        ),
-        subtitle: Text(
-          '$chapterText · ${hasEvidence ? '✓ 有依据' : '— 无依据'}',
-          style: context.text.caption,
-        ),
+      child: Column(
+        children: [
+          ListTile(
+            title: Text(
+              '${assertion.attribute}：${assertion.value}',
+              style: context.text.title,
+            ),
+            subtitle: Text(
+              '$chapterText · ${hasEvidence ? '✓ 有依据' : '— 无依据'}',
+              style: context.text.caption,
+            ),
+          ),
+          if (pending) _buildPendingActions(context),
+        ],
+      ),
+    );
+  }
+
+  /// pending 断言的「拒绝 / 确认」裁决行（A4；R-009：用户裁决入口，非代写）。
+  Widget _buildPendingActions(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Text('待你确认', style: context.text.caption),
+          const Spacer(),
+          TextButton(
+            onPressed: onReject,
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
+            child: const Text('拒绝'),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          FilledButton(onPressed: onConfirm, child: const Text('确认')),
+        ],
       ),
     );
   }

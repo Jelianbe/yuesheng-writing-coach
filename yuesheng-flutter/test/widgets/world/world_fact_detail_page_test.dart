@@ -341,4 +341,62 @@ void main() {
       reason: '判别点：该条身份 9 ⇒ 第3章；旧列 15 在 map 里解析不出任何章',
     );
   });
+
+  // ── A4（ADR-C107）：pending 世界观断言出现「确认/拒绝」用户裁决入口 ──────────
+  testWidgets('⑦ A4：pending 断言瓦片出现「确认/拒绝」，点确认后变 confirmed 且按钮消失', (
+    tester,
+  ) async {
+    await repo.upsertWorld(
+      manuscriptId: manuscriptId,
+      name: '灵气体系',
+      assertions: [
+        CharacterAssertion(
+          attribute: '灵气浓度',
+          value: '稀薄',
+          chapterSortOrder: identityOfChapter2,
+          timestamp: 100,
+          status: 'pending',
+        ),
+      ],
+    );
+    final id = (await repo.getWorld(manuscriptId, '灵气体系'))!.id;
+    await openDetailWide(tester, id);
+
+    // pending 瓦片有「待你确认」+ 两个裁决按钮（用户裁决入口，不代写）
+    expect(find.text('待你确认'), findsOneWidget);
+    expect(find.text('确认'), findsOneWidget);
+    expect(find.text('拒绝'), findsOneWidget);
+
+    await tester.tap(find.text('确认'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('待你确认'), findsNothing, reason: '确认后该断言已 confirmed，裁决入口消失');
+    final after = WorldFactRepository.parseAssertions(
+      (await repo.getWorld(manuscriptId, '灵气体系'))!.assertions,
+    );
+    expect(after.single.status, 'confirmed');
+  });
+
+  // ── C10（ADR-C107）：正文晚于断言时提示「建议重新提炼」（零 DB 写）─────────
+  testWidgets('⑧ C10：行 updatedAt 晚于所有断言时间 ⇒ 提示出现；confirmed 断言不挡它', (
+    tester,
+  ) async {
+    await repo.upsertWorld(
+      manuscriptId: manuscriptId,
+      name: '灵气体系',
+      assertions: [
+        CharacterAssertion(
+          attribute: '灵气浓度',
+          value: '稀薄',
+          chapterSortOrder: identityOfChapter2,
+          timestamp: 100, // 很早
+        ),
+      ],
+    );
+    final id = (await repo.getWorld(manuscriptId, '灵气体系'))!.id;
+    // upsert 落库的 updatedAt ≈ now（远晚于断言 ts=100）⇒ 提示应出现
+    await openDetailWide(tester, id);
+
+    expect(find.text('正文有改动，建议重新提炼设定'), findsOneWidget);
+  });
 }

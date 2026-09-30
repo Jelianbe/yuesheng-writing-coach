@@ -97,6 +97,24 @@ class FactStaleService {
     return '${a.attribute}\u0000${a.value}\u0000${a.chapter}';
   }
 
+  /// 断言**同一性**判据（A5：裁决精确化，单一共享实现）。
+  ///
+  /// = [tripleKey] 全等（attribute+value+chapter，自洽比较保持原列，见上）
+  ///   && [CharacterAssertion.timestamp] 全等。
+  ///
+  /// 为什么是「tripleKey + timestamp」而非仅 `(attribute,value)`：去重键含 chapter，
+  /// 故「同属性同值、不同章」（或一条 `chapter=null` 用户手写、一条 AI 在标称号第 N
+  /// 章抽到）的两条断言可并存。确认卡只显示 pending 那条，若按 `(attr,value)` 糊匹配，
+  /// 用户点「拒绝」会把自己手写的 `source=user/confirmed` 断言一并改成 rejected 并
+  /// 进拒绝记忆（R-009 越权，单向不可撤）。timestamp 是落库唯一瞬间，组合后唯一。
+  ///
+  /// 两处调用方（此前各自实现、口径曾分叉）：
+  ///   ① `CharacterEditorService._sameAssertion`（详情页修正/拒绝）；
+  ///   ② `SettingLibraryService._apply*Verdict`（确认卡裁决，A5 接线）。
+  static bool sameAssertion(CharacterAssertion a, CharacterAssertion target) {
+    return tripleKey(a) == tripleKey(target) && a.timestamp == target.timestamp;
+  }
+
   /// 缺表守卫（C78 批次2a）——复用 [AppDatabase.tableExists]。
   ///
   /// **为何会缺表**：character_fact / event_fact 是 **v16 / v17** 才建的表
@@ -349,6 +367,12 @@ class FactStaleService {
   ///
   /// [keep] = true → 原地标 stale；false → 从列表移除（用户「清除本章旧版」）。
   /// 返回 null 表示该行无需写回（调用方据此跳过 DB 写，省无谓 IO）。
+  ///
+  /// ★ A6（删除侧口径对齐）：keep=false 删 stale 条目时，**必须保留
+  ///   `status == 'rejected'`** —— 拒绝记忆是「AI 不得再次提议同值」的单向记忆，
+  ///   一旦随「清除本章旧版」被物理删掉，下章正文改写后 AI 又会把同一条当新断言报出来
+  ///   （用户已拒绝过的值复活）。此前计数侧（`_staleByChapter` / `listPendingAssertions`）
+  ///   已排除 rejected，唯独物理删除侧漏了 ⇒ 本函数补齐，三处同口径。
   static List<CharacterAssertion>? markList(
     List<CharacterAssertion> list,
     int chapterNo,
@@ -361,11 +385,22 @@ class FactStaleService {
       final hit = chapterHash == null
           ? a.chapterIdentity == chapterNo
           : belongsToChapter(a, chapterNo, chapterHash);
-      if (hit && (keep ? !a.stale : a.stale)) {
-        // 单独记账 changed：keep=true 时是原地标 stale，条目数不变；
-        // 不能用「长度变了」来判断是否需要写回。
+      if (!hit) {
+        next.add(a);
+        continue;
+      }
+      if (keep) {
+        if (!a.stale) {
+          // 单独记账 changed：keep=true 时是原地标 stale，条目数不变；
+          // 不能用「长度变了」来判断是否需要写回。
+          changed = true;
+          next.add(a.withStaleMark(stale: true));
+        } else {
+          next.add(a);
+        }
+      } else if (a.stale && a.status != 'rejected') {
+        // keep=false 且 stale → 删除（不 add）；但 rejected 拒绝记忆保留（A6）。
         changed = true;
-        if (keep) next.add(a.withStaleMark(stale: true));
       } else {
         next.add(a);
       }

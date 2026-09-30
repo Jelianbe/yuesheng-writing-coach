@@ -224,6 +224,29 @@ class WorldFactRepository {
     return _findWorld(manuscriptId, name);
   }
 
+  /// 设定资料库第一批：列出作品下全部「待用户裁决」的 AI 世界观断言（跨主题聚合）。
+  ///
+  /// 与 [CharacterFactRepository.listPendingAssertions] **同构**：仅返回
+  /// `status == 'pending'` 且非 stale 的断言；stale 的 pending（章节已改写）不再值得
+  /// 裁决。按 (主题名, 断言时间) 稳定排序。详情页「确认/拒绝」瓦片数据源（A4 接线）。
+  Future<List<(WorldFact, CharacterAssertion)>> listPendingAssertions(
+    String manuscriptId,
+  ) async {
+    final rows = await listWorlds(manuscriptId);
+    final out = <(WorldFact, CharacterAssertion)>[];
+    for (final row in rows) {
+      for (final a in parseAssertions(row.assertions)) {
+        if (a.status == 'pending' && !a.stale) out.add((row, a));
+      }
+    }
+    out.sort((x, y) {
+      final byName = x.$1.name.compareTo(y.$1.name);
+      if (byName != 0) return byName;
+      return x.$2.timestamp.compareTo(y.$2.timestamp);
+    });
+    return out;
+  }
+
   /// 按主键获取设定条目（详情页用：列表项携带的是 id）
   Future<WorldFact?> getWorldById(String id) async {
     return (_db.select(

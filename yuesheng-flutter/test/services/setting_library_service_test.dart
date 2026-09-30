@@ -254,4 +254,95 @@ void main() {
     expect(assertions.first.status, 'rejected');
     expect(assertions.first.rejectReason, '设定冲突');
   });
+
+  // ── A5（ADR-C107）：裁决精确化 —— 拒绝 AI 的 pending 不得连带改写同 (属性,值)
+  // 其他章节/不同时间戳的已确认断言（R-009 越权，单向不可撤）。
+  test('#10 A5：拒绝 pending 不连带同 (属性,值) 异章/异戳的 user 已确认断言', () async {
+    // 用户手写已确认（source=user，chapter 与 AI 抽取不同，timestamp 更晚）
+    final userWritten = CharacterAssertion(
+      attribute: '职业',
+      value: '捕快',
+      chapter: null,
+      chapterSortOrder: 1,
+      timestamp: 5000,
+      status: 'confirmed',
+      source: 'user',
+    );
+    // AI 在第 3 章抽到的同值 pending
+    final aiPending = CharacterAssertion(
+      attribute: '职业',
+      value: '捕快',
+      chapter: 3,
+      chapterSortOrder: 3,
+      timestamp: 1000,
+      status: 'pending',
+      source: 'ai',
+    );
+    await charRepo.upsertCharacter(
+      manuscriptId: manuscriptId,
+      name: '阿禾',
+      assertions: [userWritten, aiPending],
+    );
+
+    // 用户只在确认卡里拒绝 AI 那条（传入 target = AI pending 本身）
+    await service.rejectCharacter(
+      manuscriptId: manuscriptId,
+      name: '阿禾',
+      attribute: '职业',
+      value: '捕快',
+      reason: '抽取错误',
+      target: aiPending,
+    );
+
+    final after = await loadCharacter('阿禾');
+    final rejected = after.singleWhere((a) => a.timestamp == 1000);
+    final kept = after.singleWhere((a) => a.timestamp == 5000);
+    expect(rejected.status, 'rejected', reason: 'AI pending 被用户拒绝');
+    expect(
+      kept.status,
+      'confirmed',
+      reason: '用户手写的同值已确认断言**不得**被连带改成 rejected',
+    );
+    expect(kept.source, 'user');
+  });
+
+  test('#11 A5：confirm 同样按 target 精确定位（不连带另一条同值断言）', () async {
+    final a1 = CharacterAssertion(
+      attribute: '出身',
+      value: '临安',
+      chapter: 3,
+      chapterSortOrder: 3,
+      timestamp: 1000,
+      status: 'pending',
+    );
+    final a2 = CharacterAssertion(
+      attribute: '出身',
+      value: '临安',
+      chapter: 7,
+      chapterSortOrder: 7,
+      timestamp: 2000,
+      status: 'pending',
+    );
+    await charRepo.upsertCharacter(
+      manuscriptId: manuscriptId,
+      name: '阿禾',
+      assertions: [a1, a2],
+    );
+
+    await service.confirmCharacter(
+      manuscriptId: manuscriptId,
+      name: '阿禾',
+      attribute: '出身',
+      value: '临安',
+      target: a1,
+    );
+
+    final after = await loadCharacter('阿禾');
+    expect(after.singleWhere((a) => a.timestamp == 1000).status, 'confirmed');
+    expect(
+      after.singleWhere((a) => a.timestamp == 2000).status,
+      'pending',
+      reason: '只确认 target 那条，另一条同值不同章仍待裁决',
+    );
+  });
 }

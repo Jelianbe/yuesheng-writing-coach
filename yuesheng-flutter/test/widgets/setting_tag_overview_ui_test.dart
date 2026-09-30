@@ -237,4 +237,28 @@ void main() {
     expect(find.text('重试'), findsNothing);
     expect(find.textContaining('还没有标签'), findsOneWidget);
   });
+
+  // ── C9（ADR-C107）：归档/合并实体的标签不再静默消失，而是显式计数提示 ──
+  testWidgets('#8 C9：归档世界观主题后，其标签不显示但提示「N 条未显示」', (tester) async {
+    await WorldFactRepository(
+      db,
+    ).upsertWorld(manuscriptId: manuscriptId, name: '雾都');
+    final worldId = (await WorldFactRepository(
+      db,
+    ).getWorld(manuscriptId, '雾都'))!.id;
+    await SettingTagRepository(
+      db,
+    ).addTag(manuscriptId, SettingEntityKind.world, worldId, '悬疑');
+    // 归档该主题（软归档，行仍在）
+    await WorldFactRepository(db).archiveWorld(worldId);
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    // 归档主题的标签不再出现在分组里
+    expect(find.text('#悬疑 (1)'), findsNothing);
+    expect(find.text('雾都'), findsNothing);
+    // 但显式告诉用户有 1 条因归档未显示（不再静默消失）
+    expect(find.text('1 条标签因所属条目已归档 / 合并而未显示'), findsOneWidget);
+  });
 }

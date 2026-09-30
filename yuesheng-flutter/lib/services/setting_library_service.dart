@@ -16,6 +16,7 @@
 import '../data/repositories/character_fact_repository.dart';
 import '../data/repositories/world_fact_repository.dart';
 import '../types/character_types.dart';
+import 'fact_stale_service.dart';
 
 /// 合并裁决：保留 A / 保留 B / 两者皆是（被取代者标 superseded）。
 enum MergeVerdict { keepA, keepB, keepBoth }
@@ -111,11 +112,17 @@ class SettingLibraryService {
   // ─── 人物侧 ───
 
   /// 确认一条 pending 断言为 confirmed（用户认可 AI 抽取）。
+  ///
+  /// [target] = 用户正在裁决的那条断言对象（确认卡作用域持有它）。生产调用方**必须传**：
+  /// 传后按 [FactStaleService.sameAssertion]（tripleKey+timestamp）精确定位，
+  /// 不会连带改写同 `(属性,值)` 其他章节的断言。缺省（null）退化为旧 `(attr,value)`
+  /// 匹配——仅供存量测试 / 未接线调用点兼容，**新生产调用点不得依赖此退化**（A5）。
   Future<void> confirmCharacter({
     required String manuscriptId,
     required String name,
     required String attribute,
     required String value,
+    CharacterAssertion? target,
   }) async {
     await _applyCharacterVerdict(
       manuscriptId: manuscriptId,
@@ -123,6 +130,7 @@ class SettingLibraryService {
       attribute: attribute,
       value: value,
       status: 'confirmed',
+      target: target,
     );
   }
 
@@ -133,6 +141,7 @@ class SettingLibraryService {
     required String attribute,
     required String value,
     String? reason,
+    CharacterAssertion? target,
   }) async {
     await _applyCharacterVerdict(
       manuscriptId: manuscriptId,
@@ -141,6 +150,7 @@ class SettingLibraryService {
       value: value,
       status: 'rejected',
       reason: reason,
+      target: target,
     );
   }
 
@@ -150,6 +160,7 @@ class SettingLibraryService {
     required String name,
     required String attribute,
     required String value,
+    CharacterAssertion? target,
   }) async {
     await _applyCharacterVerdict(
       manuscriptId: manuscriptId,
@@ -157,6 +168,7 @@ class SettingLibraryService {
       attribute: attribute,
       value: value,
       status: 'superseded',
+      target: target,
     );
   }
 
@@ -210,15 +222,14 @@ class SettingLibraryService {
     required String value,
     required String status,
     String? reason,
+    CharacterAssertion? target,
   }) async {
     final row = await _characterRepo.getCharacter(manuscriptId, name);
     if (row == null) return;
     final existing = CharacterFactRepository.parseAssertions(row.assertions);
     final updated = existing.map((a) {
-      if (a.attribute == attribute && a.value == value) {
-        return a.withStatus(status, rejectReason: reason);
-      }
-      return a;
+      if (!_matchesVerdict(a, attribute, value, target)) return a;
+      return a.withStatus(status, rejectReason: reason);
     }).toList();
     await _characterRepo.replaceAssertions(
       manuscriptId: manuscriptId,
@@ -227,14 +238,33 @@ class SettingLibraryService {
     );
   }
 
+  /// 一条已存断言是否是用户正在裁决的那一条（A5 精确匹配）。
+  ///
+  /// [target] 非空（生产路径）⇒ [FactStaleService.sameAssertion]（tripleKey+timestamp）
+  /// 精确定位，杜绝跨章连带改写；[target] 为 null（存量兼容）⇒ 退回 `(attr,value)`。
+  static bool _matchesVerdict(
+    CharacterAssertion a,
+    String attribute,
+    String value,
+    CharacterAssertion? target,
+  ) {
+    if (a.attribute != attribute || a.value != value) return false;
+    if (target == null) return true;
+    return FactStaleService.sameAssertion(a, target);
+  }
+
   // ─── 世界观侧（同构；world 目前仅用户录入，裁决通道先行就位）───
 
   /// 确认一条世界观断言。
+  ///
+  /// [target] 同 [confirmCharacter]：生产调用方（详情页瓦片）必须传，按 tripleKey+timestamp
+  /// 精确定位（A5）。缺省退化为 `(attr,value)` 兼容存量测试。
   Future<void> confirmWorld({
     required String manuscriptId,
     required String name,
     required String attribute,
     required String value,
+    CharacterAssertion? target,
   }) async {
     await _applyWorldVerdict(
       manuscriptId: manuscriptId,
@@ -242,6 +272,7 @@ class SettingLibraryService {
       attribute: attribute,
       value: value,
       status: 'confirmed',
+      target: target,
     );
   }
 
@@ -252,6 +283,7 @@ class SettingLibraryService {
     required String attribute,
     required String value,
     String? reason,
+    CharacterAssertion? target,
   }) async {
     await _applyWorldVerdict(
       manuscriptId: manuscriptId,
@@ -260,6 +292,7 @@ class SettingLibraryService {
       value: value,
       status: 'rejected',
       reason: reason,
+      target: target,
     );
   }
 
@@ -270,15 +303,14 @@ class SettingLibraryService {
     required String value,
     required String status,
     String? reason,
+    CharacterAssertion? target,
   }) async {
     final row = await _worldRepo.getWorld(manuscriptId, name);
     if (row == null) return;
     final existing = WorldFactRepository.parseAssertions(row.assertions);
     final updated = existing.map((a) {
-      if (a.attribute == attribute && a.value == value) {
-        return a.withStatus(status, rejectReason: reason);
-      }
-      return a;
+      if (!_matchesVerdict(a, attribute, value, target)) return a;
+      return a.withStatus(status, rejectReason: reason);
     }).toList();
     await _worldRepo.replaceAssertions(
       manuscriptId: manuscriptId,

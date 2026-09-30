@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
 import '../../data/repositories/character_fact_repository.dart';
 import '../../data/repositories/setting_entry_repository.dart';
 import '../../data/repositories/setting_link_repository.dart'
@@ -41,6 +42,9 @@ class _SettingTagOverviewPageState
   bool _error = false;
   List<TagOverviewGroup> _groups = const [];
 
+  /// C9：因实体已归档 / 合并而**不显示**的标签条目数（不再静默消失）。
+  int _hiddenArchivedCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -50,35 +54,26 @@ class _SettingTagOverviewPageState
   Future<void> _load() async {
     try {
       final db = ref.read(appDatabaseProvider);
-      final tagRepo = SettingTagRepository(db);
-      final tags = await tagRepo.listAllForManuscript(widget.manuscriptId);
-      final characterNames = <String, String>{};
-      for (final c in await CharacterFactRepository(
+      final tags = await SettingTagRepository(
         db,
-      ).listCharacters(widget.manuscriptId)) {
-        characterNames[c.id] = c.name;
-      }
-      final worldNames = <String, String>{};
-      for (final w in await WorldFactRepository(
+      ).listAllForManuscript(widget.manuscriptId);
+      final names = await _buildEntityNameMaps(db);
+      final hidden = await _countHiddenArchived(
         db,
-      ).listWorlds(widget.manuscriptId)) {
-        worldNames[w.id] = w.name;
-      }
-      final settingNames = <String, String>{};
-      for (final s in await SettingEntryRepository(
-        db,
-      ).listEntries(widget.manuscriptId)) {
-        settingNames[s.id] = s.name;
-      }
+        tags,
+        characterNames: names.$1,
+        worldNames: names.$2,
+      );
       final groups = buildTagGroups(
         tags: tags,
-        characterNames: characterNames,
-        worldNames: worldNames,
-        settingNames: settingNames,
+        characterNames: names.$1,
+        worldNames: names.$2,
+        settingNames: names.$3,
       );
       if (!mounted) return;
       setState(() {
         _groups = groups;
+        _hiddenArchivedCount = hidden;
         _loading = false;
         _error = false;
       });
@@ -91,6 +86,68 @@ class _SettingTagOverviewPageState
         _error = true;
       });
     }
+  }
+
+  /// 构造三类实体的 id→名字 映射（仅含当前可见实体，供分组显示）。
+  Future<(Map<String, String>, Map<String, String>, Map<String, String>)>
+  _buildEntityNameMaps(AppDatabase db) async {
+    final characterNames = <String, String>{};
+    for (final c in await CharacterFactRepository(
+      db,
+    ).listCharacters(widget.manuscriptId)) {
+      characterNames[c.id] = c.name;
+    }
+    final worldNames = <String, String>{};
+    for (final w in await WorldFactRepository(
+      db,
+    ).listWorlds(widget.manuscriptId)) {
+      worldNames[w.id] = w.name;
+    }
+    final settingNames = <String, String>{};
+    for (final s in await SettingEntryRepository(
+      db,
+    ).listEntries(widget.manuscriptId)) {
+      settingNames[s.id] = s.name;
+    }
+    return (characterNames, worldNames, settingNames);
+  }
+
+  /// 数出因实体归档/合并而**不显示**的标签条数（C9）。
+  ///
+  /// buildTagGroups 会静默丢弃解析不到名字的条目，这里把「全集」拉一遍
+  /// 数出到底丢了几条，显式告诉用户（决策口径与互链侧相反）。
+  Future<int> _countHiddenArchived(
+    AppDatabase db,
+    List<SettingTag> tags, {
+    required Map<String, String> characterNames,
+    required Map<String, String> worldNames,
+  }) async {
+    final allCharIds = {
+      for (final c in await CharacterFactRepository(
+        db,
+      ).listCharacters(widget.manuscriptId, includeMerged: true))
+        c.id,
+    };
+    final allWorldIds = {
+      for (final w in await WorldFactRepository(
+        db,
+      ).listWorlds(widget.manuscriptId, includeArchived: true))
+        w.id,
+    };
+    var hidden = 0;
+    for (final t in tags) {
+      final archived = switch (t.entityKind) {
+        'character' =>
+          allCharIds.contains(t.entityId) &&
+              !characterNames.containsKey(t.entityId),
+        'world' =>
+          allWorldIds.contains(t.entityId) &&
+              !worldNames.containsKey(t.entityId),
+        _ => false,
+      };
+      if (archived) hidden++;
+    }
+    return hidden;
   }
 
   void _jump(TagOverviewItem item) {
@@ -128,7 +185,7 @@ class _SettingTagOverviewPageState
     if (_error) {
       return SettingErrorState(message: '加载标签失败，请重试', onRetry: _load);
     }
-    if (_groups.isEmpty) {
+    if (_groups.isEmpty && _hiddenArchivedCount == 0) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.page),
@@ -142,7 +199,17 @@ class _SettingTagOverviewPageState
     }
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.page),
-      children: [for (final group in _groups) _buildGroup(group)],
+      children: [
+        if (_hiddenArchivedCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.md),
+            child: Text(
+              '$_hiddenArchivedCount 条标签因所属条目已归档 / 合并而未显示',
+              style: context.text.caption,
+            ),
+          ),
+        for (final group in _groups) _buildGroup(group),
+      ],
     );
   }
 

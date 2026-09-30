@@ -53,12 +53,9 @@ class CharacterAssertion {
   /// 一律由身份载体经 `chapterLabel` 渲染，**无身份 ⇒ 不渲染**（存量行方案 `S1`）。
   /// 本字段此后只承担两件事：① **原样保留** AI/用户写入的原值（R1′ / R-009）；
   /// ② 作存量行的 [chapterIdentity] **回退源**。
-  /// ⚠️ 仍有**未切换**的同族展示点（另行批次，**勿**据此认为全仓已切换）—— 按**符号名**
-  /// 标注（行号会漂移）：
-  /// `widgets/world/world_fact_detail_page.dart` 的 `_WorldAssertionTile`（世界观断言瓦片）；
-  /// 同文件 `_WorldHeaderCard` 与 `world_fact_list_view.dart` 的 `_firstSeenText`
-  /// 渲染的是 `world_fact.first_seen_chapter` —— 那一列与 `character_fact` **同名不同基**
-  /// （无机器写入方，由用户「新建主题」对话框手填），**`N12-F3a` 式归一尚未覆盖**它。
+  /// 「展示侧如何按身份解析章标、为什么旧列不能当身份」的唯一真源见
+  /// `utils/chapter_number.dart:45-49`（各展示点按 `chapterSortOrder` 喂 `chapterLabel`，
+  /// 行号会漂移，勿在此罗列符号名 —— 历史上此处曾列了一条已切换 + 路径写错的清单）。
   final int? chapter;
 
   /// 断言所属章节的**身份键**（`chapters.sort_order`，0 基）—— `ADR-C96` 裁定 1。
@@ -73,7 +70,9 @@ class CharacterAssertion {
 
   /// C78 D-2（2026-09-16 修订 · 设定资料库第一批）：确认状态四态
   /// \pending | confirmed | rejected | superseded\。
-  /// - \pending\：AI 新抽取待用户裁决（AI 协议写入默认；不参与检测/注入）
+  /// - \pending\：AI 新抽取待用户裁决（AI 协议写入默认）。**不参与冲突检测**
+  ///   （`isActiveAssertion` 仅认 confirmed），但会以「参考形态」注入上下文供用户核对 ——
+  ///   不是「完全不进 prompt」（旧注释口径错误，C3 订正）。
   /// - \confirmed\：用户已确认 / 存量断言（默认值，isActiveAssertion 仅认它）
   /// - ejected\：用户已否决（拒绝记忆本体；不参与检测/注入）
   /// - \superseded\：合并裁决中被取代（留库不进列表；不参与检测/注入）
