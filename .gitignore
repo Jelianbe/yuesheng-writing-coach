@@ -95,6 +95,7 @@ historical-archive/
 # 以下目录/文件仅本地使用，不进入公开仓库（覆盖上方白名单 ! 规则）
 /docs/
 /.workbuddy/
+/yuesheng-flutter/.workbuddy/
 /.trae/
 /AGENTS.md
 
