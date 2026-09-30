@@ -216,11 +216,6 @@ String? buildCognitiveStyleNote(
   final style = profile.cognitiveStyle;
   if (style == null || hasOnboarding) return null;
   final styleLabel = _cognitiveStyleLabel(style.style);
-  final styleBasis = style.style == CognitiveStyle.analytical
-      ? '分析型'
-      : style.style == CognitiveStyle.intuitive
-      ? '直觉型'
-      : '混合型';
   return '认知风格：$styleLabel（仅供参考，学员说不合适时优先往另一边换）\n'
       '依据：基于近期消息关键词粗略推断，不是确定性判断';
 }

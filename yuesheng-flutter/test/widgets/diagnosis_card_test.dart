@@ -261,6 +261,95 @@ void main() {
         reason: '张力不足症 severity=L3 → #E8C5C5',
       );
     });
+
+    testWidgets('G-1 只有 L2/L3 症候时不显示笔误 / 用词类分隔块', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'G001',
+                name: '仅结构层症候',
+                severity: 'L2',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('仅结构层症候'), findsWidgets, reason: '阳性对照：症候详情已渲染');
+      expect(find.text('笔误 / 用词类'), findsNothing);
+    });
+
+    testWidgets('G-2 只有 L1 症候时不显示笔误 / 用词类分隔块', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'G002',
+                name: '仅表面层症候',
+                severity: 'L1',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('仅表面层症候'), findsWidgets, reason: '阳性对照：症候详情已渲染');
+      expect(find.text('笔误 / 用词类'), findsNothing);
+    });
+
+    testWidgets('G-3 两类都有时显示分隔块且位于结构块之后', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 2,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'G003',
+                name: '结构层症候',
+                severity: 'L3',
+                evidenceCount: 1,
+                explanation: '结构层说明',
+              ),
+              DiagnosisSyndromeCard(
+                syndromeId: 'G004',
+                name: '表面层症候',
+                severity: 'L1',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final divider = find.text('笔误 / 用词类');
+      final structureBody = find.text('结构层说明');
+      expect(divider, findsOneWidget);
+      expect(structureBody, findsOneWidget, reason: '阳性对照：结构块已渲染');
+      expect(
+        tester.getTopLeft(divider).dy,
+        greaterThan(tester.getBottomLeft(structureBody).dy),
+        reason: '分隔块应位于结构块之后',
+      );
+    });
   });
 
   // ── D5-B: 症候确认栏（对齐 RN DiagnosisConfirmationBar）──

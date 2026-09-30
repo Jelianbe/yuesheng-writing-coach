@@ -17,7 +17,6 @@ import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../services/syndrome_registry.dart';
 import 'growth_detail_widgets.dart';
-import '../app_settings/coach_settings_page.dart';
 
 String _nameOf(String id) {
   final hit = kSyndromeRegistry.where((s) => s.id == id).firstOrNull;
@@ -39,10 +38,20 @@ const _genres = [
 ];
 
 class GrowthDiagnosisPrefsCard extends ConsumerStatefulWidget {
-  /// embedded=true：直接展开编辑态（教练设置二级页），无折叠按钮。
-  /// embedded=false：成长页收起态入口行，点击跳二级页。
+  /// embedded=true：直接展开编辑态（教练设置二级页内嵌），无折叠按钮。
+  /// embedded=false：成长页收起态入口行，点击触发 [onOpenSettings]。
   final bool embedded;
-  const GrowthDiagnosisPrefsCard({super.key, this.embedded = false});
+
+  /// 折叠态点击回调（ADR-C110：由调用方注入，避免卡片反向依赖二级页形成环）。
+  ///
+  /// embedded=true 时不使用；embedded=false 且为 null 时点击为 no-op。
+  final VoidCallback? onOpenSettings;
+
+  const GrowthDiagnosisPrefsCard({
+    super.key,
+    this.embedded = false,
+    this.onOpenSettings,
+  });
 
   @override
   ConsumerState<GrowthDiagnosisPrefsCard> createState() =>
@@ -115,9 +124,7 @@ class _GrowthDiagnosisPrefsCardState
         border: Border.all(color: palette.divider),
       ),
       child: InkWell(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const CoachSettingsPage()),
-        ),
+        onTap: widget.onOpenSettings,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.symmetric(

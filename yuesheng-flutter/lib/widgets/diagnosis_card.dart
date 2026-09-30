@@ -478,7 +478,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 4, AppSpacing.lg, 0),
       child: Text(
         '以下是逐条问题点，不是对整篇的总评',
-        style: context.text.caption?.copyWith(
+        style: context.text.caption.copyWith(
           color: context.palette.textTertiary,
           fontSize: 11,
         ),
@@ -498,7 +498,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           const SizedBox(height: AppSpacing.sm),
           Text(
             '读者层 · 需自行判断',
-            style: context.text.caption?.copyWith(
+            style: context.text.caption.copyWith(
               color: context.palette.textTertiary,
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -507,7 +507,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           const SizedBox(height: 2),
           Text(
             '以上是文本层面的问题。题材选择、受众匹配、读者会不会想读下去——这部分我覆盖不了，请自行判断。',
-            style: context.text.caption?.copyWith(
+            style: context.text.caption.copyWith(
               color: context.palette.textTertiary,
               fontSize: 11,
               height: 1.4,
@@ -690,26 +690,33 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         .where((s) => s.severity == 'L2' || s.severity == 'L3')
         .toList();
     final surface = widget.syndromes.where((s) => s.severity == 'L1').toList();
+    final children = <Widget>[];
 
-    Widget buildBlock(DiagnosisSyndromeCard s) => Column(
+    _appendBlocks(children, structure);
+    if (structure.isNotEmpty && surface.isNotEmpty) {
+      children.add(_buildSectionDivider('笔误 / 用词类'));
+    }
+    _appendBlocks(children, surface);
+
+    return Column(children: children);
+  }
+
+  Widget _buildSyndromeBlock(DiagnosisSyndromeCard s) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _SyndromeBlock(syndrome: s, tracked: _trends[s.syndromeId]),
+      if (widget.sessionId != null) ...[
+        const SizedBox(height: 8),
+        _SyndromeConfirmationBar(syndrome: s, sessionId: widget.sessionId!),
+      ],
+    ],
+  );
+
+  Widget _buildSectionDivider(String label) {
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SyndromeBlock(syndrome: s, tracked: _trends[s.syndromeId]),
-        if (widget.sessionId != null) ...[
-          const SizedBox(height: 8),
-          _SyndromeConfirmationBar(syndrome: s, sessionId: widget.sessionId!),
-        ],
-      ],
-    );
-
-    final children = <Widget>[];
-    for (var i = 0; i < structure.length; i++) {
-      children.add(buildBlock(structure[i]));
-      if (i < structure.length - 1) children.add(const SizedBox(height: 12));
-    }
-    if (structure.isNotEmpty && surface.isNotEmpty) {
-      children.add(const SizedBox(height: 16));
-      children.add(
+        const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Row(
@@ -720,7 +727,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
-                  '笔误 / 用词类',
+                  label,
                   style: TextStyle(
                     fontSize: 11,
                     color: context.palette.textTertiary,
@@ -733,15 +740,16 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             ],
           ),
         ),
-      );
-      children.add(const SizedBox(height: 12));
-    }
-    for (var i = 0; i < surface.length; i++) {
-      children.add(buildBlock(surface[i]));
-      if (i < surface.length - 1) children.add(const SizedBox(height: 12));
-    }
+        const SizedBox(height: 12),
+      ],
+    );
+  }
 
-    return Column(children: children);
+  void _appendBlocks(List<Widget> out, List<DiagnosisSyndromeCard> items) {
+    for (var i = 0; i < items.length; i++) {
+      out.add(_buildSyndromeBlock(items[i]));
+      if (i < items.length - 1) out.add(const SizedBox(height: 12));
+    }
   }
 
   // ── 改写建议块：品牌竹青 #E8F0EE 底 + 左竹青 #2D5A52 条 ──

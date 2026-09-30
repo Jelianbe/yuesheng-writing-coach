@@ -172,14 +172,25 @@ class SyndromeHistoryEvent {
   });
 }
 
-extension GrowthStatsExtension on GrowthService {
-  /// 成长总览（复刻 RN getGrowthOverview）
-  Future<GrowthOverview> getGrowthOverview() async {
-    final wordRow = await (_db.customSelect(
+/// R-019 真分解（ADR-C112 ③）：成长总览的 6 段**只读查询**聚合为独立类。
+///
+/// 刻意**不含** B1 的本地自然日去重 —— 该逻辑依赖
+/// `GrowthStatsExtension._localDateStr`（extension static，跨类型不可见），
+/// 故由调用方拿到时间戳后完成，保证「SQL 文本」与「去重语义」两处都不变。
+/// 6 段 SQL **逐字符**搬移，执行顺序由调用方保持（虽无依赖，保持以杜绝时序差异）。
+class _GrowthOverviewQuery {
+  _GrowthOverviewQuery(this._db);
+
+  final AppDatabase _db;
+
+  Future<QueryRow?> queryTotalWords() {
+    return (_db.customSelect(
       'SELECT COALESCE(SUM(word_count), 0) AS total FROM chapters',
     )).getSingleOrNull();
+  }
 
-    final diagRow = await (_db.customSelect(
+  Future<QueryRow?> queryDiagnosisStats() {
+    return (_db.customSelect(
       'SELECT COUNT(*) AS total, '
       // COALESCE 兜底：空表时 SUM() 返回 NULL（对齐 RN `?? 0`）
       "COALESCE(SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END), 0) "
@@ -188,32 +199,52 @@ extension GrowthStatsExtension on GrowthService {
       'AS active '
       'FROM active_problem',
     )).getSingleOrNull();
+  }
 
-    final phaseRow = await (_db.customSelect(
+  Future<QueryRow?> queryTeachingPhase() {
+    return (_db.customSelect(
       'SELECT current_phase AS phase, beginner_level AS beginner '
       'FROM teaching_state '
       'ORDER BY updated_at DESC LIMIT 1',
     )).getSingleOrNull();
+  }
 
-    // B1：写作天数按用户本地自然日归并。本工程 sqlite 的 strftime('localtime')
-    // 不可用（恒返回 NULL），故取出全部时刻后在 Dart 侧按本地 y/m/d 去重计数，
-    // 避免 UTC+8 用户本地 00:00–08:00 的记录被并到前一个 UTC 日导致少算。
-    final writingDayRows = await (_db.customSelect(
+  /// 返回全部 `updated_at`（秒）。B1：本地自然日去重在**调用方**完成 ——
+  /// 本工程 sqlite 的 strftime('localtime') 不可用（恒返回 NULL），故取出
+  /// 全部时刻后在 Dart 侧按本地 y/m/d 去重计数，避免 UTC+8 用户本地
+  /// 00:00–08:00 的记录被并到前一个 UTC 日导致少算。
+  Future<List<int>> queryWritingDays() async {
+    final rows = await (_db.customSelect(
       'SELECT updated_at FROM chapters WHERE word_count > 0',
     )).get();
-    final writingDays = writingDayRows
-        .map((r) => _localDateStr(r.read<int>('updated_at')))
-        .toSet()
-        .length;
+    return [for (final r in rows) r.read<int>('updated_at')];
+  }
 
-    final timeRow = await (_db.customSelect(
+  Future<QueryRow?> queryChapterTimeRange() {
+    return (_db.customSelect(
       'SELECT MIN(updated_at) AS first, MAX(updated_at) AS last '
       'FROM chapters WHERE word_count > 0',
     )).getSingleOrNull();
+  }
 
-    final totalDiagnoses = await (_db.customSelect(
+  Future<QueryRow?> queryDiagnosisTotal() {
+    return (_db.customSelect(
       'SELECT COUNT(*) AS total FROM diagnosis_results',
     )).getSingleOrNull();
+  }
+}
+
+extension GrowthStatsExtension on GrowthService {
+  /// 成长总览（复刻 RN getGrowthOverview）
+  Future<GrowthOverview> getGrowthOverview() async {
+    final q = _GrowthOverviewQuery(_db);
+    final wordRow = await q.queryTotalWords();
+    final diagRow = await q.queryDiagnosisStats();
+    final phaseRow = await q.queryTeachingPhase();
+    final writingDayStamps = await q.queryWritingDays();
+    final writingDays = writingDayStamps.map(_localDateStr).toSet().length;
+    final timeRow = await q.queryChapterTimeRange();
+    final totalDiagnoses = await q.queryDiagnosisTotal();
 
     final trainingCount = await _countTrainingRecords();
     final diagTotal = totalDiagnoses?.read<int>('total') ?? 0;

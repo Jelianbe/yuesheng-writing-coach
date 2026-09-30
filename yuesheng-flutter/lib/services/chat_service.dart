@@ -62,6 +62,8 @@ import 'package:writingcoach/data/repositories/training_result_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_message_types.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
+import 'package:writingcoach/services/chat_training_parser.dart'
+    show kTrainingStart;
 import 'package:writingcoach/services/outline_parser.dart';
 import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/genui_parser.dart';
@@ -327,10 +329,18 @@ class ChatService {
   /// 9. addMessage(assistant)
   /// 10. 若有诊断：commitDiagnosis + phase-mapper resolver
 
-  /// 批次6（6.3）：流式拦截标记最大长度
-  ///（kDiagnosisStart='[YS_DIAGNOSIS]'=14 / kOutlineStart='[YS_ENTITY]'=11 /
-  ///  kFactStart='[YS_FACT]'=9）——标记只可能出现在末尾 ≤ 此长度的窗口内
-  static const int _kMaxStreamMarkerLen = 14;
+  /// 批次6（6.3）：流式拦截标记最大长度（取全部被拦截标记的**最长值**）。
+  /// 现值来源：`kTrainingStart='[YS_TRAINING]'`=**15**（ADR-C105 A1 新增，
+  /// 此前最长者为 `kDiagnosisStart='[YS_DIAGNOSIS]'`=14）。
+  ///
+  /// ⚠️ 本常量**只影响 rescan 窗口的回退距离（性能）**，不承担正确性：
+  ///   ① 「不泄漏半截标记」由 [_blockPendingPrefix] 保证（跨 chunk 暂缓转发）；
+  ///   ② `indexOf` 的起点恒 ≤ `displayLength` ⇒ 任何起点 ≥ displayLength 的
+  ///      标记必被发现，与窗口大小无关。
+  /// 新增协议块时**照抄最长值**即可，但**必须**同步另外两处：
+  /// [DiagnosisFlowHandler._stripProtocolBlocks] 与 [_blockPendingPrefix]，
+  /// 否则会重演 ADR-C105 A1（协议块全仓无剥离/无拦截）。
+  static const int _kMaxStreamMarkerLen = 15;
 
   /// 批次6（6.10）：fullContent 内存上限——超过则截断头部（协议块/诊断信息在
   /// 尾部，尾部价值最高；displayLength 同步左移保持索引一致）。
@@ -351,15 +361,27 @@ class ChatService {
     return indexes.reduce(_earliestMarkerIndex);
   }
 
-  /// 检查 fullContent 尾部是否命中任一协议块标记（[YS_DIAGNOSIS]/[YS_ENTITY]/[YS_FACT]/[YS_GENUI]）的
-  /// 某个前缀，返回需暂缓转发的后缀长度（防分隔符跨 chunk 到达时误转发）
+  /// 检查 fullContent 尾部是否命中任一协议块标记的某个前缀
+  ///（[YS_DIAGNOSIS] / ```diagnosis / [YS_ENTITY] / [YS_FACT] / [YS_GENUI] /
+  ///  [YS_TRAINING]），返回需暂缓转发的后缀长度（防分隔符跨 chunk 到达时误转发）
+  ///
+  /// ADR-C105 A1：`[YS_TRAINING]`（15 字符）此前**不在本表内** ⇒ 与前缀共享关系
+  /// 导致半截标记被当作正文转发（实测：`#C105-1b①` 由「onStream 不含标记」断言抓获）。
   static int _blockPendingPrefix(String fullContent) {
     final diag = getPendingMarkerPrefix(fullContent);
     final mdDiag = _pendingPrefix(fullContent, kMarkdownDiagOpen);
     final outline = _pendingPrefix(fullContent, kOutlineStart);
     final fact = _pendingPrefix(fullContent, kFactStart);
     final genui = _pendingPrefix(fullContent, kGenuiStart);
-    return [diag, mdDiag, outline, fact, genui].reduce((a, b) => a > b ? a : b);
+    final training = _pendingPrefix(fullContent, kTrainingStart);
+    return [
+      diag,
+      mdDiag,
+      outline,
+      fact,
+      genui,
+      training,
+    ].reduce((a, b) => a > b ? a : b);
   }
 
   static int _pendingPrefix(String fullContent, String marker) {
@@ -524,7 +546,15 @@ extension ChatServiceSendRun on ChatService {
   }) async {
     // 8. 流式调用 + 拦截诊断块
     String fullContent = '';
+    // ★ 两个标志**刻意分离**（ADR-C105 v5 P1-2）：
+    //   - `blockIntercepted`：已进入「协议块拦截模式」，从标记处起停止转发（**任何**标记）。
+    //   - `inDiagnosisBlock`：本轮**确实发起了诊断**（仅 `[YS_DIAGNOSIS]` / ```diagnosis）。
+    //     它下游喂给 `_recordDiagnosisOutcome(attempted:)`，契约（diagnosis_flow_handler
+    //     .dart:288-289）明写是「AI 输出含 [YS_DIAGNOSIS] 块」。若被 `[YS_TRAINING]` /
+    //     `[YS_OUTLINE]` / `[YS_FACT]` / `[YS_GENUI]` 置位，则纯训练轮会被误记为
+    //     「发起诊断却失败」，连续 2 轮即插入「诊断失败卡」（用户可见误报）。
     bool inDiagnosisBlock = false;
+    bool blockIntercepted = false;
     int displayLength = 0;
     int streamChunkCount = 0;
 
@@ -556,9 +586,10 @@ extension ChatServiceSendRun on ChatService {
         );
       }
 
-      if (inDiagnosisBlock) return;
+      if (blockIntercepted) return;
 
-      // 拦截诊断块、大纲记忆块（[YS_ENTITY]）、事实块（[YS_FACT]）：
+      // 拦截诊断块、大纲记忆块（[YS_ENTITY]）、事实块（[YS_FACT]）、
+      // GENUI 块（[YS_GENUI]）、训练判定块（[YS_TRAINING]，ADR-C105 A1）：
       // 任一标记出现即从该处起不再转发，避免原始协议 JSON 泄漏到流式展示
       // 批次6（6.3）：O(n²) → O(n)——安全区已转发到 displayLength，标记只可能
       // 出现在末尾 ≤ 最大标记长的窗口内（含跨 chunk 拼接），从窗口起点起搜，
@@ -574,20 +605,31 @@ extension ChatServiceSendRun on ChatService {
       final outlineMarkerIndex = fullContent.indexOf(kOutlineStart, scanStart);
       final factMarkerIndex = fullContent.indexOf(kFactStart, scanStart);
       final genuiMarkerIndex = fullContent.indexOf(kGenuiStart, scanStart);
+      final trainingMarkerIndex = fullContent.indexOf(
+        kTrainingStart,
+        scanStart,
+      );
       final markerIndex = ChatService._earliestMarkerIndexList([
         diagMarkerIndex,
         mdDiagMarkerIndex,
         outlineMarkerIndex,
         factMarkerIndex,
         genuiMarkerIndex,
+        trainingMarkerIndex,
       ]);
       if (markerIndex != -1) {
         final newDisplay = fullContent.substring(displayLength, markerIndex);
         if (newDisplay.isNotEmpty) callbacks.onStream(newDisplay);
         displayLength = markerIndex;
-        inDiagnosisBlock = true;
+        blockIntercepted = true;
+        // 见本函数顶部注释：只有诊断类标记才置 `inDiagnosisBlock`（成败计数用），
+        // 其余协议块（大纲 / 事实 / GENUI / 训练）只切拦截模式。
+        if (markerIndex == diagMarkerIndex ||
+            markerIndex == mdDiagMarkerIndex) {
+          inDiagnosisBlock = true;
+        }
         debugPrint(
-          '[ChatService] 步骤8: 检测到协议块标记，切换到拦截模式 | displayLength=$displayLength',
+          '[ChatService] 步骤8: 检测到协议块标记，切换到拦截模式 | displayLength=$displayLength | 诊断块=${inDiagnosisBlock ? "是" : "否"}',
         );
         return;
       }
@@ -602,6 +644,18 @@ extension ChatServiceSendRun on ChatService {
         displayLength = safeEnd;
       }
     }, cancelToken: options.cancelToken);
+    // ★ ADR-C105 v5（第 2 轮自检 P2-2）：补一次**全文**诊断标记判定。
+    // 流式阶段只把「最早出现的标记」与诊断标记比对，而一旦任一标记命中即
+    // `blockIntercepted` 短路（`return`）⇒ 若 `[YS_TRAINING]` / `[YS_OUTLINE]` 等
+    // **排在诊断块之前**，其后的 `[YS_DIAGNOSIS]` 在整个流里都扫不到 ⇒
+    // `inDiagnosisBlock` 漏置位（**假阴性**：真诊断失败不计入，少插失败卡）。
+    // 这里在流结束后对完整回复补判一次，使语义与契约（「输出含 [YS_DIAGNOSIS] 块」
+    // ⇒ attempted）字面一致；O(n) 一次，与 `parseDiagnosis` 的判定同源。
+    if (!inDiagnosisBlock &&
+        (fullContent.contains(kDiagnosisStart) ||
+            fullContent.contains(kMarkdownDiagOpen))) {
+      inDiagnosisBlock = true;
+    }
     debugPrint(
       '[ChatService] 步骤8: streamChat 完成 | 总 chunk=$streamChunkCount | fullContent 长度=${fullContent.length} | inDiagnosisBlock=$inDiagnosisBlock',
     );
@@ -1659,6 +1713,8 @@ extension ChatServiceSend on ChatService {
       trainingSyndromeId: trainingSyndromeId,
       activeProblems: activeProblems,
       callbacks: callbacks,
+      // ADR-C105 A1：协议块的模型自主判定（在 parseAndPersist 内从 fullContent 解析）
+      trainingResult: parsed.trainingResult,
     );
     await callbacks.onComplete(parsed.finalContent, parsed.messageId);
     debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');

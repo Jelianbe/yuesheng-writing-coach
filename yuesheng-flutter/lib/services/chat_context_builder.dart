@@ -210,10 +210,10 @@ String buildStructuredSyndromeContext(
       default:
         confirmLabel = '待确认';
     }
-    // P0-3：把学员质疑理由带给 LLM（拼到非 focus 摘要行尾）。
-    final disputeNote = (p.disputeReason != null && p.disputeReason!.isNotEmpty)
-        ? '（学员理由：${p.disputeReason}）'
-        : '';
+    // P0-3：学员质疑理由 → LLM 的**唯一**落点是 `_buildFullSyndromeSummary`
+    // 的非 focus 摘要行尾（见本文件 `（学员理由：…）` 的 disputeSuffix 构造）。
+    // 此处曾有一份同款 `disputeNote` 局部变量但从未被读取 —— ADR-C111 删除
+    // （死代码，零行为变更）；若要再挂一次，请改那里而不是在这里重算。
     final isFocus = focusEnabled && p.syndromeId == focusId;
 
     if (isFocus) {

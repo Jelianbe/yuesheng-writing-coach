@@ -232,8 +232,13 @@ void main() {
 
   // ── 组4：严重度不变分支 _judgeStableTrend（L182/L187/L199）───
   group('D-组4 _judgeStableTrend（L182 / L187 / L199）', () {
-    test('D-S1 stable + 0.5 + 下降 ⇒ stable（杀 L199 && → ||）', () {
-      // 变异后 `0.5<=0.4 || worsening` 为真 ⇒ 误判 possibleWorsening
+    // ADR-C105 C11 注释纠错（2026-09-30，**变异实验实测**）：
+    // 本用例**走不到 L199** —— pr=0.5 时 L187（0.5 >= 0.4 && 0.5 < 0.6）为真
+    // 即返回 ⇒ 本用例实杀的是 **L187 的「中等达标率 → stable」分支**。
+    // 实证：把 L199 的 `&&` 改成 `||` 后跑全组，变红的是 **D-S7**（pr=0.7 下降）
+    // 与 D-J2（L126 数据不足短路）；**本用例仍绿** ⇒
+    // 原注释「杀 L199 && → ||」是**假的变异覆盖**，已更正。
+    test('D-S1 stable + 0.5 + 下降 ⇒ stable（实杀 L187 中等达标率分支；L199 由 D-S7 守护）', () {
       expect(
         _cj(TrendJudgment.stable, 5, 10, kDown),
         ComprehensiveJudgment.stable,
@@ -278,12 +283,19 @@ void main() {
       );
     });
 
-    test('D-S7 stable + 0.7 + 下降 ⇒ stable（>0.4 不落入可能恶化，反面对照）', () {
-      expect(
-        _cj(TrendJudgment.stable, 7, 10, kDown),
-        ComprehensiveJudgment.stable,
-      );
-    });
+    // ADR-C105 C11：**本用例才是真正杀 L199 `&&` → `||` 的用例**（变异实验实测）。
+    // pr=0.7 ⇒ L182 假、L187 假（0.7<0.6 为假）、L194 假 ⇒ 唯一落在 L199：
+    // 原版 `0.7<=0.4 && worsening` = false → stable；变异成 `||` ⇒ true
+    // → possibleWorsening ⇒ 本用例变红。
+    test(
+      'D-S7 stable + 0.7 + 下降 ⇒ stable（>0.4 不落入可能恶化，反面对照；★实杀 L199 && → ||）',
+      () {
+        expect(
+          _cj(TrendJudgment.stable, 7, 10, kDown),
+          ComprehensiveJudgment.stable,
+        );
+      },
+    );
   });
 
   // ── 组5：detectDeterioration 门槛（L250/L258/L274 ×3）───────

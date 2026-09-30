@@ -82,4 +82,25 @@ void main() {
       expect(parseTrainingResult('还没达标，但方向对了'), TrainingResult.partial);
     });
   });
+
+  group('ADR-C105 协议优先 — 约定与关键词表冲突时的仲裁契约', () {
+    // 本组是 ADR-C105 §12.2 #4「负向验证」的锚点：若把 `parseTrainingResult`
+    // 的 Tier 1（协议优先）摘掉，下列用例**必须变红**。
+    test('★模型判 failed 且理由含「完成」→ failed（不得被关键词表反转）', () {
+      const raw =
+          '写得太急了。\n[YS_TRAINING]\n'
+          '{"result":"failed","reason":"没能完成动作细节"}\n[/YS_TRAINING]';
+      expect(
+        parseTrainingResult(raw),
+        TrainingResult.failed,
+        reason:
+            'prompt（skills_training_p3.dart:115-125/:128）授权模型输出协议块'
+            '自主判定；代码侧须以协议为准，而非扫自由文本里谁先撞上关键词',
+      );
+    });
+
+    test('协议块缺失 → 回退关键词表（纯增量：无协议时行为不变）', () {
+      expect(parseTrainingResult('本次练习未达标'), TrainingResult.failed);
+    });
+  });
 }

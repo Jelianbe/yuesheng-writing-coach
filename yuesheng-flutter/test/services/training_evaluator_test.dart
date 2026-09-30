@@ -328,6 +328,202 @@ void main() {
       expect(r, isNot(ComprehensiveJudgment.improving));
       expect(r, isNot(ComprehensiveJudgment.significantImprovement));
     });
+
+    // ─────────────────────────────────────────────────────────────
+    // ADR-C105 B4：严格不等号的**边界值**判据
+    //
+    // 背景（审计 B4）：项目的变异审计算子集**不含 `<`/`>`** ⇒ 「边界写成严格
+    // 不等号」这类缺陷在审计里**结构性不可见**；而既有用例全取区间内点
+    //（0.5 / 0.8 / 0.35 …），把 `>=` 改成 `>` 照样绿。
+    //
+    // ★本组只收**能杀死变异**的用例，并显式登记**不可观测**的冗余条件（见末尾
+    //  注释）—— 后者若被当成「边界已覆盖」写进用例，就是制造**假覆盖**
+    //  （同 ADR-C105 C11：`D-S1` 注释曾声称覆盖 `:199`，实际走不到）。
+    // ─────────────────────────────────────────────────────────────
+
+    test('★#B4-1 严重度不变 + pr 恰 0.4 + 稳定度下降 → 稳定（杀 `:187` 的 `>=`→`>`）', () {
+      final r = judge(
+        severityTrend: TrendJudgment.stable,
+        passCount: 2,
+        totalCount: 5, // 恰 0.4 = 规则「中等达标率」下界
+        stability: const FsrsStabilityInput(
+          currentStability: 1.0,
+          previousStability: 2.0, // worsening
+        ),
+      );
+      expect(
+        r,
+        ComprehensiveJudgment.stable,
+        reason:
+            '若 :187 的 `>=`→`>`，0.4 会漏出该分支、落到规则8（pr<=0.4 且恶化）'
+            '⇒ 误判 possibleWorsening',
+      );
+    });
+
+    test('★#B4-2 严重度不变 + pr 恰 0.2 + 稳定度下降 → 可能恶化（杀 `:194` 的 `<`→`<=`）', () {
+      final r = judge(
+        severityTrend: TrendJudgment.stable,
+        passCount: 1,
+        totalCount: 5, // 恰 0.2 = 规则7「很低达标率」上界（严格小于）
+        stability: const FsrsStabilityInput(
+          currentStability: 1.0,
+          previousStability: 2.0,
+        ),
+      );
+      expect(
+        r,
+        ComprehensiveJudgment.possibleWorsening,
+        reason: '0.2 不算「很低」（:194 是严格 <）⇒ 走规则8；若 `<`→`<=` 会误判 worseningTrend',
+      );
+    });
+
+    test('★#B4-3 严重度不变 + pr 恰 0.6 + 稳定度上升 → 改善（杀 `:182` 的 `>=`→`>`）', () {
+      final r = judge(
+        severityTrend: TrendJudgment.stable,
+        passCount: 3,
+        totalCount: 5, // 恰 0.6 = 「达标率好」下界
+        stability: const FsrsStabilityInput(
+          currentStability: 2.0,
+          previousStability: 1.0,
+        ),
+      );
+      expect(
+        r,
+        ComprehensiveJudgment.improving,
+        reason:
+            '若 :182 的 `>=`→`>`，0.6 会漏到 :187（0.6<0.6 为假）与规则8（0.6<=0.4 为假）'
+            '⇒ 误判 stable',
+      );
+    });
+
+    test('★#B4-4 严重度下降 + pr 恰 0.6 + 稳定度**不**上升 → 改善（杀 `:170` 的 `>=`→`>`）', () {
+      final r = judge(
+        severityTrend: TrendJudgment.improving,
+        passCount: 3,
+        totalCount: 5, // 恰 0.6
+        stability: const FsrsStabilityInput(
+          currentStability: 1.0,
+          previousStability: 1.0, // stable ⇒ 走不到 :165，落在 :170
+        ),
+      );
+      expect(
+        r,
+        ComprehensiveJudgment.improving,
+        reason: '既有 #B1 只覆盖 :165（稳定度上升那一支），:170 的 0.6 下界此前无判据',
+      );
+    });
+
+    // ⚠️ **刻意不写**的两条（登记，防止后人补「假覆盖」）：
+    //   1. `:187` 的 `passRateVal < 0.6` 上界：pr==0.6 时无论该子条件真假，
+    //      都落到 :194(false)/:199(false) ⇒ **同为 stable** ⇒ `<=` 变异**不可观测**
+    //      （即该子条件在 stable 分支内是冗余的，可简化但不能靠测试守护）。
+    //   2. `:199` 的 `passRateVal <= 0.4` 上界：pr==0.4 已被 `:187` 先截获并返回
+    //      （B4-1 即此），⇒ 该边界的 `<=`→`<` 同样**不可观测**；其可达边界实际由
+    //      `:194` 的严格 `<0.2` 决定（B4-2 已守护）。
+  });
+
+  // ═════════════════════════════════════════════════════════════
+  // ADR-C105 B4：classifyStability 的严格不等号边界（此前**零直接判据**）
+  //
+  // 既有 #A4 用 previousStability==currentStability 间接触发过该函数，但
+  // **杀不死变异**：把 `:93` 的 `>` 改成 `>=` 会让等值判 improving，
+  // 而 #A4 的稳定度上升/下降在该 pr 下不改变最终结论 ⇒ 断言照样绿。
+  // ⇒ 必须直锚返回值。
+  // ═════════════════════════════════════════════════════════════
+
+  group('ADR-C105 B4 classifyStability 边界', () {
+    test('★等值 → stable（杀 `:93` 的 `>`→`>=` 与 `:96` 的 `<`→`<=`）', () {
+      expect(
+        classifyStability(
+          const FsrsStabilityInput(
+            currentStability: 1.5,
+            previousStability: 1.5,
+          ),
+        ),
+        TrendJudgment.stable,
+      );
+    });
+
+    test('上升 → improving', () {
+      expect(
+        classifyStability(
+          const FsrsStabilityInput(
+            currentStability: 1.6,
+            previousStability: 1.5,
+          ),
+        ),
+        TrendJudgment.improving,
+      );
+    });
+
+    test('下降 → worsening', () {
+      expect(
+        classifyStability(
+          const FsrsStabilityInput(
+            currentStability: 1.4,
+            previousStability: 1.5,
+          ),
+        ),
+        TrendJudgment.worsening,
+      );
+    });
+
+    test('上次无值 → insufficientData', () {
+      expect(
+        classifyStability(const FsrsStabilityInput(currentStability: 1.5)),
+        TrendJudgment.insufficientData,
+      );
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════
+  // ADR-C105 B4：detectDeterioration 的严格不等号边界补漏
+  //（既有 #D4/#D5/#D7 已覆盖 `>=2` / `>=3` / `8 天` 的**内侧**，
+  //  本组补它们**外侧**的恰好取等点）
+  // ═════════════════════════════════════════════════════════════
+
+  group('ADR-C105 B4 detectDeterioration 边界（外侧取等点）', () {
+    test('★已缓解到 L1 且当前仍 L1 → 不算复发（杀 `:240` 的 `>=`→`<=`）', () {
+      final r = detectDeterioration(
+        _detInput(wasResolvedToL1: true, currentSeverity: Severity.l1),
+      );
+      expect(
+        r.signal,
+        isNull,
+        reason:
+            '复发门槛是「当前严重度序号 >= 2」；L1==1 不应触发。'
+            '若 `>=`→`<=`，1<=2 为真 ⇒ 误报复发',
+      );
+    });
+
+    test('★严重度持平 + 连续失败多次 → 不算 worsening（杀 `:248` 的 `>`→`>=`）', () {
+      final r = detectDeterioration(
+        _detInput(
+          currentSeverity: Severity.l2,
+          previousSeverity: Severity.l2, // 持平
+          consecutiveFailures: 5,
+        ),
+      );
+      expect(
+        r.signal,
+        isNull,
+        reason: '恶化要求「当前 > 上次」；持平不满足。若 `>`→`>=` ⇒ 误报 worsening',
+      );
+    });
+
+    test('★间隔恰 7 天 + L2 → 不算巩固失败（杀 `:274` 的 `>`→`>=`）', () {
+      final r = detectDeterioration(
+        _detInput(gapDays: 7, currentSeverity: Severity.l2),
+      );
+      expect(r.signal, isNull, reason: '门槛是「间隔 > 7 天」，7 天恰好不触发');
+    });
+
+    test('★间隔 8 天但当前 L1 → 不算巩固失败（杀 `:274` 第二条件的 `>=` 变异）', () {
+      final r = detectDeterioration(
+        _detInput(gapDays: 8, currentSeverity: Severity.l1),
+      );
+      expect(r.signal, isNull, reason: '巩固失败还要求当前 L2+（序号>=2）');
+    });
   });
 
   // ── 批次 G：buildEvaluationSummary（组装层 + 除零保护）──

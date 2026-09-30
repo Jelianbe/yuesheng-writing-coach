@@ -31,6 +31,7 @@ import '../../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
 import 'growth_detail_nav.dart';
 import 'growth_diagnosis_prefs_card.dart';
+import '../app_settings/coach_settings_page.dart';
 import 'observation_audit_card.dart';
 import 'proficiency_ring.dart';
 import 'severity_bar.dart';
@@ -252,7 +253,9 @@ class _GrowthContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        const GrowthDiagnosisPrefsCard(),
+        GrowthDiagnosisPrefsCard(
+          onOpenSettings: () => _openCoachSettings(context),
+        ),
         const SizedBox(height: 12),
         // 当前焦点卡（P1-4）
         if (focus != null) ...[
@@ -269,6 +272,16 @@ class _GrowthContent extends StatelessWidget {
         ObservationAuditCard(sessionId: sessionId),
       ],
     );
+  }
+
+  /// ADR-C110：折叠态「教学设置」入口行 → 教练设置二级页。
+  ///
+  /// 该导航**原本写在卡片内部**，使卡片反向 import 二级页、与二级页内嵌卡片
+  /// 形成循环依赖（门禁 3 全量卡口）。改为由调用方注入 Action，依赖单向化。
+  void _openCoachSettings(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const CoachSettingsPage()));
   }
 
   /// 熟练度卡片：能力画像 + 熟练度环 + 总会话数
@@ -429,7 +442,9 @@ class _GrowthContent extends StatelessWidget {
               AppSpacing.lg,
               0,
             ),
-            child: const GrowthDiagnosisPrefsCard(),
+            child: GrowthDiagnosisPrefsCard(
+              onOpenSettings: () => _openCoachSettings(context),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(AppSpacing.xxl),

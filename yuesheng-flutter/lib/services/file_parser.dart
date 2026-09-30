@@ -268,6 +268,50 @@ bool _isMdChapterHeading(String trimmed) {
       trimmed.length < FileParserLimits.heading1MaxLength;
 }
 
+/// md 解析状态机（R-019 真分解：ADR-C112 ④）。
+///
+/// ★ 两条不变点（改动前务必确认，颠倒即错）：
+/// 1. `chapterVolumeAtTitle` **初值为 null**，且只在 `beginChapter` 里被赋成
+///    「当时的 `currentVolumeTitle`」⇒ 章挂的是**章开始时的卷快照**，不是结束时。
+/// 2. `beginChapter` 内顺序是「**先 flush 旧章，后更新标题/快照**」；
+///    提交时卷取 `chapterVolumeAtTitle ?? currentVolumeTitle`（**回退不可删** ——
+///    首章之前才出现卷标题时快照为 null，靠它挂到当前卷）。
+class _MdParseState {
+  _MdParseState(this.chapters);
+
+  final List<ParsedChapter> chapters;
+
+  String currentChapterTitle = '第一章';
+  // B5：StringBuffer 替代 String +=，避免大文件正文 O(n²) 拷贝卡主线程
+  StringBuffer currentChapterContent = StringBuffer();
+  String? currentVolumeTitle;
+  String? chapterVolumeAtTitle;
+
+  /// 开始新章：提交旧章（挂旧卷快照 / 无快照则回退当前卷）→ 设新标题 → 快照当前卷。
+  void beginChapter(String newTitle) {
+    flush();
+    currentChapterTitle = _cleanTitle(newTitle);
+    chapterVolumeAtTitle = currentVolumeTitle;
+  }
+
+  void appendLine(String line) {
+    currentChapterContent
+      ..write(line)
+      ..write('\n');
+  }
+
+  /// 提交当前章并重置缓冲（**替换** StringBuffer，不是 clear）。
+  void flush() {
+    _flushChapter(
+      chapters,
+      currentChapterTitle,
+      currentChapterContent.toString(),
+      chapterVolumeAtTitle ?? currentVolumeTitle,
+    );
+    currentChapterContent = StringBuffer();
+  }
+}
+
 /// 解析 markdown 文件：按 md 层级切分。
 /// 层级约定（FIX-3，对照 Kindle 教程 ##卷 ###章）：
 ///   - `# ` 一级标题 → 章（维持原行为）
@@ -277,51 +321,27 @@ bool _isMdChapterHeading(String trimmed) {
 ParsedFile parseMdFile(String content, String fileName) {
   final title = _stripExtension(fileName) ?? '未命名作品';
   final chapters = <ParsedChapter>[];
+  final state = _MdParseState(chapters);
   final lines = content.split(RegExp(r'\r?\n'));
-  var currentChapterTitle = '第一章';
-  // B5：StringBuffer 替代 String +=，避免大文件正文 O(n²) 拷贝卡主线程
-  var currentChapterContent = StringBuffer();
-  String? currentVolumeTitle;
-  String? chapterVolumeAtTitle;
-
-  // 开始新章：提交旧章、设标题、快照当前卷
-  void beginChapter(String newTitle) {
-    _flushChapter(
-      chapters,
-      currentChapterTitle,
-      currentChapterContent.toString(),
-      chapterVolumeAtTitle ?? currentVolumeTitle,
-    );
-    currentChapterContent = StringBuffer();
-    currentChapterTitle = _cleanTitle(newTitle);
-    chapterVolumeAtTitle = currentVolumeTitle;
-  }
 
   for (final line in lines) {
     final trimmed = line.trim();
     if (trimmed.startsWith('## ') &&
         trimmed.length < FileParserLimits.heading1MaxLength) {
-      currentVolumeTitle = _cleanTitle(trimmed);
+      state.currentVolumeTitle = _cleanTitle(trimmed);
     } else if (_isMdChapterHeading(trimmed)) {
-      beginChapter(trimmed);
+      state.beginChapter(trimmed);
     } else if (_volumePattern.hasMatch(trimmed) &&
         trimmed.length < FileParserLimits.chapterTitleMaxLength) {
-      currentVolumeTitle = _cleanTitle(trimmed);
+      state.currentVolumeTitle = _cleanTitle(trimmed);
     } else if (_chapterPattern.hasMatch(trimmed) &&
         trimmed.length < FileParserLimits.chapterTitleMaxLength) {
-      beginChapter(trimmed);
+      state.beginChapter(trimmed);
     } else {
-      currentChapterContent
-        ..write(line)
-        ..write('\n');
+      state.appendLine(line);
     }
   }
-  _flushChapter(
-    chapters,
-    currentChapterTitle,
-    currentChapterContent.toString(),
-    chapterVolumeAtTitle ?? currentVolumeTitle,
-  );
+  state.flush();
   if (chapters.isEmpty) {
     chapters.add(ParsedChapter(title: '第一章', content: content.trim()));
   }

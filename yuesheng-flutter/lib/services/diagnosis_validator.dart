@@ -12,6 +12,7 @@ import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'decode_guard.dart';
 import 'skill_registry.dart';
 import 'syndrome_registry.dart';
+import 'technique_knowledge_base.dart';
 
 export 'package:writingcoach/contracts/diagnosis_capability.dart';
 
@@ -20,6 +21,17 @@ final RegExp kSyndromeCodeRe = RegExp(r'P0\d{2}');
 
 /// 匹配所有 A0xx 格式的教学动作编号（A000-A099）
 final RegExp kActionCodeRe = RegExp(r'A0\d{2}');
+
+/// 匹配所有 T0xx 格式的**技法**编号（T000-T099）。
+///
+/// ADR-C105 A9：技法编号**确实会进 prompt**——`kTechniqueIndexContent`
+/// （`technique_kb_content.dart:9`）的首列即裸编号，且 `_l2AltColumn`
+/// （`technique_knowledge_base.dart:265`）对 P004/P005/P006/P007/P009
+/// 直接输出 `T017/T018/T022`（**无技法名**）。该表经
+/// `skill_registry.dart:214`（'technique-library-index'）→
+/// `skill_layers.dart:96` 注入。此前 V-03 只覆盖 P0xx/A0xx ⇒ 模型回显裸
+/// 技法编号时会**原样到达学员眼前**（prompt 自己声明「不暴露编号」）。
+final RegExp kTechniqueCodeRe = RegExp(r'T0\d{2}');
 
 const int _kRewriteThreshold = 80;
 const List<String> _kSugaryWords = [
@@ -205,6 +217,7 @@ NlValidationResult validateNaturalLanguage(
 /// 改为**回填名称**：
 ///   `P007` → `「角色空心化」`（精确匹配优先；LLM 偶发旧编号经 mergeMap 归一）
 ///   `A001` → `「缩小范围」`
+///   `T017` → `「悬念伏笔法」`（ADR-C105 A9 新增第三族）
 /// 查不到名的编号（越界/拼错，如 P099）仍退化为占位符——"编号不外泄"这条底线不破。
 ({String text, List<String> codes}) _applyCodeReplacement(String cleaned) {
   final codes = <String>[];
@@ -219,6 +232,14 @@ NlValidationResult validateNaturalLanguage(
     codes.add(code);
     final name = actionNameOf(code);
     return name == null ? '【动作】' : '「$name」';
+  });
+  // ADR-C105 A9：技法编号同款回填（`T017` → 「悬念伏笔法」）。
+  // 查不到名（越界/拼错，如 T099）仍退化为占位符——「编号不外泄」底线不破。
+  out = out.replaceAllMapped(kTechniqueCodeRe, (match) {
+    final code = match.group(0)!;
+    codes.add(code);
+    final name = techniqueNameOf(code);
+    return name == null ? '【技法】' : '「$name」';
   });
   return (text: out, codes: codes);
 }

@@ -187,56 +187,17 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
     setState(() => _importing = true);
     try {
       final db = ref.read(appDatabaseProvider);
-      final chapterRepo = ChapterRepository(db);
-      final volumeRepo = VolumeRepository(db);
-
-      // 已有卷按标题索引，追加同名卷时复用而非新建重复卷
-      final existingVolumes = await volumeRepo.listVolumes(widget.manuscriptId);
-      final volumeIdByTitle = {
-        for (final v in existingVolumes) v.title.trim(): v.id,
-      };
-      final createdVolumeCache = <String, String>{};
-      Future<String?> resolveVolumeId(String? volumeTitle) async {
-        if (volumeTitle == null || volumeTitle.trim().isEmpty) return null;
-        final key = volumeTitle.trim();
-        final cached = createdVolumeCache[key] ?? volumeIdByTitle[key];
-        if (cached != null) return cached;
-        final id = await volumeRepo.createVolume(
-          widget.manuscriptId,
-          title: key,
-        );
-        createdVolumeCache[key] = id;
-        return id;
-      }
-
-      // 按选中顺序（已排序）切同卷连续段，逐段批量入库：
-      // createChaptersBatch 每次取全局 MAX(sort_order)+1 递增，段间顺序不丢。
+      final importer = _ChapterBatchImporter(
+        chapterRepo: ChapterRepository(db),
+        volumeRepo: VolumeRepository(db),
+        manuscriptId: widget.manuscriptId,
+      );
+      await importer.preload();
+      // 传入顺序 = 选中顺序（已排序），决定入库顺序
       final selectedIndexes = _selected.toList()..sort();
-      var totalImported = 0;
-      var batch = <({String title, String content})>[];
-      String? batchVolumeTitle;
-
-      Future<void> flushBatch() async {
-        if (batch.isEmpty) return;
-        final volumeId = await resolveVolumeId(batchVolumeTitle);
-        totalImported += await chapterRepo.createChaptersBatch(
-          widget.manuscriptId,
-          batch,
-          volumeId: volumeId,
-        );
-        batch = [];
-      }
-
-      for (final i in selectedIndexes) {
-        final item = _chapters[i];
-        final vt = item.volumeTitle;
-        if (batch.isNotEmpty && vt != batchVolumeTitle) {
-          await flushBatch();
-        }
-        batchVolumeTitle = vt;
-        batch.add((title: item.title, content: item.content));
-      }
-      await flushBatch();
+      final totalImported = await importer.import([
+        for (final i in selectedIndexes) _chapters[i],
+      ]);
 
       if (!mounted) return;
       setState(() => _importing = false);
@@ -509,6 +470,80 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
               ),
             ),
     );
+  }
+}
+
+/// 追加导入的批量入库器：按「同卷连续段」切段，逐段批量入库。
+///
+/// 从 [_AppendChaptersPageState._handleConfirm] 职责级抽出（R-019）：
+/// 卷解析 + 切段循环内聚于此，页面只负责选中集合与 UI 反馈。
+class _ChapterBatchImporter {
+  final ChapterRepository chapterRepo;
+  final VolumeRepository volumeRepo;
+  final String manuscriptId;
+
+  /// 已有卷按标题索引，追加同名卷时复用而非新建重复卷
+  final Map<String, String> _volumeIdByTitle = {};
+
+  /// 本轮新建的卷，解析时优先于 [_volumeIdByTitle]
+  final Map<String, String> _createdVolumeCache = {};
+
+  _ChapterBatchImporter({
+    required this.chapterRepo,
+    required this.volumeRepo,
+    required this.manuscriptId,
+  });
+
+  /// 拉取已有卷，建立标题 → id 索引
+  Future<void> preload() async {
+    final existingVolumes = await volumeRepo.listVolumes(manuscriptId);
+    for (final v in existingVolumes) {
+      _volumeIdByTitle[v.title.trim()] = v.id;
+    }
+  }
+
+  /// 卷标题 → 卷 id（null / 空 = 未分卷）
+  Future<String?> _resolveVolumeId(String? volumeTitle) async {
+    if (volumeTitle == null || volumeTitle.trim().isEmpty) return null;
+    final key = volumeTitle.trim();
+    final cached = _createdVolumeCache[key] ?? _volumeIdByTitle[key];
+    if (cached != null) return cached;
+    final id = await volumeRepo.createVolume(manuscriptId, title: key);
+    _createdVolumeCache[key] = id;
+    return id;
+  }
+
+  /// 单段入库，返回该段实际入库条数（不是 batch.length）
+  Future<int> _flush(
+    List<({String title, String content})> batch,
+    String? batchVolumeTitle,
+  ) async {
+    if (batch.isEmpty) return 0;
+    final volumeId = await _resolveVolumeId(batchVolumeTitle);
+    return chapterRepo.createChaptersBatch(
+      manuscriptId,
+      batch,
+      volumeId: volumeId,
+    );
+  }
+
+  /// 按 items 顺序切同卷连续段，逐段批量入库后返回累计入库条数。
+  /// createChaptersBatch 每次取全局 MAX(sort_order)+1 递增，段间顺序不丢。
+  Future<int> import(List<AppendChapterItem> items) async {
+    var totalImported = 0;
+    var batch = <({String title, String content})>[];
+    String? batchVolumeTitle;
+    for (final item in items) {
+      final vt = item.volumeTitle;
+      if (batch.isNotEmpty && vt != batchVolumeTitle) {
+        totalImported += await _flush(batch, batchVolumeTitle);
+        batch = [];
+      }
+      batchVolumeTitle = vt;
+      batch.add((title: item.title, content: item.content));
+    }
+    totalImported += await _flush(batch, batchVolumeTitle);
+    return totalImported;
   }
 }
 

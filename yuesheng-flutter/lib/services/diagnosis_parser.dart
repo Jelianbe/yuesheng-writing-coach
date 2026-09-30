@@ -155,20 +155,40 @@ ParseResult parseDiagnosis(String rawText) {
   );
 }
 
-/// 组装展示文本：prefix/suffix 各自剥离 ENTITY/FACT 协议块（R-019 拆出）。
+/// 展示文本的协议块剥离 —— **本文件全部展示文本构造点的单一真源**。
+///
+/// ADR-C105 §4.3 #5：此前各构造点各自内联 `stripFactBlock(stripOutlineBlock(x))`，
+/// 且**全部漏** `[YS_TRAINING]`（`chat_training_parser.dart`）—— 而该协议块是
+/// prompt（`skills_training_p3.dart:115-125`）要求模型在 FEEDBACK 子阶段输出的。
+/// 遗漏后果：`parseDiagnosis(...).displayContent` 会把协议块的**原始 JSON**
+/// 交给下游（落库 / 上屏），`[YS_TRAINING]` 因此对用户可见。
+/// 收口后新增协议块只需改这一处（当前已含 OUTLINE / FACT / TRAINING）。
+///
+/// **不变量**：① 各剥离器只按各自标记截断、互不干扰 ⇒ 顺序无关；
+/// ② 无对应标记时逐字节返回原文 ⇒ 对既有输入零行为变更；
+/// ③ 刻意**不含** `[YS_DIAGNOSIS]` —— 诊断块自身的定位与剥离由调用点按
+/// start/end 区间完成，此处不可越权。
+String _stripDisplayBlocks(String rawText) {
+  var cleaned = stripOutlineBlock(rawText);
+  cleaned = stripFactBlock(cleaned);
+  cleaned = stripTrainingBlock(cleaned);
+  return cleaned;
+}
+
+/// 组装展示文本：prefix/suffix 各自剥离协议块（R-019 拆出）。
 String _buildDisplayContent(String rawText, int startIndex, int endIndex) {
   // 批次6（6.12 V8）：prefix 同样剥 ENTITY/FACT 协议块（FACT 块出现在
   // 诊断块之前等顺序错乱场景不泄漏原始 JSON）
-  final prefix = stripFactBlock(
-    stripOutlineBlock(rawText.substring(0, startIndex)),
+  final prefix = _stripDisplayBlocks(
+    rawText.substring(0, startIndex),
   ).trimRight();
 
   // 批次74：suffix 也做大纲协议块剥离（AI 常把 YS_ENTITY 放诊断块之后、自然语言之前）
   // 批次6（6.12 V8）：suffix 同步剥 FACT 块
   final suffix = endIndex == -1
       ? ''
-      : stripFactBlock(
-          stripOutlineBlock(rawText.substring(endIndex + kDiagnosisEnd.length)),
+      : _stripDisplayBlocks(
+          rawText.substring(endIndex + kDiagnosisEnd.length),
         ).trimLeft();
 
   return _concatDiagnosisDisplay(prefix, suffix);
@@ -198,8 +218,8 @@ ParseResult _parseMarkdownDiagnosis(String rawText) {
   }
   // 载荷非法 → 仍剥离代码块（不泄漏原始 JSON），诊断为 null。
   return ParseResult(
-    displayContent: stripFactBlock(
-      stripOutlineBlock(_buildMarkdownDisplay(rawText, mdStart, mdEnd)),
+    displayContent: _stripDisplayBlocks(
+      _buildMarkdownDisplay(rawText, mdStart, mdEnd),
     ),
     diagnosis: null,
   );
@@ -209,8 +229,9 @@ ParseResult _parseMarkdownDiagnosis(String rawText) {
 ParseResult _parseNoMarker(String rawText) {
   // 批次74：无诊断块也要保证大纲协议块被剥离，避免 100% 非诊断路径出现协议 JSON
   // 批次6（6.12 V8）：FACT 协议块同样剥离（顺序错乱/无诊断时均不泄漏）
+  // ADR-C105：TRAINING 协议块同属剥离面（本文件唯一收口点见 _stripDisplayBlocks）
   return ParseResult(
-    displayContent: stripFactBlock(stripOutlineBlock(rawText)),
+    displayContent: _stripDisplayBlocks(rawText),
     diagnosis: null,
   );
 }
@@ -218,11 +239,9 @@ ParseResult _parseNoMarker(String rawText) {
 /// 组装 markdown 包裹诊断块的展示文本（ADR-C82）：剥掉代码块本身，
 /// 保留前后自然语言，与 [YS_DIAGNOSIS] 路径的展示语义一致。
 String _buildMarkdownDisplay(String rawText, int mdStart, int mdEnd) {
-  final prefix = stripFactBlock(
-    stripOutlineBlock(rawText.substring(0, mdStart)),
-  ).trimRight();
-  final suffix = stripFactBlock(
-    stripOutlineBlock(rawText.substring(mdEnd + '```'.length)),
+  final prefix = _stripDisplayBlocks(rawText.substring(0, mdStart)).trimRight();
+  final suffix = _stripDisplayBlocks(
+    rawText.substring(mdEnd + '```'.length),
   ).trimLeft();
   return _concatDiagnosisDisplay(prefix, suffix);
 }

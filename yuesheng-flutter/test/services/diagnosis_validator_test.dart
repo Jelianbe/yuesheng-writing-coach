@@ -18,6 +18,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/diagnosis_validator.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
+import 'package:writingcoach/services/technique_knowledge_base.dart'
+    show kTechniqueShortNames;
 import 'package:writingcoach/types/teaching_types.dart';
 
 void main() {
@@ -244,6 +246,66 @@ void main() {
       expect(syndromeNameOf('P099'), isNull);
       expect(syndromeNameOf(''), isNull);
       expect(syndromeNameOf(null), isNull);
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════
+  // ADR-C105 A9：技法编号 `T0xx` 纳入 V-03 回填面
+  //
+  // 修复前 `kSyndromeCodeRe`/`kActionCodeRe` 只覆盖 P0xx/A0xx，`T0\d{2}`
+  // 全仓 0 命中 ⇒ 模型回显的裸技法编号**原样落到学员可见文本**。
+  // 泄漏产生点（实测）：`technique_kb_content.dart:35-40` 的索引表首列，
+  // 以及 `technique_knowledge_base.dart:265` 的斜杠组分支
+  //（P004/P005/P006/P007/P009 → `T017/T018/T022`，**无技法名**）。
+  // ═════════════════════════════════════════════════════════════
+
+  group('ADR-C105 A9 V-03 技法编号回填（T0xx）', () {
+    test('全部注册技法编号 → 回填为技法名：无【技法】空壳、无编号泄漏', () {
+      final bad = <String>[];
+      for (final entry in kTechniqueShortNames.entries) {
+        final r = validateNaturalLanguage('这一段可以用 ${entry.key} 来处理');
+        if (r.cleaned.contains('【技法】')) {
+          bad.add('${entry.key} 仍残留【技法】空壳');
+        }
+        if (!r.cleaned.contains(entry.value)) {
+          bad.add('${entry.key} 未回填为「${entry.value}」');
+        }
+        if (r.cleaned.contains(entry.key)) bad.add('${entry.key} 编号原文泄漏');
+      }
+      expect(bad, isEmpty, reason: bad.join('\n'));
+    });
+
+    test('★斜杠组原样输出（真实触发形态）→ T017/T018/T022 逐个回填', () {
+      final r = validateNaturalLanguage('备选技法：T017/T018/T022');
+      expect(r.cleaned.contains('T017'), isFalse);
+      expect(r.cleaned.contains('T018'), isFalse);
+      expect(r.cleaned.contains('T022'), isFalse);
+      expect(r.cleaned, contains('悬念伏笔法'));
+      expect(r.cleaned, contains('欲扬先抑法'));
+      expect(r.cleaned, contains('场景概述交替法'));
+    });
+
+    test('越界技法编号 → 退化为占位符（底线：编号不外泄）', () {
+      final r = validateNaturalLanguage('这里提到 T099 的写法');
+      expect(r.cleaned.contains('T099'), isFalse);
+      expect(r.cleaned, contains('【技法】'));
+    });
+
+    test('V-03 属阻断型 ⇒ 技法编号命中时 valid=false（与症候/动作同待遇）', () {
+      final r = validateNaturalLanguage('备选技法：T017');
+      expect(r.valid, isFalse);
+      expect(r.fixes.any((f) => f.type == 'V-03'), isTrue);
+    });
+
+    test('覆盖度自检：技法短名表非空（防循环空过造成假绿）', () {
+      expect(kTechniqueShortNames.length, greaterThanOrEqualTo(20));
+      expect(
+        kTechniqueShortNames.keys.every(
+          (k) => RegExp(r'^T0\d{2}$').hasMatch(k),
+        ),
+        isTrue,
+        reason: '本组用例的扫描面依赖键格式恒为 T0xx；格式一变则本组会静默空过',
+      );
     });
   });
 }

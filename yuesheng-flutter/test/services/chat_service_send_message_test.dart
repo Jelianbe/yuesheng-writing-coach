@@ -1081,4 +1081,229 @@ void main() {
     final messages = await sessionRepo.listMessages(sessionId);
     expect(messages[0].content, malicious);
   });
+
+  // ─────────────────────────────────────────────────────────────
+  // ADR-C105 §12.2 DoD 1b：两条落库链路的协议块剥离
+  //
+  // 背景：`[YS_TRAINING]` 是 prompt（skills_training_p3.dart:115-125）要求
+  // 模型在 FEEDBACK 阶段输出的协议块，但代码侧此前**从未实现解析与剥离**
+  // ⇒ 原始 JSON 直接进用户可见文本。两条落库链路必须都堵：
+  //   ① sendMessage 路径 → `_stripProtocolBlocks`
+  //   ② 长文路径 commitDiagnosisFromContent → `_persistOutlineAndStrip`
+  // ─────────────────────────────────────────────────────────────
+
+  test(
+    '★#C105-1b① sendMessage：`[YS_TRAINING]` 不上屏，且判定取协议（不被正文「完成」污染）',
+    () async {
+      const llmResponse =
+          '这次改写基本完成，只是节奏还急。\n'
+          '[YS_TRAINING]\n'
+          '{"result":"failed","reason":"学员没能完成动作细节的改写"}\n'
+          '[/YS_TRAINING]';
+      final chatService = buildChatService(FakeLlmClient(llmResponse));
+
+      final deltas = <String>[];
+      String? completeContent;
+      TrainingResult? trainingResult;
+
+      await chatService.sendMessage(
+        sessionId,
+        '他攥紧拳头，指节发白。',
+        SendMessageCallbacks(
+          onStream: (d) => deltas.add(d),
+          onComplete: (c, _) => completeContent = c,
+          onError: (_) {},
+          onTrainingResult: (r) => trainingResult = r,
+        ),
+        defaultOptions,
+        subphase: TeachingSubphase.feedback,
+      );
+
+      expect(
+        deltas.join().contains('[YS_TRAINING]'),
+        isFalse,
+        reason:
+            '流式增量不得泄漏协议块。本用例 chunkSize=10 < 标记长 15 '
+            '⇒ 标记**必然跨 chunk**，同时覆盖「半截标记被当正文转发」这一形态'
+            '（实测：本断言是本批唯一抓获流式泄漏的判据）',
+      );
+      expect(completeContent, isNotNull);
+      expect(
+        completeContent!.contains('[YS_TRAINING]'),
+        isFalse,
+        reason: '剥离器接进 _stripProtocolBlocks 后，落库/上屏文本不含协议块',
+      );
+      expect(completeContent, contains('节奏还急'), reason: '正文自然语言必须保留');
+      expect(
+        trainingResult,
+        TrainingResult.failed,
+        reason: '协议优先：正文含「完成」，旧实现会把模型判的 failed 记成 passed',
+      );
+    },
+  );
+
+  test('★#C105-1b② 长文链路：commitDiagnosisFromContent 落库文本不含任何协议块', () async {
+    final chatService = buildChatService(FakeLlmClient('占位'));
+
+    await chatService.commitDiagnosisFromContent(
+      sessionId: sessionId,
+      fullContent:
+          '诊断说明。\n'
+          '[YS_DIAGNOSIS]\n'
+          '{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2",'
+          '"evidence":[],"explanation":"测试"}],"suggested_actions":[],"confidence":0.8}\n'
+          '[/YS_DIAGNOSIS]\n'
+          '[YS_TRAINING]\n'
+          '{"result":"partial","reason":"方向对了"}\n'
+          '[/YS_TRAINING]\n'
+          '[YS_GENUI]\n'
+          '{"components":[]}\n'
+          '[/YS_GENUI]',
+    );
+
+    final messages = await sessionRepo.listMessages(sessionId);
+    final assistant = messages.lastWhere((m) => m.role == 'assistant');
+
+    // 注：本用例锁定的是**不变量**（协议块对用户不可见），
+    // 不断言「是哪一层剥的」——该链路 displayContent 与 _persistOutlineAndStrip
+    // 两层都会剥（ADR-C105 §13 N7 记录了两聚合器分叉风险，故两处都补）。
+    expect(assistant.content.contains('[YS_TRAINING]'), isFalse);
+    expect(
+      assistant.content.contains('[YS_GENUI]'),
+      isFalse,
+      reason: 'N6：长文链路此前**连 GENUI 都没剥**（插了卡、原文块却留着）',
+    );
+    expect(assistant.content.contains('[YS_DIAGNOSIS]'), isFalse);
+    expect(assistant.content, contains('诊断说明'));
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // ★#C105-1b③④ ADR-C105 v5 · P1-2（自检第 1 轮查出的**真缺陷**）
+  //
+  // 缺陷形态：流式拦截把 `[YS_TRAINING]` 与诊断标记**并入同一个** `inDiagnosisBlock`，
+  // 而该标志下游喂给 `_recordDiagnosisOutcome(attempted:)`，其契约
+  // （`diagnosis_flow_handler.dart:288-289`）明写 attempted =「本轮输出含 [YS_DIAGNOSIS] 块」。
+  // ⇒ 纯训练轮被记成「发起诊断却失败」，连续 2 轮（UILimits.failureWarningThreshold = 2）
+  // ⇒ 向会话插入「诊断失败卡」—— **用户可见误报**，且违反教学语义。
+  //
+  // 本组**刻意正反成对**：只写「不插卡」的话，若有人把 attempted 一关了之
+  // （或把计数链路整体摘掉），③ 照样绿 —— 那才是更糟的静默失守。④ 就是
+  // 专门堵这个的（与 DECISIONS §2「预置 flag 必须同时补『不预置』接线用例」同型）。
+  // ─────────────────────────────────────────────────────────────
+
+  test('★#C105-1b③ 连续三轮纯训练（只有 [YS_TRAINING]）⇒ 不插入诊断失败卡', () async {
+    const trainingOnly =
+        '这一版比上一版具体多了。\n'
+        '[YS_TRAINING]\n'
+        '{"result":"passed","reason":"动作细节到位了"}\n'
+        '[/YS_TRAINING]';
+    final chatService = buildChatService(FakeLlmClient(trainingOnly));
+
+    // 3 轮 > 阈值 2：若缺陷存在，第 2 轮就会插卡
+    for (var i = 0; i < 3; i++) {
+      await chatService.sendMessage(
+        sessionId,
+        '第${i + 1}轮练习。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+          onTrainingResult: (_) {},
+        ),
+        defaultOptions,
+        subphase: TeachingSubphase.feedback,
+      );
+    }
+
+    final messages = await sessionRepo.listMessages(sessionId);
+    final failedCards = messages
+        .where((m) => m.messageType == 'diagnosis_failed')
+        .toList();
+    expect(
+      failedCards,
+      isEmpty,
+      reason:
+          '训练轮不是诊断轮。`attempted` 只能由 [YS_DIAGNOSIS] / ```diagnosis 置位；'
+          '[YS_TRAINING] / [YS_OUTLINE] / [YS_FACT] / [YS_GENUI] 只切「拦截模式」，'
+          '不参与成败计数',
+    );
+  });
+
+  test('★#C105-1b④ 反证：连续两轮「有诊断块但解析失败」⇒ 仍插入诊断失败卡', () async {
+    // 与 ③ 的唯一差别：响应含 [YS_DIAGNOSIS] 但载荷非法 ⇒ attempted=true /
+    // success=false。若 ③ 的修复把 `inDiagnosisBlock` 一关了之，本用例会转红
+    // ⇒ 证明「成败计数」链路仍在正常工作，不是被整体拆除。
+    const brokenDiagnosis =
+        '我看了一下。\n'
+        '[YS_DIAGNOSIS]\n'
+        '{这不是合法 JSON}\n'
+        '[/YS_DIAGNOSIS]';
+    final chatService = buildChatService(FakeLlmClient(brokenDiagnosis));
+
+    for (var i = 0; i < 2; i++) {
+      await chatService.sendMessage(
+        sessionId,
+        '第${i + 1}轮。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        defaultOptions,
+      );
+    }
+
+    final messages = await sessionRepo.listMessages(sessionId);
+    final failedCards = messages
+        .where((m) => m.messageType == 'diagnosis_failed')
+        .toList();
+    expect(
+      failedCards.length,
+      greaterThanOrEqualTo(1),
+      reason: '诊断块出现即 attempted；解析失败 ⇒ 连续 2 轮应触发失败卡',
+    );
+  });
+
+  test('★#C105-1b⑤ 顺序无关：`[YS_TRAINING]` 排在诊断块**之前** ⇒ 非法诊断仍计失败', () async {
+    // ADR-C105 v5 第 2 轮自检 P2-2 查出的**假阴性**：流式只把「最早标记」与诊断
+    // 标记比对，而命中即 `blockIntercepted` 短路 ⇒ 训练块在前时其后的
+    // `[YS_DIAGNOSIS]` 整轮扫不到 ⇒ `inDiagnosisBlock` 漏置位（少插失败卡）。
+    // 修法：流结束后对 fullContent 补判一次（见 chat_service.dart 步骤8 收尾）。
+    const trainingThenBrokenDiagnosis =
+        '[YS_TRAINING]\n'
+        '{"result":"partial","reason":"方向对了"}\n'
+        '[/YS_TRAINING]\n'
+        '我看了一下。\n'
+        '[YS_DIAGNOSIS]\n'
+        '{这不是合法 JSON}\n'
+        '[/YS_DIAGNOSIS]';
+    final chatService = buildChatService(
+      FakeLlmClient(trainingThenBrokenDiagnosis),
+    );
+
+    for (var i = 0; i < 2; i++) {
+      await chatService.sendMessage(
+        sessionId,
+        '第${i + 1}轮。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        defaultOptions,
+      );
+    }
+
+    final messages = await sessionRepo.listMessages(sessionId);
+    final failedCards = messages
+        .where((m) => m.messageType == 'diagnosis_failed')
+        .toList();
+    expect(
+      failedCards.length,
+      greaterThanOrEqualTo(1),
+      reason:
+          'attempted 的判据是「输出含 [YS_DIAGNOSIS] 块」，与它在全文中的**位置**无关；'
+          '训练块在前不应把诊断块「藏起来」',
+    );
+  });
 }

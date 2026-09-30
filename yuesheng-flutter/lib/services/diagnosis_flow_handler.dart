@@ -51,6 +51,8 @@ import 'package:writingcoach/services/chat_gates.dart'
 import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+import 'package:writingcoach/services/chat_training_parser.dart'
+    show parseTrainingProtocol, stripTrainingBlock;
 import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
@@ -91,6 +93,10 @@ typedef ParseAndPersistResult = ({
   String messageId,
   String finalContent,
   List<GenUiComponent>? genuiComponents,
+
+  /// ADR-C105 A1：`[YS_TRAINING]` 协议块的模型自主判定。
+  /// **从原始回复（fullContent）解析**，与 `displayContent`（已剥协议块）无关。
+  TrainingResult? trainingResult,
 });
 
 /// K-9 中间结果：解析 + 校验 + 协议剥离后的诊断输出。
@@ -101,6 +107,9 @@ typedef _ParsedOutput = ({
   List<GenUiComponent>? genuiComponents,
   int factCount,
   String? factManuscriptId,
+
+  /// ADR-C105 A1：协议块的模型判定（在剥协议块前、从 fullContent 解析）。
+  TrainingResult? trainingResult,
 });
 
 /// S4b（R6，Q1 甲）：空正文判真（treatAsValid）时的升级占位文案，
@@ -504,6 +513,11 @@ class DiagnosisFlowHandler {
     var cleaned = stripOutlineBlock(displayContent);
     // A6：剥离 [YS_FACT] 协议块
     cleaned = stripFactBlock(cleaned);
+    // ADR-C105 A1/N6：本链路（长文/分块）此前**只剥 OUTLINE+FACT** ——
+    // 既漏 TRAINING，也漏 GENUI（而 commitDiagnosisFromContent 会 parseGenuiBlock
+    // 插卡 ⇒ 卡插了、原文块没剥，用户可见原始 JSON）。两处一并补齐。
+    cleaned = stripGenuiBlock(cleaned);
+    cleaned = stripTrainingBlock(cleaned);
     return (
       cleaned: cleaned,
       factCount: outcome.count,
@@ -684,10 +698,7 @@ class DiagnosisFlowHandler {
     required SendMessageOptions options,
   }) async {
     final rawParse = _filterDisabled(_diagnosis.parseDiagnosis(fullContent));
-    debugPrint(
-      '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}'
-      '${_diagnosisDropLog(rawParse)}',
-    );
+    _logDiagnoseParse(rawParse);
     var displayContent = rawParse.displayContent;
     ParsedDiagnosis? diagnosis = rawParse.diagnosis;
 
@@ -707,9 +718,9 @@ class DiagnosisFlowHandler {
     displayContent = validated.displayContent;
     diagnosis = validated.diagnosis;
 
-    // 协议块剥离 + GenUI 解析
-    displayContent = _stripProtocolBlocks(displayContent);
-    final genuiComponents = _genUi.parseGenuiBlock(fullContent);
+    // ADR-C105 A1 / N6：协议层三项（剥离 / GenUI / 训练判定）聚合为一处。
+    final protocol = _resolveProtocolLayer(fullContent, displayContent);
+    displayContent = protocol.displayContent;
 
     // B1：诊断成败记录
     await _recordDiagnosisOutcome(
@@ -721,17 +732,50 @@ class DiagnosisFlowHandler {
     return (
       displayContent: displayContent,
       diagnosis: diagnosis,
-      genuiComponents: genuiComponents,
+      genuiComponents: protocol.genuiComponents,
       factCount: factOutcome.count,
       factManuscriptId: factOutcome.manuscriptId,
+      trainingResult: protocol.trainingResult,
     );
   }
 
-  /// 协议块剥离（R-019 真分解：三个协议块剥离聚合为一处）。
+  /// 步骤9 解析日志（R-019 真分解：从 `_parseAndValidate` 抽出，零行为变更）。
+  void _logDiagnoseParse(ParseResult rawParse) {
+    debugPrint(
+      '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}'
+      '${_diagnosisDropLog(rawParse)}',
+    );
+  }
+
+  /// 协议层三项 Resolve（R-019 真分解；ADR-C105 A1 / N6）。
+  ///
+  /// 三项刻意**不同源**：
+  /// - `displayContent` 剥离源 = 已清洗的展示文本；
+  /// - `genuiComponents` / `trainingResult` 解析源 = **原始回复** `fullContent`
+  ///   （此刻未受任何清洗/剥离影响，否则协议块被先剥掉就再也解析不出来）。
+  ({
+    String displayContent,
+    List<GenUiComponent>? genuiComponents,
+    TrainingResult? trainingResult,
+  })
+  _resolveProtocolLayer(String fullContent, String displayContent) {
+    return (
+      displayContent: _stripProtocolBlocks(displayContent),
+      genuiComponents: _genUi.parseGenuiBlock(fullContent),
+      trainingResult: parseTrainingProtocol(fullContent)?.result,
+    );
+  }
+
+  /// 协议块剥离（R-019 真分解：协议块剥离聚合为一处）。
+  ///
+  /// ADR-C105 A1：新增 `[YS_TRAINING]`（此前完全未剥 ⇒ 模型协议块的原始 JSON
+  /// 会直接进用户可见文本）。注意**另有一条落库链路**走
+  /// `_persistOutlineAndStrip`（长文/分块），两处必须同步，否则只堵一个口。
   String _stripProtocolBlocks(String content) {
     var cleaned = stripOutlineBlock(content);
     cleaned = stripFactBlock(cleaned);
     cleaned = stripGenuiBlock(cleaned);
+    cleaned = stripTrainingBlock(cleaned);
     return cleaned;
   }
 
@@ -835,22 +879,32 @@ class DiagnosisFlowHandler {
         );
         // callTeacherStream 内部吞掉取消异常（返回空结果），故在此显式检查
         // token 状态：暂停语义 = 诊断已完成、教学建议被中止（不冒泡 onCancelled）
-        if (options.cancelToken?.isCancelled ?? false) {
-          callbacks.onTeacherCancelled?.call();
-        }
+        _notifyTeacherCancelledIfNeeded(options, callbacks);
         teacherDisplayContent = teacherStream.displayContent;
         teacherResult = teacherStream.teacher;
       } catch (e, s) {
         // 兜底：若 callTeacherStream 未来改为抛出，取消仍能被识别
-        if (options.cancelToken?.isCancelled ?? false) {
-          callbacks.onTeacherCancelled?.call();
-        }
+        _notifyTeacherCancelledIfNeeded(options, callbacks);
         _logSafeRun('Teacher 失败不影响 Diagnosis 已有输出', e, s);
       } finally {
         callbacks.onTeacherPhase?.call(false);
       }
     }
     return (displayContent: teacherDisplayContent, teacher: teacherResult);
+  }
+
+  /// Teacher 取消通知（R-019 真分解：ADR-C112 ⑤）。
+  ///
+  /// try / catch **两条路径的触发条件逐字符相同**，故合并为一处：
+  /// - try 内：`callTeacherStream` 吞掉取消异常（返回空结果）后显式检查；
+  /// - catch 内：兜底（若 `callTeacherStream` 未来改为抛出，取消仍能被识别）。
+  void _notifyTeacherCancelledIfNeeded(
+    SendMessageOptions options,
+    SendMessageCallbacks callbacks,
+  ) {
+    if (options.cancelToken?.isCancelled ?? false) {
+      callbacks.onTeacherCancelled?.call();
+    }
   }
 
   /// 私有 helper：combinedContent + 空响应判真 + 写消息（parseAndPersist 后段）。
@@ -876,6 +930,7 @@ class DiagnosisFlowHandler {
         diagnosis: parsed.diagnosis,
         teacherResult: teacher.teacher,
         genuiComponents: parsed.genuiComponents,
+        trainingResult: parsed.trainingResult,
       );
     }
     final messageId = await _sessionRepo.addMessage(
@@ -900,6 +955,7 @@ class DiagnosisFlowHandler {
       messageId: messageId,
       finalContent: resolved.finalContent,
       genuiComponents: parsed.genuiComponents,
+      trainingResult: parsed.trainingResult,
     );
   }
 
@@ -1018,6 +1074,7 @@ class DiagnosisFlowHandler {
     required ParsedDiagnosis? diagnosis,
     required TeacherResult? teacherResult,
     required List<GenUiComponent>? genuiComponents,
+    required TrainingResult? trainingResult,
   }) {
     return (
       aborted: true,
@@ -1027,6 +1084,7 @@ class DiagnosisFlowHandler {
       messageId: '',
       finalContent: '',
       genuiComponents: genuiComponents,
+      trainingResult: trainingResult,
     );
   }
 
@@ -1216,11 +1274,19 @@ class DiagnosisFlowHandler {
     required String? trainingSyndromeId,
     required List<ActiveProblemView> activeProblems,
     required SendMessageCallbacks callbacks,
+
+    /// ADR-C105 A1：`[YS_TRAINING]` 协议块的模型自主判定（由 fullContent 解析）。
+    /// 非 null ⇒ 以模型判定为准；null ⇒ 回退关键词表（见下）。
+    required TrainingResult? trainingResult,
   }) async {
     if (currentSubphase != TeachingSubphase.feedback) return;
 
-    final trainingResult = _diagnosis.parseTrainingResult(displayContent);
-    if (trainingResult == null) return;
+    // ADR-C105 A1：协议优先；协议缺失/非法时回退关键词表。
+    // 注：displayContent 已被 _stripProtocolBlocks 剥掉协议块 ⇒ 回退路径的
+    // Tier 1 必然为 null，实际走 Tier 2 关键词（且不会读到模型自述文本）。
+    final resolvedResult =
+        trainingResult ?? _diagnosis.parseTrainingResult(displayContent);
+    if (resolvedResult == null) return;
 
     await _recordTrainingFeedback(
       sessionId: sessionId,
@@ -1228,7 +1294,7 @@ class DiagnosisFlowHandler {
       activeProblems: activeProblems,
       userContent: userContent,
       displayContent: displayContent,
-      trainingResult: trainingResult,
+      trainingResult: resolvedResult,
     );
     // 防 feedback 残留
     try {
@@ -1236,7 +1302,7 @@ class DiagnosisFlowHandler {
     } catch (e, s) {
       _logSafeRun('训练轮终结重置子阶段失败', e, s);
     }
-    callbacks.onTrainingResult?.call(trainingResult);
+    callbacks.onTrainingResult?.call(resolvedResult);
   }
 
   /// 私有 helper：训练反馈写入（teaching_history + FSM 重评估 + results 落库）。
