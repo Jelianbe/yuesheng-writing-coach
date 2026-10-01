@@ -122,7 +122,7 @@ class WorkImportService {
           manuscriptId,
           title: ch.title,
           content: ch.content,
-          sortOrder: i + 1,
+          sortOrder: i, // C116-B2：导入/手动/批量三路统一 0 基（旧导入稿仍 1-based，展示按序位归一不出错）
           volumeId: volumeId.isEmpty ? null : volumeId,
         );
         if (i == 0) firstChapterId = chapterId;

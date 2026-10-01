@@ -82,10 +82,10 @@ void main() {
       expect(chapters.length, 2);
       expect(chapters[0].title, '第一章');
       expect(chapters[0].content, '正文一');
-      expect(chapters[0].sortOrder, 1);
+      expect(chapters[0].sortOrder, 0); // C116-B2：导入三路统一 0 基（手动/批量本就 0 基）
       expect(chapters[0].wordCount, '正文一'.length);
       expect(chapters[1].title, '第二章');
-      expect(chapters[1].sortOrder, 2);
+      expect(chapters[1].sortOrder, 1);
 
       // 主引用：chapter 类型 + is_primary=1
       final refs = await db.select(db.sessionReferences).get();

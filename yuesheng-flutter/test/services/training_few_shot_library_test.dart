@@ -183,6 +183,18 @@ void main() {
       expect(getTrainingFewShot(['P012']), contains('兰花'));
     });
 
+    test('#7h C3 守卫：P012 正文无英文残留、舞台提示已中文化', () {
+      // ADR-C116 C3：P012 两处「（三 chapters 后）」英文残留中文化为「（三章之后）」。
+      // 守卫：正文不得残留英文 'chapters'；舞台提示必须为中文措辞。
+      final p012 = kTrainingFewShotLibrary['P012']!;
+      expect(
+        p012,
+        isNot(contains('chapters')),
+        reason: 'P012 few-shot 正文不得残留英文 chapters',
+      );
+      expect(p012, contains('三章之后'), reason: 'P012 舞台提示应为中文「（三章之后）」');
+    });
+
     test('#8 每条示例必含好/坏对比 + 改善点说明', () {
       for (final entry in kTrainingFewShotLibrary.entries) {
         final content = entry.value;

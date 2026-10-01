@@ -66,13 +66,15 @@ void main() {
       // 实际全仓 grep 无裸 debugPrint('[SafeRun] 残留。
       // ⚠️ 本用例是**纯文本计数**型护栏：注释里若写出 helper 的完整调用串
       //    也会被计入（C92-6b 同款教训），故本文件注释一律不写完整调用形式。
+      // ADR-C116 A2（v2）2026-10-01 新增 2 处：学员焦点解析失败留痕（序数/
+      // 别名多命中/P 码不在集）+ 读取最近 assistant 清单失败 catch。
       final mi = File('lib/services/message_injector.dart').readAsStringSync();
       final cs = File('lib/services/chat_service.dart').readAsStringSync();
       final miCalls = '_logSafeRun('.allMatches(mi).length - 1;
       final csCalls = '_logSafeRun('.allMatches(cs).length - 1;
       expect(
         miCalls + csCalls,
-        35,
+        37,
         reason: 'CR-53 应覆盖全部降级点（实际 mi=$miCalls cs=$csCalls）',
       );
     });

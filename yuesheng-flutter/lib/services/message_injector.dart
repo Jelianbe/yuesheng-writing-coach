@@ -1,6 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// MessageInjector — system 消息注入编排器（独立类）
-//
+// MessageInjector — system 消息注入编排器（独立类）//
 // ADR-C74 批次 K-7 拆分重构产物。从 ChatService 抽出 sendMessage
 // 主流程中 5 个 system 消息注入方法（聚类 A，详见
 // docs/recon-reports/RECON-K7-K8-K9-2026-09-04.md §4 聚类 A 共性）：
@@ -31,6 +30,8 @@
 
 // 私有字段（_xxx）+ 公开命名参数（xxx）模式无法用 initializing formal
 // ignore_for_file: prefer_initializing_formals
+
+import 'dart:convert';
 
 import 'syndrome_tracker.dart';
 import 'package:flutter/foundation.dart';
@@ -1664,9 +1665,14 @@ class MessageInjector {
       sessionId,
     );
     final focusHistory = await _buildFocusHistory(sessionId);
+    // ADR-C116 A2（v2）：学员回复轮次取最近一条 assistant 消息——directExplain
+    // 全貌清单（「序号. [P码] 名称」）只存在于 AI 上一条回复里，注入时 messages
+    // 尚未追加历史，故自取会话库；失败返回 null 不阻断主流程。
+    final recentAssistantText = await _recentAssistantListText(sessionId);
     final userFocusOverride = _parseUserFocusFromMessage(
       content,
       activeProblems,
+      recentAssistantText,
     );
     final focusProblems = _toFocusProblems(activeProblems);
     final focusHistoryEntries = focusHistory
@@ -2104,25 +2110,48 @@ class MessageInjector {
     }
   }
 
-  /// 从用户消息解析 focus 切换意图（只解析 P\d+ 显式编码）
+  /// 从用户消息解析 focus 切换意图。
+  ///
+  /// ADR-C116 A2（v2）：旧 P 码显式正则保持优先不变；其后追加
+  /// ① 从 AI 上一条 assistant 消息还原「序号→P码」映射（学员「第 N 个/条/项」，
+  ///    与学员亲眼所见列表严格同源，不依赖 activeProblems 顺序）；
+  /// ② 症候真名别名包含匹配（唯一命中才返回）。
+  /// 解析决策整体下沉为纯函数 [resolveUserSyndromeFocus]；
+  /// 返回 logReason（看似做选择但解析失败）时经 [_logSafeRun] 留痕——
+  /// 此前静默回退 AI 建议、学员选择被替换且无任何痕迹（R-009 主权缺口）。
   String? _parseUserFocusFromMessage(
     String content,
     List<ActiveProblemView> activeProblems,
+    String? recentAssistantText,
   ) {
-    final patterns = [
-      RegExp(r'我想?先?(?:解决|练|练习|练练|练一下)\s*(P\d+)', caseSensitive: false),
-      RegExp(r'先?(?:解决|练|练习|练练|练一下)(?:一练)?\s*(P\d+)', caseSensitive: false),
-      RegExp(r'(?:聚焦|专注|主攻|重点练)\s*(P\d+)', caseSensitive: false),
-    ];
-    final activeIds = activeProblems.map((p) => p.syndromeId).toSet();
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(content);
-      if (match != null && match.groupCount >= 1) {
-        final id = match.group(1)!.toUpperCase();
-        if (activeIds.contains(id)) return id;
-      }
+    final r = resolveUserSyndromeFocus(
+      content: content,
+      activeProblems: activeProblems,
+      recentAssistantText: recentAssistantText,
+    );
+    if (r.logReason != null) {
+      _logSafeRun('学员焦点解析失败', r.logReason!, StackTrace.empty);
     }
-    return null;
+    return r.focusId;
+  }
+
+  /// ADR-C116 A2（v2）：取会话最近一条 assistant 消息文本。
+  ///
+  /// directExplain 全貌清单只出现在 AI 上一条回复中；注入编排时 messages
+  /// 尚未追加历史（历史在 step 7 才拼上），故此处直取会话库。
+  /// 读取失败静默返回 null（序数映射随之整体跳过，回退旧行为）。
+  Future<String?> _recentAssistantListText(String sessionId) async {
+    try {
+      final messages = await _sessionRepo.listMessages(sessionId);
+      for (var i = messages.length - 1; i >= 0; i--) {
+        final m = messages[i];
+        if (m.role == 'assistant') return m.content;
+      }
+      return null;
+    } catch (e, st) {
+      _logSafeRun('读取最近 assistant 清单失败不阻断主流程', e, st);
+      return null;
+    }
   }
 
   /// 映射 focus-resolver 的 FocusSource 到 chat_context_builder 的 FocusSource
@@ -2231,3 +2260,128 @@ class _FocusResolveResult {
 /// 诊断请求标记（章节诊断 prompt 的特征子串，
 /// 声线漂移 / 冲突观察等统一命中条件）
 const String _kDiagnosisRequestMarker = '写作诊断分析';
+
+// ════════════════════════════════════════════════════════════════
+// ADR-C116 A2（v2）：学员焦点选择序数/别名解析（纯函数，无仓储依赖）
+// ════════════════════════════════════════════════════════════════
+
+/// 学员焦点解析结果。
+///
+/// - focusId：命中的症候 P 码（null = 未命中，回退 AI 建议）。
+/// - logReason：「看似学员在做选择但解析失败」的原因——调用方据此留痕；
+///   null = 该消息根本不像焦点选择（常规对话，不留痕）。
+typedef UserFocusResolution = ({String? focusId, String? logReason});
+
+/// 解析学员本轮消息是否在做症候焦点选择（优先级按内容递增、互斥）：
+///
+/// 1. 旧 P 码显式正则优先（「先练 P005」），行为不变；P 码不在活跃集 → logReason。
+/// 2. 序数映射：[recentAssistantText] 为 AI 上一条 assistant 消息（directExplain
+///    全貌清单），逐行还原「序号→P码」；学员「第 N 个/条/项」→ map[N]；
+///    越界或 P 码不在活跃集 → logReason。与学员亲眼所见列表严格同源，
+///    不依赖 activeProblems 的 DB 排序（v2 自检定稿的前提）。
+/// 3. 别名兜底：活跃症候真名作为子串出现在学员消息中，**唯一命中**才返回；
+///    多命中 → logReason（多义不替学员决定）；零命中 = 不像选择，静默 null。
+UserFocusResolution resolveUserSyndromeFocus({
+  required String content,
+  required List<ActiveProblemView> activeProblems,
+  required String? recentAssistantText,
+}) {
+  final activeIds = activeProblems.map((p) => p.syndromeId).toSet();
+
+  // ① 旧正则：显式 P 码优先（回归不变）
+  final patterns = [
+    RegExp(r'我想?先?(?:解决|练|练习|练练|练一下)\s*(P\d+)', caseSensitive: false),
+    RegExp(r'先?(?:解决|练|练习|练练|练一下)(?:一练)?\s*(P\d+)', caseSensitive: false),
+    RegExp(r'(?:聚焦|专注|主攻|重点练)\s*(P\d+)', caseSensitive: false),
+  ];
+  for (final pattern in patterns) {
+    final match = pattern.firstMatch(content);
+    if (match != null && match.groupCount >= 1) {
+      final id = match.group(1)!.toUpperCase();
+      if (activeIds.contains(id)) return (focusId: id, logReason: null);
+      return (focusId: null, logReason: 'P 码 $id 不在活跃症候集');
+    }
+  }
+
+  // ② 序数映射（仅当 AI 上一条消息还原出编号清单时生效）
+  final ordinalMap = parseSyndromeOrdinalList(recentAssistantText);
+  if (ordinalMap.isNotEmpty) {
+    final n = parseOrdinalNumber(content);
+    if (n != null) {
+      final mapped = ordinalMap[n];
+      if (mapped != null && activeIds.contains(mapped)) {
+        return (focusId: mapped, logReason: null);
+      }
+      return (focusId: null, logReason: '序数第$n 越界或 P 码不在活跃症候集');
+    }
+  }
+
+  // ③ 别名包含匹配（唯一命中才返回）
+  final nameHits = activeProblems
+      .where(
+        (p) =>
+            p.syndromeName.trim().isNotEmpty &&
+            content.contains(p.syndromeName),
+      )
+      .map((p) => p.syndromeId)
+      .toList();
+  if (nameHits.length == 1) return (focusId: nameHits.single, logReason: null);
+  if (nameHits.length > 1) {
+    return (focusId: null, logReason: '别名多命中：${nameHits.join(',')}');
+  }
+  return (focusId: null, logReason: null);
+}
+
+/// 从 AI 全貌清单文本逐行解析「序号. [P码] 名称」→ 1-based 序号→P码 映射。
+///
+/// 对应 prompt 格式（chat_service directExplain，本函数不改 prompt）：
+/// `1. [P005] 名称——落在哪句`。行首容忍空白；分隔符 `.` 或 `、` 均接受。
+Map<int, String> parseSyndromeOrdinalList(String? text) {
+  if (text == null || text.isEmpty) return const {};
+  final result = <int, String>{};
+  final lineReg = RegExp(r'^\s*(\d+)[.、]\s*\[(P\d+)\]', caseSensitive: false);
+  for (final line in const LineSplitter().convert(text)) {
+    final m = lineReg.firstMatch(line);
+    if (m == null) continue;
+    final n = int.tryParse(m.group(1)!);
+    if (n == null || n <= 0) continue;
+    result[n] = m.group(2)!.toUpperCase();
+  }
+  return result;
+}
+
+/// 从学员消息提取「第 N」序数：阿拉伯数字 + 中文数字（一~九十九）。
+int? parseOrdinalNumber(String content) {
+  final m = RegExp(
+    r'第\s*(\d+|[一二两三四五六七八九十]+)\s*(?:个|条|项|点|种|样)?',
+  ).firstMatch(content);
+  if (m == null) return null;
+  final raw = m.group(1)!;
+  final arabic = int.tryParse(raw);
+  if (arabic != null) return arabic;
+  return _chineseNumeralToInt(raw);
+}
+
+const Map<String, int> _kChineseDigitValue = {
+  '一': 1,
+  '二': 2,
+  '两': 2,
+  '三': 3,
+  '四': 4,
+  '五': 5,
+  '六': 6,
+  '七': 7,
+  '八': 8,
+  '九': 9,
+};
+
+int? _chineseNumeralToInt(String raw) {
+  if (raw == '十') return 10;
+  if (raw.length == 1) return _kChineseDigitValue[raw];
+  final idx = raw.indexOf('十');
+  if (idx < 0) return null;
+  final tens = idx == 0 ? 1 : _kChineseDigitValue[raw[idx - 1]];
+  final ones = idx == raw.length - 1 ? 0 : _kChineseDigitValue[raw[idx + 1]];
+  if (tens == null || ones == null) return null;
+  return tens * 10 + ones;
+}

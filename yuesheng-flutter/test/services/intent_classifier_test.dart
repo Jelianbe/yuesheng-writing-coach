@@ -236,5 +236,31 @@ void main() {
       expect(isDiagnosisRequest(''), isFalse);
       expect(isDiagnosisRequest('   '), isFalse);
     });
+
+    // ── ADR-C116 B1：否定前缀门 _hasNegationBeforeSignal 补回归守护（纯加测试，不改行为）──
+    test('#25 否定前缀紧邻信号 → false（取消类措辞不触发诊断门）', () {
+      expect(isDiagnosisRequest('别诊断了'), isFalse);
+      expect(isDiagnosisRequest('不要评价这段'), isFalse);
+      expect(isDiagnosisRequest('不用分析'), isFalse);
+      expect(isDiagnosisRequest('取消诊断'), isFalse);
+    });
+
+    test('#26 肯定诊断请求 → true（对照 #25，门不误伤正常请求）', () {
+      expect(isDiagnosisRequest('请诊断这段'), isTrue);
+      expect(isDiagnosisRequest('帮我分析一下'), isTrue);
+    });
+
+    test('#27 复合句：首个信号被否定 → false', () {
+      expect(isDiagnosisRequest('别诊断了，直接帮我改吧'), isFalse);
+    });
+
+    test('#28 现状钉死：「特别诊断这段」→ 当前行为 false（已知假阴性，本批不修）', () {
+      // ⚠️ 已知假阴性：信号「诊断」前邻字恰为「别」（特别+诊断 相邻）⇒ 否定门误触发。
+      // 本批只锁现状防将来重构误改，不修（需「别」须独立成词的边界逻辑）。
+      expect(isDiagnosisRequest('特别诊断这段'), isFalse);
+    });
+
+    // 登记（不修）：上下文信号「怎么改/哪里不好」不走否定门
+    // （「别怎么改」在 hasDiagnosisContext=true 下仍触发）——既有不对称，登记观察。
   });
 }

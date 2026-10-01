@@ -240,5 +240,28 @@ void main() {
             '若有人把中缀放开为任意通配，本用例立即变红。）',
       );
     });
+
+    // ── ADR-C116 A1：裸「难 + 空gap + 词干」误判修复 ──
+    // 问题：「不难完成」内嵌「难完成」子串（难+''+完成）⇒ 旧三重循环命中判 failed。
+    // 修复：循环内跳过 prefix=='难' && gap.isEmpty 组合（见产品代码注释）。
+    test('#A1-C116 反例：含「不难+词干」的肯定句不得判 failed', () {
+      // 修复前这三句均被内嵌「难完成/难通过/难成功」误判 failed（先红后绿）。
+      expect(parseTrainingResult('这次练习不难完成'), isNot(TrainingResult.failed));
+      expect(parseTrainingResult('这个技巧对你来说不难通过'), isNot(TrainingResult.failed));
+      expect(parseTrainingResult('整体不难成功'), isNot(TrainingResult.failed));
+    });
+
+    test('#A1-C116 正例：带中缀的真否定仍判 failed（摘除「难+空gap」不漏真失败）', () {
+      expect(parseTrainingResult('难以达标'), TrainingResult.failed); // 难+以+达标
+      expect(parseTrainingResult('未达标'), TrainingResult.failed); // 未+''+达标
+      expect(parseTrainingResult('没能完成'), TrainingResult.failed); // 没+能+完成
+      expect(parseTrainingResult('无法通过'), TrainingResult.failed); // 无+法+通过
+    });
+
+    test('#A1-C116 登记（不修）：「不得不完成」双重否定仍被误判 failed', () {
+      // 「不」+ 空gap +「完成」子串命中（index=2）⇒ 当前判 failed。
+      // 双重否定=肯定，识别需前缀前邻字逻辑，超出本批一行修复范围，登记 C 组观察。
+      expect(parseTrainingResult('不得不完成'), TrainingResult.failed);
+    });
   });
 }

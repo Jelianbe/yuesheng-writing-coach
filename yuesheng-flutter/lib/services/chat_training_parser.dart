@@ -175,6 +175,11 @@ TrainingResult? parseTrainingResult(String content) {
   // 3. 否定式归一：前缀 × 中缀 × 词干（ADR-C100 + ADR-C105 A2）
   for (final prefix in _kNegationPrefixes) {
     for (final gap in _kNegationGaps) {
+      // ADR-C116 A1：「难」+ 空gap（裸「难+词干」，如「难完成」）是描述难度而非失败；
+      // 且「不[难完成]」这类肯定句会内嵌「难完成」子串被误判 failed。
+      // 真失败一律走 以/能/法（难以达标/没能完成/无法通过），摘除该组合不漏真失败。
+      // ⚠️ 必须用简体 '难'（_kNegationPrefixes :49 真实字面量；写繁体 '難' 条件永不成立、静默失效）。
+      if (prefix == '难' && gap.isEmpty) continue;
       for (final stem in _kPositiveStems) {
         if (text.contains('$prefix$gap$stem')) return TrainingResult.failed;
       }

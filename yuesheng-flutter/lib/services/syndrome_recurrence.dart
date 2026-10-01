@@ -119,8 +119,10 @@ SyndromeRecurrence _buildRecurrence(
   var recurrences = 0;
   var wasResolved = false;
   for (final rec in records) {
-    // 之前一条已好转 → 本次出现计为复发（V1.0 原则4：同症候反复）
-    if (wasResolved) recurrences++;
+    // 之前一条已好转 → 本次出现计为复发（V1.0 原则4：同症候反复）。
+    // C116-B3：须当前条本身非 resolved 才算「再活跃」——连续两条 resolved
+    // 之间没有再活跃，不得误计复发。直接读 rec.status（勿依赖下方才计算的 isResolved）。
+    if (wasResolved && rec.status != 'resolved') recurrences++;
     final isResolved = rec.status == 'resolved';
     if (isResolved) recovered++;
     wasResolved = isResolved;

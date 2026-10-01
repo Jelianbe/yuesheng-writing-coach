@@ -617,6 +617,74 @@ void main() {
       expect(result.first.occurrences, 1);
       expect(result.first.rate, 0);
     });
+
+    // C116-B3：同症候连续两条 resolved 之间没有「再活跃」，不得计复发。
+    // 修复前口径 wasResolved 即计复发 ⇒ 第二条 resolved 被误计 1（本用例先红）。
+    test('#R5 连续两条 resolved → 不计复发（resolved→resolved 无再活跃）', () async {
+      final t = todayUtcSec();
+      final s1 = await SessionRepository(db).createBlankSession();
+      final s2 = await SessionRepository(db).createBlankSession();
+      await insertRecurrenceProblem(
+        sessionId: s1,
+        syndromeId: 'P201',
+        name: '句式节奏单一',
+        status: 'resolved',
+        createdAt: t - 3600,
+      );
+      await insertRecurrenceProblem(
+        sessionId: s2,
+        syndromeId: 'P201',
+        name: '句式节奏单一',
+        status: 'resolved',
+        createdAt: t,
+      );
+
+      final result = await GrowthService(db).getSyndromeRecurrences();
+
+      expect(result.length, 1);
+      expect(result.first.occurrences, 2);
+      expect(result.first.recovered, 2);
+      // 关键：第二条 resolved 紧跟第一条 resolved，中间无 active ⇒ 复发 0
+      expect(result.first.recurrences, 0);
+      expect(result.first.rate, 0);
+    });
+
+    // C116-B3 回归守护：active→resolved→active 仍计 1 次复发（修复不得误杀真复发）。
+    test('#R6 active→resolved→active → 计 1 次复发（真复发回归）', () async {
+      final t = todayUtcSec();
+      final s1 = await SessionRepository(db).createBlankSession();
+      final s2 = await SessionRepository(db).createBlankSession();
+      final s3 = await SessionRepository(db).createBlankSession();
+      await insertRecurrenceProblem(
+        sessionId: s1,
+        syndromeId: 'P202',
+        name: '对话跳跃',
+        status: 'active',
+        createdAt: t - 7200,
+      );
+      await insertRecurrenceProblem(
+        sessionId: s2,
+        syndromeId: 'P202',
+        name: '对话跳跃',
+        status: 'resolved',
+        createdAt: t - 3600,
+      );
+      await insertRecurrenceProblem(
+        sessionId: s3,
+        syndromeId: 'P202',
+        name: '对话跳跃',
+        status: 'active',
+        createdAt: t,
+      );
+
+      final result = await GrowthService(db).getSyndromeRecurrences();
+
+      expect(result.length, 1);
+      expect(result.first.occurrences, 3);
+      expect(result.first.recovered, 1);
+      expect(result.first.recurrences, 1);
+      expect(result.first.rate, closeTo(0.5, 1e-9));
+    });
   });
 
   group('E-1: 共享复发查询（syndrome_recurrence）', () {
