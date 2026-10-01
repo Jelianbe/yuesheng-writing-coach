@@ -348,6 +348,7 @@ const Set<String> _fewShotIntentionallyMissing = {
   'P031',
   'P032',
   'P033',
+  'P034',
 };
 
 Map<String, int> _countBy(String content, RegExp re) {

@@ -92,6 +92,7 @@ const Map<String, String> kTechniqueShortNames = {
   'T029': '过渡桥接法',
   'T030': '人设锚定法',
   'T031': '氛围构建法',
+  'T032': '动机链四问',
 };
 
 /// 技法精简名查询（真源：kTechniqueShortNames）。未知 ID 返回 null。
@@ -147,6 +148,7 @@ const Map<String, TechniqueLayer> kTechniqueLayers = {
   'T006': TechniqueLayer.character,
   'T007': TechniqueLayer.character,
   'T030': TechniqueLayer.character,
+  'T032': TechniqueLayer.character,
 };
 
 /// 五维风格坐标偏差 → 文笔层技法候选映射（首版经验值，待学员数据校准）

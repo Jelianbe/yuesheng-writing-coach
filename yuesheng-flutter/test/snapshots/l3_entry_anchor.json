@@ -1,9 +1,9 @@
 {
   "meta": {
     "note": "L3 知识库词条级行为锚点（字节级：长度 + FNV-1a 指纹）",
-    "syndromeCount": 33,
-    "techniqueCount": 31,
-    "trainingCount": 33
+    "syndromeCount": 34,
+    "techniqueCount": 32,
+    "trainingCount": 34
   },
   "syndrome": {
     "P001": {
@@ -47,8 +47,8 @@
       "fnv": "70746ef1ff6fe9ed"
     },
     "P011": {
-      "len": 1223,
-      "fnv": "646d5af3bc56fd71"
+      "len": 1420,
+      "fnv": "6200e948708c1b32"
     },
     "P012": {
       "len": 984,
@@ -63,8 +63,8 @@
       "fnv": "4cbb1cb0ad65e9e1"
     },
     "P015": {
-      "len": 1240,
-      "fnv": "58815a243f16af7e"
+      "len": 1366,
+      "fnv": "508915f40a393b33"
     },
     "P016": {
       "len": 1539,
@@ -79,12 +79,12 @@
       "fnv": "346fb6657ea6cb9"
     },
     "P019": {
-      "len": 1152,
-      "fnv": "5447951bb5df2ed9"
+      "len": 1349,
+      "fnv": "6605b8a1edf16faa"
     },
     "P020": {
-      "len": 1356,
-      "fnv": "4541090b2736923b"
+      "len": 1640,
+      "fnv": "a0beb4421f1213c"
     },
     "P021": {
       "len": 1292,
@@ -135,8 +135,12 @@
       "fnv": "3d16f38a5bfac958"
     },
     "P033": {
-      "len": 1417,
-      "fnv": "790130fb476b6dd4"
+      "len": 1412,
+      "fnv": "7a6db2ade706eaef"
+    },
+    "P034": {
+      "len": 665,
+      "fnv": "64da562b07a6c420"
     }
   },
   "technique": {
@@ -193,8 +197,8 @@
       "fnv": "2e5e76dbe6b4ae47"
     },
     "T014": {
-      "len": 533,
-      "fnv": "7542838c7b040a90"
+      "len": 780,
+      "fnv": "2435e136c2cff476"
     },
     "T015": {
       "len": 500,
@@ -253,16 +257,20 @@
       "fnv": "2f69087980f73c5a"
     },
     "T029": {
-      "len": 658,
-      "fnv": "4538c18de21aac31"
+      "len": 823,
+      "fnv": "35cbbf3f6f93df97"
     },
     "T030": {
       "len": 620,
       "fnv": "4efd379df03fbb76"
     },
     "T031": {
-      "len": 637,
-      "fnv": "21c7a05bb3c61a1"
+      "len": 642,
+      "fnv": "41ff747202534552"
+    },
+    "T032": {
+      "len": 480,
+      "fnv": "880c13a1cf70620"
     }
   },
   "training": {
@@ -291,8 +299,8 @@
       "fnv": "366abf15e1f0ce95"
     },
     "P007": {
-      "len": 809,
-      "fnv": "48855f7a4679ed8f"
+      "len": 887,
+      "fnv": "36729a31152c9709"
     },
     "P008": {
       "len": 753,
@@ -315,8 +323,8 @@
       "fnv": "2bb295eeee1e0fee"
     },
     "P013": {
-      "len": 742,
-      "fnv": "7ac69fa5cbef36a1"
+      "len": 883,
+      "fnv": "746b3f49d04a0f43"
     },
     "P014": {
       "len": 765,
@@ -331,12 +339,12 @@
       "fnv": "17fc6ab84e03e8dc"
     },
     "P017": {
-      "len": 807,
-      "fnv": "2406de85faeb1718"
+      "len": 895,
+      "fnv": "28137fcb5eb6ae7c"
     },
     "P018": {
-      "len": 761,
-      "fnv": "419cf55a25e01bc1"
+      "len": 841,
+      "fnv": "a6b0e6aae58196e"
     },
     "P019": {
       "len": 750,
@@ -395,8 +403,12 @@
       "fnv": "4c49776d07ea773f"
     },
     "P033": {
-      "len": 785,
-      "fnv": "78d8956f0a21936d"
+      "len": 780,
+      "fnv": "61a56cbe2ce0eb48"
+    },
+    "P034": {
+      "len": 516,
+      "fnv": "7252d3a74e4f979e"
     }
   }
 }
