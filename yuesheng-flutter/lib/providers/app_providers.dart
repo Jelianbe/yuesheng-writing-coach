@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/database/database.dart';
 import '../data/repositories/character_fact_repository.dart';
 import '../data/repositories/error_log_repository.dart';
+import '../data/repositories/pilot_metrics_repository.dart';
 import '../data/repositories/world_fact_repository.dart';
 import '../services/error_handler.dart';
 import '../services/setting_library_service.dart';
@@ -35,4 +36,11 @@ final settingLibraryServiceProvider = Provider<SettingLibraryService>((ref) {
     characterRepo: CharacterFactRepository(db),
     worldRepo: WorldFactRepository(db),
   );
+});
+
+/// 小白冷启动试点埋点仓库（ADR-C121，v41）。
+/// 追加式事件日志；测试可 override 内存库。
+final pilotMetricsRepositoryProvider = Provider<PilotMetricsRepository>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return PilotMetricsRepository(db);
 });

@@ -56,8 +56,10 @@ void main() {
         'setting_entry',
         'setting_link',
         'setting_tag',
+        // ADR-C121（小白冷启动试点 v41）→ 40 pilot_metric_event 试点埋点表
+        'pilot_metric_event',
       };
-      expect(tableNames.length, 27, reason: '应有 27 张业务表');
+      expect(tableNames.length, 28, reason: '应有 28 张业务表');
       for (final t in expectedTables) {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }

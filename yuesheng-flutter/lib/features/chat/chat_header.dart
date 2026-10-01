@@ -46,6 +46,9 @@ void _ignoreTierChange(String _) {}
 /// 未接线时的教练设置回调占位（P0-4c：菜单入口不随接线忽隐忽现）。
 void _ignoreCoachSettings() {}
 
+/// 未接线时的微任务入口回调占位（ADR-C121：入口不随接线忽隐忽现）。
+void _ignoreMicroTask() {}
+
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
 /// P1-6：const List 装不进运行期 palette ⇒ 改 **palette 驱动函数**，随主题翻。
 List<(AttitudeLevel, String, Color)> _attitudeOptionsFor(AppPalette p) => [
@@ -93,6 +96,9 @@ class ChatHeader extends StatelessWidget {
   /// 打开教练设置（P0-4c 方案 B：对话内快速切换保留，另供完整管理直达）
   final VoidCallback onOpenCoachSettings;
 
+  /// 打开小白冷启动微任务卡片墙（ADR-C121：常驻可达，不依赖空态欢迎）
+  final VoidCallback onOpenMicroTask;
+
   const ChatHeader({
     super.key,
     required this.currentAttitude,
@@ -107,6 +113,7 @@ class ChatHeader extends StatelessWidget {
     this.reasoningTier = reasoningTierStandard,
     this.onReasoningTierChange = _ignoreTierChange,
     this.onOpenCoachSettings = _ignoreCoachSettings,
+    this.onOpenMicroTask = _ignoreMicroTask,
   });
 
   bool get _isManuscriptEntry => entryPoint == 'manuscript';
@@ -371,9 +378,10 @@ class ChatHeader extends StatelessWidget {
           builder: (context, constraints) {
             // 左右按钮区各自贴边，不参与 Spacer 分配 ⇒ 标题恒居中；
             // 居中主体限宽 = 总宽 − 两侧按钮区 ⇒ 主引用长文本触发省略号、
-            // 永不过流、绝不把右侧「新建对话/更多」挤掉。
+            // 永不过流、绝不把右侧「写第一句/新建对话/更多」挤掉。
+            // ADR-C121：右侧新增「写第一句」⇒ 按钮区 1 左 + 3 右 = 4 区。
             const btnZone = _kBtnZoneWidth; // 单个 IconButton 触控宽近似
-            final titleMaxW = (constraints.maxWidth - btnZone * 3).clamp(
+            final titleMaxW = (constraints.maxWidth - btnZone * 4).clamp(
               0.0,
               double.infinity,
             );
@@ -499,6 +507,12 @@ class ChatHeader extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // ADR-C121：头部常驻「写第一句」微任务入口（30 秒微任务→立刻诊断）
+          IconButton(
+            icon: Icon(Icons.edit_note, color: context.palette.textPrimary),
+            tooltip: '写第一句',
+            onPressed: onOpenMicroTask,
+          ),
           // 批次 29：新建对话快捷入口（⋯ 左侧，避免进抽屉才能新建）
           IconButton(
             icon: Icon(

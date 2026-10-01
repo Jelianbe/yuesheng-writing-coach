@@ -6,12 +6,15 @@
 // MVP 范围：只处理 chat 类型消息，不实现 ChatModals 等高级特性。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
 import '../../data/repositories/diagnosis_repository.dart';
 import '../../data/repositories/app_state_repository.dart';
+import '../../data/repositories/pilot_metrics_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
@@ -30,6 +33,7 @@ import 'chat_page_sections.dart';
 import 'chat_reference_controller.dart';
 import 'chat_session_controller.dart';
 import 'chat_teaching_controller.dart';
+import 'package:writingcoach/features/onboarding/micro_task_card_wall.dart';
 import 'package:writingcoach/features/onboarding/onboarding_questionnaire.dart';
 import 'session_drawer.dart';
 
@@ -302,6 +306,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       onInputChange: setInputText,
       onToggleTaskPanel: _toggleTaskPanel,
       onOpenSessionDrawer: _openSessionDrawer,
+      onOpenMicroTask: _openMicroTaskWall,
       attitudeController: _attitudeController,
       diagnosis: _diagnosis,
       teaching: _teaching,
@@ -309,6 +314,60 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       messages: _messages,
       session: _session,
     );
+  }
+
+  // ── 小白冷启动试点（ADR-C121）：30 秒微任务卡片墙 ──
+
+  /// 打开卡片墙（header 常驻入口 / onboarding 完成自动弹出 / 空态欢迎按钮共用）。
+  void _openMicroTaskWall({String entry = 'header'}) {
+    final sessionId =
+        ref.read(sessionBootstrapProvider).valueOrNull?.sessionId ?? '';
+    unawaited(
+      _recordPilotEvent(
+        sessionId,
+        PilotEventTypes.cardWallEntered,
+        '{"entry":"$entry"}',
+      ),
+    );
+    showMicroTaskWallSheet(context, entry: entry, onSubmit: _submitMicroTask);
+  }
+
+  /// 微任务提交：文本进会话自动走既有诊断链（handleSend → 诊断注入 → 落库）。
+  Future<void> _submitMicroTask(String text, String cardId) async {
+    final sessionId =
+        ref.read(sessionBootstrapProvider).valueOrNull?.sessionId ?? '';
+    await _recordPilotEvent(
+      sessionId,
+      PilotEventTypes.microTaskSubmitted,
+      PilotSubmitPayload(card: cardId, chars: text.length).encode(),
+    );
+    await _teaching.handleSend(text, stageLabel: '正在诊断你的第一份文本…');
+  }
+
+  /// 试点埋点写入：失败静默（埋点绝不阻断教学功能）。
+  Future<void> _recordPilotEvent(
+    String sessionId,
+    String eventType, [
+    String payload = '',
+  ]) async {
+    try {
+      await ref
+          .read(pilotMetricsRepositoryProvider)
+          .recordEvent(
+            sessionId: sessionId,
+            eventType: eventType,
+            payload: payload,
+          );
+    } catch (_) {
+      // 埋点失败仅跳过，不阻断主流程
+    }
+  }
+
+  /// 问卷完成后自动弹出卡片墙（30 秒微任务→立刻诊断的最小闭环起点）。
+  Future<void> _handleOnboardingComplete(OnboardingData data) async {
+    await _messages.handleOnboardingComplete(data);
+    if (!mounted) return;
+    _openMicroTaskWall(entry: 'auto');
   }
 
   @override
@@ -341,7 +400,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
             _buildBody(chatState),
             OnboardingQuestionnaire(
               visible: bootstrap.shouldShowOnboarding,
-              onComplete: _messages.handleOnboardingComplete,
+              onComplete: _handleOnboardingComplete,
               onSkip: _messages.handleOnboardingSkip,
             ),
           ],

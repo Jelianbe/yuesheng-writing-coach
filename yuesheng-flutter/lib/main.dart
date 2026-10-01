@@ -14,9 +14,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'data/database/database.dart';
 import 'data/repositories/app_state_repository.dart';
 import 'data/repositories/chapter_repository.dart';
 import 'data/repositories/manuscript_repository.dart';
+import 'data/repositories/pilot_metrics_repository.dart';
 import 'data/repositories/volume_repository.dart';
 import 'providers/app_error_observer.dart';
 import 'providers/app_providers.dart';
@@ -99,12 +101,25 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
       final done = await AppStateRepository(db).getOnboardingCompleted();
       // 演示数据种子（SEED_DEMO）：仅演示模式注入，不阻塞 UI
       unawaited(_seedDemoIfEmpty());
+      // ADR-C121：试点埋点——每次冷启动记录 app_opened（用户级，session 记 ''）
+      unawaited(_recordAppOpened(db));
       if (!mounted) return;
       setState(() => _introDone = done);
     } catch (_) {
       // DB 初始化失败：静默放行进主壳，引导不阻断核心使用
       if (!mounted) return;
       setState(() => _introDone = true);
+    }
+  }
+
+  /// 试点 app_opened 埋点：写入失败静默（绝不阻断启动）。
+  Future<void> _recordAppOpened(AppDatabase db) async {
+    try {
+      await PilotMetricsRepository(
+        db,
+      ).recordEvent(sessionId: '', eventType: PilotEventTypes.appOpened);
+    } catch (_) {
+      // 埋点失败仅跳过
     }
   }
 

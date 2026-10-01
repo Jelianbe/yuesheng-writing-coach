@@ -16557,6 +16557,369 @@ class SettingTagsCompanion extends UpdateCompanion<SettingTag> {
   }
 }
 
+class $PilotMetricEventsTable extends PilotMetricEvents
+    with TableInfo<$PilotMetricEventsTable, PilotMetricEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PilotMetricEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eventTypeMeta = const VerificationMeta(
+    'eventType',
+  );
+  @override
+  late final GeneratedColumn<String> eventType = GeneratedColumn<String>(
+    'event_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    eventType,
+    payload,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pilot_metric_event';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PilotMetricEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('event_type')) {
+      context.handle(
+        _eventTypeMeta,
+        eventType.isAcceptableOrUnknown(data['event_type']!, _eventTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventTypeMeta);
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PilotMetricEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PilotMetricEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      eventType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_type'],
+      )!,
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PilotMetricEventsTable createAlias(String alias) {
+    return $PilotMetricEventsTable(attachedDatabase, alias);
+  }
+}
+
+class PilotMetricEvent extends DataClass
+    implements Insertable<PilotMetricEvent> {
+  final String id;
+
+  /// 会话 id；用户级事件（如 app_opened）记 ''（单用户 App，用户级语义）
+  final String sessionId;
+  final String eventType;
+
+  /// JSON payload（如 card 类型 + 字数），无则 ''
+  final String payload;
+  final int createdAt;
+  const PilotMetricEvent({
+    required this.id,
+    required this.sessionId,
+    required this.eventType,
+    required this.payload,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['event_type'] = Variable<String>(eventType);
+    map['payload'] = Variable<String>(payload);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  PilotMetricEventsCompanion toCompanion(bool nullToAbsent) {
+    return PilotMetricEventsCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      eventType: Value(eventType),
+      payload: Value(payload),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PilotMetricEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PilotMetricEvent(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      eventType: serializer.fromJson<String>(json['eventType']),
+      payload: serializer.fromJson<String>(json['payload']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'eventType': serializer.toJson<String>(eventType),
+      'payload': serializer.toJson<String>(payload),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  PilotMetricEvent copyWith({
+    String? id,
+    String? sessionId,
+    String? eventType,
+    String? payload,
+    int? createdAt,
+  }) => PilotMetricEvent(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    eventType: eventType ?? this.eventType,
+    payload: payload ?? this.payload,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PilotMetricEvent copyWithCompanion(PilotMetricEventsCompanion data) {
+    return PilotMetricEvent(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      eventType: data.eventType.present ? data.eventType.value : this.eventType,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PilotMetricEvent(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('eventType: $eventType, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, sessionId, eventType, payload, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PilotMetricEvent &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.eventType == this.eventType &&
+          other.payload == this.payload &&
+          other.createdAt == this.createdAt);
+}
+
+class PilotMetricEventsCompanion extends UpdateCompanion<PilotMetricEvent> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String> eventType;
+  final Value<String> payload;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const PilotMetricEventsCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PilotMetricEventsCompanion.insert({
+    required String id,
+    required String sessionId,
+    required String eventType,
+    this.payload = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       eventType = Value(eventType);
+  static Insertable<PilotMetricEvent> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? eventType,
+    Expression<String>? payload,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (eventType != null) 'event_type': eventType,
+      if (payload != null) 'payload': payload,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PilotMetricEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String>? eventType,
+    Value<String>? payload,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PilotMetricEventsCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      eventType: eventType ?? this.eventType,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (eventType.present) {
+      map['event_type'] = Variable<String>(eventType.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PilotMetricEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('eventType: $eventType, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -16597,6 +16960,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SettingEntriesTable settingEntries = $SettingEntriesTable(this);
   late final $SettingLinksTable settingLinks = $SettingLinksTable(this);
   late final $SettingTagsTable settingTags = $SettingTagsTable(this);
+  late final $PilotMetricEventsTable pilotMetricEvents =
+      $PilotMetricEventsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -16629,6 +16994,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     settingEntries,
     settingLinks,
     settingTags,
+    pilotMetricEvents,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -30687,6 +31053,219 @@ typedef $$SettingTagsTableProcessedTableManager =
       SettingTag,
       PrefetchHooks Function({bool manuscriptId})
     >;
+typedef $$PilotMetricEventsTableCreateCompanionBuilder =
+    PilotMetricEventsCompanion Function({
+      required String id,
+      required String sessionId,
+      required String eventType,
+      Value<String> payload,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$PilotMetricEventsTableUpdateCompanionBuilder =
+    PilotMetricEventsCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<String> eventType,
+      Value<String> payload,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$PilotMetricEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $PilotMetricEventsTable> {
+  $$PilotMetricEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PilotMetricEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PilotMetricEventsTable> {
+  $$PilotMetricEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PilotMetricEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PilotMetricEventsTable> {
+  $$PilotMetricEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get eventType =>
+      $composableBuilder(column: $table.eventType, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$PilotMetricEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PilotMetricEventsTable,
+          PilotMetricEvent,
+          $$PilotMetricEventsTableFilterComposer,
+          $$PilotMetricEventsTableOrderingComposer,
+          $$PilotMetricEventsTableAnnotationComposer,
+          $$PilotMetricEventsTableCreateCompanionBuilder,
+          $$PilotMetricEventsTableUpdateCompanionBuilder,
+          (
+            PilotMetricEvent,
+            BaseReferences<
+              _$AppDatabase,
+              $PilotMetricEventsTable,
+              PilotMetricEvent
+            >,
+          ),
+          PilotMetricEvent,
+          PrefetchHooks Function()
+        > {
+  $$PilotMetricEventsTableTableManager(
+    _$AppDatabase db,
+    $PilotMetricEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PilotMetricEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PilotMetricEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PilotMetricEventsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> eventType = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PilotMetricEventsCompanion(
+                id: id,
+                sessionId: sessionId,
+                eventType: eventType,
+                payload: payload,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sessionId,
+                required String eventType,
+                Value<String> payload = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PilotMetricEventsCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                eventType: eventType,
+                payload: payload,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PilotMetricEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PilotMetricEventsTable,
+      PilotMetricEvent,
+      $$PilotMetricEventsTableFilterComposer,
+      $$PilotMetricEventsTableOrderingComposer,
+      $$PilotMetricEventsTableAnnotationComposer,
+      $$PilotMetricEventsTableCreateCompanionBuilder,
+      $$PilotMetricEventsTableUpdateCompanionBuilder,
+      (
+        PilotMetricEvent,
+        BaseReferences<
+          _$AppDatabase,
+          $PilotMetricEventsTable,
+          PilotMetricEvent
+        >,
+      ),
+      PilotMetricEvent,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -30745,4 +31324,6 @@ class $AppDatabaseManager {
       $$SettingLinksTableTableManager(_db, _db.settingLinks);
   $$SettingTagsTableTableManager get settingTags =>
       $$SettingTagsTableTableManager(_db, _db.settingTags);
+  $$PilotMetricEventsTableTableManager get pilotMetricEvents =>
+      $$PilotMetricEventsTableTableManager(_db, _db.pilotMetricEvents);
 }

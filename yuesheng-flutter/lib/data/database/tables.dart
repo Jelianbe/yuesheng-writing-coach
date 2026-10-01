@@ -938,3 +938,32 @@ class SettingTags extends Table {
     {manuscriptId, entityKind, entityId, tag},
   ];
 }
+
+/// ============================================================
+/// 18. pilot_metric_event — 小白冷启动试点埋点事件（ADR-C121 v41）
+/// 会话/用户级（session_id 维度，用户级事件 session_id 记 ''），
+/// 追加式事件日志，供 C121-2 验收读数离线计算三指标：
+///   30 秒产出率 / 可诊断率 / 二轮留存
+/// 事件类型：card_wall_entered · micro_task_submitted · app_opened
+///   （可诊断率由 diagnosis_results 按会话 + 时间关联，不在此表）
+/// 试点批次专用；正式设计批评估后决定去留（不承诺长期保留）。
+/// ============================================================
+@DataClassName('PilotMetricEvent')
+class PilotMetricEvents extends Table {
+  @override
+  String get tableName => 'pilot_metric_event';
+
+  TextColumn get id => text()();
+
+  /// 会话 id；用户级事件（如 app_opened）记 ''（单用户 App，用户级语义）
+  TextColumn get sessionId => text()();
+  TextColumn get eventType => text()();
+
+  /// JSON payload（如 card 类型 + 字数），无则 ''
+  TextColumn get payload => text().withDefault(const Constant(''))();
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

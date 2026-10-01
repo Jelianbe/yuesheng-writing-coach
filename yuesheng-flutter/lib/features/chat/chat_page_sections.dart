@@ -40,6 +40,9 @@ class ChatMessageSection extends ConsumerWidget {
   /// P1-6：活跃问题（自主练习的候选症候，反向漏斗）
   final List<ActiveProblemView> activeProblems;
 
+  /// ADR-C121：空态欢迎「写第一句 · 30 秒微任务」入口回调
+  final VoidCallback onMicroTask;
+
   const ChatMessageSection({
     super.key,
     required this.chatState,
@@ -50,6 +53,7 @@ class ChatMessageSection extends ConsumerWidget {
     required this.reference,
     required this.messages,
     required this.activeProblems,
+    required this.onMicroTask,
   });
 
   @override
@@ -91,14 +95,20 @@ class ChatMessageSection extends ConsumerWidget {
       onPartialAgreementSubmit: messages.handlePartialAgreementSubmit,
       onPartialAgreementSkip: messages.handlePartialAgreementSkip,
       // 空态 → 欢迎态（对齐 RN messages.length===0 → ChatWelcome）
-      emptyWidget: Center(
-        child: ChatWelcome(
-          onStartWriting: () => context.go(AppRoutes.bookshelf),
-          // P1-6：自主练习入口（自选症候 × 类型 × 难度）——#5 起唯一实现在
-          // chat_self_practice.dart（与活跃问题面板页脚共享，不双 copy）
-          onSelfPractice: () =>
-              openSelfPracticeSheet(context, ref, activeProblems),
-        ),
+      emptyWidget: _buildEmptyWidget(context, ref),
+    );
+  }
+
+  /// 空态欢迎（ADR-C121「写第一句 · 30 秒微任务」置首 + 去书架 + 自主练习）。
+  Widget _buildEmptyWidget(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: ChatWelcome(
+        onMicroTask: onMicroTask,
+        onStartWriting: () => context.go(AppRoutes.bookshelf),
+        // P1-6：自主练习入口（自选症候 × 类型 × 难度）——#5 起唯一实现在
+        // chat_self_practice.dart（与活跃问题面板页脚共享，不双 copy）
+        onSelfPractice: () =>
+            openSelfPracticeSheet(context, ref, activeProblems),
       ),
     );
   }

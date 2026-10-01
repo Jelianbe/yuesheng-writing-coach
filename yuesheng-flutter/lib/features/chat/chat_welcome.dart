@@ -19,13 +19,21 @@ const String _welcomeTitle = '你好，我是月笙';
 const String _welcomeSubtitle = '你的专属写作教练，随时帮你诊断和提升写作';
 
 class ChatWelcome extends StatelessWidget {
-  const ChatWelcome({super.key, this.onStartWriting, this.onSelfPractice});
+  const ChatWelcome({
+    super.key,
+    this.onStartWriting,
+    this.onSelfPractice,
+    this.onMicroTask,
+  });
 
   /// 批次62：空态行动引导——「去书架写一写」回调（null 时不显示按钮）
   final VoidCallback? onStartWriting;
 
   /// P1-6：空态行动引导——「自主练习」回调（null 时不显示按钮）
   final VoidCallback? onSelfPractice;
+
+  /// ADR-C121：空态行动引导——「写第一句 · 30 秒微任务」回调（null 时不显示）
+  final VoidCallback? onMicroTask;
 
   @override
   Widget build(BuildContext context) {
@@ -57,13 +65,24 @@ class ChatWelcome extends StatelessWidget {
     );
   }
 
-  /// 空态行动按钮（批次62「去书架写一写」+ P1-6「自主练习」）。
+  /// 空态行动按钮（ADR-C121「写第一句」置首 + 批次62「去书架」+ P1-6「自主练习」）。
   Widget _buildActions(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (onStartWriting != null) ...[
+        if (onMicroTask != null) ...[
           const SizedBox(height: AppSpacing.lg),
+          FilledButton(
+            onPressed: onMicroTask,
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+              foregroundColor: context.palette.onPrimary,
+            ),
+            child: const Text('写第一句 · 30 秒微任务'),
+          ),
+        ],
+        if (onStartWriting != null) ...[
+          const SizedBox(height: AppSpacing.sm),
           FilledButton(
             onPressed: onStartWriting,
             style: FilledButton.styleFrom(
