@@ -74,22 +74,7 @@ void main() {
     expect(find.text('自主练习'), findsNothing);
   });
 
-  testWidgets('#8 ADR-C121 传 onMicroTask → 显示「写第一句 · 30 秒微任务」并可点击', (
-    tester,
-  ) async {
-    var tapped = false;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: ChatWelcome(onMicroTask: () => tapped = true)),
-      ),
-    );
-
-    expect(find.text('写第一句 · 30 秒微任务'), findsOneWidget);
-    await tester.tap(find.text('写第一句 · 30 秒微任务'));
-    expect(tapped, isTrue);
-  });
-
-  testWidgets('#9 ADR-C121 未传 onMicroTask → 不显示按钮', (tester) async {
+  testWidgets('#8 ADR-C122 卡片墙退役 → 无「写第一句 · 30 秒微任务」按钮', (tester) async {
     await tester.pumpWidget(buildWelcome());
 
     expect(find.text('写第一句 · 30 秒微任务'), findsNothing);

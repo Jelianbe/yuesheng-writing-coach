@@ -51,7 +51,14 @@ class ChatPageBody extends ConsumerWidget {
   final ValueChanged<String> onInputChange;
   final VoidCallback onToggleTaskPanel;
   final VoidCallback onOpenSessionDrawer;
-  final VoidCallback onOpenMicroTask;
+
+  /// ADR-C122：➕ 面板「纯新手模式」回调 + novice 期间发送通道。
+  final VoidCallback onNoviceMode;
+  final ValueChanged<String>? onSendOverride;
+
+  /// ADR-C122：纯新手模式注入后强制滚动到底（单帧消费）
+  final bool forceScrollToBottom;
+
   final ChatAttitudeController attitudeController;
   final ChatDiagnosisController diagnosis;
   final ChatTeachingController teaching;
@@ -74,7 +81,9 @@ class ChatPageBody extends ConsumerWidget {
     required this.onInputChange,
     required this.onToggleTaskPanel,
     required this.onOpenSessionDrawer,
-    required this.onOpenMicroTask,
+    required this.onNoviceMode,
+    this.onSendOverride,
+    this.forceScrollToBottom = false,
     required this.attitudeController,
     required this.diagnosis,
     required this.teaching,
@@ -115,8 +124,7 @@ class ChatPageBody extends ConsumerWidget {
             reference: reference,
             messages: messages,
             activeProblems: activeProblems,
-            // ADR-C121：空态欢迎「写第一句」入口（与头部常驻入口同回调）
-            onMicroTask: onOpenMicroTask,
+            forceScrollToBottom: forceScrollToBottom,
           ),
         ),
         if (chatState.error != null) ChatErrorBar(chatState: chatState),
@@ -134,7 +142,6 @@ class ChatPageBody extends ConsumerWidget {
       activePersonaName: activePersonaName,
       suggestion: attitudeSuggestion,
       onOpenSessionDrawer: onOpenSessionDrawer,
-      onOpenMicroTask: onOpenMicroTask,
       attitudeController: attitudeController,
       session: session,
       reference: reference,
@@ -157,6 +164,9 @@ class ChatPageBody extends ConsumerWidget {
       onInputChange: onInputChange,
       teaching: teaching,
       reference: reference,
+      // ADR-C122：纯新手模式入口 + novice 期间发送通道（null = 走 handleSend）
+      onNoviceMode: onNoviceMode,
+      onSendOverride: onSendOverride,
       thinkingEnabled: isThinkingEnabled(tier),
       reasoningTierLabel: reasoningTierOf(tier).label,
       onThinkingToggle: (on) => _applyTierWrite(
@@ -191,7 +201,6 @@ class ChatHeaderSection extends StatelessWidget {
   final String? activePersonaName;
   final AttitudeSuggestion? suggestion;
   final VoidCallback onOpenSessionDrawer;
-  final VoidCallback onOpenMicroTask;
   final ChatAttitudeController attitudeController;
   final ChatSessionController session;
   final ChatReferenceController reference;
@@ -208,7 +217,6 @@ class ChatHeaderSection extends StatelessWidget {
     required this.activePersonaName,
     required this.suggestion,
     required this.onOpenSessionDrawer,
-    required this.onOpenMicroTask,
     required this.attitudeController,
     required this.session,
     required this.reference,
@@ -230,8 +238,6 @@ class ChatHeaderSection extends StatelessWidget {
           onOpenCoachSettings: () => context.push(AppRoutes.settings),
           // 批次 29：头部 ⋯ 左侧新建对话快捷入口
           onNewSession: session.handleCreateSession,
-          // ADR-C121：头部常驻「写第一句」微任务入口（不依赖空态欢迎）
-          onOpenMicroTask: onOpenMicroTask,
           primaryRefTitle: primaryRefTitle,
           activePersonaName: activePersonaName,
           onTapPrimaryRef: reference.handleOpenReferences,

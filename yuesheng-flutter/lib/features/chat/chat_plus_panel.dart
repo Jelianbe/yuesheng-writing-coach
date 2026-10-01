@@ -25,6 +25,9 @@ class ChatPlusPanel extends StatelessWidget {
   /// 上传作品项回调；null 时不渲染该项。
   final VoidCallback? onUpload;
 
+  /// ADR-C122：纯新手模式项回调（取代 onboarding 问卷）；null 时不渲染。
+  final VoidCallback? onNoviceMode;
+
   /// 思考开关当前状态（true = 档位非「关闭思考」）。
   final bool thinkingEnabled;
 
@@ -37,6 +40,7 @@ class ChatPlusPanel extends StatelessWidget {
   const ChatPlusPanel({
     super.key,
     this.onUpload,
+    this.onNoviceMode,
     this.thinkingEnabled = true,
     this.reasoningTierLabel = '标准',
     this.onThinkingToggle,
@@ -44,7 +48,11 @@ class ChatPlusPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasDivider = onUpload != null && onThinkingToggle != null;
+    // ADR-C122：面板项顺序 = 上传作品 / 纯新手模式 / 思考开关；
+    // 相邻项之间渲染分隔线（新增项也参与分隔判定）。
+    final hasNoviceDivider = onUpload != null && onNoviceMode != null;
+    final hasThinkingDivider =
+        (onUpload != null || onNoviceMode != null) && onThinkingToggle != null;
     return Container(
       width: width,
       decoration: BoxDecoration(
@@ -67,26 +75,39 @@ class ChatPlusPanel extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              if (onUpload != null)
-                _PanelActionRow(
-                  icon: Icons.upload_file,
-                  title: '上传作品',
-                  subtitle: '导入稿件，开始诊断',
-                  onTap: onUpload!,
-                ),
-              if (hasDivider) const _PanelDivider(),
-              if (onThinkingToggle != null)
-                _PanelThinkingRow(
-                  enabled: thinkingEnabled,
-                  tierLabel: reasoningTierLabel,
-                  onChanged: onThinkingToggle,
-                ),
-            ],
+            children: _buildRows(hasNoviceDivider, hasThinkingDivider),
           ),
         ),
       ),
     );
+  }
+
+  /// 面板项列表（拆出守 R-019 函数 ≤50 行）。
+  List<Widget> _buildRows(bool hasNoviceDivider, bool hasThinkingDivider) {
+    return [
+      if (onUpload != null)
+        _PanelActionRow(
+          icon: Icons.upload_file,
+          title: '上传作品',
+          subtitle: '导入稿件，开始诊断',
+          onTap: onUpload!,
+        ),
+      if (hasNoviceDivider) const _PanelDivider(),
+      if (onNoviceMode != null)
+        _PanelActionRow(
+          icon: Icons.auto_awesome,
+          title: '纯新手模式',
+          subtitle: 'AI 引导 · 从零开始',
+          onTap: onNoviceMode!,
+        ),
+      if (hasThinkingDivider) const _PanelDivider(),
+      if (onThinkingToggle != null)
+        _PanelThinkingRow(
+          enabled: thinkingEnabled,
+          tierLabel: reasoningTierLabel,
+          onChanged: onThinkingToggle,
+        ),
+    ];
   }
 }
 

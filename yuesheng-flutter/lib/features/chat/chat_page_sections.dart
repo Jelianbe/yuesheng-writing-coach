@@ -40,8 +40,8 @@ class ChatMessageSection extends ConsumerWidget {
   /// P1-6：活跃问题（自主练习的候选症候，反向漏斗）
   final List<ActiveProblemView> activeProblems;
 
-  /// ADR-C121：空态欢迎「写第一句 · 30 秒微任务」入口回调
-  final VoidCallback onMicroTask;
+  /// ADR-C122：纯新手模式注入后强制滚动到底（单帧消费）
+  final bool forceScrollToBottom;
 
   const ChatMessageSection({
     super.key,
@@ -53,7 +53,7 @@ class ChatMessageSection extends ConsumerWidget {
     required this.reference,
     required this.messages,
     required this.activeProblems,
-    required this.onMicroTask,
+    this.forceScrollToBottom = false,
   });
 
   @override
@@ -64,6 +64,7 @@ class ChatMessageSection extends ConsumerWidget {
       streamingContent: chatState.streamingContent,
       streamStageLabel: chatState.streamStageLabel,
       failedMessageIds: chatState.failedMessageIds,
+      forceScrollToBottom: forceScrollToBottom,
       onRetry: messages.handleRetry,
       onDelete: messages.handleDelete,
       activePracticeTask: practiceState.activePracticeTask,
@@ -99,11 +100,10 @@ class ChatMessageSection extends ConsumerWidget {
     );
   }
 
-  /// 空态欢迎（ADR-C121「写第一句 · 30 秒微任务」置首 + 去书架 + 自主练习）。
+  /// 空态欢迎（ADR-C122：卡片墙退役后，仅保留去书架 + 自主练习）。
   Widget _buildEmptyWidget(BuildContext context, WidgetRef ref) {
     return Center(
       child: ChatWelcome(
-        onMicroTask: onMicroTask,
         onStartWriting: () => context.go(AppRoutes.bookshelf),
         // P1-6：自主练习入口（自选症候 × 类型 × 难度）——#5 起唯一实现在
         // chat_self_practice.dart（与活跃问题面板页脚共享，不双 copy）
@@ -195,6 +195,11 @@ class ChatComposerSection extends StatelessWidget {
   final String reasoningTierLabel;
   final ValueChanged<bool> onThinkingToggle;
 
+  /// ADR-C122：➕ 面板「纯新手模式」回调 + novice 期间发送通道
+  /// （onSendOverride 非 null 时优先于 teaching.handleSend）。
+  final VoidCallback onNoviceMode;
+  final ValueChanged<String>? onSendOverride;
+
   const ChatComposerSection({
     super.key,
     required this.inputText,
@@ -206,6 +211,8 @@ class ChatComposerSection extends StatelessWidget {
     required this.thinkingEnabled,
     required this.reasoningTierLabel,
     required this.onThinkingToggle,
+    required this.onNoviceMode,
+    this.onSendOverride,
   });
 
   @override
@@ -215,10 +222,11 @@ class ChatComposerSection extends StatelessWidget {
       input: inputText,
       isStreaming: isStreaming,
       onInputChange: onInputChange,
-      onSend: teaching.handleSend,
+      onSend: onSendOverride ?? teaching.handleSend,
       onStop: teaching.cancelGeneration,
       onUploadFile: reference.handleUploadFile,
       onMention: reference.handleMention,
+      onNoviceMode: onNoviceMode,
       thinkingEnabled: thinkingEnabled,
       reasoningTierLabel: reasoningTierLabel,
       onThinkingToggle: onThinkingToggle,

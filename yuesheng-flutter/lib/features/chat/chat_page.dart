@@ -12,9 +12,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
+import '../../data/database/database.dart';
 import '../../data/repositories/diagnosis_repository.dart';
 import '../../data/repositories/app_state_repository.dart';
-import '../../data/repositories/pilot_metrics_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
@@ -33,8 +33,7 @@ import 'chat_page_sections.dart';
 import 'chat_reference_controller.dart';
 import 'chat_session_controller.dart';
 import 'chat_teaching_controller.dart';
-import 'package:writingcoach/features/onboarding/micro_task_card_wall.dart';
-import 'package:writingcoach/features/onboarding/onboarding_questionnaire.dart';
+import 'package:writingcoach/features/onboarding/novice_mode_guide.dart';
 import 'session_drawer.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -76,6 +75,20 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
 
   bool _showTaskPanel = false;
 
+  /// ADR-C122：纯新手模式激活态（➕ → 纯新手模式 → 学员回答解析期间）。
+  /// 激活期间学员发送走本地 novice 通道（不调 LLM），解析完成或超限后复位。
+  bool _noviceActive = false;
+
+  /// ADR-C122：novice 追问轮数（达到 kNoviceMaxRetries 后按默认值落库兜底）。
+  int _noviceRetries = 0;
+
+  /// 强制滚底的单帧 flag（build 读取后立即清除，保证 MessageList 下一帧
+  /// 收到 true 并滚到底）。两条强意图路径会设置：
+  ///   1. ADR-C122 novice 注入（用户点「开始引导」/提交回答触发）；
+  ///   2. 会话切换（抽屉选会话/新建/相关对话跳转/删除兜底）——切到等长或
+  ///      更短会话时旧的「消息长度增长」条件不成立，必须靠此 flag 强滚到底。
+  bool _forceScrollRequested = false;
+
   /// 批次 18 活跃问题面板：当前会话活跃问题列表（对齐 RN activeProblems）
   List<ActiveProblemView> _activeProblems = [];
 
@@ -83,6 +96,11 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
 
   /// B20：最近一次发起的消息加载目标会话 ID；快速切换会话时仅最新回调可写入。
   String? _loadingSessionId;
+
+  /// 最近一次 bootstrap 就绪的会话 ID；用于判定「是否真的切换了会话」。
+  /// 同会话 refresh（novice 落库后 refresh / reloadMessages 同会话刷新）
+  /// 不会改变它，故不设滚底 flag（B18 不劫持常规刷新）。
+  String? _lastBootstrapSessionId;
 
   // ── R-019 真分解：动作控制器（经 ChatPageHost 注入）──
   late final ChatTeachingController _teaching = ChatTeachingController(this);
@@ -246,13 +264,13 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       if (next != null && next.isNotEmpty) _session.consumePendingSession(next);
     });
 
-    // bootstrap 完成后加载已有消息
+    // bootstrap 完成后加载已有消息（ADR-C122：问卷退役，不再等待问卷）
     ref.listen<AsyncValue<SessionBootstrapState>>(sessionBootstrapProvider, (
       previous,
       next,
     ) {
       final bootstrap = next.valueOrNull;
-      if (bootstrap != null && !bootstrap.shouldShowOnboarding) {
+      if (bootstrap != null) {
         _onBootstrapReady(bootstrap);
       }
     });
@@ -261,6 +279,11 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   /// bootstrap 就绪：加载态度/引用/会话列表，回读消息并恢复评估报告
   void _onBootstrapReady(SessionBootstrapState bootstrap) {
     final sessionId = bootstrap.sessionId;
+    // 仅当会话真的变了才在下一帧强滚底。首次加载（_lastBootstrapSessionId
+    // 为 null，视为切换）亦无害：旧消息列表为空，长度 0→N 的常规分支本就会
+    // 滚到底，强 flag 不改变首屏落点。
+    final isSessionSwitched = _lastBootstrapSessionId != sessionId;
+    _lastBootstrapSessionId = sessionId;
     _attitudeController.loadAttitude(sessionId);
     _loadTeachingMode();
     _reference.loadPrimaryRefTitle(); // 头部小字：当前主引用书名
@@ -273,6 +296,10 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     sessionRepo.listMessages(sessionId).then((messages) {
       if (!mounted) return;
       if (_loadingSessionId != sessionId) return;
+      // 与会话消息写入同一同步块设 flag（无 await 间隙，避免其他 rebuild
+      // 提前单帧消费）。切到等长/更短会话时长度不增，MessageList 靠
+      // 「首条 sessionId 不同 = 整体替换」分支识别并强滚到底。
+      if (isSessionSwitched) _forceScrollRequested = true;
       ref.read(chatStoreProvider.notifier).setMessages(messages);
     });
   }
@@ -291,7 +318,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   }
 
   /// bootstrap 就绪后的主体装配（渲染树见 chat_page_body.dart）
-  Widget _buildBody(ChatState chatState) {
+  Widget _buildBody(ChatState chatState, bool scrollRequested) {
     return ChatPageBody(
       chatState: chatState,
       attitude: _attitude,
@@ -306,7 +333,10 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       onInputChange: setInputText,
       onToggleTaskPanel: _toggleTaskPanel,
       onOpenSessionDrawer: _openSessionDrawer,
-      onOpenMicroTask: _openMicroTaskWall,
+      // ADR-C122：纯新手模式（➕ 面板项）+ novice 期间发送走本地通道
+      onNoviceMode: _startNoviceMode,
+      onSendOverride: _noviceActive ? _handleNoviceAnswer : null,
+      forceScrollToBottom: scrollRequested,
       attitudeController: _attitudeController,
       diagnosis: _diagnosis,
       teaching: _teaching,
@@ -316,64 +346,130 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     );
   }
 
-  // ── 小白冷启动试点（ADR-C121）：30 秒微任务卡片墙 ──
+  // ── ADR-C122：纯新手模式（取代 onboarding 问卷 + 卡片墙）──
 
-  /// 打开卡片墙（header 常驻入口 / onboarding 完成自动弹出 / 空态欢迎按钮共用）。
-  void _openMicroTaskWall({String entry = 'header'}) {
-    final sessionId =
-        ref.read(sessionBootstrapProvider).valueOrNull?.sessionId ?? '';
-    unawaited(
-      _recordPilotEvent(
-        sessionId,
-        PilotEventTypes.cardWallEntered,
-        '{"entry":"$entry"}',
+  /// 开始纯新手模式：固定确认弹窗 → 确认后插入固定首条消息
+  /// （AI 主动自我介绍 + 主动询问三字段），激活 novice 解析态。
+  Future<void> _startNoviceMode() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(kNoviceModeDialogTitle),
+        content: const Text(kNoviceModeDialogContent),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('开始引导'),
+          ),
+        ],
       ),
     );
-    showMicroTaskWallSheet(context, entry: entry, onSubmit: _submitMicroTask);
+    if (ok != true || !mounted) return;
+    debugPrint('[C122] _startNoviceMode ok=true, waiting bootstrap future');
+    // 等 bootstrap 就绪再继续：首次 read 时异步 provider 可能仍在加载，
+    // valueOrNull 会静默返回 null（真机：弹窗关闭但首条消息不出现）。
+    final bootstrap = await ref.read(sessionBootstrapProvider.future);
+    debugPrint('[C122] bootstrap ready: ${bootstrap.sessionId}');
+    if (!mounted) return;
+    // 先激活 novice 态（setState 触发 rebuild，onSendOverride 生效）
+    // 再注入首条消息——避免 build 快照在激活前读到 null override
+    setState(() {
+      _noviceActive = true;
+      _noviceRetries = 0;
+    });
+    debugPrint('[C122] novice active, injecting first message');
+    await _injectAssistantMessage(kNoviceModeFirstMessage);
+    debugPrint('[C122] first message injected');
   }
 
-  /// 微任务提交：文本进会话自动走既有诊断链（handleSend → 诊断注入 → 落库）。
-  Future<void> _submitMicroTask(String text, String cardId) async {
-    final sessionId =
-        ref.read(sessionBootstrapProvider).valueOrNull?.sessionId ?? '';
-    await _recordPilotEvent(
-      sessionId,
-      PilotEventTypes.microTaskSubmitted,
-      PilotSubmitPayload(card: cardId, chars: text.length).encode(),
-    );
-    await _teaching.handleSend(text, stageLabel: '正在诊断你的第一份文本…');
-  }
+  /// novice 期间学员发送：本地解析三字段 → 落库（复用 onboarding_service
+  /// 三步迁移）→ 插入固定分支引导；解析不完整 → 固定追问（有上限）。
+  Future<void> _handleNoviceAnswer(String text) async {
+    final bootstrap = await ref.read(sessionBootstrapProvider.future);
+    if (!mounted) return;
+    // 学员回答先落库（user 消息，保证会话上下文连续）
+    final repo = SessionRepository(ref.read(appDatabaseProvider));
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final userId = await repo.addMessage(bootstrap.sessionId, 'user', text);
+    ref
+        .read(chatStoreProvider.notifier)
+        .addMessage(
+          Message(
+            id: userId,
+            sessionId: bootstrap.sessionId,
+            role: 'user',
+            content: text,
+            timestamp: now,
+            messageType: 'chat',
+          ),
+        );
 
-  /// 试点埋点写入：失败静默（埋点绝不阻断教学功能）。
-  Future<void> _recordPilotEvent(
-    String sessionId,
-    String eventType, [
-    String payload = '',
-  ]) async {
-    try {
-      await ref
-          .read(pilotMetricsRepositoryProvider)
-          .recordEvent(
-            sessionId: sessionId,
-            eventType: eventType,
-            payload: payload,
-          );
-    } catch (_) {
-      // 埋点失败仅跳过，不阻断主流程
+    if (isNoviceAnswerComplete(text)) {
+      await _commitNoviceData(bootstrap.sessionId, text);
+      final data = buildNoviceOnboardingData(text);
+      final guide = isBeginnerGuide(data.proficiency)
+          ? kNoviceModeBeginnerGuide
+          : kNoviceModeAdvancedGuide;
+      setState(() => _noviceActive = false);
+      await _injectAssistantMessage(guide);
+    } else if (_noviceRetries < kNoviceMaxRetries) {
+      setState(() => _noviceRetries++);
+      await _injectAssistantMessage(kNoviceModeFollowUpMessage);
+    } else {
+      // 两次追问仍无法识别 → 默认值落库 + 兜底引导（不让学员卡死）
+      await _commitNoviceData(bootstrap.sessionId, text);
+      setState(() => _noviceActive = false);
+      await _injectAssistantMessage(kNoviceModeFallbackGuide);
     }
   }
 
-  /// 问卷完成后自动弹出卡片墙（30 秒微任务→立刻诊断的最小闭环起点）。
-  Future<void> _handleOnboardingComplete(OnboardingData data) async {
-    await _messages.handleOnboardingComplete(data);
+  /// 落库 + 刷新 bootstrap（复用问卷同款三步迁移；隐私告知由
+  /// ChatMessagesController.maybeShowPrivacyNotice 兜底）。
+  Future<void> _commitNoviceData(String sessionId, String text) async {
+    final data = buildNoviceOnboardingData(text);
+    await ref.read(onboardingServiceProvider).submitOnboarding(sessionId, data);
+    await ref.read(sessionBootstrapProvider.notifier).refresh();
+    await _messages.maybeShowPrivacyNotice();
+  }
+
+  /// 插入一条 assistant 固定消息（DB 落库 + 内存追加即时渲染）。
+  /// 注入前设置强制滚底 flag（单帧消费：下一帧 build 读取后清除）——
+  /// novice 注入是用户主动触发的强意图，必须立即可见。
+  Future<void> _injectAssistantMessage(String content) async {
+    final bootstrap = await ref.read(sessionBootstrapProvider.future);
     if (!mounted) return;
-    _openMicroTaskWall(entry: 'auto');
+    final repo = SessionRepository(ref.read(appDatabaseProvider));
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final id = await repo.addMessage(bootstrap.sessionId, 'assistant', content);
+    if (!mounted) return;
+    // 与 store 更新同一同步块：避免 await 间隙内其他 rebuild 提前消费 flag
+    _forceScrollRequested = true;
+    ref
+        .read(chatStoreProvider.notifier)
+        .addMessage(
+          Message(
+            id: id,
+            sessionId: bootstrap.sessionId,
+            role: 'assistant',
+            content: content,
+            timestamp: now,
+            messageType: 'chat',
+          ),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     final bootstrapAsync = ref.watch(sessionBootstrapProvider);
     final chatState = ref.watch(chatStoreProvider);
+    // 单帧消费强制滚底 flag（读取后立即清除；本帧 MessageList 的
+    // didUpdateWidget 会收到 true 并滚到底）。覆盖 novice 注入与会话切换两条路径。
+    final scrollRequested = _forceScrollRequested;
+    _forceScrollRequested = false;
     _registerListeners();
     _consumeInitialPendingSession();
 
@@ -395,16 +491,8 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       body: bootstrapAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => ChatBootstrapErrorView(error: error),
-        data: (bootstrap) => Stack(
-          children: [
-            _buildBody(chatState),
-            OnboardingQuestionnaire(
-              visible: bootstrap.shouldShowOnboarding,
-              onComplete: _handleOnboardingComplete,
-              onSkip: _messages.handleOnboardingSkip,
-            ),
-          ],
-        ),
+        data: (bootstrap) =>
+            Stack(children: [_buildBody(chatState, scrollRequested)]),
       ),
     );
   }

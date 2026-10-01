@@ -15,7 +15,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../config/app_motion.dart';
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../widgets/yue_sheet.dart';
@@ -112,6 +111,13 @@ class MessageList extends ConsumerStatefulWidget {
   /// 「保存到文件」：透传给 MessageBubble 操作区（批次 14）
   final void Function(Message message)? onSaveToFile;
 
+  /// ADR-C122：纯新手模式注入（首条/追问/引导）后强制滚动到底。
+  /// 用户在列表中部时，B18「不劫持」会让 assistant 追加不滚——新手
+  /// 引导是用户主动触发的强意图（点「开始引导」/提交回答），必须
+  /// 让新消息立即可见，否则用户以为没反应。单帧消费（ChatPage 在读
+  /// 取后立即清 flag），不改变其他 assistant 追加行为。
+  final bool forceScrollToBottom;
+
   const MessageList({
     super.key,
     required this.messages,
@@ -122,6 +128,7 @@ class MessageList extends ConsumerStatefulWidget {
     this.onRetry,
     this.onDelete,
     this.activePracticeTask,
+    this.forceScrollToBottom = false,
     this.trainingResult,
     this.isPracticeSubmitting = false,
     this.onSubmitPractice,
@@ -335,7 +342,19 @@ class _MessageListState extends ConsumerState<MessageList> {
               m.role == 'user' &&
               !oldWidget.messages.any((om) => om.id == m.id),
         );
-    if (hasNewUserMessage) {
+    // 强制滚底（单帧 flag）：两条强意图路径——ADR-C122 新手注入、会话切换。
+    // 「不劫持」仅适用于常规流式/assistant 追加。会话切换可能切到等长或更短
+    // 的会话（长度不增），故除「长度增长」外再补「整体替换」分支：新旧首条
+    // 消息 sessionId 不同即视为整个列表被换成新会话，必须强滚到底，否则用户
+    // 停在旧会话滚动位置、看不到新会话末条。切到空会话无可滚内容，无需处理。
+    final hasNewForcedMessage =
+        widget.forceScrollToBottom &&
+        (widget.messages.length > oldWidget.messages.length ||
+            (widget.messages.isNotEmpty &&
+                oldWidget.messages.isNotEmpty &&
+                widget.messages.first.sessionId !=
+                    oldWidget.messages.first.sessionId));
+    if (hasNewUserMessage || hasNewForcedMessage) {
       _scrollToBottom();
     } else if ((oldWidget.messages.length != widget.messages.length ||
             oldWidget.streamingContent != widget.streamingContent) &&
@@ -351,18 +370,35 @@ class _MessageListState extends ConsumerState<MessageList> {
     return pos.pixels >= pos.maxScrollExtent - 80;
   }
 
+  /// 强意图滚底（novice 注入 / 会话切换）。
+  ///
+  /// 真机实测（2026-10-02 emulator-5554 logcat）：全新挂载的 ListView.builder
+  /// 首帧只布局了视口+缓存区的 item，[ScrollPosition.maxScrollExtent] 被严重低估
+  /// （实测 max=1370，而真实底部=3536）。若直接 animateTo(被低估的 max)，动画锁死
+  /// 旧目标 1370，滚动途中 sliver 补建尾部 item 使真实 max 涨到 3536，动画却已在
+  /// 1370 结束 → 用户停在半路（约 2 屏高），看不到末条。
+  ///
+  /// 修复：用瞬时 jumpTo(max) 强制 sliver 围绕该 offset 补建尾部 item、暴露真实
+  /// extent，下一帧复校 max——若因补建而增大则再 jumpTo，直到 max 收敛（pixels≈max）。
+  /// bounded 重试（≤6 帧）防异常不收敛死循环。
   void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _settleAtBottom(0));
+  }
+
+  void _settleAtBottom(int attempt) {
+    if (!mounted || !_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final target = pos.maxScrollExtent;
+    pos.jumpTo(target);
+    // jumpTo 触发下一次 layout，sliver 补建尾部 item 后 maxScrollExtent 可能继续变化
+    // （增大=尾部补建；减小=顶部 item 被回收后重估）。下一帧复校，偏移超 1px 则再跳，
+    // 直到 max 稳定（收敛）。bounded ≤6 帧防异常不收敛。
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          // 批次6（6.1）：prefers-reduced-motion 时归零动画时长
-          // 批次69：动效节奏统一——时长/曲线收敛到 AppMotion 令牌
-          duration: MediaQuery.disableAnimationsOf(context)
-              ? Duration.zero
-              : AppMotion.durationStandard,
-          curve: AppMotion.curveFade,
-        );
+      if (!mounted || !_scrollController.hasClients) return;
+      final shifted =
+          (_scrollController.position.maxScrollExtent - target).abs() > 1.0;
+      if (shifted && attempt < 6) {
+        _settleAtBottom(attempt + 1);
       }
     });
   }
@@ -375,6 +411,13 @@ class _MessageListState extends ConsumerState<MessageList> {
 
   @override
   Widget build(BuildContext context) {
+    // 会话切换经 bootstrap refresh 会先进入 loading 帧（MessageList 被卸载），
+    // 待新会话消息就绪后 MessageList 是「全新挂载」——didUpdateWidget 不触发，
+    // 而 ListView 默认停在顶部。forceScrollToBottom 是单帧强意图（仅 novice 注入 /
+    // 会话切换设置），首帧挂载同样要滚到底，否则切到等长/更短会话时用户停在顶部。
+    if (widget.forceScrollToBottom && widget.messages.isNotEmpty) {
+      _scrollToBottom();
+    }
     final renderItems = _buildRenderItems();
     final hasThinkingIndicator =
         widget.isStreaming &&

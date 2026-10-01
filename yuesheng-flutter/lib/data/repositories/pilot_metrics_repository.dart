@@ -1,14 +1,13 @@
 // ─────────────────────────────────────────────────────────────
-// PilotMetricsRepository — 小白冷启动试点埋点（ADR-C121，v41）
+// PilotMetricsRepository — 冷启动试点埋点（ADR-C121，v41）
 //
-// 追加式事件日志，供 C121-2 验收读数离线计算三指标：
-//   30 秒产出率 = 提交微任务产出学员数 ÷ 进入卡片墙学员数
-//   可诊断率    = 诊断链路返回非空症候集次数 ÷ 提交次数
-//   二轮留存    = 完成闭环学员 7 天内再打开/再发起比例
+// 追加式事件日志。ADR-C122 裁定：卡片墙整体退役（30 秒机制作废），
+// card_wall_entered / micro_task_submitted **停写**；v41 表既有历史数据
+// 保留（迁移兼容，只停写不删表）。app_opened 继续记录（通用启动埋点）。
 //
 // 事件类型（event_type）：
-//   - card_wall_entered    学员打开卡片墙（payload 含 entry：auto/skip/header/welcome）
-//   - micro_task_submitted 提交微任务产出（payload：{"card":"<cardId>","chars":<int>}）
+//   - card_wall_entered    学员打开卡片墙（ADR-C122 起停写，历史数据保留）
+//   - micro_task_submitted 提交微任务产出（ADR-C122 起停写，历史数据保留）
 //   - app_opened           每次冷启动（session_id 记 ''，用户级）
 //
 // 可诊断率不在此表：由 diagnosis_results（message_id/session_id 维度）
@@ -32,12 +31,12 @@ class PilotEventTypes {
   const PilotEventTypes._();
 }
 
-/// 微任务提交 payload 规约
+/// 微任务提交 payload 规约（ADR-C122 起停写，仅历史数据 decode/读数用）
 class PilotSubmitPayload {
-  /// 微任务卡 id（kMicroTaskCards 的 id）
+  /// 微任务卡 id（历史数据）
   final String card;
 
-  /// 提交文本字数（≥50，可诊断门槛）
+  /// 提交文本字数（历史数据）
   final int chars;
 
   const PilotSubmitPayload({required this.card, required this.chars});

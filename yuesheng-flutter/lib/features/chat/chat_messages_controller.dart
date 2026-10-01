@@ -21,7 +21,6 @@ import '../../providers/chat_store.dart';
 import '../../providers/practice_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../router/app_routes.dart';
-import '../../types/teaching_types.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
 import 'partial_agreement_card.dart';
@@ -139,28 +138,8 @@ class ChatMessagesController {
     debugPrint('[ChatPage] 内存列表移除完成 messageId=$messageId');
   }
 
-  Future<void> handleOnboardingComplete(OnboardingData data) async {
-    final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
-    if (bootstrap == null) return;
-
-    final onboardingService = host.ref.read(onboardingServiceProvider);
-    await onboardingService.submitOnboarding(bootstrap.sessionId, data);
-    await host.ref.read(sessionBootstrapProvider.notifier).refresh();
-    await maybeShowPrivacyNotice();
-  }
-
-  Future<void> handleOnboardingSkip() async {
-    final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
-    if (bootstrap == null) return;
-
-    final onboardingService = host.ref.read(onboardingServiceProvider);
-    await onboardingService.skipOnboarding(bootstrap.sessionId);
-    await host.ref.read(sessionBootstrapProvider.notifier).refresh();
-    await maybeShowPrivacyNotice();
-  }
-
-  /// v0.1 发布批：首启流程（完成/跳过）结束后一次性隐私与费用告知。
-  /// 跳过问卷的用户同样告知——他们接下来就会直接发送文本，属应告知范围。
+  /// v0.1 发布批：首启流程结束后一次性隐私与费用告知（ADR-C122 起由
+  /// 纯新手模式落库后触发；问卷路径已退役）。
   Future<void> maybeShowPrivacyNotice() async {
     if (!host.mounted) return;
     final appState = AppStateRepository(host.ref.read(appDatabaseProvider));

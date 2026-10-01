@@ -39,4 +39,9 @@ class AppRoutes {
 
   /// 大纲结构化批次：大纲实体详情页（互链承载；标签克制不纳入）
   static const String outlineDetail = '/setting-outline-detail';
+
+  /// ADR-C122：诊断资料区（成长页「教学资料」入口）
+  /// 列表页 / 症候详情页（详情带 :id 参数 + extra 传 SyndromeLearnerNote）
+  static const String diagnosticReference = '/diagnostic-reference';
+  static const String syndromeLearnerDetail = '/syndrome-learner-detail/:id';
 }

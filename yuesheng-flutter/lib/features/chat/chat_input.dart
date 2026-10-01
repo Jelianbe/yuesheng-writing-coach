@@ -43,6 +43,9 @@ class ChatInput extends StatefulWidget {
   /// + 面板内的「上传作品」回调（null 时该功能项不出现）。
   final VoidCallback? onUploadFile;
 
+  /// ADR-C122：+ 面板内的「纯新手模式」回调（null 时不出现）。
+  final VoidCallback? onNoviceMode;
+
   /// @ 引用触发回调：用户输入 "@" 字符时调用（批次70：字符级触发）
   final VoidCallback? onMention;
 
@@ -68,6 +71,7 @@ class ChatInput extends StatefulWidget {
     required this.onInputChange,
     required this.onSend,
     this.onUploadFile,
+    this.onNoviceMode,
     this.onMention,
     this.onStop,
     this.entryPoint,
@@ -395,6 +399,15 @@ class ChatInputState extends State<ChatInput> {
           onTapOutside: (_) => _panelController.hide(),
           child: ChatPlusPanel(
             onUpload: widget.onUploadFile == null ? null : _handleUploadTap,
+            // ADR-C122：点「纯新手模式」后立即收起面板——
+            // 浮层在 OverlayPortal 中，若不收会遮挡输入区/发送按钮
+            // （真机与 widget 测试均会 tap 落空）。
+            onNoviceMode: widget.onNoviceMode == null
+                ? null
+                : () {
+                    _panelController.hide();
+                    widget.onNoviceMode!();
+                  },
             thinkingEnabled: widget.thinkingEnabled,
             reasoningTierLabel: widget.reasoningTierLabel,
             onThinkingToggle: widget.onThinkingToggle,

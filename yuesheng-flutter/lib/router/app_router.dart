@@ -30,6 +30,8 @@ import '../features/character/character_page.dart';
 import '../widgets/chapter_recycle_bin_page.dart';
 import '../features/growth/growth_detail_page.dart';
 import '../features/growth/growth_page.dart';
+import '../features/growth/diagnostic_reference_page.dart';
+import '../services/syndrome_learner_notes.dart';
 import '../features/manuscript/manuscript_detail_page.dart';
 import '../widgets/placeholder_page.dart';
 import '../widgets/progress_detail_page.dart';
@@ -133,6 +135,26 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.growthDetail,
       builder: (context, state) => const GrowthDetailPage(),
+    ),
+
+    // ── 顶层路由：/diagnostic-reference + /syndrome-learner-detail/:id
+    // （诊断资料区，ADR-C122 一期纯展示）──
+    GoRoute(
+      path: AppRoutes.diagnosticReference,
+      builder: (context, state) => const DiagnosticReferenceListPage(),
+    ),
+    GoRoute(
+      path: AppRoutes.syndromeLearnerDetail,
+      builder: (context, state) {
+        final note = state.extra as SyndromeLearnerNote?;
+        final id = state.pathParameters['id'];
+        final resolved = note ?? syndromeLearnerNoteById(id ?? '');
+        if (resolved == null) {
+          // 兜底：未知编号 → 回列表页（不裸显编号错误）
+          return const DiagnosticReferenceListPage();
+        }
+        return SyndromeLearnerDetailPage(note: resolved);
+      },
     ),
 
     // ── 顶层路由：/settings（设置页，批次 11）──

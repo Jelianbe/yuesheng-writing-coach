@@ -1,19 +1,13 @@
 // ─────────────────────────────────────────────────────────────
-// ChatPage widget 测试 — bootstrap → onboarding 完整接线
+// ChatPage widget 测试 — bootstrap → 对话完整接线
 //
-// 方案2 迁移（T2d）：
-//   - 构造函数注入 db/bootstrapService → ProviderScope override
-//   - 测试通过 override appDatabaseProvider / bootstrapServiceProvider 注入依赖
+// ADR-C122：问卷/BootstrapService 退役，问卷相关用例移除；
+// onboarding 三步迁移改由纯新手模式服务层测试覆盖。
 //
 // 覆盖路径：
-//   1. 新用户：空 DB → 弹问卷 → 完成问卷 → 隐藏问卷
-//   2. 新用户：空 DB → 弹问卷 → 跳过问卷 → 隐藏问卷
-//   3. 老用户：已有 questionnaire_completed → 不弹问卷
-//   4. 初始化中：CircularProgressIndicator 占位
-//   5. 完成问卷后状态持久化（onboarding_data + beginner_level + questionnaire_completed）
-//   6. 复用已有 session（覆盖 sessions.first.id 分支）
-//   7. bootstrap 异常 → 显示错误 UI（覆盖 AsyncError 分支）
-//   8. 发送消息集成：输入 → 发送 → 流式渲染（T6）
+//   1. 初始化中：CircularProgressIndicator 占位
+//   2. 复用已有 session（覆盖 sessions.first.id 分支）
+//   3. 发送消息集成：输入 → 发送 → 流式渲染（T6）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -41,7 +35,6 @@ import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/providers/chat_store.dart';
 import 'package:writingcoach/providers/practice_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
-import 'package:writingcoach/services/bootstrap_service.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/message_injector.dart';
@@ -54,7 +47,6 @@ import 'package:writingcoach/features/chat/encouragement_text.dart';
 import 'package:writingcoach/features/chat/message_list.dart';
 import 'package:writingcoach/features/chat/partial_agreement_card.dart';
 import 'package:writingcoach/widgets/practice_task_card.dart';
-import 'package:writingcoach/widgets/privacy_notice_dialog.dart';
 import 'package:writingcoach/features/chat/reference_bar.dart';
 import 'package:writingcoach/features/chat/task_panel.dart';
 import 'package:writingcoach/widgets/ui_overlay_host.dart';
@@ -81,7 +73,7 @@ void main() {
   tearDown(() async => db.close());
 
   // 辅助：构造 ChatPage 并通过 ProviderScope 注入内存 DB
-  Widget buildChatPage({BootstrapService? bootstrapService}) {
+  Widget buildChatPage() {
     return ProviderScope(
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
@@ -89,94 +81,10 @@ void main() {
         lastSessionStorageProvider.overrideWithValue(
           MemoryLastSessionStorage(),
         ),
-        if (bootstrapService != null)
-          bootstrapServiceProvider.overrideWithValue(bootstrapService),
       ],
       child: const MaterialApp(home: ChatPage()),
     );
   }
-
-  group('新用户：空 DB → 弹问卷', () {
-    testWidgets('#1 完成问卷 → 隐藏 + 状态迁移', (tester) async {
-      await tester.pumpWidget(buildChatPage());
-
-      // 初始化中：应显示 loading
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-      // 等待 bootstrap 完成（listSessions + shouldShowQuestionnaire）
-      await tester.pumpAndSettle();
-
-      // 应弹出问卷
-      expect(find.text('写作偏好问卷'), findsOneWidget);
-
-      // 单题制（8f6aaf29 简化）：只留关注领域一题，可直接完成
-      await tester.tap(find.text('人物塑造'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, '开始写作之旅'));
-      await tester.pumpAndSettle();
-
-      // 问卷应隐藏
-      expect(find.text('写作偏好问卷'), findsNothing);
-
-      // 应显示消息列表和输入框
-      expect(find.byType(MessageList), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
-
-      // 状态迁移验证
-      final appStateRepo = AppStateRepository(db);
-      expect(await appStateRepo.getQuestionnaireCompleted(), true);
-
-      // v0.1 发布批：完成后弹一次性隐私与费用告知，确认后落 flag
-      expect(find.text('开始之前，请了解'), findsOneWidget);
-      await tester.tap(find.text('我知道了'));
-      await tester.pumpAndSettle();
-      expect(find.text('开始之前，请了解'), findsNothing);
-      expect(await appStateRepo.getValue(kPrivacyNoticeAckKey), '1');
-    });
-
-    testWidgets('#2 跳过问卷 → 隐藏 + 状态迁移', (tester) async {
-      await tester.pumpWidget(buildChatPage());
-      await tester.pumpAndSettle();
-
-      // 应弹出问卷
-      expect(find.text('写作偏好问卷'), findsOneWidget);
-
-      // 点击跳过
-      await tester.tap(find.text('跳过问卷'));
-      await tester.pumpAndSettle();
-
-      // 问卷应隐藏
-      expect(find.text('写作偏好问卷'), findsNothing);
-
-      // 状态迁移验证
-      final appStateRepo = AppStateRepository(db);
-      expect(await appStateRepo.getQuestionnaireCompleted(), true);
-
-      // v0.1 发布批：跳过问卷同样告知（跳过者接下来就会直接发送文本）
-      expect(find.text('开始之前，请了解'), findsOneWidget);
-      await tester.tap(find.text('我知道了'));
-      await tester.pumpAndSettle();
-      expect(await appStateRepo.getValue(kPrivacyNoticeAckKey), '1');
-    });
-  });
-
-  group('老用户：已有 questionnaire_completed → 不弹问卷', () {
-    testWidgets('#3 老用户启动直接看到主页', (tester) async {
-      // 预置：标记已完成
-      final appStateRepo = AppStateRepository(db);
-      await appStateRepo.setQuestionnaireCompleted(true);
-
-      await tester.pumpWidget(buildChatPage());
-      await tester.pumpAndSettle();
-
-      // 不应弹问卷
-      expect(find.text('写作偏好问卷'), findsNothing);
-
-      // 应直接显示消息列表和输入框
-      expect(find.byType(MessageList), findsOneWidget);
-      expect(find.byType(TextField), findsOneWidget);
-    });
-  });
 
   group('批次4：作品导入入口（+ 按钮）', () {
     testWidgets('#B4-1 + 按钮出现，点击打开作品导入弹层', (tester) async {
@@ -408,6 +316,166 @@ void main() {
     });
   });
 
+  group('会话切换自动滚到底', () {
+    // 判别性场景：两个会话各埋等量（30+1 条，溢出视口）历史，末条标记互不相同。
+    // 用户先停在会话 A 的底部、再把列表跳回顶部（正在读历史），随后切到等长的
+    // 会话 B。
+    // 修复前分支分析：长度等长（31==31）⇒ hasNewUserMessage 第一子句不成立；
+    // 旧 forced 条件只看「长度增长」亦不成立（且旧代码切换路径根本不设 flag）；
+    // else-if 常规滚动分支因「长度未变 + streamingContent 未变」短路，且即便走到
+    // _isAtBottom() 此时也在顶部 ⇒ 不触发任何滚动，列表停在顶部，B 末条不被
+    // ListView.builder 构建 ⇒ 断言失败。
+    // 修复后：会话切换设单帧 flag + MessageList「首条 sessionId 不同 = 整体替换」
+    // 分支触发强滚底 ⇒ B 末条滚入视口，断言通过。
+    testWidgets('#SW1 切到等长会话且列表停在顶部 → 强制滚到新会话末条', (tester) async {
+      final appStateRepo = AppStateRepository(db);
+      await appStateRepo.setQuestionnaireCompleted(true);
+      final repo = SessionRepository(db);
+
+      // 两个会话各 30 条填充 + 1 条末条标记（等量，溢出视口）
+      final aId = await repo.createBlankSession(title: '会话A');
+      for (var i = 0; i < 30; i++) {
+        await repo.addMessage(aId, 'user', 'A第$i条');
+      }
+      await repo.addMessage(aId, 'assistant', 'A末尾标记');
+      final bId = await repo.createBlankSession(title: '会话B');
+      for (var i = 0; i < 30; i++) {
+        await repo.addMessage(bId, 'user', 'B第$i条');
+      }
+      await repo.addMessage(bId, 'assistant', 'B末尾标记');
+
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          lastSessionStorageProvider.overrideWithValue(
+            MemoryLastSessionStorage(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: ChatPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 固定停在会话 A（无论 bootstrap 初始落在哪边）；首屏滚到底 ⇒ A 末条可见
+      await container.read(sessionBootstrapProvider.notifier).switchTo(aId);
+      await tester.pumpAndSettle();
+      expect(container.read(sessionBootstrapProvider).value?.sessionId, aId);
+      expect(find.text('A末尾标记'), findsOneWidget);
+
+      // 模拟用户正在读历史：把列表从底部跳回顶部
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await tester.pumpAndSettle();
+      // 顶部首条可见、末条不可见（证明停在顶部而非底部）
+      expect(find.text('A第0条'), findsOneWidget);
+      expect(find.text('A末尾标记'), findsNothing);
+
+      // 切到等长会话 B
+      await container.read(sessionBootstrapProvider.notifier).switchTo(bId);
+      await tester.pumpAndSettle();
+      expect(container.read(sessionBootstrapProvider).value?.sessionId, bId);
+
+      // 判别性断言：B 末条必须被强滚入视口
+      expect(find.text('B末尾标记'), findsOneWidget);
+    });
+
+    // 真机缺陷加固（2026-10-02 emulator-5554 logcat 定位）：
+    // #SW1 用短而均匀的单行长文本，首帧 maxScrollExtent 已≈真实值，掩盖了
+    // ListView.builder 懒加载「首帧只布局视口+缓存区、max 被严重低估」的问题。
+    // 真机欢迎会话是异构高消息（实测首帧 max=1370、真实底部=3536），旧实现
+    // animateTo 锁死被低估的 1370 → 落到半路。本用例用多行长文本高消息复现，
+    // 且部分 pump（不一次 pumpAndSettle）模拟真机逐帧时序。
+    testWidgets('#SW2 切到异构高消息会话 → 收敛滚到真实底部（复现真机 max 低估）', (tester) async {
+      final appStateRepo = AppStateRepository(db);
+      await appStateRepo.setQuestionnaireCompleted(true);
+      final repo = SessionRepository(db);
+
+      // 异构高消息：奇数条超长段落（~多屏高），偶数条极短单行。
+      // 高度参差 → ListView.builder 首帧对剩余 item 高度估计失真，
+      // maxScrollExtent 被低估（复现真机 max=1370 vs 真实 3536）。
+      String tall(int i) =>
+          '欢迎长段落 $i\n'
+              '这是一段较长的正文，用于撑高单条消息高度使其多行换行显示。'
+              '换行后会占多行，模拟真机里欢迎语那种长段落消息。' *
+          8;
+      String shortMsg(int i) => '短问 $i';
+
+      final aId = await repo.createBlankSession(title: '会话A');
+      for (var i = 0; i < 10; i++) {
+        await repo.addMessage(
+          aId,
+          'assistant',
+          i.isEven ? tall(i) : shortMsg(i),
+        );
+      }
+      await repo.addMessage(aId, 'assistant', 'A末尾标记');
+
+      final bId = await repo.createBlankSession(title: '会话B');
+      for (var i = 0; i < 10; i++) {
+        await repo.addMessage(
+          bId,
+          'assistant',
+          i.isEven ? tall(i) : shortMsg(i),
+        );
+      }
+      await repo.addMessage(bId, 'assistant', 'B末尾标记');
+
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          lastSessionStorageProvider.overrideWithValue(
+            MemoryLastSessionStorage(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: ChatPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 固定停在 A，首屏滚到底 ⇒ A 末条可见
+      await container.read(sessionBootstrapProvider.notifier).switchTo(aId);
+      await tester.pumpAndSettle();
+      expect(find.text('A末尾标记'), findsOneWidget);
+
+      // 模拟用户读历史：跳回顶部（末条不可见）
+      tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(find.text('A末尾标记'), findsNothing);
+
+      // 切到 B；部分 pump 模拟真机逐帧时序（收敛跨多 postFrame）
+      await container.read(sessionBootstrapProvider.notifier).switchTo(bId);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      // 判别性断言 1：B 末条标记必须被收敛滚入视口
+      // （旧实现锁死被低估 max → 末条不可见，本断言必然失败）
+      expect(find.text('B末尾标记'), findsOneWidget);
+      // 判别性断言 2：滚动位置必须贴真实底部（pixels≈maxScrollExtent）
+      final pos = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      expect(pos.pixels, moreOrLessEquals(pos.maxScrollExtent, epsilon: 2.0));
+    });
+  });
+
   group('初始化中', () {
     testWidgets('#4 显示 CircularProgressIndicator', (tester) async {
       await tester.pumpWidget(buildChatPage());
@@ -418,52 +486,11 @@ void main() {
     });
   });
 
-  group('完成问卷后状态持久化', () {
-    testWidgets('#5 单题制默认 beginner → N0_ENGAGE + onboarding_data 完整', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildChatPage());
-      await tester.pumpAndSettle();
-
-      // 单题制（8f6aaf29 简化）：只选关注领域，等级/偏好走默认值
-      await tester.tap(find.text('人物塑造'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('情节设计'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, '开始写作之旅'));
-      await tester.pumpAndSettle();
-
-      // 验证 onboarding_data
-      final sessions = await db.select(db.sessions).get();
-      expect(sessions.length, 1);
-      final sessionId = sessions.first.id;
-
-      final smRepo = StudentModelRepository(db);
-      final saved = await smRepo.getOnboardingData(sessionId);
-      expect(saved, isNotNull);
-      expect(saved!['proficiency'], 'beginner');
-      expect(saved['focusAreas'], ['人物塑造', '情节设计']);
-      expect(saved['cognitiveStyle'], 'mixed');
-      expect(saved['skipped'], false);
-
-      // 验证 beginner_level（beginner 经 proficiencyToBeginnerLevel 映射 N0_ENGAGE）
-      final stateRepo = TeachingStateRepository(db);
-      final ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts, isNotNull);
-      expect(ts!.beginnerLevel, BeginnerLevel.n0Engage.value);
-    });
-  });
-
   group('复用已有 session（覆盖 sessions.first.id 分支）', () {
     testWidgets('#6 DB 中已有 session → 复用而非新建', (tester) async {
       // 预置：DB 中已存在一条 session（模拟老用户首次启动）
-      // 同时标记 questionnaire_completed=false，让 bootstrap 走完整流程
       final sessionRepo = SessionRepository(db);
       final presetSessionId = await sessionRepo.createBlankSession();
-      final appStateRepo = AppStateRepository(db);
-      // 注意：不设 questionnaire_completed，让 shouldShowQuestionnaire 返回 true
-      // 这样可以同时验证"复用 session"和"新用户问卷"两个分支
-      expect(await appStateRepo.getQuestionnaireCompleted(), false);
 
       await tester.pumpWidget(buildChatPage());
       await tester.pumpAndSettle();
@@ -472,31 +499,6 @@ void main() {
       final sessions = await db.select(db.sessions).get();
       expect(sessions.length, 1);
       expect(sessions.first.id, presetSessionId);
-
-      // 仍应弹问卷（questionnaire_completed 未设）
-      expect(find.text('写作偏好问卷'), findsOneWidget);
-    });
-  });
-
-  group('bootstrap 异常路径', () {
-    testWidgets('#7 bootstrapService 抛异常 → 显示错误 UI', (tester) async {
-      // 注入一个会抛错的 fake BootstrapService，覆盖 AsyncError 分支
-      // 注意：不能用 db.close() 方案，drift NativeDatabase.memory() 关闭后
-      // 会自动重建 in-memory schema，查询仍返回空列表而非抛错
-      final throwingService = _ThrowingBootstrapService();
-
-      await tester.pumpWidget(buildChatPage(bootstrapService: throwingService));
-      await tester.pumpAndSettle();
-
-      // 应显示错误信息（覆盖 AsyncError 分支）
-      expect(find.textContaining('初始化失败'), findsOneWidget);
-      expect(find.textContaining('bootstrap failed'), findsOneWidget);
-
-      // 不应显示问卷
-      expect(find.text('写作偏好问卷'), findsNothing);
-
-      // 不应显示"会话已就绪"
-      expect(find.textContaining('会话已就绪'), findsNothing);
     });
   });
 
@@ -2298,14 +2300,5 @@ class _RetryFakeChatService extends _FakeChatService {
     // 重试成功：assistant 落库并完成
     final aid = await repo.addMessage(sessionId, 'assistant', '重试后回复');
     await callbacks.onComplete('重试后回复', aid);
-  }
-}
-
-/// Fake BootstrapService：shouldShowQuestionnaire 总是抛异常
-/// 用于覆盖 sessionBootstrapProvider 的 AsyncError 分支
-class _ThrowingBootstrapService implements BootstrapService {
-  @override
-  Future<bool> shouldShowQuestionnaire(String? sessionId) async {
-    throw Exception('bootstrap failed');
   }
 }

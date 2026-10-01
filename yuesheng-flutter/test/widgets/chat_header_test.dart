@@ -29,7 +29,6 @@ void main() {
     VoidCallback? onOpenSessionDrawer,
     VoidCallback? onOpenProfile,
     VoidCallback? onNewSession,
-    VoidCallback? onOpenMicroTask,
     String? entryPoint,
     String? primaryRefTitle,
     String? activePersonaName,
@@ -46,7 +45,6 @@ void main() {
           onOpenSessionDrawer: onOpenSessionDrawer ?? () {},
           onOpenProfile: onOpenProfile ?? () {},
           onNewSession: onNewSession ?? () {},
-          onOpenMicroTask: onOpenMicroTask ?? () {},
           entryPoint: entryPoint,
           primaryRefTitle: primaryRefTitle,
           activePersonaName: activePersonaName,
@@ -211,7 +209,7 @@ void main() {
     addTearDown(() => t.binding.setSurfaceSize(null));
   }
 
-  testWidgets('#9 超长主引用（360 竖屏）→ 不溢出 + 写第一句/新建/更多按钮仍在可点', (tester) async {
+  testWidgets('#9 超长主引用（360 竖屏）→ 不溢出 + 新建/更多按钮仍在可点', (tester) async {
     await usePhone(tester);
     final longTitle = '一二三四五六七八九十' * 8; // 80 字，远超可用宽
     await tester.pumpWidget(buildHeader(primaryRefTitle: longTitle));
@@ -219,8 +217,8 @@ void main() {
 
     // 旧布局（Row + Spacer + 非 flex 中心块）会 RenderFlex 溢出并被 takeException 捕获
     expect(tester.takeException(), isNull);
-    // 右侧三个按钮未被挤掉（ADR-C121 新增「写第一句」）
-    expect(find.byIcon(Icons.edit_note), findsOneWidget);
+    // 右侧两个按钮未被挤掉（ADR-C122：卡片墙退役，「写第一句」铅笔图标已删）
+    expect(find.byIcon(Icons.edit_note), findsNothing);
     expect(find.byIcon(Icons.add_comment_outlined), findsOneWidget);
     expect(find.byIcon(Icons.more_horiz), findsOneWidget);
     // 主引用行被限宽省略（TextRenderer 实际宽 < 其 80 字固有宽）
@@ -228,13 +226,10 @@ void main() {
     expect(box.width, lessThan(360));
   });
 
-  testWidgets('#13 ADR-C121 头部「写第一句」按钮 → onOpenMicroTask', (tester) async {
-    var opened = false;
-    await tester.pumpWidget(buildHeader(onOpenMicroTask: () => opened = true));
+  testWidgets('#13 ADR-C122 卡片墙退役 → 头部无「写第一句」按钮', (tester) async {
+    await tester.pumpWidget(buildHeader());
 
-    expect(find.byIcon(Icons.edit_note), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.edit_note));
-    expect(opened, isTrue);
+    expect(find.byIcon(Icons.edit_note), findsNothing);
   });
 
   testWidgets('#10 会话标题屏幕居中（左右按钮不对称下仍居中）', (tester) async {

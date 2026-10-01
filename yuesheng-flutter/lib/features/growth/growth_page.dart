@@ -72,6 +72,7 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
           _QuickEntries(
             onDiagnosis: () => _openDiagnosisPicker(context),
             onProgress: _openProgressDetail,
+            onReference: () => context.push(AppRoutes.diagnosticReference),
           ),
           Expanded(
             child: state.isLoading
@@ -145,12 +146,18 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
   }
 }
 
-/// 快捷入口（对齐 RN growth.tsx GROWTH_ENTRIES：写作诊断/学习进度）
+/// 快捷入口（对齐 RN growth.tsx GROWTH_ENTRIES：写作诊断/学习进度；
+/// ADR-C122 追加「教学资料」资料区入口）
 class _QuickEntries extends StatelessWidget {
   final VoidCallback onDiagnosis;
   final VoidCallback onProgress;
+  final VoidCallback onReference;
 
-  const _QuickEntries({required this.onDiagnosis, required this.onProgress});
+  const _QuickEntries({
+    required this.onDiagnosis,
+    required this.onProgress,
+    required this.onReference,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +179,9 @@ class _QuickEntries extends StatelessWidget {
           Divider(height: 1, color: context.palette.borderSoft),
           // 批次 38：原「敬请期待」占位替换为「学习进度」真实入口
           _entry(context, '学习进度', Icons.trending_up, onProgress),
+          Divider(height: 1, color: context.palette.borderSoft),
+          // ADR-C122：诊断资料区（症候学员解读库一期）
+          _entry(context, '教学资料', Icons.menu_book_outlined, onReference),
         ],
       ),
     );
