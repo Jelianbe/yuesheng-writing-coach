@@ -348,7 +348,7 @@ const Set<String> _fewShotIntentionallyMissing = {
   'P031',
   'P032',
   'P033',
-  'P034',
+  // P034 已于 C123 批（2026-10-02）补正反例对，移出「刻意缺口」。
 };
 
 Map<String, int> _countBy(String content, RegExp re) {

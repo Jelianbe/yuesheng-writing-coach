@@ -8,6 +8,7 @@ import 'package:writingcoach/services/chat_context_builder.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
+import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -112,6 +113,23 @@ void main() {
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
     });
+
+    test('P034 判据含例外清单+强规则+正反例（C123 方案 E 同型修复）', () {
+      final content = getSyndromeContent(['P034']);
+      expect(content, contains('### P034 代词指代不清/零回指过载症'));
+      // 例外守卫：正常零回指（单主角话题链/对话轮省略）不得报
+      expect(content, contains('不得报 P034'));
+      // 强规则：先数就近可及候选数，候选<2 一律不报
+      expect(content, contains('就近可及候选数'));
+      // 真过载 L2 命中示例（双候选无话题锚）仍在场——防矫枉过正
+      expect(content, contains('林远把刀递给李梅'));
+      expect(content, contains('他点点头，转身出了门'));
+      // 同句两个"他"分属不同人物形态（rowid5 实测最高频形态）锚定在 P034
+      expect(content, contains('他骂了他一顿'));
+      // 与 P018/P023 的划界守卫（防 LLM 把指称过载误路由到相邻症候）
+      expect(content, contains('不是 P018'));
+      expect(content, contains('不是 P023'));
+    });
   });
 
   group('technique 知识库', () {
@@ -144,6 +162,16 @@ void main() {
       expect(content, contains('### T002'));
       expect(content, isNot(contains('### T020')));
       expect(getTechniquesBySyndrome([]), isEmpty);
+    });
+
+    test('T012 不再把"他不知道的是"当漂移（C123 P003 方案 E 同步）', () {
+      final t012 = getTechniqueContent(['T012']);
+      // 旧矛盾样本（把全知插叙标成漂移的 ❌ 例）必须已移除
+      expect(t012, isNot(contains('他不知道的是，最左边那个人口袋里有一把刀')));
+      // 新真漂移样本（无标记跳内心）必须在场
+      expect(t012, contains('指节绷得发白'));
+      // 显式插叙标记不算越界的强规则在场
+      expect(t012, contains('先找切换标记'));
     });
   });
 
@@ -252,6 +280,22 @@ void main() {
       expect(content, contains('## P001'));
       expect(getTrainingContent([]), isEmpty);
       expect(getTrainingContent(['P999']), isEmpty);
+    });
+  });
+
+  group('training few-shot 库（C123 P034/P003 守卫）', () {
+    test('P034 新增正反例对，含"不得报 P034"守卫', () {
+      final block = getTrainingFewShot(['P034']);
+      // 真过载问题版（双候选无话题锚）在场
+      expect(block, contains('林远把刀递给李梅'));
+      // 正常写法版（单主角行动链）在场并标注不得报
+      expect(block, contains('不得报 P034'));
+      expect(block, contains('就近候选恒为 1'));
+    });
+
+    test('P003 few-shot 仍含全知插叙"不得报 P003"正例', () {
+      final block = getTrainingFewShot(['P003']);
+      expect(block, contains('不得报 P003'));
     });
   });
 }

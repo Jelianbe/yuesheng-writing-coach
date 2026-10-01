@@ -77,7 +77,7 @@ void main() {
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
     test(
-      '#7 覆盖高频症候（0.3.6+9 聚类去重后 23 条；原 P012/P001/P013/P019/P011/P005 示例块已并入其保留症候）',
+      '#7 覆盖高频症候（0.3.6+9 聚类去重后 24 条；原 P012/P001/P013/P019/P011/P005 示例块已并入其保留症候）',
       () {
         // 首批
         expect(kTrainingFewShotLibrary.keys, contains('P001'));
@@ -110,7 +110,9 @@ void main() {
         expect(kTrainingFewShotLibrary.keys, contains('P021'));
         expect(kTrainingFewShotLibrary.keys, contains('P022'));
         expect(kTrainingFewShotLibrary.keys, contains('P023'));
-        expect(kTrainingFewShotLibrary.length, 23);
+        // 第九批 / C123（2026-10-02）：P034 指称歧义/零回指过载补正反例对
+        expect(kTrainingFewShotLibrary.keys, contains('P034'));
+        expect(kTrainingFewShotLibrary.length, 24);
       },
     );
 

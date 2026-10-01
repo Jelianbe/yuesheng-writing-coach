@@ -26,6 +26,15 @@ import '../../types/teaching_types.dart';
 /// 解析最多轮数（学员两次都答不出可识别内容 → 默认值兜底）
 const int kNoviceMaxRetries = 2;
 
+/// 纯新手模式消息的 messageType 标记（C123）。
+///
+/// 新手问答（AI 固定引导 + 学员三字段采集回答）落库时打此标记：
+/// - **UI 消息列表仍全量显示**（message_card_dispatcher 白名单未命中 → 回退普通气泡）；
+/// - **喂 LLM 的诊断上下文在 chat_service._loadSessionContext 处剔除**，
+///   避免把采集问答当学员真实写作文本混入后续真实诊断。
+/// messageType 为 TEXT 自由取值（无 CHECK 约束），加此值零 schema 迁移。
+const String kNoviceMessageType = 'novice_chat';
+
 /// 固定弹窗标题
 const String kNoviceModeDialogTitle = '进入纯新手模式';
 

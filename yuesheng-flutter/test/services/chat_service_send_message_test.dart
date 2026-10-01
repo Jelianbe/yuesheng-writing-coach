@@ -31,6 +31,7 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/chat_context_builder.dart'
     show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/features/onboarding/novice_mode_guide.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
@@ -557,6 +558,67 @@ void main() {
       second.sublist(0, first.length),
       first,
       reason: '首轮历史必须是次轮历史的严格前缀（上下文缓存可复用）',
+    );
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // C123：纯新手模式消息隔离 —— novice_chat 不进 LLM 诊断上下文，
+  // 正常 'chat' 历史不被误排除。
+  // ─────────────────────────────────────────────────────────────
+  test('#14 C123 novice_chat 历史不进 LLM，正常 chat 不误排除', () async {
+    final fake = FakeLlmClient('收到。');
+    final chatService = buildChatService(fake);
+
+    // 脏数据：两条 novice 消息（AI 固定引导 + 学员三字段采集回答）
+    await sessionRepo.addMessage(
+      sessionId,
+      'assistant',
+      kNoviceModeFirstMessage,
+      messageType: kNoviceMessageType,
+    );
+    await sessionRepo.addMessage(
+      sessionId,
+      'user',
+      '我刚接触写作，想提升情节设计',
+      messageType: kNoviceMessageType,
+    );
+    // 正常历史：一对真实 chat（DB 类型仍为默认 'chat'）
+    await sessionRepo.addMessage(sessionId, 'user', '之前写的真实句子');
+    await sessionRepo.addMessage(sessionId, 'assistant', '真实回复');
+
+    await chatService.sendMessage(
+      sessionId,
+      '现在我写了一段新的文字',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
+
+    final sentContents = historySent(fake).map((m) => m.content).toList();
+
+    // 核心 AC①：novice 固定引导与三字段回答均不进 LLM 诊断上下文
+    expect(sentContents.contains(kNoviceModeFirstMessage), isFalse);
+    expect(sentContents.contains('我刚接触写作，想提升情节设计'), isFalse);
+    // AC③：正常 chat 历史不被误排除
+    expect(sentContents, contains('之前写的真实句子'));
+    expect(sentContents, contains('真实回复'));
+    // 本轮真实 user 消息必在（且为最后一条）
+    expect(sentContents.last, '现在我写了一段新的文字');
+
+    // DB 侧：novice 行落为 'novice_chat'，普通行仍为 'chat'（类型未被误改）
+    final dbMsgs = await sessionRepo.listMessages(sessionId);
+    expect(
+      dbMsgs
+          .firstWhere((m) => m.content == kNoviceModeFirstMessage)
+          .messageType,
+      kNoviceMessageType,
+    );
+    expect(
+      dbMsgs.firstWhere((m) => m.content == '之前写的真实句子').messageType,
+      'chat',
     );
   });
 

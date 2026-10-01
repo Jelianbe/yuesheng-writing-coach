@@ -3,7 +3,9 @@
 // 两层校验：
 //   1. JSON schema 校验（字段白名单）
 //   2. 自然语言校验（V-01/V-02/V-03/V-04）
-// V-03（编号泄漏）+ V-04（sensei 糖水词）真拦截；V-01/V-02 仅记录
+// V-03（编号泄漏）真回填；V-04（sensei 糖水词）阻断；
+// V-01/V-02（C123 任务4，R-009）由「仅记录」升级为「真降级 cleaned」——
+//   因 .fixes/.valid 无运行路径消费，照 V-03 模式直接改写 displayContent 才生效。
 // ─────────────────────────────────────────────────────────────
 
 import '../config/shared_constants.dart';
@@ -43,8 +45,41 @@ const List<String> _kSugaryWords = [
   '别灰心',
   '继续努力',
 ];
-// 批次4（4.6）：V-02 判定句正则改由共享常量诊断词表构建（防双份维护漂移）
-final RegExp _kDecisionRe = RegExp(diagnosisVerdictPhrases.join('|'));
+
+// ── R-009（C123 任务4）：V-01/V-02 由「仅记录」升级为「真降级 cleaned」──────
+// 背景：V-01/V-02 命中后只造 NlFix，而全 lib 无运行路径消费 .fixes/.valid
+// （formatValidationErrors 无人调；flow_handler 只取 displayContent=cleaned）。
+// 故照 V-03 模式直接改写 cleaned——该路才是真被消费的那一路。
+// 精度原则：只拦「确定性违规」，宁漏勿伤。
+//  V-01：整段 >80 字、无引号、且无教练元话语 = 替学员成文（ghostwrite）。
+//  V-02：句首裸指令（你应该/你务必…）或 同句「全局量词+全局贬判」= 替下结论。
+
+/// V-01 教练元话语标记：段落命中即说明在「点评学员文本」而非「替学员成文」→ 不拦。
+///
+/// 指示词用明确复合形式（这句/这段/这里…），**不裸匹配「这一」**——否则
+/// 叙述里的「这一次/这一刻」会被误判成点评（C123 实测 P1 误伤）。
+final RegExp _kCoachMetaMarkers = RegExp(
+  r'这里|这[一]?句|这[一]?段|这[一]?章|上文|原文|你的|你写的|'
+  r'问题(?:在于|是)|因为|所以|对比|建议|可以(?:再|试着|多|少)|'
+  r'为什么|节奏|动机|镜头感|比喻|铺垫|转折',
+);
+
+/// V-02b 全局量词：整篇/通篇/整体而言等「覆盖全篇」的措辞。
+final RegExp _kGlobalQuantifier = RegExp(r'整篇|全文|通篇|全篇|整个(?:故事|章节|小说)?|整体而言');
+
+/// V-02b 全局贬判词：须与 [_kGlobalQuantifier] 同句共现才拦（局部点评不算）。
+/// 与 verdictDangerousWords 语义相近但不合并：后者对任一出现即拦（editor/teacher
+/// hard-limit）；本表专司「全局定性」，且含 很差/不知所云/毫无逻辑 等前者没有的词。
+final RegExp _kGlobalVerdict = RegExp(
+  r'很差|太烂|平庸|失败|拖沓|空洞|毫无(?:亮点|逻辑|意义)|'
+  r'完全(?:失败|不行|垮掉)|一无是处|不知所云|没救了',
+);
+
+/// V-01 降级文案（R-009 合规）：不替学员落笔、不贴标签，改为邀请其自己写。
+const String _kV01Downgrade = '（这段我不替你落笔：这一段请你自己先写一稿，写完我们一起逐句回看。）';
+
+/// V-02 降级文案（R-009 合规）：不替学员下结论，改为邀请一起逐段定位。
+const String _kV02Downgrade = '（这个判断我先不下：我们把这一段拆开，一起看它具体卡在哪里。）';
 
 /// 批次4（4.1 O6）：症候互斥对（原为知识库软约束，迁移到代码层防漂移）。
 /// 与 syndrome_knowledge_base 手册中的互斥/前置/区分规则对齐：
@@ -198,10 +233,15 @@ NlValidationResult validateNaturalLanguage(
       ),
     );
   }
-  fixes.addAll(_detectRewrites(cleaned));
+  // V-01 R-009：代写段整段降级（照 V-03 真改写 cleaned）
+  final v01 = _applyGhostRewriteGuard(cleaned);
+  cleaned = v01.text;
+  fixes.addAll(v01.fixes);
   fixes.addAll(_detectSugaryWords(cleaned, attitude));
-  final decision = _detectDecision(cleaned);
-  if (decision != null) fixes.add(decision);
+  // V-02 R-009：判决句整句降级（句首裸指令 / 全局定性）
+  final v02 = _applyVerdictSentenceGuard(cleaned);
+  cleaned = v02.text;
+  fixes.addAll(v02.fixes);
   return NlValidationResult(
     valid: !fixes.any((f) => _kBlockingFixTypes.contains(f.type)),
     fixes: fixes,
@@ -244,29 +284,37 @@ NlValidationResult validateNaturalLanguage(
   return (text: out, codes: codes);
 }
 
-/// V-01 连续改写检测（仅记录，R-019 拆出）。
-List<NlFix> _detectRewrites(String cleaned) {
+/// V-01 R-009 代写段守卫（真降级：改写 cleaned）。
+///
+/// 判据（同时满足才拦，宁漏勿伤）：
+///   1. 段落 >80 字（沿用 _kRewriteThreshold）；
+///   2. 无引号（"「『）—— 引用学员原文/例句不算代写；
+///   3. 无教练元话语（[_kCoachMetaMarkers]）—— 长段点评学员文本不算代写。
+/// 命中即把整段替换为 [_kV01Downgrade]，并产出 V-01 fix 供观测。
+({String text, List<NlFix> fixes}) _applyGhostRewriteGuard(String cleaned) {
   final fixes = <NlFix>[];
-  final paragraphs = cleaned
+  final out = cleaned
       .split('\n')
-      .where((p) => p.trim().isNotEmpty)
-      .toList();
-  for (final para in paragraphs) {
-    if (para.length > _kRewriteThreshold &&
-        !para.contains('"') &&
-        !para.contains('「') &&
-        !para.contains('『')) {
-      fixes.add(
-        NlFix(
-          type: 'V-01',
-          original:
-              '${para.substring(0, para.length > DiagnosisLimits.rewritePreviewLength ? DiagnosisLimits.rewritePreviewLength : para.length)}...',
-          replacement: '（检测到连续改写，已在日志中记录）',
-        ),
-      );
-    }
-  }
-  return fixes;
+      .map((line) {
+        final para = line.trim();
+        if (para.length <= _kRewriteThreshold) return line;
+        if (para.contains('"') || para.contains('「') || para.contains('『')) {
+          return line;
+        }
+        if (_kCoachMetaMarkers.hasMatch(para)) return line;
+        fixes.add(
+          NlFix(
+            type: 'V-01',
+            original: para.length > DiagnosisLimits.rewritePreviewLength
+                ? '${para.substring(0, DiagnosisLimits.rewritePreviewLength)}...'
+                : para,
+            replacement: _kV01Downgrade,
+          ),
+        );
+        return _kV01Downgrade;
+      })
+      .join('\n');
+  return (text: out, fixes: fixes);
 }
 
 /// V-04 sensei 档禁止糖水词（真拦截，R-019 拆出）。
@@ -283,15 +331,44 @@ List<NlFix> _detectSugaryWords(String cleaned, AttitudeLevel? attitude) {
   return fixes;
 }
 
-/// V-02 决策句检测（仅记录，R-019 拆出）。
-NlFix? _detectDecision(String cleaned) {
-  final decisionMatch = _kDecisionRe.firstMatch(cleaned);
-  if (decisionMatch == null) return null;
-  return NlFix(
-    type: 'V-02',
-    original: decisionMatch.group(0)!,
-    replacement: '（已记录）',
+/// V-02 R-009 判决句守卫（真降级：改写 cleaned）。
+///
+/// 按句切分后逐句判两类（命中即整句替换为 [_kV02Downgrade]）：
+///   - V-02a 句首裸指令：trim 后以 diagnosisVerdictPhrases 之一开头
+///     （引号包裹的教学例句句首是引号，天然豁免）；
+///   - V-02b 全局定性：同句内 [_kGlobalQuantifier] 与 [_kGlobalVerdict] 共现。
+({String text, List<NlFix> fixes}) _applyVerdictSentenceGuard(String cleaned) {
+  final fixes = <NlFix>[];
+  final out = cleaned.splitMapJoin(
+    RegExp(r'(?<=[。！？；\n])'),
+    onMatch: (_) => '',
+    onNonMatch: (sentence) {
+      final tailMatch = RegExp(r'\s*$').firstMatch(sentence);
+      final tail = tailMatch?.group(0) ?? '';
+      final body = sentence.substring(0, sentence.length - tail.length);
+      final trimmed = body.trim();
+      String? phrase;
+      for (final p in diagnosisVerdictPhrases) {
+        if (trimmed.startsWith(p)) {
+          phrase = p;
+          break;
+        }
+      }
+      final global =
+          _kGlobalQuantifier.hasMatch(trimmed) &&
+          _kGlobalVerdict.hasMatch(trimmed);
+      if (phrase == null && !global) return sentence;
+      fixes.add(
+        NlFix(
+          type: 'V-02',
+          original: phrase ?? '（全局定性）',
+          replacement: _kV02Downgrade,
+        ),
+      );
+      return '$_kV02Downgrade$tail';
+    },
   );
+  return (text: out, fixes: fixes);
 }
 
 /// 完整校验（JSON schema + 自然语言）

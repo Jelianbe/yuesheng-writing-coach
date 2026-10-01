@@ -394,7 +394,12 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     // 学员回答先落库（user 消息，保证会话上下文连续）
     final repo = SessionRepository(ref.read(appDatabaseProvider));
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final userId = await repo.addMessage(bootstrap.sessionId, 'user', text);
+    final userId = await repo.addMessage(
+      bootstrap.sessionId,
+      'user',
+      text,
+      messageType: kNoviceMessageType,
+    );
     ref
         .read(chatStoreProvider.notifier)
         .addMessage(
@@ -404,7 +409,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
             role: 'user',
             content: text,
             timestamp: now,
-            messageType: 'chat',
+            messageType: kNoviceMessageType,
           ),
         );
 
@@ -444,7 +449,12 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     if (!mounted) return;
     final repo = SessionRepository(ref.read(appDatabaseProvider));
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final id = await repo.addMessage(bootstrap.sessionId, 'assistant', content);
+    final id = await repo.addMessage(
+      bootstrap.sessionId,
+      'assistant',
+      content,
+      messageType: kNoviceMessageType,
+    );
     if (!mounted) return;
     // 与 store 更新同一同步块：避免 await 间隙内其他 rebuild 提前消费 flag
     _forceScrollRequested = true;
@@ -457,7 +467,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
             role: 'assistant',
             content: content,
             timestamp: now,
-            messageType: 'chat',
+            messageType: kNoviceMessageType,
           ),
         );
   }

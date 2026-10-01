@@ -759,7 +759,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P034',
-    name: '指称歧义/零回指过载症',
+    name: '代词指代不清/零回指过载症',
     shortName: '零回指过载',
     keyword: '零形回指/指代不明',
     oneLine: '连续两个以上小句主语/宾语均省略且就近可及候选≥2，读者需回看上段才确认"他/她/它"或零主语指谁',

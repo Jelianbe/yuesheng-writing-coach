@@ -197,6 +197,19 @@ void main() {
             '后段症候没有对应例外，需一句通用兜底避免「零例外」导致过度诊断）',
       );
     });
+
+    test('P034 判界存在（C123：防诊断分块轮把指称过载误路由 P018/P023）', () {
+      // 诊断分块 prompt 只给 LLM 紧凑目录（ID+名称）+ 本例外指引，不注入 manual 正文。
+      // 故 P034 与 P018/P023 的划界规则必须写进本指引，LLM 才会把「他骂了他」
+      // 报成 P034 而非按字面「重复」归 P018。
+      expect(
+        kChunkSystemPrompt.contains('P034判界'),
+        isTrue,
+        reason: '例外指引缺 P034判界——诊断分块轮会把指称过载误路由到 P018/P023',
+      );
+      expect(kChunkSystemPrompt.contains('他骂了他一顿'), isTrue);
+      expect(kChunkSystemPrompt.contains('必须报 P034'), isTrue);
+    });
   });
 
   group('⑤ 生效性：分块链路真的用了 kChunkSystemPrompt', () {

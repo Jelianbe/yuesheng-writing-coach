@@ -30,6 +30,7 @@ import 'package:writingcoach/contracts/genui_capability.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
 import 'package:writingcoach/contracts/teaching_capability.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
@@ -98,6 +99,9 @@ class DiagnosisCommitter {
   // C78 批次2a：db 仅用于构造 FactStaleService（事实 stale 标记）。未装配
   // → 跳过 stale 标记，落库行为与本批前完全一致（保护既有构造点）。
   final AppDatabase? _db;
+  // C123 T3：beginner_level 双写仲裁读门。未装配（null）→ 不锁 → 走现状
+  // LLM 回填（保护约 130 处既有测试构造点零改动）。
+  final AppStateRepository? _appStateRepo;
   final OutlineRepository? _outlineRepo;
   final CharacterFactRepository? _characterFactRepo;
   final EventFactRepository? _eventFactRepo;
@@ -124,6 +128,8 @@ class DiagnosisCommitter {
     DiagnosisCapability? diagnosis,
     // C78 批次2a：事实 stale 标记需要 AppDatabase（仅依赖链最底层，无环）
     AppDatabase? db,
+    // C123 T3：beginner_level 仲裁读门（可选，null = 不锁 = 现状）
+    AppStateRepository? appStateRepo,
     OutlineRepository? outlineRepo,
     CharacterFactRepository? characterFactRepo,
     EventFactRepository? eventFactRepo,
@@ -138,7 +144,8 @@ class DiagnosisCommitter {
        _characterFactRepo = characterFactRepo,
        _eventFactRepo = eventFactRepo,
        _subplotFactRepo = subplotFactRepo,
-       _db = db;
+       _db = db,
+       _appStateRepo = appStateRepo;
 
   /// C78 批次2a：懒构建事实 stale 服务（未装配 db → null，跳过 stale 标记）。
   FactStaleService? get _factStale =>
@@ -271,12 +278,34 @@ class DiagnosisCommitter {
       );
     }
     if (resolverResult.effectiveBeginnerLevel != null) {
-      await _stateRepo.updateBeginnerLevel(
-        sessionId,
-        resolverResult.effectiveBeginnerLevel!.value,
-      );
+      // C123 T3 仲裁：显式学员采集 > LLM 推断。已被显式采集则丢弃本轮
+      // LLM 推断的 beginner_level（phase 迁移不受影响）。
+      final explicitCollected = await _isBeginnerLevelExplicitlyCollected();
+      if (!explicitCollected) {
+        await _stateRepo.updateBeginnerLevel(
+          sessionId,
+          resolverResult.effectiveBeginnerLevel!.value,
+        );
+      }
     }
     return migrated;
+  }
+
+  /// C123 T3：beginner_level 是否已被「显式学员采集」锁定。
+  ///
+  /// 批准裁定：LLM 诊断推断仅在尚未被显式采集时回填；显式采集后 LLM 不得覆盖。
+  /// 判据用用户级 [questionnaire_completed]。注意 skipOnboarding 同样置该 flag
+  /// 并写 N0_ENGAGE（onboarding_service.skipOnboarding）——skip 不是显式等级
+  /// 采集，不能据此把等级永久锁死在 N0。故再用跨会话最新 onboarding 数据的
+  /// `skipped` 标记排除 skip：仅当问卷「非 skip 地完成」才返回 true（=锁）。
+  ///
+  /// 可选依赖未装配（[AppStateRepository?] == null，约 130 处既有测试构造点）
+  /// → 视为未锁 → LLM 走现状回填，零行为变更。
+  Future<bool> _isBeginnerLevelExplicitlyCollected() async {
+    final done = await _appStateRepo?.getQuestionnaireCompleted() ?? false;
+    if (!done) return false;
+    final latest = await _studentModelRepo.getLatestOnboardingData();
+    return latest?['skipped'] != true;
   }
 
   /// 计算连续失败训练次数（仅 N3 触发降级检查时需要）。

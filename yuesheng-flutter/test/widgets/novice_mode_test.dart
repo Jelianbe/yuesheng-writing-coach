@@ -117,6 +117,15 @@ void main() {
 
     final appStateRepo = AppStateRepository(db);
     expect(await appStateRepo.getQuestionnaireCompleted(), true);
+
+    // C123：novice 流程产生的消息（固定首条引导 + 学员回答 + 分支引导）
+    // 落库 messageType 均为 kNoviceMessageType（不喂 LLM 诊断上下文；UI 仍全量显示）。
+    final noviceMsgs = await SessionRepository(db).listMessages(sessionId);
+    expect(noviceMsgs.length, 3); // assistant 首条 + user 回答 + assistant 小白引导
+    expect(
+      noviceMsgs.every((m) => m.messageType == kNoviceMessageType),
+      isTrue,
+    );
   });
 
   testWidgets('#2 不完整回答 → 固定追问，再答完整 → 落库', (tester) async {

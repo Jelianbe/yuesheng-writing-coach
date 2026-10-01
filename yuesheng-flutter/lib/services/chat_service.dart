@@ -80,6 +80,7 @@ import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/stage_drop_notice.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
+import 'package:writingcoach/features/onboarding/novice_mode_guide.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/types/coach_persona.dart';
 import 'package:writingcoach/types/coach_persona_seed.dart';
@@ -1039,8 +1040,14 @@ extension ChatServiceSend on ChatService {
     final userMessageId = await _writeUserMessage(sessionId, content, options);
 
     // 2. 获取历史消息（已含 user）
-    final history = await _sessionRepo.listMessages(sessionId);
-    debugPrint('[ChatService] 步骤2: 历史消息 ${history.length} 条');
+    final rawHistory = await _sessionRepo.listMessages(sessionId);
+    // C123：剔除纯新手模式问答（不喂 LLM 诊断上下文；DB 与 UI 仍全量保留）。
+    // 咽喉点：loaded.history 同时供 _appendHistory 与 _collectPriorUserTexts
+    // 消费，此处一处过滤即切断两条泄漏。
+    final history = _excludeNoviceMessages(rawHistory);
+    debugPrint(
+      '[ChatService] 步骤2: 历史消息 ${history.length} 条（已剔除 novice ${rawHistory.length - history.length} 条）',
+    );
 
     // 3. 读取 teaching state（批次6 M2：DB currentPhase 优先于 options.phase）
     final teaching = await _prepareTeachingState(
@@ -1070,6 +1077,15 @@ extension ChatServiceSend on ChatService {
       activeProblems: activeProblems,
       isOutlineContext: isOutlineContext,
     );
+  }
+
+  /// C123：剔除纯新手模式问答消息（messageType == kNoviceMessageType）。
+  ///
+  /// 这些是 UI 层固定引导 / 学员三字段采集回答，不是学员真实写作文本；
+  /// 混入诊断上下文会污染后续真实诊断。只作用于「喂 LLM 的 history 副本」，
+  /// 不改 DB、不影响 UI 全量展示。
+  List<Message> _excludeNoviceMessages(List<Message> history) {
+    return history.where((m) => m.messageType != kNoviceMessageType).toList();
   }
 
   /// 5-5.2. system prompt + 上下文注入装配（R-019 第二层编排 helper）。

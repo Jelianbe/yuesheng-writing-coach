@@ -176,6 +176,103 @@ void main() {
     });
   });
 
+  // ═════════════════════════════════════════════════════════════
+  // C123 任务4 / R-009：V-01/V-02 由「仅记录」升级为「真降级 cleaned」。
+  // 判据精度原则：只拦确定性违规，宁漏勿伤。
+  //   正例（拦）→ cleaned 不含原文、含 R-009 合规降级文案；
+  //   反例（不拦）→ cleaned 与输入逐字节一致、无对应 fix。
+  // ═════════════════════════════════════════════════════════════
+  group('R-009 V-01 代写段真降级', () {
+    const blocked = <String>[
+      '夜风穿过空荡的长廊，他缓缓抬起头，指节因用力而泛白，眼中闪过一丝不易察觉的决绝，往事如潮水般涌上心头，他知道这一次再也没有回头的余地，脚下的青砖在月光下泛着冷冽的光。',
+      '她缓缓推开那扇斑驳的木门，尘土在斜射的光柱里飞舞，多年未见的老宅在那一刻仿佛重新活了过来，墙角的蛛网轻轻晃动，像是在替这个沉默多年的屋子迎接迟来的主人，院外的风声低低地掠过。',
+      '雨还在下，街道被霓虹染成一片流动的暗红，行人撑起伞，像一朵朵沉默移动的蘑菇，没人知道今夜会发生什么，只有路灯把每个人的影子拉得很长很长，像是走不到尽头，雨丝斜斜地打在橱窗上。',
+      '他笑了笑，把那封信仔细折好塞进信封，又最后看了一眼窗外，终于做出了那个决定，尽管他知道这个决定会改变一切，而他已经没有勇气再去反悔，只能任凭心跳在胸口擂鼓，窗外的天色一点点暗了下去。',
+      '月光洒在开阔的湖面，波光粼粼，远处传来若有若无的琴声，宁静得像一幅被时间遗忘的油画，岸边的芦苇随风轻摇，把整个夜晚的心事都揉进了水波里，没有一个人说话，远处的灯火一盏盏亮起。',
+    ];
+    // 反例：正常教练反馈（短点评 + 一段 >80 字但满是教练元话语的长点评）。
+    const preserved = <String>[
+      '这句的镜头感不错，光影交代得很清楚。',
+      '第二段的人物动机可以再明确一点，读者目前还看不出他为什么生气。',
+      '这里的对话节奏偏快，两句之间缺一个动作缓冲。',
+      '这个比喻很贴切，把紧张感具象化了。',
+      '上一句的环境描写帮读者进入了场景，可以再多给一句他的反应。',
+      '这一段的人物动机可以再明确一点，读者目前还看不出他为什么生气，因为他的反应来得太突兀，情绪转变缺少铺垫，这里需要补上一个他内心动摇的细节，这样读者才会真正相信这个决定。',
+    ];
+
+    test('正例：长段代写 → 从 cleaned 降级为「邀请学员自己写」', () {
+      for (final para in blocked) {
+        final r = validateNaturalLanguage(para);
+        expect(r.cleaned.contains(para), isFalse, reason: '代写段未被摘除：$para');
+        expect(r.cleaned, contains('我不替你落笔'), reason: '缺 R-009 降级文案：$para');
+        expect(
+          r.fixes.any((f) => f.type == 'V-01'),
+          isTrue,
+          reason: '未记 V-01 fix：$para',
+        );
+      }
+    });
+
+    test('反例：正常教练反馈 → cleaned 逐字节保留、无 V-01', () {
+      for (final para in preserved) {
+        final r = validateNaturalLanguage(para);
+        expect(r.cleaned, para, reason: '误伤正常反馈：$para');
+        expect(
+          r.fixes.any((f) => f.type == 'V-01'),
+          isFalse,
+          reason: '误报 V-01：$para',
+        );
+      }
+    });
+  });
+
+  group('R-009 V-02 判决句真降级', () {
+    const blocked = <String>[
+      '你应该把整个故事重写。',
+      '整篇都很差，节奏拖沓，没有一句能看。',
+      '你必须删掉这一章，它完全是多余的。',
+      '你的小说彻底失败了，通篇平庸。',
+      '整体而言这一章不知所云，毫无逻辑。',
+    ];
+    const preserved = <String>[
+      '这句的镜头感不错。',
+      '这一段的人物动机可以再明确一点。',
+      '这个比喻贴切，但下一句的转折有点突兀。',
+      '如果把第二句的环境描写再压缩一点，节奏会更紧。',
+      '你这句的情绪铺垫到位了，只是结尾收得太急。',
+      '比如「你应该这样写」只是一个教学例句，不代表对你的判断。',
+    ];
+
+    test('正例：指令判决 / 整篇定性 → 整句降级为「邀请一起定位」', () {
+      for (final sentence in blocked) {
+        final r = validateNaturalLanguage(sentence);
+        expect(
+          r.cleaned.contains(sentence),
+          isFalse,
+          reason: '判决句未被降级：$sentence',
+        );
+        expect(r.cleaned, contains('我先不下'), reason: '缺 R-009 降级文案：$sentence');
+        expect(
+          r.fixes.any((f) => f.type == 'V-02'),
+          isTrue,
+          reason: '未记 V-02 fix：$sentence',
+        );
+      }
+    });
+
+    test('反例：具体反馈与引号教学例句 → cleaned 逐字节保留、无 V-02', () {
+      for (final sentence in preserved) {
+        final r = validateNaturalLanguage(sentence);
+        expect(r.cleaned, sentence, reason: '误伤正常反馈：$sentence');
+        expect(
+          r.fixes.any((f) => f.type == 'V-02'),
+          isFalse,
+          reason: '误报 V-02：$sentence',
+        );
+      }
+    });
+  });
+
   // ── P0'-3（2026-09-30）：V-03 由「抹成空壳」改为「回填名称」──────
   //
   // 病因：`_applyCodeReplacement` 把 LLM 输出里的 P0xx 抹成 【症候】，但全仓
