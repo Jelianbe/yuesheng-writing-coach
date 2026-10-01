@@ -23,6 +23,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/ai_account_repository.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/features/onboarding/api_config_nudge.dart';
 import 'package:writingcoach/router/app_routes.dart';
@@ -121,15 +122,23 @@ void main() {
     expect(await AppStateRepository(db).getApiConfigHintSeen(), isTrue);
   });
 
-  testWidgets('#5 已配（三字段齐全）→ 不弹，且静默落 seen=true', (tester) async {
+  testWidgets('#5 已配（账号 + key 齐全）→ 不弹，且静默落 seen=true', (tester) async {
     storage.seedConfigured();
+    // ADR-C121-2：判据已与设置页保存同源（ai_accounts 默认账号 + secure storage key）
+    await AIAccountRepository(db).createAccount(
+      name: 'deepseek',
+      baseUrl: 'https://api.deepseek.com',
+      model: 'deepseek-v4-flash',
+      apiKey: 'sk-test-key',
+    );
 
     await tester.pumpWidget(MaterialApp(home: triggerButton()));
     await trigger(tester);
 
     expect(find.text('还未配置 AI 服务商 API'), findsNothing);
     // 正对照：证明本替身确实拦截到了真实通道（否则 #4 的 reads.isEmpty 可能空转）
-    expect(storage.reads, contains(kApiKeyPref));
+    // ADR-C121-2：判据改读 ai_accounts 表（secure storage 键 yuesheng_ai_account_keys）
+    expect(storage.reads, contains('yuesheng_ai_account_keys'));
     expect(await AppStateRepository(db).getApiConfigHintSeen(), isTrue);
   });
 }

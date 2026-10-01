@@ -19,9 +19,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/database/database.dart';
+import '../../data/repositories/ai_account_repository.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../router/app_routes.dart';
-import '../../services/llm_config_storage.dart';
 
 /// 首次在对话 / 诊断里发起真实请求、且未配 API 时弹一次性引导。
 ///
@@ -33,7 +33,10 @@ Future<void> maybeShowApiConfigNudge(
 ) async {
   final repo = AppStateRepository(db);
   if (await repo.getApiConfigHintSeen()) return;
-  final configured = await LlmConfigStorage().getLlmConfig() != null;
+  // ADR-C121-2：判据与设置页保存同源（ai_accounts 表默认账号 + secure storage key），
+  // 修复「已保存仍弹未配置」（旧判据 LlmConfigStorage 与新表双轨漂移）。
+  final configured =
+      await AIAccountRepository(db).getDefaultAccountConfig() != null;
   if (configured) {
     await repo.setApiConfigHintSeen(true); // 已配：静默标记，不再提示
     return;

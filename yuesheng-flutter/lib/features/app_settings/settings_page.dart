@@ -240,6 +240,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _baseUrlCtrl.text = config.baseUrl;
         _modelCtrl.text = config.model;
       }
+      // ADR-C121-2：无已存配置时预填 DeepSeek 预设——修复「hintText 看似已填实为空」
+      // 导致的『填了还提示没填完整』（占位符易被误读为已填值）。
+      if (config == null && mounted) {
+        final preset = _llmPresets.first;
+        _baseUrlCtrl.text = preset.baseUrl;
+        _modelCtrl.text = preset.model;
+      }
     } catch (_) {
       // 加载失败保持空表单，静默（release 不暴露技术细节）
     } finally {
