@@ -336,22 +336,62 @@ class ChapterRepository {
 
   /// 采纳内容到章节（旧内容备份到 previous_content）
   /// 复刻 adoptContentToChapter(chapterId, newContent)
-  Future<void> adoptContentToChapter(String chapterId, String newContent) =>
-      guardRepoWrite('chapter', 'adoptContentToChapter', () async {
-        final chapter = await getChapter(chapterId);
-        if (chapter == null) return;
+  ///
+  /// ADR-C133 批1 子任务B：采纳链路补位置级 diff 埋点，与自主修改显式区分。
+  ///  - 自主修改 = saveChapterContent（message_id 恒 null，无 source）；
+  ///  - 采纳链路 = 本方法。带教练消息上下文 [messageId]（UI 链路由触发采纳的
+  ///    教练消息 id 透传，非空 ⇒ M3 聚合器计入 adoptedChainDiffCount 排除）；
+  ///    拿不到 id 的调用形态（provider 包装层/旧调用）messageId 留 null，但
+  ///    payload.source='adopt' 仍使二者在数据层可区分。
+  ///  - source 落 payload 而非加列：edit_diff_event 表（v43）无 source 列，
+  ///    加列需 migration——非必要不动 schema（C132 刚收口 v43）。
+  /// 埋点失败仅留痕，绝不阻断采纳（对齐 saveChapterContent 埋点纪律）。
+  Future<void> adoptContentToChapter(
+    String chapterId,
+    String newContent, {
+    String? messageId,
+    String source = 'adopt',
+  }) => guardRepoWrite('chapter', 'adoptContentToChapter', () async {
+    final chapter = await getChapter(chapterId);
+    if (chapter == null) return;
+    final segments = locateTextDiff(chapter.content, newContent);
 
-        await (_db.update(
-          _db.chapters,
-        )..where((t) => t.id.equals(chapterId))).write(
-          ChaptersCompanion(
-            previousContent: Value(chapter.content),
-            content: Value(newContent),
-            wordCount: Value(newContent.length),
-            updatedAt: Value(nowSec()),
-          ),
-        );
-      });
+    await (_db.update(
+      _db.chapters,
+    )..where((t) => t.id.equals(chapterId))).write(
+      ChaptersCompanion(
+        previousContent: Value(chapter.content),
+        content: Value(newContent),
+        wordCount: Value(newContent.length),
+        updatedAt: Value(nowSec()),
+      ),
+    );
+
+    if (segments.isEmpty) return;
+    try {
+      final sessionId = await firstSessionIdForChapter(chapterId);
+      await _db
+          .into(_db.editDiffEvents)
+          .insert(
+            EditDiffEventsCompanion.insert(
+              id: generateUuid(),
+              sessionId: Value(sessionId),
+              chapterId: chapterId,
+              messageId: Value(messageId),
+              eventType: EditDiffEventTypes.diff,
+              anchorStart: Value(segments.first.start),
+              anchorEnd: Value(segments.first.end),
+              beforeText: Value(segments.first.before),
+              afterText: Value(segments.first.after),
+              payload: Value(
+                '{"diff_segments":${segments.length},"source":"$source"}',
+              ),
+            ),
+          );
+    } catch (e) {
+      debugPrint('[edit_diff] 记录 adopt diff 事件失败（不阻断采纳）: $e');
+    }
+  });
 
   /// 撤销上次采纳：将 previous_content 恢复为 content，并清空 previous_content
   /// 若 chapter 不存在或 previous_content 为 null，则不做任何操作。

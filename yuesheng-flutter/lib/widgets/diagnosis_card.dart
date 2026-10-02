@@ -39,6 +39,7 @@ import '../services/syndrome_tracker.dart';
 import '../services/teaching_state_cache.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
+import 'm2_recall_bar.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
 
@@ -779,6 +780,21 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       if (widget.sessionId != null) ...[
         const SizedBox(height: 8),
         _SyndromeConfirmationBar(syndrome: s, sessionId: widget.sessionId!),
+      ],
+      // ADR-C133 批2（M2）：复述根因入口。仅在有诊断上下文（sessionId +
+      // chapterId）且该症候有「为什么」根因解释时渲染——无解释不编造根因。
+      if (widget.sessionId != null &&
+          _chapterId.isNotEmpty &&
+          (s.explanation?.trim().isNotEmpty ?? false)) ...[
+        const SizedBox(height: 8),
+        M2RecallBar(
+          syndromeId: s.syndromeId,
+          syndromeName: s.name,
+          rootCauseText: s.explanation!.trim(),
+          sessionId: widget.sessionId!,
+          chapterId: _chapterId,
+          messageId: widget.messageId,
+        ),
       ],
     ],
   );

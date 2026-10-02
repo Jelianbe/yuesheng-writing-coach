@@ -49,8 +49,10 @@ class WritingCoachMessageList extends ConsumerWidget {
   /// 消息列表滚动控制器（自动滚动到底部由宿主负责驱动）
   final ScrollController scrollController;
 
-  /// 采纳建议回调（null 表示不建议采纳按钮）
-  final void Function(String suggestion)? onAdopt;
+  /// 采纳建议回调（null 表示不建议采纳按钮）。
+  /// [messageId] = 触发本次采纳的教练消息 id（ADR-C133 子任务B：透传以区分
+  /// 采纳链路与自主修改；非空 ⇒ M3 聚合器排除）。
+  final void Function(String suggestion, String? messageId)? onAdopt;
 
   /// Teacher 建议卡「教我原理」
   final void Function(String syndromeName) onTeachPrinciple;
@@ -307,7 +309,9 @@ class WritingCoachMessageList extends ConsumerWidget {
           .dismissEvaluationReport(msg.id),
       // E1-b②：评估报告「查看成长记录」→ 成长详情页（对齐本文件既有先例）
       onOpenGrowth: () => context.push(AppRoutes.growthDetail),
-      onAdoptSuggestion: onAdopt != null ? () => onAdopt!(msg.content) : null,
+      onAdoptSuggestion: onAdopt != null
+          ? () => onAdopt!(msg.content, msg.id)
+          : null,
       // 批次81：三卡回调接线（H1-H3）
       onContinueTraining: () =>
           ref.read(practiceStoreProvider.notifier).retryPractice(),

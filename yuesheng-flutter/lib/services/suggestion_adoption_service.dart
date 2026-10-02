@@ -13,16 +13,20 @@ import '../widgets/adopt_suggestion_sheet.dart';
 ///
 /// [chapterId] 采纳目标章节；[suggestion] 建议原文；[onAdopted]
 /// 采纳/撤销成功后由调用方刷新章节内容（写作页刷新 store + 编辑器）。
+/// [messageId] 触发本次采纳的教练消息 id（ADR-C133 子任务B：透传到
+/// 数据层，使采纳链路 diff 与自主修改可区分；拿不到传 null，落 payload.source=adopt）。
 void adoptSuggestionToChapter(
   BuildContext context, {
   required String chapterId,
   required String suggestion,
+  String? messageId,
   required Future<void> Function() onAdopted,
 }) {
   AdoptSuggestionSheet.show(
     context,
     chapterId: chapterId,
     suggestion: suggestion,
+    messageId: messageId,
     onAdopted: onAdopted,
   );
 }

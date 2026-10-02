@@ -45,7 +45,7 @@ class WritingCoachPanel extends ConsumerStatefulWidget {
   final String manuscriptId;
   final String chapterTitle;
   final VoidCallback onClose;
-  final void Function(String suggestion)? onAdopt;
+  final void Function(String suggestion, String? messageId)? onAdopt;
 
   /// B3 划词诊断：写作页选中文本注入（非空时打开面板即自动对该选段诊断）
   final String? pendingDiagnoseText;

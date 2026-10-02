@@ -327,12 +327,15 @@ class WritingPageScaffold extends ConsumerWidget {
       // B3 划词诊断：注入选中文本（面板打开后自动触发选段诊断）
       pendingDiagnoseText: host.pendingDiagnoseText,
       onClose: controllers.fab.toggleAiPanel,
-      onAdopt: (suggestion) {
+      onAdopt: (suggestion, messageId) {
         // 批次5（5.1）：采纳动作收敛单一 service（suggestion_adoption_service）
+        // ADR-C133 子任务B：透传触发采纳的教练消息 id（messageId），
+        // 使采纳链路 diff 事件与自主修改（message_id 恒 null）可区分。
         adoptSuggestionToChapter(
           context,
           chapterId: host.chapterId,
           suggestion: suggestion,
+          messageId: messageId,
           onAdopted: () async {
             // 采纳/撤销后刷新 store + 同步编辑器
             await host.ref

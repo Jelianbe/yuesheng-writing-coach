@@ -949,6 +949,8 @@ class SettingTags extends Table {
 /// 会话/用户级（session_id 维度，用户级事件 session_id 记 ''），
 /// 追加式事件日志，供 C121-2 验收读数离线计算三指标：
 ///   30 秒产出率 / 可诊断率 / 二轮留存
+///   ⚠ 口径降级（ADR-C133 §4.4）：二轮留存 = 复刷率，仅报次留/7留两窗口，
+///     只作「产品是否还有人用」的存活信号；禁止用于教学成败判断与立项依据。
 /// 事件类型：card_wall_entered · micro_task_submitted · app_opened
 ///   （可诊断率由 diagnosis_results 按会话 + 时间关联，不在此表）
 /// 试点批次专用；正式设计批评估后决定去留（不承诺长期保留）。

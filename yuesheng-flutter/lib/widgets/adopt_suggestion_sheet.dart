@@ -32,11 +32,17 @@ class AdoptSuggestionSheet extends ConsumerStatefulWidget {
   final String suggestion;
   final VoidCallback onAdopted;
 
+  /// 触发本次采纳的教练消息 id（ADR-C133 子任务B：透传到 adoptContentToChapter
+  /// 落 diff 事件 message_id，使采纳链路与自主修改可区分；null = 拿不到，
+  /// 仍落 payload.source='adopt' 保底区分）。
+  final String? messageId;
+
   const AdoptSuggestionSheet({
     super.key,
     required this.chapterId,
     required this.suggestion,
     required this.onAdopted,
+    this.messageId,
   });
 
   /// 弹出采纳建议弹窗
@@ -45,6 +51,7 @@ class AdoptSuggestionSheet extends ConsumerStatefulWidget {
     required String chapterId,
     required String suggestion,
     required VoidCallback onAdopted,
+    String? messageId,
   }) {
     showYueModalBottomSheet<void>(
       context: context,
@@ -53,6 +60,7 @@ class AdoptSuggestionSheet extends ConsumerStatefulWidget {
         chapterId: chapterId,
         suggestion: suggestion,
         onAdopted: onAdopted,
+        messageId: messageId,
       ),
     );
   }
@@ -123,7 +131,11 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
       final newContent = base.isEmpty
           ? widget.suggestion
           : '$base\n\n${widget.suggestion}';
-      await repo.adoptContentToChapter(widget.chapterId, newContent);
+      await repo.adoptContentToChapter(
+        widget.chapterId,
+        newContent,
+        messageId: widget.messageId,
+      );
       if (mounted) {
         widget.onAdopted();
         Navigator.pop(context);
@@ -162,7 +174,11 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
       // 所写（否则撤销时会回退到 DB 旧版，丢失未落库输入）。
       await _flushEditorInput();
       final repo = _repo();
-      await repo.adoptContentToChapter(widget.chapterId, widget.suggestion);
+      await repo.adoptContentToChapter(
+        widget.chapterId,
+        widget.suggestion,
+        messageId: widget.messageId,
+      );
       if (mounted) {
         widget.onAdopted();
         Navigator.pop(context);

@@ -270,7 +270,7 @@ void main() {
 
   Widget buildPanel({
     VoidCallback? onClose,
-    void Function(String)? onAdopt,
+    void Function(String suggestion, String? messageId)? onAdopt,
     String? customChapterId,
     String? customChapterTitle,
     String? pendingDiagnoseText,
