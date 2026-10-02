@@ -270,7 +270,12 @@ class ChatService {
 
   /// 加载会话的态度状态
   Future<
-    ({AttitudeLevel attitude, TeachingPhase phase, String? activePersonaName})
+    ({
+      AttitudeLevel attitude,
+      TeachingPhase phase,
+      String? activePersonaName,
+      bool isAttitudeLocked,
+    })
   >
   loadAttitudeState(String sessionId) async {
     final ts = await _stateRepo.getTeachingState(sessionId);
@@ -287,6 +292,10 @@ class ChatService {
       activePersonaName: persistedLevel == null
           ? await _resolveActivePersonaName()
           : null,
+      // C129（断点 B）：会话是否已锁定自身态度（persistAttitude 写过
+      // teaching_state.attitudeLevel）。锁定会话仍以此值为准，设置页改全局
+      // 教练不影响它；UI 据此显示「本会话已锁定」徽标。
+      isAttitudeLocked: persistedLevel != null,
     );
   }
 

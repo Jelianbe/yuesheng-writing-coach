@@ -36,6 +36,7 @@ void main() {
     String reasoningTier = reasoningTierStandard,
     void Function(String)? onReasoningTierChange,
     VoidCallback? onOpenCoachSettings,
+    bool isAttitudeLocked = false,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -52,6 +53,7 @@ void main() {
           reasoningTier: reasoningTier,
           onReasoningTierChange: onReasoningTierChange ?? (_) {},
           onOpenCoachSettings: onOpenCoachSettings ?? () {},
+          isAttitudeLocked: isAttitudeLocked,
         ),
       ),
     );
@@ -268,5 +270,27 @@ void main() {
 
     expect(find.text('态度档位'), findsOneWidget);
     expect(find.text('当前教练'), findsNothing);
+  });
+
+  // ════════════════════════════════════════════════════════
+  // C129（断点 B）：会话级态度锁定透明化——「本会话已锁定」徽标
+  // ════════════════════════════════════════════════════════
+
+  testWidgets('#14 C129 锁定会话 → 态度区显示「本会话已锁定」徽标', (tester) async {
+    await tester.pumpWidget(buildHeader(isAttitudeLocked: true));
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+
+    expect(find.text('本会话已锁定'), findsOneWidget);
+  });
+
+  testWidgets('#14b C129 未锁定（默认 false）→ 不显示锁定徽标', (tester) async {
+    await tester.pumpWidget(buildHeader());
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+
+    expect(find.text('本会话已锁定'), findsNothing);
   });
 }

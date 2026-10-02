@@ -40,6 +40,9 @@ import 'task_panel.dart';
 class ChatPageBody extends ConsumerWidget {
   final ChatState chatState;
   final AttitudeLevel attitude;
+
+  /// C129：本会话是否锁定自身态度（true → 头部态度区显「本会话已锁定」）
+  final bool attitudeLocked;
   final TeachingPhase phase;
   final String? primaryRefTitle;
   final String? activePersonaName;
@@ -70,6 +73,7 @@ class ChatPageBody extends ConsumerWidget {
     super.key,
     required this.chatState,
     required this.attitude,
+    required this.attitudeLocked,
     required this.phase,
     required this.primaryRefTitle,
     required this.activePersonaName,
@@ -138,6 +142,7 @@ class ChatPageBody extends ConsumerWidget {
   Widget _buildHeader(WidgetRef ref, BuildContext context, String tier) {
     return ChatHeaderSection(
       attitude: attitude,
+      attitudeLocked: attitudeLocked,
       primaryRefTitle: primaryRefTitle,
       activePersonaName: activePersonaName,
       suggestion: attitudeSuggestion,
@@ -197,6 +202,9 @@ class ChatPageBody extends ConsumerWidget {
 /// 头部状态区：ChatHeader + 态度建议横幅
 class ChatHeaderSection extends StatelessWidget {
   final AttitudeLevel attitude;
+
+  /// C129：本会话是否锁定自身态度（true → 头部态度区显「本会话已锁定」）
+  final bool attitudeLocked;
   final String? primaryRefTitle;
   final String? activePersonaName;
   final AttitudeSuggestion? suggestion;
@@ -213,6 +221,7 @@ class ChatHeaderSection extends StatelessWidget {
   const ChatHeaderSection({
     super.key,
     required this.attitude,
+    required this.attitudeLocked,
     required this.primaryRefTitle,
     required this.activePersonaName,
     required this.suggestion,
@@ -231,6 +240,7 @@ class ChatHeaderSection extends StatelessWidget {
       children: [
         ChatHeader(
           currentAttitude: attitude,
+          isAttitudeLocked: attitudeLocked,
           onAttitudeChange: attitudeController.handleAttitudeChange,
           onOpenSessionDrawer: onOpenSessionDrawer,
           onOpenProfile: messages.handleOpenProfile,

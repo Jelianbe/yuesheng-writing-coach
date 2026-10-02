@@ -72,6 +72,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       await AppStateRepository(
         ref.read(appDatabaseProvider),
       ).setActiveCoachPersona(personaId);
+      // C129（断点 A）：全局教练变更 → 递增 revision，已打开的未锁定对话会话
+      // 会经 ref.listen 重新 resolve 全局态度（锁定会话不受影响）。
+      ref.read(coachPersonaRevisionProvider.notifier).state++;
       if (mounted) setState(() => _activeId = personaId);
     } catch (_) {
       if (mounted) {
@@ -127,6 +130,8 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       // 删除的正是当前激活项 → 回退系统预设 doubao。
       if (_activeId == persona.id) {
         await repo.setActiveCoachPersona('doubao');
+        // C129（断点 A）：激活人格回退 = 全局变更，同样递增 revision。
+        ref.read(coachPersonaRevisionProvider.notifier).state++;
       }
       final customs = await repo.getCustomCoachPersonas();
       if (!mounted) return;
@@ -249,7 +254,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
           _headerRow(palette),
           const SizedBox(height: 4),
           Text(
-            '换一种说话方式。切换后下次启动沿用。',
+            '对新会话生效；已锁定态度的会话保持不变。',
             style: TextStyle(fontSize: 13, color: palette.textTertiary),
           ),
           const SizedBox(height: 12),

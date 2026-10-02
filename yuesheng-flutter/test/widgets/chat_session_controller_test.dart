@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/error_log_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
@@ -27,10 +28,14 @@ import 'package:writingcoach/providers/chat_store.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/attitude_advisor.dart';
 import 'package:writingcoach/services/error_handler.dart';
+import 'package:writingcoach/types/coach_persona.dart';
 import 'package:writingcoach/types/teaching_types.dart';
+import 'package:writingcoach/features/chat/chat_attitude_controller.dart';
+import 'package:writingcoach/features/chat/chat_diagnosis_controller.dart';
 import 'package:writingcoach/features/chat/chat_input.dart';
 import 'package:writingcoach/features/chat/chat_page_host.dart';
 import 'package:writingcoach/features/chat/chat_session_controller.dart';
+import 'package:writingcoach/features/chat/chat_teaching_controller.dart';
 
 import '../helpers/mock_last_session_storage.dart';
 
@@ -305,6 +310,142 @@ void main() {
       expect(host.sessions, isEmpty, reason: '查询失败保持空列表，不崩 UI');
     });
   });
+
+  // ════════════════════════════════════════════════════════
+  // C129：态度档位「设置↔对话」链路（断点 A 刷新打通 + 断点 B 锁定透明化）
+  // 直测 ChatAttitudeController.loadAttitude / handleAttitudeChange：
+  //   真实内存库 + 真实 chatServiceProvider（loadAttitudeState 全链路跑通）。
+  // ════════════════════════════════════════════════════════
+  group('C129 态度档位设置↔对话链路', () {
+    /// 造一个自定义人格并设为全局激活（attitudeLevel 指定其态度档）。
+    Future<void> activateCustomPersona(
+      AppDatabase d, {
+      required String id,
+      required String name,
+      required AttitudeLevel level,
+    }) async {
+      final appState = AppStateRepository(d);
+      await appState.saveCustomCoachPersona(
+        CoachPersona(
+          id: id,
+          name: name,
+          label: '测',
+          isSystem: false,
+          attitudeLevel: level,
+          systemPromptFragment: '测试语气',
+        ),
+      );
+      await appState.setActiveCoachPersona(id);
+    }
+
+    testWidgets('A：未锁定会话随全局教练变更重新 resolve（revision 重载语义）', (tester) async {
+      final host = await pumpHost(tester, database: db);
+      final sessionId = (await host.ref.read(
+        sessionBootstrapProvider.future,
+      )).sessionId;
+
+      await activateCustomPersona(
+        db,
+        id: 'c_a',
+        name: '教练甲',
+        level: AttitudeLevel.yuesheng,
+      );
+      await host.attitudeController.loadAttitude(sessionId);
+      expect(host.attitude, AttitudeLevel.yuesheng);
+      expect(host.isAttitudeLocked, isFalse);
+
+      // 设置页改全局教练为「教练乙（sensei）」→ 对话页收到 revision 信号后
+      // 对当前会话重载重 resolve（与 _attitudeController.loadAttitude 同一路径）。
+      await activateCustomPersona(
+        db,
+        id: 'c_b',
+        name: '教练乙',
+        level: AttitudeLevel.sensei,
+      );
+      await host.attitudeController.loadAttitude(sessionId);
+
+      expect(host.attitude, AttitudeLevel.sensei, reason: '未锁定会话应反映新全局教练态度');
+      expect(host.isAttitudeLocked, isFalse);
+    });
+
+    testWidgets('A：锁定会话不受全局教练变更影响', (tester) async {
+      final host = await pumpHost(tester, database: db);
+      final sessionId = (await host.ref.read(
+        sessionBootstrapProvider.future,
+      )).sessionId;
+
+      // 先在对话页切档 → 会话锁定 yuesheng（persistAttitude 落库）
+      await host.ref
+          .read(chatServiceProvider)
+          .persistAttitude(sessionId, AttitudeLevel.yuesheng);
+
+      // 设置页把全局教练改为 sensei
+      await activateCustomPersona(
+        db,
+        id: 'c_b',
+        name: '教练乙',
+        level: AttitudeLevel.sensei,
+      );
+
+      await host.attitudeController.loadAttitude(sessionId);
+
+      expect(
+        host.attitude,
+        AttitudeLevel.yuesheng,
+        reason: '锁定会话仍用其锁定态度，不跟全局教练变',
+      );
+      expect(host.isAttitudeLocked, isTrue);
+    });
+
+    testWidgets('A：会话切换重载——锁定会话与新会话各自 resolve 当时状态', (tester) async {
+      final host = await pumpHost(tester, database: db);
+      await activateCustomPersona(
+        db,
+        id: 'c_y',
+        name: '全局教练',
+        level: AttitudeLevel.yuesheng,
+      );
+
+      // 会话甲：锁定 sensei
+      final s1 = await SessionRepository(db).createBlankSession(title: '甲');
+      await host.ref
+          .read(chatServiceProvider)
+          .persistAttitude(s1, AttitudeLevel.sensei);
+      // 会话乙：空白未锁定
+      final s2 = await SessionRepository(db).createBlankSession(title: '乙');
+
+      await host.attitudeController.loadAttitude(s1);
+      expect(host.attitude, AttitudeLevel.sensei);
+      expect(host.isAttitudeLocked, isTrue);
+
+      // 切到会话乙（bootstrap 变更 → _onBootstrapReady → loadAttitude）
+      await host.attitudeController.loadAttitude(s2);
+      expect(
+        host.attitude,
+        AttitudeLevel.yuesheng,
+        reason: '新会话未锁定 → resolve 全局激活人格态度',
+      );
+      expect(host.isAttitudeLocked, isFalse);
+    });
+
+    testWidgets('B：handleAttitudeChange 成功 → 会话即时锁定', (tester) async {
+      final host = await pumpHost(tester, database: db);
+      final sessionId = (await host.ref.read(
+        sessionBootstrapProvider.future,
+      )).sessionId;
+      expect(host.isAttitudeLocked, isFalse);
+
+      await host.attitudeController.handleAttitudeChange(AttitudeLevel.sensei);
+
+      expect(host.attitude, AttitudeLevel.sensei);
+      expect(host.isAttitudeLocked, isTrue, reason: 'persistAttitude 成功即锁定');
+      // DB 侧确证：下次 loadAttitudeState 带锁定标志
+      final state = await host.ref
+          .read(chatServiceProvider)
+          .loadAttitudeState(sessionId);
+      expect(state.isAttitudeLocked, isTrue);
+    });
+  });
 }
 
 // ── 最小宿主：用 ConsumerState 拿真实 WidgetRef，实现 ChatPageHost 最小集 ──
@@ -320,10 +461,22 @@ class _HostHarness extends ConsumerStatefulWidget {
 
 class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   late final ChatSessionController controller = ChatSessionController(this);
+  // C129：态度控制器（复用同一宿主 harness 直测 loadAttitude / handleAttitudeChange）
+  late final ChatTeachingController _teaching = ChatTeachingController(this);
+  late final ChatDiagnosisController _diagnosis = ChatDiagnosisController(
+    this,
+    _teaching,
+  );
+  late final ChatAttitudeController attitudeController = ChatAttitudeController(
+    this,
+    _diagnosis,
+  );
 
   String _inputText = '';
   AttitudeLevel _attitude = AttitudeLevel.doubao;
   TeachingPhase _phase = TeachingPhase.p0Engage;
+  // C129：会话态度锁定标志（applyAttitudeState / setAttitudeLocked 写入）
+  bool _attitudeLocked = false;
   String? _primaryRefTitle;
   AttitudeSuggestion? _suggestion;
   int? _lastSuggestionTime;
@@ -352,6 +505,8 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   @override
   AttitudeLevel get attitude => _attitude;
   @override
+  bool get isAttitudeLocked => _attitudeLocked;
+  @override
   String? get activePersonaName => null;
   @override
   TeachingPhase get phase => _phase;
@@ -378,10 +533,15 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
     AttitudeLevel attitude,
     TeachingPhase phase, {
     String? activePersonaName,
+    bool isAttitudeLocked = false,
   }) {
     _attitude = attitude;
     _phase = phase;
+    _attitudeLocked = isAttitudeLocked;
   }
+
+  @override
+  void setAttitudeLocked(bool value) => _attitudeLocked = value;
 
   @override
   void setPrimaryRefTitle(String? value) => _primaryRefTitle = value;

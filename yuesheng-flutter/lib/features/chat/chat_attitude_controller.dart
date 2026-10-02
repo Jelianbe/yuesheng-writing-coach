@@ -40,13 +40,18 @@ class ChatAttitudeController {
     if (bootstrap == null) return;
 
     final prev = host.attitude;
+    final wasLocked = host.isAttitudeLocked;
     host.setAttitude(attitude);
     try {
       await host.ref
           .read(chatServiceProvider)
           .persistAttitude(bootstrap.sessionId, attitude);
+      // C129（断点 B）：persistAttitude 成功 = 本会话即时锁定自身态度，
+      // 设置页改全局教练不再影响本会话（同步 UI 锁定徽标）。
+      host.setAttitudeLocked(true);
     } catch (e) {
       host.setAttitude(prev);
+      host.setAttitudeLocked(wasLocked);
       if (host.context.mounted) {
         ScaffoldMessenger.of(
           host.context,
@@ -139,11 +144,12 @@ class ChatAttitudeController {
           .loadAttitudeState(sessionId);
       if (!host.mounted) return;
       // 会话级态度优先（锁定）；无持久态度时 loadAttitudeState 已回退全局激活人格
-      // （activePersonaName 供菜单体现「当前教练」）
+      // （activePersonaName 供菜单体现「当前教练」；isAttitudeLocked 驱动「本会话已锁定」徽标）
       host.applyAttitudeState(
         state.attitude,
         state.phase,
         activePersonaName: state.activePersonaName,
+        isAttitudeLocked: state.isAttitudeLocked,
       );
       // 批次 18：P2 阶段进入时加载活跃问题（对齐 RN useEffect currentPhase 依赖）
       if (state.phase == TeachingPhase.p2PracticeLoop) {

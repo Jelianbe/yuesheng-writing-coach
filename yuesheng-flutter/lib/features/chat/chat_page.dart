@@ -59,6 +59,11 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   /// T6 态度切换：当前态度档位（bootstrap 后从 teaching_state 加载）
   AttitudeLevel _attitude = AttitudeLevel.doubao;
 
+  /// C129（断点 B）：本会话是否已锁定自身态度（persistAttitude 写过
+  /// teaching_state.attitudeLevel）。true → 头部态度区显示「本会话已锁定」，
+  /// 设置页改全局教练不影响本会话。
+  bool _attitudeLocked = false;
+
   /// 当前激活的教练人格名（用户自定义 → 显示名；系统预设 / 无 → null）。
   String? _activePersonaName;
 
@@ -128,6 +133,9 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   AttitudeLevel get attitude => _attitude;
 
   @override
+  bool get isAttitudeLocked => _attitudeLocked;
+
+  @override
   String? get activePersonaName => _activePersonaName;
 
   TeachingMode _teachingMode = TeachingMode.socratic;
@@ -195,11 +203,16 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     AttitudeLevel attitude,
     TeachingPhase phase, {
     String? activePersonaName,
+    bool isAttitudeLocked = false,
   }) => setState(() {
     _attitude = attitude;
     _phase = phase;
+    _attitudeLocked = isAttitudeLocked;
     if (activePersonaName != null) _activePersonaName = activePersonaName;
   });
+
+  @override
+  void setAttitudeLocked(bool value) => setState(() => _attitudeLocked = value);
 
   @override
   void setPrimaryRefTitle(String? value) =>
@@ -264,6 +277,16 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       if (next != null && next.isNotEmpty) _session.consumePendingSession(next);
     });
 
+    // C129（断点 A）：设置页改/删教练 → 已打开会话重新 resolve 态度。
+    // 仅 bootstrap 就绪后响应（未就绪则跳过：就绪时 _onBootstrapReady 自会
+    // 加载最新全局）。锁定会话 loadAttitudeState 仍返回其锁定值——只重载，
+    // 不改「会话级锁定 > 全局」的优先级。
+    ref.listen<int>(coachPersonaRevisionProvider, (previous, next) {
+      final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
+      if (bootstrap == null) return;
+      _attitudeController.loadAttitude(bootstrap.sessionId);
+    });
+
     // bootstrap 完成后加载已有消息（ADR-C122：问卷退役，不再等待问卷）
     ref.listen<AsyncValue<SessionBootstrapState>>(sessionBootstrapProvider, (
       previous,
@@ -322,6 +345,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     return ChatPageBody(
       chatState: chatState,
       attitude: _attitude,
+      attitudeLocked: _attitudeLocked,
       phase: _phase,
       primaryRefTitle: _primaryRefTitle,
       activePersonaName: _activePersonaName,

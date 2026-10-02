@@ -44,3 +44,13 @@ final pilotMetricsRepositoryProvider = Provider<PilotMetricsRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return PilotMetricsRepository(db);
 });
+
+/// C129（断点 A）：全局教练人格变更 revision 信号。
+///
+/// 设置页改选/删除当前激活教练（setActiveCoachPersona 成功）后递增。
+/// ChatPage 经 StatefulShellRoute.indexedStack 常驻存活，ref.listen 到变化后
+/// 对当前会话重新 resolve 态度：**未锁定**会话随之反映新全局教练；**锁定**
+/// 会话（teaching_state 已持久 attitudeLevel）由 loadAttitudeState 仍返回其
+/// 锁定值——本信号只触发重载，不改加载优先级（R：会话级锁定 > 全局）。
+/// 与会话切换重载（bootstrap 变更 → _onBootstrapReady）语义同构。
+final coachPersonaRevisionProvider = StateProvider<int>((ref) => 0);

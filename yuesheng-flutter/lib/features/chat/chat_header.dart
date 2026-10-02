@@ -93,6 +93,11 @@ class ChatHeader extends StatelessWidget {
   /// 打开教练设置（P0-4c 方案 B：对话内快速切换保留，另供完整管理直达）
   final VoidCallback onOpenCoachSettings;
 
+  /// C129（断点 B）：本会话是否锁定自身态度。true 时态度区显示紧凑徽标
+  /// 「本会话已锁定」——提示设置页改全局教练不影响本会话；默认 false 不破坏
+  /// 既有调用/测试（未锁定显示完全不变）。
+  final bool isAttitudeLocked;
+
   const ChatHeader({
     super.key,
     required this.currentAttitude,
@@ -107,6 +112,7 @@ class ChatHeader extends StatelessWidget {
     this.reasoningTier = reasoningTierStandard,
     this.onReasoningTierChange = _ignoreTierChange,
     this.onOpenCoachSettings = _ignoreCoachSettings,
+    this.isAttitudeLocked = false,
   });
 
   bool get _isManuscriptEntry => entryPoint == 'manuscript';
@@ -149,8 +155,37 @@ class ChatHeader extends StatelessWidget {
             _buildCurrentCoach(context, sheetCtx, activeName)
           else
             _buildSystemAttitudeChips(context, sheetCtx),
+          // C129（断点 B）：会话锁定 → 紧凑徽标提示「本会话已锁定」，
+          // 让用户理解「设置页换教练为何对本会话无效」。
+          if (isAttitudeLocked) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _buildLockedBadge(context),
+          ],
           const SizedBox(height: AppSpacing.sm),
           _buildManageCoachEntry(context, sheetCtx),
+        ],
+      ),
+    );
+  }
+
+  /// C129（断点 B）：会话级态度锁定徽标（设计令牌，样式对齐「自定义」胶囊）。
+  Widget _buildLockedBadge(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: palette.primarySoft,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline, size: 11, color: palette.primary),
+          const SizedBox(width: 4),
+          Text(
+            '本会话已锁定',
+            style: TextStyle(fontSize: 11, color: palette.primary),
+          ),
         ],
       ),
     );

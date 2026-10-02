@@ -19,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/features/app_settings/coach_selector_card.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
@@ -261,5 +262,47 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('待删教练'), findsNothing);
     expect(find.byIcon(Icons.delete_outline), findsNothing);
+  });
+
+  // ════════════════════════════════════════════════════════
+  // C129：断点 B 设置页生效范围说明 + 断点 A revision 信号写入
+  // ════════════════════════════════════════════════════════
+
+  testWidgets('#10 C129 副标题说明全局教练的生效范围', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('对新会话生效；已锁定态度的会话保持不变。'),
+      findsOneWidget,
+      reason: '需向用户说明：对新会话生效；已有锁定态度会话不受影响',
+    );
+    expect(
+      find.text('换一种说话方式。切换后下次启动沿用。'),
+      findsNothing,
+      reason: '旧文案未说明锁定会话语义，已替换',
+    );
+  });
+
+  testWidgets('#11 C129 选系统预设教练成功 → coachPersonaRevisionProvider 递增', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+    expect(container.read(coachPersonaRevisionProvider), 0);
+
+    await tester.tap(find.text('月笙如歌'));
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(coachPersonaRevisionProvider),
+      1,
+      reason: '设置侧写入全局教练后应递增 revision，对话页据此重载重 resolve',
+    );
+    expect(
+      await AppStateRepository(db).getActiveCoachPersonaId(),
+      'yuesheng',
+      reason: '写库确证（系统预设双写）',
+    );
   });
 }

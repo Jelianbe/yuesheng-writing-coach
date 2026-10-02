@@ -285,18 +285,22 @@ void main() {
     expect(id, sessionId, reason: '应复用首个既有会话');
   });
 
-  test('A3 loadAttitudeState 无状态 → 默认 doubao / p0Engage', () async {
+  test('A3 loadAttitudeState 无状态 → 默认 doubao / p0Engage（未锁定）', () async {
     final chatService = buildChatService(FakeLlmClient('ok'));
     final state = await chatService.loadAttitudeState(sessionId);
     expect(state.attitude, AttitudeLevel.doubao);
     expect(state.phase, TeachingPhase.p0Engage);
+    // C129（断点 B）：无持久态度 = 未锁定（回退全局，设置页变更会反映）
+    expect(state.isAttitudeLocked, isFalse);
   });
 
-  test('A4 persistAttitude + loadAttitudeState 往返一致', () async {
+  test('A4 persistAttitude + loadAttitudeState 往返一致（锁定 true）', () async {
     final chatService = buildChatService(FakeLlmClient('ok'));
     await chatService.persistAttitude(sessionId, AttitudeLevel.sensei);
     final state = await chatService.loadAttitudeState(sessionId);
     expect(state.attitude, AttitudeLevel.sensei);
+    // C129（断点 B）：persistAttitude 写过 = 会话锁定
+    expect(state.isAttitudeLocked, isTrue);
   });
 
   test('A5 loadMessages 写入后可读取', () async {
@@ -368,6 +372,8 @@ void main() {
       '月笙',
       reason: '会话无持久态度且激活自定义人格时，应带出人格名供菜单展示当前教练',
     );
+    // C129（断点 B）：回退全局 = 未锁定（设置页改教练后此会话会跟着变）
+    expect(state.isAttitudeLocked, isFalse);
   });
 
   test('A9b 会话有持久态度 → activePersonaName 为 null（菜单走系统档位）', () async {
@@ -398,6 +404,8 @@ void main() {
       isNull,
       reason: '会话已锁定持久态度时，不应再以激活人格名覆盖菜单展示',
     );
+    // C129（断点 B）：会话锁定 = true
+    expect(state.isAttitudeLocked, isTrue);
   });
 
   test('A10 直接说明阈值覆盖 round-trip（系统预设可编辑）', () async {
