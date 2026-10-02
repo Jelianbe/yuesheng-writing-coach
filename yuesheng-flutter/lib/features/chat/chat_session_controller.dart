@@ -90,6 +90,21 @@ class ChatSessionController {
     final sessionRepo = SessionRepository(host.ref.read(appDatabaseProvider));
     final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
     await sessionRepo.deleteSession(sessionId);
+    // 仅当删的正是「上次会话」指针时才清除，避免启动恢复死 ID；删其它会话不动
+    // 该指针（恢复当前会话的体验不变）。SecureStore 失败不阻断本次删除。
+    try {
+      final lastStorage = host.ref.read(lastSessionStorageProvider);
+      final lastId = await lastStorage.getLastSessionId();
+      if (lastId == sessionId) {
+        await lastStorage.clearLastSessionId();
+      }
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'handleDeleteSession.clearLastSessionId',
+        error: e,
+        stack: st,
+      );
+    }
     await loadSessions();
     if (bootstrap == null || bootstrap.sessionId != sessionId) return;
     resetSessionScopedState();

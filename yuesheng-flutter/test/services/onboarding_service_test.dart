@@ -5,9 +5,8 @@
 // 覆盖路径：
 //   1. submitOnboarding 三步迁移（onboarding_data + beginner_level + questionnaire_completed）
 //   2. proficiency → BeginnerLevel 映射（N0/N1/N2/N3 四级）
-//   3. skipOnboarding 默认值（beginner + skipped=true）
-//   4. 重复调用幂等性
-//   5. onboarding_data 持久化正确性（toJson/tofromJson 往返）
+//   3. 重复调用幂等性
+//   4. onboarding_data 持久化正确性（toJson/tofromJson 往返）
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/native.dart';
@@ -120,42 +119,6 @@ void main() {
     });
   });
 
-  group('skipOnboarding 默认值', () {
-    test('写入默认 beginner + skipped=true + 空数组', () async {
-      final sessionId = await sessionRepo.createBlankSession();
-
-      await service.skipOnboarding(sessionId);
-
-      // onboarding_data
-      final saved = await smRepo.getOnboardingData(sessionId);
-      expect(saved, isNotNull);
-      expect(saved!['proficiency'], 'beginner');
-      expect(saved['focusAreas'], <String>[]);
-      expect(saved['cognitiveStyle'], 'mixed');
-      expect(saved['writingGoal'], '');
-      expect(saved['skipped'], true);
-
-      // beginner_level → N0_ENGAGE
-      final ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts!.beginnerLevel, BeginnerLevel.n0Engage.value);
-
-      // questionnaire_completed
-      expect(await appStateRepo.getQuestionnaireCompleted(), true);
-    });
-
-    test('completedAt 为当前秒级时间戳', () async {
-      final sessionId = await sessionRepo.createBlankSession();
-      final startTs = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-      await service.skipOnboarding(sessionId);
-
-      final saved = await smRepo.getOnboardingData(sessionId);
-      final completedAt = saved!['completedAt'] as int;
-      expect(completedAt, greaterThanOrEqualTo(startTs));
-      expect(completedAt, lessThan(startTs + 1000));
-    });
-  });
-
   group('幂等性', () {
     test('重复调用 submitOnboarding 不报错且状态一致', () async {
       final sessionId = await sessionRepo.createBlankSession();
@@ -168,20 +131,6 @@ void main() {
       final ts = await stateRepo.getTeachingState(sessionId);
       expect(ts!.beginnerLevel, BeginnerLevel.n1Elements.value);
       expect(await appStateRepo.getQuestionnaireCompleted(), true);
-    });
-
-    test('先 submit 再 skip 不报错', () async {
-      final sessionId = await sessionRepo.createBlankSession();
-
-      await service.submitOnboarding(sessionId, makeData());
-      await service.skipOnboarding(sessionId);
-
-      final saved = await smRepo.getOnboardingData(sessionId);
-      expect(saved!['skipped'], true);
-      expect(saved['proficiency'], 'beginner');
-
-      final ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts!.beginnerLevel, BeginnerLevel.n0Engage.value);
     });
   });
 

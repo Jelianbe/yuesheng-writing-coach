@@ -44,6 +44,12 @@ class StudentModelRepository {
   /// 追加教学历史记录
   /// 复刻 appendTeachingHistory(sessionId, record)
   /// record 是任意 JSON 对象（type: diagnosis/confirmation/training）
+  ///
+  /// G15 口径归属：teaching_history 仅作**历史流水**，**不再承担诊断次数统计语义**。
+  /// 本方法全量 append（不做 NO_OP 去重），与 diagnosis_results 的去重口径不同、
+  /// 次数偏多；统计/画像侧「诊断次数」一律以 diagnosis_results 全表
+  /// （append-only 事件流水，confirmed 行）为唯一口径，见
+  /// DiagnosisRepository.countConfirmedDiagnosesBySyndrome。本方法只保证历史可追溯。
   Future<void> appendTeachingHistory(
     String sessionId,
     Map<String, dynamic> record,
@@ -378,8 +384,10 @@ class StudentModelRepository {
 
   /// 全表扫描：是否存在任意一条有效的 onboarding_data — 批次1-8 波6
   ///
-  /// 用于 bootstrap_service 边界 A 修复：当 currentSession 查不到 onboarding_data
+  /// 用于会话启动的 onboarding 数据兜底迁移：当 currentSession 查不到 onboarding_data
   /// 但用户级 questionnaire_completed 也缺失时，fallback 扫描全表。
+  /// （bootstrap_service 已于 C122 退役；现真源为 SessionBootstrapNotifier，
+  /// 见 lib/providers/session_providers.dart。）
   /// 只要任意一个 session 有有效数据（非 null / 非空串 / 非 'null' 字面量），
   /// 即认定老用户已填过问卷，触发用户级标记迁移。
   ///

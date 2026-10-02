@@ -112,6 +112,11 @@ class DiagnosisRepository {
   ///
   /// 注意：阶段迁移校验（validatePhaseTransition）在 service 层做，
   ///       DAO 只负责落库，不做业务校验。
+  ///
+  /// G15 口径：diagnosis_results 即「诊断次数」唯一口径（append-only 事件流水）。
+  /// 步骤 0 的 NO_OP 去重属有意设计（勿动）——重复症候不进入行内 syndromes，
+  /// 统计诊断次数时重复结论不膨胀；teaching_history 不再承担次数统计语义，
+  /// 次数统计统一走 countConfirmedDiagnosesBySyndrome（confirmed 行）。
   Future<String> commitDiagnosis(
     DiagnosisInput input,
   ) => guardRepoWrite('diagnosis', 'commitDiagnosis', () async {
@@ -360,6 +365,37 @@ class DiagnosisRepository {
       }
     }
     return entries;
+  }
+
+  /// G15：按 syndromeId 累计「正式诊断次数」——统计/画像侧诊断次数的唯一口径。
+  ///
+  /// 口径归属（B 组裁定 G15）：诊断次数一律以 diagnosis_results 全表
+  /// （append-only 事件流水）为准；teaching_history
+  /// （[StudentModelRepository.appendTeachingHistory]）仅作历史流水，
+  /// **不再承担次数统计语义**（它全量 append、含 NO_OP 重复，口径偏多）。
+  ///
+  /// 只聚合 status='confirmed'（权威正式诊断）：pending（教学轮反问）/ replaced
+  /// 未确认结论不计入，对齐 C126 growth 页 queryDiagnosisTotal。
+  /// commitDiagnosis 内的 NO_OP 去重（同 id+severity 重复症候滤除，有意设计，勿动）
+  /// 在此自然生效——重复症候不进入行内 syndromes JSON，故不重复膨胀次数。
+  Future<Map<String, int>> countConfirmedDiagnosesBySyndrome(
+    String sessionId,
+  ) async {
+    final rows =
+        await (_db.select(_db.diagnosisResults)..where(
+              (t) =>
+                  t.sessionId.equals(sessionId) & t.status.equals('confirmed'),
+            ))
+            .get();
+    final counts = <String, int>{};
+    for (final row in rows) {
+      for (final s in _parseSyndromes(row.syndromes)) {
+        final sid = s['syndrome_id'] as String? ?? '';
+        if (sid.isEmpty) continue;
+        counts[sid] = (counts[sid] ?? 0) + 1;
+      }
+    }
+    return counts;
   }
 
   /// 获取最新教学焦点

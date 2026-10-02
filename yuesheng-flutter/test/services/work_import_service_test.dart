@@ -181,6 +181,39 @@ void main() {
       expect(await db.select(db.chapters).get(), isEmpty);
       expect(await db.select(db.sessionReferences).get(), isEmpty);
     });
+
+    test('中途建章失败 → 已建的稿件/卷/章整体回滚无残留', () async {
+      // 与「会话不存在」(失败在事务最后一步 addReference) 互补：
+      // 本用例失败点在循环中途——稿件+卷+第一章已落库后，第二章写入抛错，
+      // 外层事务必须把「已成功的半成品」一并回滚，不得留卷/章残行。
+      final sessionId = await sessRepo.createBlankSession();
+      service = WorkImportService(
+        db,
+        msRepo,
+        _FlakySecondChapterRepo(db),
+        ReferenceRepository(db),
+        VolumeRepository(db),
+      );
+      final parsed = ParsedFile(
+        title: '半途而废',
+        genre: '未知',
+        chapters: const [
+          ParsedChapter(title: '第一章', content: '正文一', volumeTitle: '第一卷 风起'),
+          ParsedChapter(title: '第二章', content: '正文二', volumeTitle: '第一卷 风起'),
+        ],
+      );
+
+      await expectLater(
+        service.importWork(sessionId: sessionId, parsed: parsed),
+        throwsA(isA<Exception>()),
+      );
+
+      // 回滚后四类写入表全部为空：无半成品稿件/卷/章/主引用
+      expect(await db.select(db.manuscripts).get(), isEmpty);
+      expect(await db.select(db.volumes).get(), isEmpty);
+      expect(await db.select(db.chapters).get(), isEmpty);
+      expect(await db.select(db.sessionReferences).get(), isEmpty);
+    });
   });
 
   // ════════════════════════════════════════════════════════════
@@ -218,4 +251,31 @@ void main() {
       expect(chapters.single.content, '没有任何章节标记的正文内容');
     });
   });
+}
+
+/// 测试替身：第一次 createChapter 走真实落库（经 super），第二次直接抛错。
+/// 用于在 importWork 事务中途（稿件+卷+第一章已写、第二章将写）注入失败，
+/// 验证外层事务把已成功的半成品整体回滚。不改生产代码。
+class _FlakySecondChapterRepo extends ChapterRepository {
+  _FlakySecondChapterRepo(super.db);
+  int _calls = 0;
+
+  @override
+  Future<String> createChapter(
+    String manuscriptId, {
+    String? title,
+    String? content,
+    int? sortOrder,
+    String? volumeId,
+  }) async {
+    _calls++;
+    if (_calls >= 2) throw Exception('注入：第二个章节写入失败');
+    return super.createChapter(
+      manuscriptId,
+      title: title,
+      content: content,
+      sortOrder: sortOrder,
+      volumeId: volumeId,
+    );
+  }
 }

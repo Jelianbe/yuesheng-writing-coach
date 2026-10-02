@@ -294,9 +294,9 @@ class DiagnosisCommitter {
   /// C123 T3：beginner_level 是否已被「显式学员采集」锁定。
   ///
   /// 批准裁定：LLM 诊断推断仅在尚未被显式采集时回填；显式采集后 LLM 不得覆盖。
-  /// 判据用用户级 [questionnaire_completed]。注意 skipOnboarding 同样置该 flag
-  /// 并写 N0_ENGAGE（onboarding_service.skipOnboarding）——skip 不是显式等级
-  /// 采集，不能据此把等级永久锁死在 N0。故再用跨会话最新 onboarding 数据的
+  /// 判据用用户级 [questionnaire_completed]。注意 skipped=true 的 onboarding 数据
+  /// 同样置该 flag 并写 N0_ENGAGE——skip 不是显式等级采集，不能据此把等级永久
+  /// 锁死在 N0。故再用跨会话最新 onboarding 数据的
   /// `skipped` 标记排除 skip：仅当问卷「非 skip 地完成」才返回 true（=锁）。
   ///
   /// 可选依赖未装配（[AppStateRepository?] == null，约 130 处既有测试构造点）

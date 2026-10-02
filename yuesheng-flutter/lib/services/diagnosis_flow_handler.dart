@@ -1282,6 +1282,19 @@ class DiagnosisFlowHandler {
 
   /// 步骤 11（FEEDBACK）：训练结果解析 + teaching_history 写入 +
   /// 训练后 FSM 重评估 + 达标卡插入 + training_results 持久化。
+  ///
+  /// 【C130 G13 已知限制】回退判定的结构化字段在判定点不可得：`trainingResult`
+  /// 即本函数唯一的结构化源，= _resolveProtocolLayer 对 fullContent 跑的
+  /// parseTrainingProtocol(fullContent)?.result。其为 null ⇒ 上游对原始协议块的
+  /// 结构化解析已返回 null（无 [YS_TRAINING] 块 / 块存在但 result 非法），此刻
+  /// 不存在有效结构化判定；作用域内也无 diagnosis_results 行或原始块文本可借，
+  /// 故回退只能读 displayContent，属如实降级。
+  /// 粒度局限：displayContent 已剥协议块 ⇒ 回退 _diagnosis.parseTrainingResult
+  /// (displayContent) 的 Tier 1（协议块解析）必 null，实际只走 Tier 2 固定关键词
+  /// 表做粗粒度子串匹配，读不到模型结构化自述，粒度偏粗、可能与真实判定有偏差。
+  /// displayContent 此处仅用于粗粒度回退判定与展示 / 落库，不承载结构化语义。
+  /// （回传 fullContent 重解析无增益——上游已解析且同为 null；本批不扩参、
+  /// 不改上游协议解析结构。）
   Future<void> handleTrainingResult({
     required String sessionId,
     required TeachingSubphase? currentSubphase,
@@ -1298,8 +1311,8 @@ class DiagnosisFlowHandler {
     if (currentSubphase != TeachingSubphase.feedback) return;
 
     // ADR-C105 A1：协议优先；协议缺失/非法时回退关键词表。
-    // 注：displayContent 已被 _stripProtocolBlocks 剥掉协议块 ⇒ 回退路径的
-    // Tier 1 必然为 null，实际走 Tier 2 关键词（且不会读到模型自述文本）。
+    // 【C130 G13】回退判定的结构化字段在本点不可得，读 displayContent 为如实降级；
+    // 数据可得性与粒度局限详见本函数 doc 注释「G13 已知限制」。
     final resolvedResult =
         trainingResult ?? _diagnosis.parseTrainingResult(displayContent);
     if (resolvedResult == null) return;
@@ -1362,6 +1375,14 @@ class DiagnosisFlowHandler {
   }
 
   /// 私有 helper：FSM 重评估 + 达标分支插入阶段总结卡。
+  ///
+  /// 【C130 G14 已知限制】`activeProblems` 是**发消息时刻（send）一路传入的
+  /// 快照**，并非重评估当下的实时库态：本函数基于这份快照里该症候的存在性 /
+  /// severity 做重评估，期间不回查库。
+  /// 触发场景：若本轮训练反馈到达前，该症候在期间被其他路径 resolve（或从
+  /// active 列表消失），它已不在这份发消息快照里 ⇒ 下方 `problem == null` 提前
+  /// 返回，**不会触发本次重评估**（也不插阶段总结卡）。此为已知快照语义限制，
+  /// 本批按裁定不动逻辑，仅在此标注。
   Future<void> _reevaluateTeachingState({
     required String sessionId,
     required String trainingSyndromeId,
@@ -1371,6 +1392,8 @@ class DiagnosisFlowHandler {
       final problem = activeProblems
           .where((p) => p.syndromeId == trainingSyndromeId)
           .firstOrNull;
+      // G14：此早退即「发消息快照中已无该症候」——期间被 resolve / 移出 active
+      // 列表的病例，不触发重评估（已知快照语义限制，见本函数 doc 注释）。
       if (problem == null) return;
       final reEvalInput = await buildTrainingInputForActiveSyndrome(
         _studentModelRepo,

@@ -54,22 +54,4 @@ class OnboardingService {
     // 3. 标记用户级问卷已完成（跨会话去重）
     await _appStateRepo.setQuestionnaireCompleted(true);
   }
-
-  /// 跳过问卷（用户选择"跳过"）
-  ///
-  /// 与 submitOnboarding 的区别：
-  ///   - 仍然写入 onboarding_data（带 skipped=true 标记，供画像服务识别）
-  ///   - 仍然写入 beginner_level（默认 N0_ENGAGE）
-  ///   - 仍然标记 questionnaire_completed=true（不再弹窗）
-  Future<void> skipOnboarding(String sessionId) async {
-    final data = OnboardingData(
-      proficiency: ProficiencyLevel.beginner,
-      focusAreas: const [],
-      cognitiveStyle: CognitiveStyle.mixed,
-      writingGoal: '',
-      completedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      skipped: true,
-    );
-    await submitOnboarding(sessionId, data);
-  }
 }

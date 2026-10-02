@@ -473,14 +473,13 @@ extension ChatServiceDiagnosisFocus on ChatService {
       return true;
     }
     // 诊断次数阈值：某症候累计诊断次数达阈值即绕过（统计失败降级为不绕过）
+    // G15：诊断次数唯一口径 = diagnosis_results 全表（confirmed 行按症候聚合），
+    // 不再读 teaching_history（后者仅历史流水、全量 append 含 NO_OP 重复）。
     try {
-      final history = await _studentModelRepo.getTeachingHistory(sessionId);
+      final diagnosisCounts = await _diagnosisRepo
+          .countConfirmedDiagnosesBySyndrome(sessionId);
       for (final p in activeProblems) {
-        final diagnosisCount = history.where((r) {
-          if (r['type'] != 'diagnosis') return false;
-          final syndromes = r['syndromes'];
-          return syndromes is List && syndromes.contains(p.syndromeId);
-        }).length;
+        final diagnosisCount = diagnosisCounts[p.syndromeId] ?? 0;
         if (diagnosisCount >= kFlowBypassDiagnosisCount) return true;
       }
     } catch (e, st) {

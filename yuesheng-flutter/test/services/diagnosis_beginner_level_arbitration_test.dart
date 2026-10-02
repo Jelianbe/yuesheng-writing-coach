@@ -7,9 +7,9 @@
 // 批准裁定：显式学员采集 > LLM 推断。LLM 仅在「尚未被显式采集」时回填；
 // 显式采集后 LLM 不得覆盖（写点 A 保持无条件覆盖，写点 B 加读门）。
 //
-// 判据：用户级 questionnaire_completed；但 skipOnboarding 也置该 flag 并写
-// N0——skip 非显式等级采集，不能据此锁死。故门再用跨会话最新 onboarding
-// 数据的 skipped 标记排除 skip。
+// 判据：用户级 questionnaire_completed；但 skipped=true 的 onboarding 也置该
+// flag 并写 N0——skip 非显式等级采集，不能据此锁死。故门再用跨会话最新
+// onboarding 数据的 skipped 标记排除 skip。
 //
 // Case A：先显式(N1) 后 LLM(N2) → 学员值保留 N1（LLM 被门丢弃）
 // Case B：先 LLM(N2) 后显式(N1) → 学员值覆盖 N1（写点 A 无条件覆盖）
@@ -150,8 +150,19 @@ void main() {
     'Case E：skip 写 N0 + questionnaire_completed=true，但 LLM(N1) 仍可回填',
     () async {
       final sid = await sessionRepo.createBlankSession();
-      // 写点 A：skip → N0_ENGAGE，且 questionnaire_completed=true
-      await onboarding.skipOnboarding(sid);
+      // 写点 A：skipped=true 的 onboarding → N0_ENGAGE，且 questionnaire_completed=true
+      // （直接构造 skipped 数据喂 submitOnboarding；原 skipOnboarding 方法已删，产物等价）
+      await onboarding.submitOnboarding(
+        sid,
+        OnboardingData(
+          proficiency: ProficiencyLevel.beginner,
+          focusAreas: const [],
+          cognitiveStyle: CognitiveStyle.mixed,
+          writingGoal: '',
+          completedAt: 1700000000,
+          skipped: true,
+        ),
+      );
       expect(await beginnerLevelOf(sid), BeginnerLevel.n0Engage.value);
       expect(await appStateRepo.getQuestionnaireCompleted(), isTrue);
 
