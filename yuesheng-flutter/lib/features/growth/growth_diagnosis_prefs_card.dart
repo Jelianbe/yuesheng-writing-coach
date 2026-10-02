@@ -5,6 +5,8 @@
 // - 档位（写作阶段）× 类型（写什么）是「教练侧重」软信号，只提示教练优先强调什么，
 //   不剥夺任何诊断（不再硬映射成禁用维度）。
 // - 用户真正能关掉的只有「不适用」维度（disabledIds），独立成区，可单条/全部恢复。
+// C128（2026-10-02 用户裁定 B 方向「收敛入口」）：「主要写什么？」(genre) 各选项为零消费
+//   空壳（选了无任何行为差异），UI 入口收敛；DiagnosisPrefs.genre 字段与序列化键保留不迁移。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -28,13 +30,6 @@ const _tiers = [
   ('beginner', '先写顺', '把基础语病讲透，结构与节奏先不急'),
   ('story', '完整故事', '文字、角色、结构都管'),
   ('full', '想被挑刺', '全开，连细微毛病也点出来'),
-];
-
-/// 第二问：主要写什么（教练侧重，非过滤）
-const _genres = [
-  ('literary', '纯文学', '重语言质感与文风'),
-  ('webnovel', '连载网文', '重节奏与读者追更感'),
-  ('setting', '设定优先', '重世界观与人物'),
 ];
 
 class GrowthDiagnosisPrefsCard extends ConsumerStatefulWidget {
@@ -113,10 +108,8 @@ class _GrowthDiagnosisPrefsCardState
     final tierLabel = cur.tier == null
         ? null
         : _tiers.firstWhere((t) => t.$1 == cur.tier).$2;
-    final genreLabel = cur.genre == null
-        ? null
-        : _genres.firstWhere((g) => g.$1 == cur.genre).$2;
-    final summary = [tierLabel, genreLabel].whereType<String>().join(' · ');
+    // C128：genre 入口已收敛，折叠态 summary 只由 tier 标签组成。
+    final summary = tierLabel ?? '';
     return Container(
       decoration: BoxDecoration(
         color: palette.surfaceWhite,
@@ -167,7 +160,7 @@ class _GrowthDiagnosisPrefsCardState
             _headerRow(context, cur, disabled),
             const SizedBox(height: 6),
             Text(
-              '告诉教练你现在的阶段和题材，它会更侧重对应方向——'
+              '告诉教练你现在的阶段，它会更侧重对应方向——'
               '但不会因此跳过任何诊断。',
               style: TextStyle(fontSize: 12, color: palette.textTertiary),
             ),
@@ -180,17 +173,6 @@ class _GrowthDiagnosisPrefsCardState
                 desc: t.$3,
                 selected: cur.tier == t.$1,
                 onTap: () => _save(cur.copyWith(tier: t.$1, customized: true)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _groupLabel(context, '主要写什么？'),
-            ..._genres.map(
-              (g) => _optionRow(
-                context,
-                label: g.$2,
-                desc: g.$3,
-                selected: cur.genre == g.$1,
-                onTap: () => _save(cur.copyWith(genre: g.$1, customized: true)),
               ),
             ),
             if (disabled.isNotEmpty) ..._disabledSection(context, disabled),
@@ -231,7 +213,7 @@ class _GrowthDiagnosisPrefsCardState
           ),
         ),
         const Spacer(),
-        if (disabled.isNotEmpty || cur.tier != null || cur.genre != null)
+        if (disabled.isNotEmpty || cur.tier != null)
           TextButton(
             onPressed: _restoreAll,
             child: Text('恢复默认', style: context.text.caption),
