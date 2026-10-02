@@ -417,5 +417,38 @@ void main() {
         expect(pendingChapter.selfOwnedDiffCount, 1);
       },
     );
+
+    // B5 ADR-C134 批3（M4a）：独立起稿成稿事件查询器——只记不判，
+    // 只做事实过滤（completion + payload.source=independent_drafting），
+    // 不含达标/成败判定；普通成稿事件被排除。
+    test('B5 独立起稿成稿事件可观测：只过滤带标记的 completion', () async {
+      // 普通成稿（无标记）。
+      await diffRepo.recordCompletion(sessionId: 's1', chapterId: 'ch1');
+      // 独立起稿成稿（带标记）。
+      await diffRepo.recordCompletion(
+        sessionId: 's1',
+        chapterId: 'ch1',
+        source: CompletionSource.independentDrafting,
+      );
+      // 一条 diff（非 completion）——不应混入。
+      await diffRepo.recordDiff(
+        EditDiffInput(
+          sessionId: 's1',
+          chapterId: 'ch1',
+          anchorStart: 0,
+          anchorEnd: 2,
+          beforeText: '旧',
+          afterText: '新',
+          diffSegments: 1,
+        ),
+      );
+
+      final list = await querier.listIndependentDraftingCompletions();
+      expect(list, hasLength(1), reason: '只取带 independent_drafting 标记的成稿');
+      expect(list.single.chapterId, 'ch1');
+      expect(list.single.eventType, EditDiffEventTypes.completion);
+      final decoded = CompletionPayload.tryDecode(list.single.payload);
+      expect(decoded?.source, CompletionSource.independentDrafting);
+    });
   });
 }

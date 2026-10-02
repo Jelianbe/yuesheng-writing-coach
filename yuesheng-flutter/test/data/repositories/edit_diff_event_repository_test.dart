@@ -203,4 +203,41 @@ void main() {
     expect(loose.anchorEnd == null, isTrue);
     expect(loose.afterText, '摘录片段');
   });
+
+  // #7 ADR-C134 批3（M4a）：recordCompletion 扩展独立起稿标记。
+  //   - source=null → payload 沿用列默认 ''（与 C132 旧行为零漂移）；
+  //   - source=independent_drafting → payload JSON 可解码出 source 标记。
+  test('#7 recordCompletion 独立起稿标记：source=null 与带标记两条路径', () async {
+    // 普通成稿（source=null）：payload 不落 JSON（列默认 ''）。
+    await repo.recordCompletion(sessionId: 's-c', chapterId: 'c-comp');
+    // 独立起稿成稿：打标记。
+    await repo.recordCompletion(
+      sessionId: 's-c',
+      chapterId: 'c-comp',
+      source: CompletionSource.independentDrafting,
+    );
+
+    final events = await repo.listByChapter('c-comp');
+    expect(events, hasLength(2));
+    final plain = events.firstWhere(
+      (e) => CompletionPayload.tryDecode(e.payload) == null,
+    );
+    final marked = events.firstWhere(
+      (e) => CompletionPayload.tryDecode(e.payload) != null,
+    );
+
+    // 普通成稿：payload 不可解码为 completion JSON（列默认 '' → tryDecode 返回 null）。
+    // （不用 matcher isNull/isNotNull：与 drift 导出歧义，故用 == null 显式判断。）
+    expect(plain.eventType, EditDiffEventTypes.completion);
+    expect(CompletionPayload.tryDecode(plain.payload) == null, isTrue);
+    expect(
+      plain.payload,
+      isNot('{"kind":"completion","source":"independent_drafting"}'),
+    );
+
+    // 独立起稿成稿：payload 可解码出 source 标记（证据卡可观测）。
+    final decoded = CompletionPayload.tryDecode(marked.payload);
+    expect(decoded == null, isFalse);
+    expect(decoded!.source, CompletionSource.independentDrafting);
+  });
 }

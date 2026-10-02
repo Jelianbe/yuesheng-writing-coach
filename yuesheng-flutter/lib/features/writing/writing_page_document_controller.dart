@@ -15,6 +15,7 @@ import '../../providers/chapter_providers.dart';
 import '../../providers/writing_providers.dart';
 import '../../utils/deleted_text_extractor.dart';
 import '../../utils/paragraph_format.dart';
+import 'independent_drafting_provider.dart';
 import 'writing_page_host.dart';
 
 class WritingPageDocumentController {
@@ -74,6 +75,10 @@ class WritingPageDocumentController {
 
   /// ADR-C132 批3：成稿事件埋点（写作目标首次达标）。失败仅 debugPrint
   /// 留痕，绝不阻断写作流程（与 saveChapterContent 的 diff 埋点同纪律）。
+  ///
+  /// ADR-C134 批3（M4a）：独立起稿模式开关激活期间触发成稿时，给事件打
+  /// independent_drafting 标记（复用 M2_recall 先例，零 schema 变更），
+  /// 供里程碑证据卡观测。R-009：只记不判，不含成败判定。
   Future<void> _recordCompletionEvent() async {
     try {
       final db = _host.ref.read(appDatabaseProvider);
@@ -81,9 +86,15 @@ class WritingPageDocumentController {
       final sessionId = await chapterRepo.firstSessionIdForChapter(
         _host.chapterId,
       );
-      await EditDiffEventRepository(
-        db,
-      ).recordCompletion(sessionId: sessionId, chapterId: _host.chapterId);
+      // 读独立起稿开关（按章节隔离的会话内状态；教练面板开关写入同源 provider）。
+      final independent = _host.ref.read(
+        independentDraftingProvider(_host.chapterId),
+      );
+      await EditDiffEventRepository(db).recordCompletion(
+        sessionId: sessionId,
+        chapterId: _host.chapterId,
+        source: independent ? CompletionSource.independentDrafting : null,
+      );
     } catch (e) {
       debugPrint('[edit_diff] completion 埋点失败（不阻断）: $e');
     }

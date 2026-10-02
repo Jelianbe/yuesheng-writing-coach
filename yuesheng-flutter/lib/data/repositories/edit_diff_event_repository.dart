@@ -64,6 +64,47 @@ class M2RecallVerdict {
   static bool isValid(String v) => v == confirmed || v == corrected;
 }
 
+/// ADR-C134 批3（M4a）：completion 成稿事件的来源标记（写入 payload.source）。
+///
+/// 复用 M2_recall 先例（零 schema 变更）：eventType 仍写 'completion'，
+/// 以 payload.source 区分子场景。不写该字段 = C132 普通成稿事件；
+/// 写 'independent_drafting' = 学员在「独立起稿模式」下达成写作目标。
+///
+/// R-009（只记不判）：本标记只如实记录「成稿时学员是否主动声明了独立起稿」，
+/// 代码不计算「是否真的无教练介入」「是否达标」——是否计入 M4a 由用户在
+/// 里程碑证据卡裁决（C133 四硬隔离：不设达标线 / 不展示学员 / 不打分 / 不加码）。
+class CompletionSource {
+  /// 学员主动声明「这次我自己来」（独立起稿模式开关）期间达成写作目标。
+  static const String independentDrafting = 'independent_drafting';
+  const CompletionSource._();
+}
+
+/// completion 事件 payload（JSON）编解码。
+///
+/// 字段：kind（恒 'completion'）/ source（independent_drafting 或省略）。
+/// 无 source 字段 = C132 普通成稿事件（payload 可能为 null/空，须安全降级）。
+class CompletionPayload {
+  final String? source;
+
+  const CompletionPayload({this.source});
+
+  String? encode() => source == null
+      ? null
+      : jsonEncode({'kind': 'completion', 'source': source});
+
+  /// 解码；null/空串/损坏 JSON/无 kind 字段均返回 null（按「普通成稿事件」处理）。
+  static CompletionPayload? tryDecode(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final map = jsonDecode(raw) as Map<String, dynamic>;
+      if (map['kind'] != 'completion') return null;
+      return CompletionPayload(source: map['source'] as String?);
+    } catch (_) {
+      return null; // 历史/损坏 payload：不抛，按「普通成稿事件」处理
+    }
+  }
+}
+
 /// M2 复述事件 payload（JSON）编解码。
 ///
 /// 字段：kind（恒 'M2_recall'）/ verdict（confirmed|corrected）/
@@ -215,10 +256,19 @@ class EditDiffEventRepository {
   });
 
   /// 记录一条成稿事件（章节被标记完成，UI 接线批 3）。
+  ///
+  /// [source] 可选：写 [CompletionSource.independentDrafting] = 学员在
+  /// 「独立起稿模式」开关激活期间达成写作目标（ADR-C134 批3 M4a）。
+  /// 复用 M2_recall 先例——零 schema 变更，子类型落 payload.source，
+  /// 查询期即可与普通成稿事件区分。R-009：只记不判，不含成败判定。
   Future<void> recordCompletion({
     required String sessionId,
     required String chapterId,
+    String? source,
   }) => guardRepoWrite('edit_diff_event', 'recordCompletion', () async {
+    // source==null → 不写 payload（沿用 C132 旧行为，落列默认 ''）；
+    // source!=null → 写 payload JSON（零 schema 变更，子类型查询期区分）。
+    final payloadRaw = CompletionPayload(source: source).encode();
     await _db
         .into(_db.editDiffEvents)
         .insert(
@@ -227,6 +277,9 @@ class EditDiffEventRepository {
             sessionId: Value(sessionId),
             chapterId: chapterId,
             eventType: EditDiffEventTypes.completion,
+            payload: payloadRaw == null
+                ? const Value.absent()
+                : Value(payloadRaw),
           ),
         );
   });

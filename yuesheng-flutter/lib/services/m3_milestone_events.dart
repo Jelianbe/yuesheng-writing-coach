@@ -56,6 +56,20 @@ class M3MilestoneEventQuerier {
     return _aggregate(filtered);
   }
 
+  /// ADR-C134 批3（M4a）：列出「独立起稿模式下触发的成稿事件」——
+  /// 里程碑证据卡的可观测输入。只记不判（C133 四硬隔离）：
+  /// 本方法只做事实过滤（eventType==completion 且 payload.source==independent_drafting），
+  /// 不设达标线、不展示学员、不打分、不自动加码；是否计入 M4a 由用户在证据卡裁决。
+  Future<List<EditDiffEvent>> listIndependentDraftingCompletions() async {
+    final completions = await _diffRepo.listByType(
+      EditDiffEventTypes.completion,
+    );
+    return completions.where((e) {
+      final payload = CompletionPayload.tryDecode(e.payload);
+      return payload?.source == CompletionSource.independentDrafting;
+    }).toList();
+  }
+
   Future<M3CandidateReport> _aggregate(List<EditDiffEvent> events) async {
     final anchors = await buildChapterAnchors();
     return aggregateM3Candidates(diffEvents: events, anchorsByChapter: anchors);

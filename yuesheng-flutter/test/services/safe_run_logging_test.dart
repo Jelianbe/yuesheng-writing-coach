@@ -68,13 +68,15 @@ void main() {
       //    也会被计入（C92-6b 同款教训），故本文件注释一律不写完整调用形式。
       // ADR-C116 A2（v2）2026-10-01 新增 2 处：学员焦点解析失败留痕（序数/
       // 别名多命中/P 码不在集）+ 读取最近 assistant 清单失败 catch。
+      // ADR-C134 批 2（2026-10-02）新增 2 处 fading 降级点（chat_service）：
+      // _buildFadingBlock 装配失败 + _resolveFadingEligibility 资格裁决失败。
       final mi = File('lib/services/message_injector.dart').readAsStringSync();
       final cs = File('lib/services/chat_service.dart').readAsStringSync();
       final miCalls = '_logSafeRun('.allMatches(mi).length - 1;
       final csCalls = '_logSafeRun('.allMatches(cs).length - 1;
       expect(
         miCalls + csCalls,
-        37,
+        39,
         reason: 'CR-53 应覆盖全部降级点（实际 mi=$miCalls cs=$csCalls）',
       );
     });
@@ -86,10 +88,12 @@ void main() {
       final pattern = RegExp(
         r"catch \(e, st\) \{\s*_logSafeRun\('[^']*', e, st\);",
       );
+      // ADR-C134 批 2：chat_service 新增 2 处 fading 降级 catch
+      // （_buildFadingBlock / _resolveFadingEligibility），带栈形态合规 2→4。
       expect(
         pattern.allMatches(cs).length,
-        2,
-        reason: 'chat_service 2 处降级点必须带栈（CR-53）',
+        4,
+        reason: 'chat_service 4 处降级点必须带栈（CR-53）',
       );
       expect(
         pattern.allMatches(mi).length,

@@ -47,8 +47,9 @@ void main() {
     test('注入 helper 必须在流式调用前被调用', () {
       final src = File('lib/services/chat_service.dart').readAsStringSync();
       // TH 五批：注入聚合入口改为 _applyDiagnosisInjection（R-019 减负）
+      // ADR-C134 批 2：签名带 sessionId（fading 块运行时条件注入）
       final callIdx = src.indexOf(
-        '_applyDiagnosisInjection(ctx, content, options);',
+        '_applyDiagnosisInjection(ctx, content, options, sessionId);',
       );
       expect(
         callIdx,

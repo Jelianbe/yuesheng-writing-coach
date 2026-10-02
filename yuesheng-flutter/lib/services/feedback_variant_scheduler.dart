@@ -70,3 +70,27 @@ String fillVariantTemplate(FeedbackVariant v, Map<String, String> params) {
 bool _eligible(FeedbackVariant v, FeedbackEligibility eligibility) =>
     v.eligibility == FeedbackEligibility.all ||
     eligibility == FeedbackEligibility.highStableOnly;
+
+/// ADR-C134 生产接线：按 prior 复发次数选一条变体（fading 层级适配）。
+///
+/// prior=1（N=2）→ 偏好直给判断（指根因与方向，无示范句）；
+/// prior≥2（N=3+）→ 偏好引导提问，但提问类受资格门约束：学员非 highStable
+/// 时回退直给（低水平/消沉不得用引导提问，与 feedback_tier 的降级同向）。
+/// 试点外症候无池内变体 → null，调用方回退纯层级指令（不注入措辞骨架）。
+FeedbackVariant? selectVariantForRecurrence(
+  String syndromeId,
+  int priorConfirmed,
+  FeedbackEligibility eligibility, {
+  Set<String> excludeIds = const {},
+}) {
+  final prefer =
+      (priorConfirmed >= 2 && eligibility == FeedbackEligibility.highStableOnly)
+      ? FeedbackFunction.guidedQuestion
+      : FeedbackFunction.directJudgment;
+  return selectVariant(
+    syndromeId,
+    eligibility: eligibility,
+    excludeIds: excludeIds,
+    preferFunction: prefer,
+  );
+}

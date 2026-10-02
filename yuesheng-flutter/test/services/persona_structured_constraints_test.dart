@@ -109,10 +109,17 @@ void main() {
   });
 
   group('kPersonaRedLine', () {
-    test('#8 边界句含 R-009 核心（不替写 / 不替决定）+ 直给边界（禁成句与打分）', () {
+    test('#8 边界句含 R-009 核心（不替写 / 不替决定）+ 直给边界（禁成段成品与打分）', () {
       expect(kPersonaRedLine, contains('不替学员写句子'));
       expect(kPersonaRedLine, contains('不替学员做决定'));
-      expect(kPersonaRedLine, contains('禁成句与打分'));
+      expect(kPersonaRedLine, contains('禁成段成品与打分'));
+      expect(kPersonaRedLine, contains('示范单句受限'));
+      expect(kPersonaRedLine, contains('为说明改法可给单句示范'));
+      expect(kPersonaRedLine, contains('不改全段'));
+      expect(kPersonaRedLine, contains('不替写成品段落'));
+      // F-1 口径（ADR-C134）：旧「禁成句与打分」字样已废，注入链不得再出现
+      //（示范单句 ≠ 替写，直给判断禁成句的语义由「禁成段成品」承接）。
+      expect(kPersonaRedLine, isNot(contains('禁成句与打分')));
     });
   });
 }

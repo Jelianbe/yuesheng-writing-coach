@@ -78,6 +78,9 @@ import 'package:writingcoach/services/llm_usage.dart';
 import 'package:writingcoach/services/prompt_sanitizer.dart'; // L2：指令 token 清洗
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/stage_drop_notice.dart';
+import 'package:writingcoach/services/feedback_tier.dart';
+import 'package:writingcoach/services/feedback_variant_pool.dart'
+    show FeedbackEligibility;
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
 import 'package:writingcoach/features/onboarding/novice_mode_guide.dart';
@@ -767,7 +770,7 @@ extension ChatServiceSend on ChatService {
       // ADR-C84：用户消息落库即通知 UI 上屏（不等 AI 回复）
       await _notifyUserMessagePersisted(ctx, callbacks);
       // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
-      await _applyDiagnosisInjection(ctx, content, options);
+      await _applyDiagnosisInjection(ctx, content, options, sessionId);
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
         messages: ctx.messages,
@@ -1497,12 +1500,14 @@ extension ChatServiceSend on ChatService {
     String content,
     String? chapterFullText, {
     required bool hasDiagnosisContext,
+    required String sessionId,
   }) async {
     await _injectDiagnosisProtocolAndLog(
       messages,
       content,
       chapterFullText: chapterFullText,
       hasDiagnosisContext: hasDiagnosisContext,
+      sessionId: sessionId,
     );
   }
 
@@ -1513,12 +1518,14 @@ extension ChatServiceSend on ChatService {
     String content, {
     String? chapterFullText,
     required bool hasDiagnosisContext,
+    required String sessionId,
   }) async {
     await _maybeInjectDiagnosisProtocol(
       messages,
       content,
       chapterFullText: chapterFullText,
       hasDiagnosisContext: hasDiagnosisContext,
+      sessionId: sessionId,
     );
     debugPrint(
       '[ChatService] ADR-C82 请求结构: ${messages.map((m) => "${m.role}[${m.content.length}]").join(" | ")}',
@@ -1534,6 +1541,7 @@ extension ChatServiceSend on ChatService {
     String content, {
     String? chapterFullText,
     required bool hasDiagnosisContext,
+    required String sessionId,
   }) async {
     if (!isDiagnosisRequest(
       content,
@@ -1562,11 +1570,50 @@ extension ChatServiceSend on ChatService {
         '2. 末尾问一句"这些都在，你想先动哪个"，把选择权交给学员；\n'
         '3. 学员选定一条后，才对那一条展开"怎么改"（走正常教学流程）。\n'
         '若少于 $threshold，按正常教学方式聚焦讲解 1-2 条。';
+    // ADR-C134：fading 支架渐退 override 块（运行时条件注入；无复发/失败 → ''）。
+    final fadingBlock = await _buildFadingBlock(sessionId);
     messages[lastUser] = ChatMessage(
       role: m.role,
       content:
-          '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix$directExplain',
+          '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix$directExplain$fadingBlock',
     );
+  }
+
+  /// ADR-C134：fading 支架渐退 override 块（运行时条件注入）。
+  ///
+  /// 仅当会话内存在 prior≥1 的复发症候时返回非空块；无复发 / 仓储查询失败 → ''
+  /// （const / 无会话数据用例零漂移）。R-028：诊断仓储为边界层，try/catch 降级
+  /// 留痕，不阻断诊断主链路。
+  Future<String> _buildFadingBlock(String sessionId) async {
+    try {
+      final recurrence = await _diagnosisRepo.countConfirmedDiagnosesBySyndrome(
+        sessionId,
+      );
+      if (recurrence.values.every((c) => c < 1)) return '';
+      final eligibility = await _resolveFadingEligibility(sessionId);
+      return buildFadingBlock(recurrence, eligibility) ?? '';
+    } catch (e, st) {
+      _logSafeRun('fading 块装配失败（降级不注入）', e, st);
+      return '';
+    }
+  }
+
+  /// ADR-C134：学员反馈资格裁决——仅 N3/N4 独立级视为 highStable（可用引导提问）；
+  /// 教学状态取不到 / 偏低级一律降级 all（低水平/消沉不得用提问类，安全方向）。
+  Future<FeedbackEligibility> _resolveFadingEligibility(
+    String sessionId,
+  ) async {
+    try {
+      final ts = await _stateRepo.getTeachingState(sessionId);
+      final level = BeginnerLevel.fromString(ts?.beginnerLevel);
+      if (level == BeginnerLevel.n3Diagnose ||
+          level == BeginnerLevel.n4Independent) {
+        return FeedbackEligibility.highStableOnly;
+      }
+    } catch (e, st) {
+      _logSafeRun('fading 资格裁决失败（降级 all）', e, st);
+    }
+    return FeedbackEligibility.all;
   }
 
   /// 本轮是否处于**诊断上下文** —— 确定性信号，不由措辞反推（TH 五批）。
@@ -1588,12 +1635,14 @@ extension ChatServiceSend on ChatService {
     _SendContext ctx,
     String content,
     SendMessageOptions options,
+    String sessionId,
   ) async {
     await _injectDiagnosisFor(
       ctx.messages,
       content,
       options.chapterFullText,
       hasDiagnosisContext: _hasDiagnosisContext(options, ctx),
+      sessionId: sessionId,
     );
   }
 
