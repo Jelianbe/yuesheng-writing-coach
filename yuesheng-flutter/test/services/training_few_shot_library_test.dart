@@ -12,6 +12,8 @@
 //   kTrainingFewShotLibrary:
 //     6. 首批覆盖 5 个高频症候（P001/P002/P006/P009/P001）
 //     7. 每条示例必含「❌ 问题版」+「✅ 改善版」对比
+//
+// C135（2026-10-02）：P029–P033 few-shot 二批补全（key 总数 29 → 34）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -77,7 +79,7 @@ void main() {
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
     test(
-      '#7 覆盖高频症候（0.3.6+9 聚类去重后 29 条；原 P012/P001/P013/P019/P011/P005 示例块已并入其保留症候）',
+      '#7 覆盖高频症候（0.3.6+9 聚类去重后 34 条（C135：P029–P033 二批）；原 P012/P001/P013/P019/P011/P005 示例块已并入其保留症候）',
       () {
         // 首批
         expect(kTrainingFewShotLibrary.keys, contains('P001'));
@@ -118,7 +120,13 @@ void main() {
         expect(kTrainingFewShotLibrary.keys, contains('P026'));
         expect(kTrainingFewShotLibrary.keys, contains('P027'));
         expect(kTrainingFewShotLibrary.keys, contains('P028'));
-        expect(kTrainingFewShotLibrary.length, 29);
+        // 第十一批 / C135（2026-10-02）：P029–P033 few-shot 二批
+        expect(kTrainingFewShotLibrary.keys, contains('P029'));
+        expect(kTrainingFewShotLibrary.keys, contains('P030'));
+        expect(kTrainingFewShotLibrary.keys, contains('P031'));
+        expect(kTrainingFewShotLibrary.keys, contains('P032'));
+        expect(kTrainingFewShotLibrary.keys, contains('P033'));
+        expect(kTrainingFewShotLibrary.length, 34);
       },
     );
 
@@ -201,6 +209,46 @@ void main() {
         reason: 'P012 few-shot 正文不得残留英文 chapters',
       );
       expect(p012, contains('三章之后'), reason: 'P012 舞台提示应为中文「（三章之后）」');
+    });
+
+    test('#10 C135：P029–P033 二批五症候契约（key 齐全 + 无重复 + 格式一致 + 检索命中）', () {
+      // ADR-C135：本测试为 P029–P033 五症候做显式断言。
+      // 其中「格式一致性」与 #8 对全库的通用断言重复——此处显式列出，便于
+      // 二批补内容时聚焦这五症候的验收，不依赖 #8 的循环兜底。
+      const newKeys = ['P029', 'P030', 'P031', 'P032', 'P033'];
+
+      // ① 五 key 存在
+      for (final k in newKeys) {
+        expect(kTrainingFewShotLibrary.keys, contains(k), reason: '缺 key $k');
+      }
+
+      // ② 无重复 key
+      final allKeys = kTrainingFewShotLibrary.keys.toList();
+      expect(
+        allKeys.length,
+        allKeys.toSet().length,
+        reason: 'kTrainingFewShotLibrary 存在重复 key',
+      );
+
+      // ③ 格式一致性：五 key 的 value 必含四段标记
+      for (final k in newKeys) {
+        final content = kTrainingFewShotLibrary[k]!;
+        expect(content, contains('❌ 问题版'), reason: '$k 缺「❌ 问题版」段');
+        expect(content, contains('✅ 改善版'), reason: '$k 缺「✅ 改善版」段');
+        expect(content, contains('→ 问题点'), reason: '$k 缺「→ 问题点」说明');
+        expect(content, contains('→ 改善点'), reason: '$k 缺「→ 改善点」说明');
+      }
+
+      // ④ getTrainingFewShot 对五症候逐一返回非空（不再跳过）
+      for (final k in newKeys) {
+        final hit = getTrainingFewShot([k]);
+        expect(hit, isNotEmpty, reason: 'getTrainingFewShot([$k]) 应返回非空');
+        expect(
+          hit,
+          contains('❌ 问题版'),
+          reason: 'getTrainingFewShot([$k]) 应含「❌ 问题版」',
+        );
+      }
     });
 
     test('#8 每条示例必含好/坏对比 + 改善点说明', () {
