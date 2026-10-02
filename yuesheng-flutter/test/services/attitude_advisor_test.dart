@@ -222,7 +222,7 @@ void main() {
     });
   });
 
-  // ── 批次4（4.4）：负反馈关键词 + 安全词上下文判断 ──
+  // ── 批次4（4.4）：负反馈关键词 ──
 
   group('containsNegativeFeedback（批次4 4.4）', () {
     test('自嘲样本命中负反馈关键词', () {
@@ -238,27 +238,6 @@ void main() {
     test('夸 AI 样本不命中', () {
       expect(containsNegativeFeedback('你讲得真好，特别清楚'), isFalse);
       expect(containsNegativeFeedback('老师你太棒了，我明白了'), isFalse);
-    });
-  });
-
-  group('isSafetyWordRequest（批次4 4.4 安全词上下文判断）', () {
-    test('裸"轻一点" → 降档请求', () {
-      expect(isSafetyWordRequest('老师你说话轻一点'), isTrue);
-      expect(isSafetyWordRequest('轻一点，别太严厉'), isTrue);
-    });
-
-    test('引号内引用（转述）不触发', () {
-      expect(isSafetyWordRequest('她说了"轻一点"'), isFalse);
-      expect(isSafetyWordRequest('他写道「轻一点」'), isFalse);
-    });
-
-    test('写作示例不触发', () {
-      expect(isSafetyWordRequest('这句改成"轻一点"更合适'), isFalse);
-    });
-
-    test('含"语气措辞"术语不触发', () {
-      expect(isSafetyWordRequest('用"轻一点"这个语气措辞怎么样'), isFalse);
-      expect(isSafetyWordRequest('"轻一点"这个措辞更温柔'), isFalse);
     });
   });
 
@@ -295,19 +274,6 @@ void main() {
       ];
       // assistant 跳过不 break，用户负反馈仍连续 → 2
       expect(computeAttitudeDowngradeSignal(messages), 2);
-    });
-
-    test('最新用户消息是安全词「轻一点」→ 强制达到降档阈值', () {
-      final messages = [msg('user', '老师你说话轻一点'), msg('assistant', '好的')];
-      expect(
-        computeAttitudeDowngradeSignal(messages),
-        AttitudeThresholds.negativeFeedbackDowngradeCount,
-      );
-    });
-
-    test('转述的"轻一点"不触发降档信号', () {
-      final messages = [msg('user', '她说了"轻一点"')];
-      expect(computeAttitudeDowngradeSignal(messages), 0);
     });
   });
 }

@@ -1,15 +1,17 @@
 // ─────────────────────────────────────────────────────────────
-// OnboardingService — 问卷提交服务（状态迁移编排器）
+// OnboardingService — 新手模式落库服务（状态迁移编排器）
 // 复刻 yuesheng-android/src/services/onboarding-service.ts（RN 真源规划中的文件）
 //
-// 设计意图（批次1-8 波6）：
-//   问卷提交不再直接调 DAO，而是走本 service 一次性触发三处状态迁移：
-//     1. student_model.onboarding_data ← 问卷原始数据（含 skipped 标记）
+// 设计意图（批次1-8 波6；ADR-C122：问卷 UI 已退役，由纯新手模式取代）：
+//   新手模式落库不再直接调 DAO，而是走本 service 一次性触发三处状态迁移：
+//     1. student_model.onboarding_data ← buildNoviceOnboardingData 解析的
+//        三字段（proficiency / focusAreas / cognitiveStyle；writingGoal 恒空）
 //     2. teaching_state.beginner_level ← 由 proficiency 映射 N0/N1/N2/N3
 //     3. app_state.questionnaire_completed ← 'true'（用户级，跨会话去重）
 //
-//   硬约束：ChatModals/OnboardingQuestionnaire 的 onComplete/onSkip
-//   必须调本 service，不允许直接 updateOnboardingData。
+//   调用方：chat_page 新手流程 _commitNoviceData
+//   （➕面板 → 固定弹窗对话 → buildNoviceOnboardingData(text) → 本 service）。
+//   C122 后无 onSkip 路径（skipOnboarding 已随问卷 UI 一并移除）。
 // ─────────────────────────────────────────────────────────────
 
 // 私有字段（_xxx）+ 公开命名参数（xxx）模式无法用 initializing formal

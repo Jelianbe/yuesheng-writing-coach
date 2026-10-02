@@ -454,23 +454,6 @@ bool containsNegativeFeedback(String text) {
   return false;
 }
 
-/// 批次4（4.4）：安全词「轻一点」降档请求检测（带上下文判断）。
-/// 以下情况不视为态度降档请求：
-///   - 引号内引用（如 她说了"轻一点"）——是转述而非请求
-///   - 写作示例（如 这句改成"轻一点"更合适）——是教学内容
-///   - 含「语气措辞」术语（如 用"轻一点"这个语气措辞）——是术语讨论
-bool isSafetyWordRequest(String text) {
-  if (!text.contains('轻一点')) return false;
-  // 剥离引号包裹的「轻一点」后仍有裸命中 → 才是降档请求
-  final stripped = text
-      .replaceAll('"轻一点"', '')
-      .replaceAll('「轻一点」', '')
-      .replaceAll("'轻一点'", '');
-  if (!stripped.contains('轻一点')) return false;
-  if (text.contains('语气措辞') || text.contains('措辞')) return false;
-  return true;
-}
-
 /// 临场输出约束（最高优先级）— 复刻 RN e8c46bb 表达密度提交。
 ///
 /// 真源：chat_service_send.dart 步骤 6.5。利用 LLM recency bias，在所有教学内容

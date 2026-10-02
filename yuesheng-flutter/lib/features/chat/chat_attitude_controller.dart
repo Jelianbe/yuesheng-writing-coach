@@ -73,7 +73,7 @@ class ChatAttitudeController {
     final messages = await sessionRepo.listMessages(bootstrap.sessionId);
     final syndromes = _extractSeverities(messages);
 
-    // B4：接入连续负反馈 / 安全词降档信号（否则降档逻辑为死代码）
+    // B4：接入连续负反馈降档信号（否则降档逻辑为死代码）
     final consecutiveNegative = computeAttitudeDowngradeSignal(
       messages.map((m) => (role: m.role, content: m.content)).toList(),
     );

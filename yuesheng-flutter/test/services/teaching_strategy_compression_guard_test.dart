@@ -77,7 +77,6 @@ void _checkS91Policy() {
     '如实说现在还没有足够的积累可谈',
     '不在自然语言中暴露症候编号',
     '**不**逐条朗读画像内容，最多提炼 2-3 条',
-    '无条件将态度档位降一档（sensei→yuesheng→doubao）',
     '只用正例示范',
     '优先切换到镜像反馈',
     '尊重学员的选择',
@@ -92,7 +91,6 @@ void _checkS91SignalRows() {
   for (final sig in const [
     '"我写得怎么样"',
     '"我有什么问题"',
-    '"你温柔点"',
     '"你直接说问题就行"',
     '"我不太懂"',
     '"换个方式教我"',
@@ -148,7 +146,7 @@ void main() {
     test('§9.1 引号话术预算不超压密后上限', _checkS91Budget);
     test('§9.1 被压掉的示例台词不得回填', _checkS91LinesGone);
     test('§9.1 政策句逐字在位', _checkS91Policy);
-    test('§9.1 十行学员信号表未塌陷', _checkS91SignalRows);
+    test('§9.1 九行学员信号表未塌陷', _checkS91SignalRows);
     test('§3.2.1 入口动作列与三层模型在位', _checkS321);
     test('§7.2 四步框架与追问约束在位', _checkS72);
     test('跨批冻结区（C72/C75）不回退', _checkCrossBatchFreezeZone);

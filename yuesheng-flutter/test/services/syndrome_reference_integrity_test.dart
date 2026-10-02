@@ -336,19 +336,15 @@ void _r2NoDanglingIds(_Scan scan) {
 }
 
 /// 刻意**无** few-shot 示例的症候 —— 须与 training_few_shot_library.dart
-/// 文件头「覆盖范围：注册表 P001–P023」一致；补了示例即须改本行（否则红）。
+/// 文件头「覆盖范围」一致；补了示例即须改本行（否则红）。
 const Set<String> _fewShotIntentionallyMissing = {
-  'P024',
-  'P025',
-  'P026',
-  'P027',
-  'P028',
   'P029',
   'P030',
   'P031',
   'P032',
   'P033',
   // P034 已于 C123 批（2026-10-02）补正反例对，移出「刻意缺口」。
+  // P024–P028 已于 C131 批（2026-10-02）补改善版示例，移出「刻意缺口」。
 };
 
 Map<String, int> _countBy(String content, RegExp re) {
