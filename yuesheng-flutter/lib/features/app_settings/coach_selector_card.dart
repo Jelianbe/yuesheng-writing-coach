@@ -759,6 +759,9 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       name: name,
       label: label.isEmpty ? '自定义教练' : label,
       isSystem: false,
+      // 兼容壳占位（R3 字面清理 · ADR-C138）：自定义教练 attitudeLevel=doubao
+      // 仅取色/取图标用，不决定注入语气——语气以 systemPromptFragment 为准，
+      // 见 CoachPersona.attitudeLevel 类注释。字段 required，故保留赋值。
       attitudeLevel: AttitudeLevel.doubao,
       // 语气选填：留空存 '' → 注入层回退默认态度档（见类注释）。
       systemPromptFragment: _promptCtrl.text.trim(),
@@ -916,6 +919,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     name: _nameCtrl.text.trim().isEmpty ? '教练' : _nameCtrl.text.trim(),
     label: '',
     isSystem: false,
+    // 兼容壳占位（同 _save）：预览不落库，语气以 systemPromptFragment 为准。
     attitudeLevel: AttitudeLevel.doubao,
     systemPromptFragment: _promptCtrl.text.trim(),
     expressionDensity: _expressionDensity,

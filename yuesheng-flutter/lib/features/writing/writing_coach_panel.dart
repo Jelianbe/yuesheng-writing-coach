@@ -36,6 +36,7 @@ import 'writing_coach_panel_store.dart';
 import 'writing_coach_panel_teaching.dart';
 import 'writing_coach_panel_view.dart';
 import 'independent_drafting_bar.dart';
+import 'whole_chapter_mode_bar.dart';
 
 /// 对外保持旧路径可用：writingCoachStoreProvider 定义在
 /// writing_coach_panel_store.dart，此处 re-export（既有 importer 无需改动）。
@@ -268,6 +269,9 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
           const Divider(height: 1),
           // ADR-C134 批3：M4 独立起稿开关 + 结构性提问引导（纯页面引导，零注入）
           IndependentDraftingBar(chapterId: widget.chapterId),
+          // ADR-C137 批1：M4 第二格「完整章模式」开关 + 最小支持引导
+          // （纯页面引导，零对话注入；按需介入 prompt 注入属批2，本批不碰）
+          WholeChapterModeBar(chapterId: widget.chapterId),
           if (chatState.error != null)
             WritingCoachErrorBanner(
               error: chatState.error!,

@@ -999,7 +999,14 @@ extension ChatServiceSend on ChatService {
       options: options,
       loaded: loaded,
     );
-    return _finalizeSendContext(loaded, assembled, flow, sessionId, content);
+    return _finalizeSendContext(
+      loaded,
+      assembled,
+      flow,
+      sessionId,
+      content,
+      options,
+    );
   }
 
   /// 6.5-7. 临场约束 + 历史/纪律/预算 + 返回装配（R-019 拆出）。
@@ -1009,6 +1016,7 @@ extension ChatServiceSend on ChatService {
     _FlowWindow flow,
     String sessionId,
     String content,
+    SendMessageOptions options,
   ) {
     // 6.5 临场输出约束：在所有教学内容注入后、历史对话前追加（recency bias）
     assembled.messages.add(
@@ -1022,6 +1030,7 @@ extension ChatServiceSend on ChatService {
       assembled.stageIndexes,
       sessionId: sessionId,
       content: content,
+      wholeChapterModeActive: options.wholeChapterModeActive,
     );
     debugPrint(
       '[ChatService] 步骤7: 发送到 LLM 的 messages 数量=${assembled.messages.length}（含 system + history）',
@@ -1399,6 +1408,7 @@ extension ChatServiceSend on ChatService {
     Map<String, List<int>> stageIndexes, {
     required String sessionId,
     required String content,
+    bool wholeChapterModeActive = false,
   }) {
     _appendHistory(history, messages, markStage);
     _messageInjector.injectTrailingHints(
@@ -1411,6 +1421,17 @@ extension ChatServiceSend on ChatService {
     // 只作用于 LLM 输入副本，不影响落库的用户原文。
     _sanitizeUserMessages(messages);
     _appendDisciplineReminder(messages);
+    // ADR-C137 批2：完整章模式激活 → 末尾追加「按需介入」system 块
+    // （存在感 + 求助即答 + R-009 边界重申）。非激活路径不追加 ⇒
+    // 消息序列与锚点逐字节一致（锚点用例均不传该 flag）。
+    if (wholeChapterModeActive) {
+      messages.add(
+        const ChatMessage(
+          role: 'system',
+          content: kWholeChapterMinimalSupportBlock,
+        ),
+      );
+    }
     _logBudgetOutcome(
       TokenBudgetGuard.apply(messages, stageIndexes: stageIndexes),
       messages,
@@ -1488,6 +1509,23 @@ extension ChatServiceSend on ChatService {
       '块内容必须与正文结论一致，不得伪造症候。'
       '不要使用 markdown 代码块（```）包裹诊断 JSON；'
       '必须用 [YS_DIAGNOSIS] 与 [/YS_DIAGNOSIS] 标记，不要省略。';
+
+  /// ADR-C137 批2：完整章模式「按需介入」块（追加到消息序列末尾的 system 指令）。
+  ///
+  /// 注入条件：SendMessageOptions.wholeChapterModeActive == true（学员在写作页
+  /// 激活「这一章我自己写」后，经 chat runner 透传）。非完整章路径不追加。
+  ///
+  /// R-009 形态（逐字锁定）：只给存在感 + 求助即答 + 边界重申；
+  /// 不含任何代写句子/段落、打分、处方、达标线——块本身就是「最小介入」指令。
+  static const String kWholeChapterMinimalSupportBlock =
+      '# 按需介入（完整章模式）\n\n'
+      '学员已主动声明「这一章我自己写」。在本章达到其自设字数目标前，保持最小介入：\n\n'
+      '1. 存在感：让学员知道你在（一句「我在，随时叫我」即可），不主动点评、'
+      '不主动给改法、不催更、不追问进度；\n'
+      '2. 求助即答：仅当学员主动提问或求助时，才恢复正常介入、深入解答；'
+      '学员这次开口即视为求助；\n'
+      '3. R-009 边界重申：不替学员写句子或段落，不打分，不开处方；'
+      '只给结构性提问与方向。';
 
   /// ADR-C82：诊断意图注入 + 请求结构观测（R-019 拆出：_sendMessageCore
   /// 行数收敛）。注入需在流式前、历史追加后执行；观测仅 debug 级留痕。

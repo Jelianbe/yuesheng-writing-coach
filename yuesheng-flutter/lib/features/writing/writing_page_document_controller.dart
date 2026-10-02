@@ -16,6 +16,7 @@ import '../../providers/writing_providers.dart';
 import '../../utils/deleted_text_extractor.dart';
 import '../../utils/paragraph_format.dart';
 import 'independent_drafting_provider.dart';
+import 'whole_chapter_mode_provider.dart';
 import 'writing_page_host.dart';
 
 class WritingPageDocumentController {
@@ -86,10 +87,17 @@ class WritingPageDocumentController {
       final sessionId = await chapterRepo.firstSessionIdForChapter(
         _host.chapterId,
       );
-      // 读独立起稿开关（按章节隔离的会话内状态；教练面板开关写入同源 provider）。
-      final independent = _host.ref.read(
+      // 读独立写作开关（按章节隔离的会话内状态；教练面板开关写入同源 provider）。
+      // ADR-C137 批1：M4a「这次我自己来」或 M4 第二格「这一章我自己写」任一
+      // 激活 → completion 事件都打 independent_drafting 标记（完整章是更强的
+      // 同语义声明，复用同一 source，不新增子类型——是否「完整」由字数判据消费）。
+      final drafting = _host.ref.read(
         independentDraftingProvider(_host.chapterId),
       );
+      final wholeChapter = _host.ref.read(
+        wholeChapterDraftingProvider(_host.chapterId),
+      );
+      final independent = drafting || wholeChapter;
       await EditDiffEventRepository(db).recordCompletion(
         sessionId: sessionId,
         chapterId: _host.chapterId,

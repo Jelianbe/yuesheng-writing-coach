@@ -73,6 +73,12 @@ class SendMessageOptions {
   /// 全文在此字段随运行时装配注入 user 消息（不落库）。
   final String? chapterFullText;
 
+  /// ADR-C137 批2：完整章模式（「这一章我自己写」）激活时为 true。
+  /// 为 true 时对话层末尾追加一条「按需介入」system 块（存在感 + 求助即答 +
+  /// R-009 边界重申）。默认 false——对话页 / 非完整章路径注入链逐字节不变
+  /// （message_sequence 锚点零漂移的依据）。
+  final bool wholeChapterModeActive;
+
   const SendMessageOptions({
     required this.phase,
     required this.attitude,
@@ -81,5 +87,6 @@ class SendMessageOptions {
     this.lastEditorEditAtSec,
     this.referencesJson,
     this.chapterFullText,
+    this.wholeChapterModeActive = false,
   });
 }

@@ -45,10 +45,16 @@ FeedbackTier tierForPriorCount(int priorConfirmed) {
 /// 返回 null = 无任何复发症候（全部 prior<1），走默认教学路径、不注入。
 /// 仅枚举 prior≥1（N≥2）的症候；guidedRecall 在学员非 highStable 时安全降级
 /// 为 rootCauseOnly（资格门：低水平/消沉不得用引导提问）。
+///
+/// [excludeIdsBySyndrome]（ADR-C138 项① 近轮去重）：每症候近轮已用变体 id，
+/// 经 `_lineFor` 透传 `selectVariantForRecurrence`，避免跨复发复用同一表达骨架。
+/// 默认空 = 不去重（生产调用方 chat_service 当前不传）；纯函数侧已串联，
+/// 生产侧填充（跨轮变体历史存储）待后续批——见 C134 批2 现场裁定#2。
 String? buildFadingBlock(
   Map<String, int> priorBySyndrome,
-  FeedbackEligibility eligibility,
-) {
+  FeedbackEligibility eligibility, {
+  Map<String, Set<String>> excludeIdsBySyndrome = const {},
+}) {
   final lines = <String>[];
   priorBySyndrome.forEach((sid, c) {
     if (c < 1) return; // N=1 首次：默认路径，不进 override 块
@@ -57,7 +63,15 @@ String? buildFadingBlock(
         eligibility != FeedbackEligibility.highStableOnly) {
       tier = FeedbackTier.rootCauseOnly; // 资格门安全降级
     }
-    lines.add(_lineFor(sid, c, tier, eligibility));
+    lines.add(
+      _lineFor(
+        sid,
+        c,
+        tier,
+        eligibility,
+        excludeIdsBySyndrome[sid] ?? const {},
+      ),
+    );
   });
   if (lines.isEmpty) return null;
   return '\n\n【复发症候·渐退反馈（fading）】\n'
@@ -74,8 +88,9 @@ String _lineFor(
   String syndromeId,
   int priorCount,
   FeedbackTier tier,
-  FeedbackEligibility eligibility,
-) {
+  FeedbackEligibility eligibility, [
+  Set<String> excludeIds = const {},
+]) {
   final occurrenceNo = priorCount + 1; // 本轮是第几次见到它
   final directive = switch (tier) {
     FeedbackTier.rootCauseOnly =>
@@ -90,6 +105,7 @@ String _lineFor(
     syndromeId,
     priorCount,
     eligibility,
+    excludeIds: excludeIds, // ADR-C138 项①：近轮去重串联进 fading 计数路径
   );
   final skeleton = variant == null
       ? ''

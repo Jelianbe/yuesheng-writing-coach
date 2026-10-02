@@ -22,6 +22,7 @@ import '../../services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import '../../types/teaching_types.dart';
 import '../onboarding/api_config_nudge.dart';
+import 'whole_chapter_mode_provider.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
 import 'writing_coach_panel_host.dart';
 
@@ -140,6 +141,11 @@ class WritingCoachChatRunner {
         lastEditorEditAtSec: _ref.read(editorActivityProvider),
         // ADR-C87：取消令牌——流式中可主动中止
         cancelToken: cancelToken,
+        // ADR-C137 批2：完整章模式激活 → 对话层末尾注入「按需介入」块；
+        // 关闭时 false，注入链逐字节不变（锚点零漂移）。
+        wholeChapterModeActive: _ref.read(
+          wholeChapterDraftingProvider(_chapterId),
+        ),
       ),
       subphase: subphase,
     );

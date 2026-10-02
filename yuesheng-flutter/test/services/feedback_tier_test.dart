@@ -109,6 +109,69 @@ void main() {
         isNull,
       );
     });
+
+    test('prior=1 + excludeIds 排除直给变体 → 换一条（近轮去重串联 fading 路径）', () {
+      // ADR-C138 项①：selectVariantForRecurrence 必须透传 excludeIds。
+      final first = selectVariantForRecurrence(
+        'P018',
+        1,
+        FeedbackEligibility.all,
+      );
+      expect(first!.id, 'P018-direct-1'); // N=2 偏好直给，池内唯一直给
+      final second = selectVariantForRecurrence(
+        'P018',
+        1,
+        FeedbackEligibility.all,
+        excludeIds: {first.id},
+      );
+      expect(second, isNotNull);
+      expect(second!.id, isNot(first.id)); // 近轮已用 → 不再复用
+    });
+  });
+
+  group('ADR-C138 项① · buildFadingBlock 串联近轮去重', () {
+    test('excludeIdsBySyndrome 排除首条骨架 → 注入块换用另一变体文本', () {
+      // 无排除：N=2 偏好直给 → P018-direct-1（含「语感被它拖住了」）。
+      final base = buildFadingBlock({'P018': 1}, FeedbackEligibility.all)!;
+      expect(base, contains('语感被它拖住了'));
+      // 排除 P018-direct-1：直给候选空 → 安全回退 broader 集首条 = meta-1
+      // （含「读者会下意识跳过它」），证明 excludeIds 经 buildFadingBlock 串联生效。
+      final dedup = buildFadingBlock(
+        {'P018': 1},
+        FeedbackEligibility.all,
+        excludeIdsBySyndrome: {
+          'P018': {'P018-direct-1'},
+        },
+      )!;
+      expect(dedup, isNot(contains('语感被它拖住了')));
+      expect(dedup, contains('读者会下意识跳过它'));
+    });
+
+    test('默认不传 excludeIdsBySyndrome → 行为与既有一致（零漂移）', () {
+      // 可选参数默认空：生产调用方 chat_service 不传时逐字节不变。
+      final block = buildFadingBlock({'P018': 1}, FeedbackEligibility.all)!;
+      expect(block, contains('语感被它拖住了'));
+    });
+  });
+
+  group('ADR-C138 项③ · 试点外症候优雅降级（块级）', () {
+    test('试点外症候 → 块保留层级指令、但无表达骨架（不注入措辞骨架）', () {
+      // selectVariantForRecurrence(P999) → null → _lineFor skeleton=''。
+      final block = buildFadingBlock({'P999': 1}, FeedbackEligibility.all)!;
+      expect(block, contains('[P999]')); // 层级指令仍在
+      expect(block, contains('只指根因与方向'));
+      expect(block, isNot(contains('表达骨架'))); // 无池内变体 → 不注入骨架
+    });
+  });
+
+  group('ADR-C138 项④ · {anchor} 由 LLM 落地（代码侧确认）', () {
+    test('注入块保留 {anchor} 原文 + 附替换指令（不在注入时填充）', () {
+      // C134 批2 现场裁定#1：注入发生在 LLM 诊断前，被标记原句未产生 →
+      // 占位符保留 + 明示替换规则，由 LLM 落地真实片段（伪造即触 R-009）。
+      final block = buildFadingBlock({'P018': 1}, FeedbackEligibility.all)!;
+      expect(block, contains('{anchor}')); // 占位符未被预填
+      expect(block, contains('替换后使用')); // 附替换指令交 LLM 落地
+    });
   });
 
   group('R-009 形态审计 · 注入块文本', () {
