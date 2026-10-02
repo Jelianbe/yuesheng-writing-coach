@@ -7,7 +7,7 @@
 // [CoachPersona.systemPromptFragment] 直注。
 //
 // [systemPromptFragment] 取各态度档「角色定位」首句（skills_attitude.dart:31/94/157），
-// 作为声音锚点，不重复搬运完整 skill 正文（避免与快照源漂移）。
+// 作为语气锚点，不重复搬运完整 skill 正文（避免与快照源漂移）。
 // ─────────────────────────────────────────────────────────────
 
 import 'teaching_types.dart';

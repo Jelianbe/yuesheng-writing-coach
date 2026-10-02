@@ -16965,6 +16965,681 @@ class PilotMetricEventsCompanion extends UpdateCompanion<PilotMetricEvent> {
   }
 }
 
+class $EditDiffEventsTable extends EditDiffEvents
+    with TableInfo<$EditDiffEventsTable, EditDiffEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EditDiffEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _chapterIdMeta = const VerificationMeta(
+    'chapterId',
+  );
+  @override
+  late final GeneratedColumn<String> chapterId = GeneratedColumn<String>(
+    'chapter_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventTypeMeta = const VerificationMeta(
+    'eventType',
+  );
+  @override
+  late final GeneratedColumn<String> eventType = GeneratedColumn<String>(
+    'event_type',
+    aliasedName,
+    false,
+    check: () => eventType.isIn(const ['diff', 'anchor_ack', 'completion']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _anchorStartMeta = const VerificationMeta(
+    'anchorStart',
+  );
+  @override
+  late final GeneratedColumn<int> anchorStart = GeneratedColumn<int>(
+    'anchor_start',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _anchorEndMeta = const VerificationMeta(
+    'anchorEnd',
+  );
+  @override
+  late final GeneratedColumn<int> anchorEnd = GeneratedColumn<int>(
+    'anchor_end',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _beforeTextMeta = const VerificationMeta(
+    'beforeText',
+  );
+  @override
+  late final GeneratedColumn<String> beforeText = GeneratedColumn<String>(
+    'before_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _afterTextMeta = const VerificationMeta(
+    'afterText',
+  );
+  @override
+  late final GeneratedColumn<String> afterText = GeneratedColumn<String>(
+    'after_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _payloadMeta = const VerificationMeta(
+    'payload',
+  );
+  @override
+  late final GeneratedColumn<String> payload = GeneratedColumn<String>(
+    'payload',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    chapterId,
+    messageId,
+    eventType,
+    anchorStart,
+    anchorEnd,
+    beforeText,
+    afterText,
+    payload,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'edit_diff_event';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EditDiffEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    }
+    if (data.containsKey('chapter_id')) {
+      context.handle(
+        _chapterIdMeta,
+        chapterId.isAcceptableOrUnknown(data['chapter_id']!, _chapterIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_chapterIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    }
+    if (data.containsKey('event_type')) {
+      context.handle(
+        _eventTypeMeta,
+        eventType.isAcceptableOrUnknown(data['event_type']!, _eventTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventTypeMeta);
+    }
+    if (data.containsKey('anchor_start')) {
+      context.handle(
+        _anchorStartMeta,
+        anchorStart.isAcceptableOrUnknown(
+          data['anchor_start']!,
+          _anchorStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('anchor_end')) {
+      context.handle(
+        _anchorEndMeta,
+        anchorEnd.isAcceptableOrUnknown(data['anchor_end']!, _anchorEndMeta),
+      );
+    }
+    if (data.containsKey('before_text')) {
+      context.handle(
+        _beforeTextMeta,
+        beforeText.isAcceptableOrUnknown(data['before_text']!, _beforeTextMeta),
+      );
+    }
+    if (data.containsKey('after_text')) {
+      context.handle(
+        _afterTextMeta,
+        afterText.isAcceptableOrUnknown(data['after_text']!, _afterTextMeta),
+      );
+    }
+    if (data.containsKey('payload')) {
+      context.handle(
+        _payloadMeta,
+        payload.isAcceptableOrUnknown(data['payload']!, _payloadMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EditDiffEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EditDiffEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      chapterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chapter_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      ),
+      eventType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_type'],
+      )!,
+      anchorStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}anchor_start'],
+      ),
+      anchorEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}anchor_end'],
+      ),
+      beforeText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}before_text'],
+      ),
+      afterText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}after_text'],
+      ),
+      payload: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $EditDiffEventsTable createAlias(String alias) {
+    return $EditDiffEventsTable(attachedDatabase, alias);
+  }
+}
+
+class EditDiffEvent extends DataClass implements Insertable<EditDiffEvent> {
+  final String id;
+
+  /// 会话 id；无法确定会话（章节级保存无会话上下文）记 ''
+  final String sessionId;
+  final String chapterId;
+
+  /// 触发该次修改的教练消息 id（可空：无关联反馈的自主修改 / 成稿事件）
+  final String? messageId;
+
+  /// 事件类型：diff | anchor_ack | completion
+  final String eventType;
+
+  /// 变化片段起止（字符偏移，[start, end) 前含后不含；null = 全章）
+  final int? anchorStart;
+  final int? anchorEnd;
+
+  /// 变化前后文本（diff 事件必填；anchor_ack 记录被指认片段，completion 可空）
+  final String? beforeText;
+  final String? afterText;
+
+  /// JSON payload（如 diff 段数 / 指认来源），无则 ''
+  final String payload;
+  final int createdAt;
+  const EditDiffEvent({
+    required this.id,
+    required this.sessionId,
+    required this.chapterId,
+    this.messageId,
+    required this.eventType,
+    this.anchorStart,
+    this.anchorEnd,
+    this.beforeText,
+    this.afterText,
+    required this.payload,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['chapter_id'] = Variable<String>(chapterId);
+    if (!nullToAbsent || messageId != null) {
+      map['message_id'] = Variable<String>(messageId);
+    }
+    map['event_type'] = Variable<String>(eventType);
+    if (!nullToAbsent || anchorStart != null) {
+      map['anchor_start'] = Variable<int>(anchorStart);
+    }
+    if (!nullToAbsent || anchorEnd != null) {
+      map['anchor_end'] = Variable<int>(anchorEnd);
+    }
+    if (!nullToAbsent || beforeText != null) {
+      map['before_text'] = Variable<String>(beforeText);
+    }
+    if (!nullToAbsent || afterText != null) {
+      map['after_text'] = Variable<String>(afterText);
+    }
+    map['payload'] = Variable<String>(payload);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  EditDiffEventsCompanion toCompanion(bool nullToAbsent) {
+    return EditDiffEventsCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      chapterId: Value(chapterId),
+      messageId: messageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(messageId),
+      eventType: Value(eventType),
+      anchorStart: anchorStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorStart),
+      anchorEnd: anchorEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorEnd),
+      beforeText: beforeText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(beforeText),
+      afterText: afterText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(afterText),
+      payload: Value(payload),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory EditDiffEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EditDiffEvent(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      chapterId: serializer.fromJson<String>(json['chapterId']),
+      messageId: serializer.fromJson<String?>(json['messageId']),
+      eventType: serializer.fromJson<String>(json['eventType']),
+      anchorStart: serializer.fromJson<int?>(json['anchorStart']),
+      anchorEnd: serializer.fromJson<int?>(json['anchorEnd']),
+      beforeText: serializer.fromJson<String?>(json['beforeText']),
+      afterText: serializer.fromJson<String?>(json['afterText']),
+      payload: serializer.fromJson<String>(json['payload']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'chapterId': serializer.toJson<String>(chapterId),
+      'messageId': serializer.toJson<String?>(messageId),
+      'eventType': serializer.toJson<String>(eventType),
+      'anchorStart': serializer.toJson<int?>(anchorStart),
+      'anchorEnd': serializer.toJson<int?>(anchorEnd),
+      'beforeText': serializer.toJson<String?>(beforeText),
+      'afterText': serializer.toJson<String?>(afterText),
+      'payload': serializer.toJson<String>(payload),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  EditDiffEvent copyWith({
+    String? id,
+    String? sessionId,
+    String? chapterId,
+    Value<String?> messageId = const Value.absent(),
+    String? eventType,
+    Value<int?> anchorStart = const Value.absent(),
+    Value<int?> anchorEnd = const Value.absent(),
+    Value<String?> beforeText = const Value.absent(),
+    Value<String?> afterText = const Value.absent(),
+    String? payload,
+    int? createdAt,
+  }) => EditDiffEvent(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    chapterId: chapterId ?? this.chapterId,
+    messageId: messageId.present ? messageId.value : this.messageId,
+    eventType: eventType ?? this.eventType,
+    anchorStart: anchorStart.present ? anchorStart.value : this.anchorStart,
+    anchorEnd: anchorEnd.present ? anchorEnd.value : this.anchorEnd,
+    beforeText: beforeText.present ? beforeText.value : this.beforeText,
+    afterText: afterText.present ? afterText.value : this.afterText,
+    payload: payload ?? this.payload,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  EditDiffEvent copyWithCompanion(EditDiffEventsCompanion data) {
+    return EditDiffEvent(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      chapterId: data.chapterId.present ? data.chapterId.value : this.chapterId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      eventType: data.eventType.present ? data.eventType.value : this.eventType,
+      anchorStart: data.anchorStart.present
+          ? data.anchorStart.value
+          : this.anchorStart,
+      anchorEnd: data.anchorEnd.present ? data.anchorEnd.value : this.anchorEnd,
+      beforeText: data.beforeText.present
+          ? data.beforeText.value
+          : this.beforeText,
+      afterText: data.afterText.present ? data.afterText.value : this.afterText,
+      payload: data.payload.present ? data.payload.value : this.payload,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EditDiffEvent(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('messageId: $messageId, ')
+          ..write('eventType: $eventType, ')
+          ..write('anchorStart: $anchorStart, ')
+          ..write('anchorEnd: $anchorEnd, ')
+          ..write('beforeText: $beforeText, ')
+          ..write('afterText: $afterText, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    chapterId,
+    messageId,
+    eventType,
+    anchorStart,
+    anchorEnd,
+    beforeText,
+    afterText,
+    payload,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EditDiffEvent &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.chapterId == this.chapterId &&
+          other.messageId == this.messageId &&
+          other.eventType == this.eventType &&
+          other.anchorStart == this.anchorStart &&
+          other.anchorEnd == this.anchorEnd &&
+          other.beforeText == this.beforeText &&
+          other.afterText == this.afterText &&
+          other.payload == this.payload &&
+          other.createdAt == this.createdAt);
+}
+
+class EditDiffEventsCompanion extends UpdateCompanion<EditDiffEvent> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String> chapterId;
+  final Value<String?> messageId;
+  final Value<String> eventType;
+  final Value<int?> anchorStart;
+  final Value<int?> anchorEnd;
+  final Value<String?> beforeText;
+  final Value<String?> afterText;
+  final Value<String> payload;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const EditDiffEventsCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.chapterId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.anchorStart = const Value.absent(),
+    this.anchorEnd = const Value.absent(),
+    this.beforeText = const Value.absent(),
+    this.afterText = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EditDiffEventsCompanion.insert({
+    required String id,
+    this.sessionId = const Value.absent(),
+    required String chapterId,
+    this.messageId = const Value.absent(),
+    required String eventType,
+    this.anchorStart = const Value.absent(),
+    this.anchorEnd = const Value.absent(),
+    this.beforeText = const Value.absent(),
+    this.afterText = const Value.absent(),
+    this.payload = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       chapterId = Value(chapterId),
+       eventType = Value(eventType);
+  static Insertable<EditDiffEvent> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? chapterId,
+    Expression<String>? messageId,
+    Expression<String>? eventType,
+    Expression<int>? anchorStart,
+    Expression<int>? anchorEnd,
+    Expression<String>? beforeText,
+    Expression<String>? afterText,
+    Expression<String>? payload,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (chapterId != null) 'chapter_id': chapterId,
+      if (messageId != null) 'message_id': messageId,
+      if (eventType != null) 'event_type': eventType,
+      if (anchorStart != null) 'anchor_start': anchorStart,
+      if (anchorEnd != null) 'anchor_end': anchorEnd,
+      if (beforeText != null) 'before_text': beforeText,
+      if (afterText != null) 'after_text': afterText,
+      if (payload != null) 'payload': payload,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EditDiffEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String>? chapterId,
+    Value<String?>? messageId,
+    Value<String>? eventType,
+    Value<int?>? anchorStart,
+    Value<int?>? anchorEnd,
+    Value<String?>? beforeText,
+    Value<String?>? afterText,
+    Value<String>? payload,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return EditDiffEventsCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      chapterId: chapterId ?? this.chapterId,
+      messageId: messageId ?? this.messageId,
+      eventType: eventType ?? this.eventType,
+      anchorStart: anchorStart ?? this.anchorStart,
+      anchorEnd: anchorEnd ?? this.anchorEnd,
+      beforeText: beforeText ?? this.beforeText,
+      afterText: afterText ?? this.afterText,
+      payload: payload ?? this.payload,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (chapterId.present) {
+      map['chapter_id'] = Variable<String>(chapterId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (eventType.present) {
+      map['event_type'] = Variable<String>(eventType.value);
+    }
+    if (anchorStart.present) {
+      map['anchor_start'] = Variable<int>(anchorStart.value);
+    }
+    if (anchorEnd.present) {
+      map['anchor_end'] = Variable<int>(anchorEnd.value);
+    }
+    if (beforeText.present) {
+      map['before_text'] = Variable<String>(beforeText.value);
+    }
+    if (afterText.present) {
+      map['after_text'] = Variable<String>(afterText.value);
+    }
+    if (payload.present) {
+      map['payload'] = Variable<String>(payload.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EditDiffEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('chapterId: $chapterId, ')
+          ..write('messageId: $messageId, ')
+          ..write('eventType: $eventType, ')
+          ..write('anchorStart: $anchorStart, ')
+          ..write('anchorEnd: $anchorEnd, ')
+          ..write('beforeText: $beforeText, ')
+          ..write('afterText: $afterText, ')
+          ..write('payload: $payload, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -17007,6 +17682,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SettingTagsTable settingTags = $SettingTagsTable(this);
   late final $PilotMetricEventsTable pilotMetricEvents =
       $PilotMetricEventsTable(this);
+  late final $EditDiffEventsTable editDiffEvents = $EditDiffEventsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -17040,6 +17716,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     settingLinks,
     settingTags,
     pilotMetricEvents,
+    editDiffEvents,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -31330,6 +32007,326 @@ typedef $$PilotMetricEventsTableProcessedTableManager =
       PilotMetricEvent,
       PrefetchHooks Function()
     >;
+typedef $$EditDiffEventsTableCreateCompanionBuilder =
+    EditDiffEventsCompanion Function({
+      required String id,
+      Value<String> sessionId,
+      required String chapterId,
+      Value<String?> messageId,
+      required String eventType,
+      Value<int?> anchorStart,
+      Value<int?> anchorEnd,
+      Value<String?> beforeText,
+      Value<String?> afterText,
+      Value<String> payload,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$EditDiffEventsTableUpdateCompanionBuilder =
+    EditDiffEventsCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<String> chapterId,
+      Value<String?> messageId,
+      Value<String> eventType,
+      Value<int?> anchorStart,
+      Value<int?> anchorEnd,
+      Value<String?> beforeText,
+      Value<String?> afterText,
+      Value<String> payload,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$EditDiffEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $EditDiffEventsTable> {
+  $$EditDiffEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get chapterId => $composableBuilder(
+    column: $table.chapterId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get anchorStart => $composableBuilder(
+    column: $table.anchorStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get anchorEnd => $composableBuilder(
+    column: $table.anchorEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get beforeText => $composableBuilder(
+    column: $table.beforeText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get afterText => $composableBuilder(
+    column: $table.afterText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$EditDiffEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $EditDiffEventsTable> {
+  $$EditDiffEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get chapterId => $composableBuilder(
+    column: $table.chapterId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get anchorStart => $composableBuilder(
+    column: $table.anchorStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get anchorEnd => $composableBuilder(
+    column: $table.anchorEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get beforeText => $composableBuilder(
+    column: $table.beforeText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get afterText => $composableBuilder(
+    column: $table.afterText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payload => $composableBuilder(
+    column: $table.payload,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$EditDiffEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EditDiffEventsTable> {
+  $$EditDiffEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get chapterId =>
+      $composableBuilder(column: $table.chapterId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get eventType =>
+      $composableBuilder(column: $table.eventType, builder: (column) => column);
+
+  GeneratedColumn<int> get anchorStart => $composableBuilder(
+    column: $table.anchorStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get anchorEnd =>
+      $composableBuilder(column: $table.anchorEnd, builder: (column) => column);
+
+  GeneratedColumn<String> get beforeText => $composableBuilder(
+    column: $table.beforeText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get afterText =>
+      $composableBuilder(column: $table.afterText, builder: (column) => column);
+
+  GeneratedColumn<String> get payload =>
+      $composableBuilder(column: $table.payload, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$EditDiffEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $EditDiffEventsTable,
+          EditDiffEvent,
+          $$EditDiffEventsTableFilterComposer,
+          $$EditDiffEventsTableOrderingComposer,
+          $$EditDiffEventsTableAnnotationComposer,
+          $$EditDiffEventsTableCreateCompanionBuilder,
+          $$EditDiffEventsTableUpdateCompanionBuilder,
+          (
+            EditDiffEvent,
+            BaseReferences<_$AppDatabase, $EditDiffEventsTable, EditDiffEvent>,
+          ),
+          EditDiffEvent,
+          PrefetchHooks Function()
+        > {
+  $$EditDiffEventsTableTableManager(
+    _$AppDatabase db,
+    $EditDiffEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EditDiffEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EditDiffEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EditDiffEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> chapterId = const Value.absent(),
+                Value<String?> messageId = const Value.absent(),
+                Value<String> eventType = const Value.absent(),
+                Value<int?> anchorStart = const Value.absent(),
+                Value<int?> anchorEnd = const Value.absent(),
+                Value<String?> beforeText = const Value.absent(),
+                Value<String?> afterText = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EditDiffEventsCompanion(
+                id: id,
+                sessionId: sessionId,
+                chapterId: chapterId,
+                messageId: messageId,
+                eventType: eventType,
+                anchorStart: anchorStart,
+                anchorEnd: anchorEnd,
+                beforeText: beforeText,
+                afterText: afterText,
+                payload: payload,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> sessionId = const Value.absent(),
+                required String chapterId,
+                Value<String?> messageId = const Value.absent(),
+                required String eventType,
+                Value<int?> anchorStart = const Value.absent(),
+                Value<int?> anchorEnd = const Value.absent(),
+                Value<String?> beforeText = const Value.absent(),
+                Value<String?> afterText = const Value.absent(),
+                Value<String> payload = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EditDiffEventsCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                chapterId: chapterId,
+                messageId: messageId,
+                eventType: eventType,
+                anchorStart: anchorStart,
+                anchorEnd: anchorEnd,
+                beforeText: beforeText,
+                afterText: afterText,
+                payload: payload,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$EditDiffEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $EditDiffEventsTable,
+      EditDiffEvent,
+      $$EditDiffEventsTableFilterComposer,
+      $$EditDiffEventsTableOrderingComposer,
+      $$EditDiffEventsTableAnnotationComposer,
+      $$EditDiffEventsTableCreateCompanionBuilder,
+      $$EditDiffEventsTableUpdateCompanionBuilder,
+      (
+        EditDiffEvent,
+        BaseReferences<_$AppDatabase, $EditDiffEventsTable, EditDiffEvent>,
+      ),
+      EditDiffEvent,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -31390,4 +32387,6 @@ class $AppDatabaseManager {
       $$SettingTagsTableTableManager(_db, _db.settingTags);
   $$PilotMetricEventsTableTableManager get pilotMetricEvents =>
       $$PilotMetricEventsTableTableManager(_db, _db.pilotMetricEvents);
+  $$EditDiffEventsTableTableManager get editDiffEvents =>
+      $$EditDiffEventsTableTableManager(_db, _db.editDiffEvents);
 }

@@ -33,17 +33,23 @@ void main() {
       );
     });
 
-    test('C13：4 个调用点各出现 markCallContext 恰好一次', () {
-      const files = <String>[
-        'lib/services/editor_service.dart',
-        'lib/services/setting_assertion_extractor.dart',
-        'lib/features/app_settings/coach_selector_card.dart',
-        'lib/features/character/character_detail_page.dart',
-      ];
-      for (final f in files) {
-        final src = _src(f);
+    test('C13：调用点各出现 markCallContext 恰好 N 次（逐处断言、不求和）', () {
+      const files = <String, int>{
+        'lib/services/editor_service.dart': 1,
+        'lib/services/setting_assertion_extractor.dart': 1,
+        // ADR-C132 批3：coach_selector_card 增「试听语气」链路（与润色
+        // 同一教练人格 AI 辅助语义）→ 2 处。
+        'lib/features/app_settings/coach_selector_card.dart': 2,
+        'lib/features/character/character_detail_page.dart': 1,
+      };
+      for (final e in files.entries) {
+        final src = _src(e.key);
         final count = 'markCallContext'.allMatches(src).length;
-        expect(count, 1, reason: '$f 应恰好标注 1 处业务链路（实测 $count 处）');
+        expect(
+          count,
+          e.value,
+          reason: '${e.key} 应标注 ${e.value} 处业务链路（实测 $count 处）',
+        );
       }
     });
 

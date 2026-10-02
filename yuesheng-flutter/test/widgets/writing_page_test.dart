@@ -25,6 +25,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
+import 'package:writingcoach/data/repositories/edit_diff_event_repository.dart';
 import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
@@ -966,6 +967,55 @@ void main() {
       expect(find.text('本章写作目标达成 🎉'), findsOneWidget);
 
       // 收尾：等 SnackBar 关闭，避免 pending timer
+      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+    });
+
+    // ADR-C132 批3：写作目标首次达标 = 北极星漏斗底端 ⇒ 落一条 completion 事件。
+    // `_recordCompletionEvent` 是 unawaited + try/catch（失败仅 debugPrint），
+    // 故本用例同时守两件事：
+    //   (a) 达标瞬间 completion 事件真的落进 edit_diff_events（接线证据，
+    //       区别于 edit_diff_event_repository_test 只测仓库层 recordCompletion）；
+    //   (b) 埋点与写作流程解耦——SnackBar「目标达成」照常弹出（不被埋点阻断）。
+    testWidgets('#82-8 目标首次达标 → completion 事件落库，且 SnackBar 照常（埋点不阻断）', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWritingPage());
+      await tester.pumpAndSettle();
+
+      // 前提：达标前库内无任何 completion 事件
+      final editRepo = EditDiffEventRepository(db);
+      expect(await editRepo.listByType(EditDiffEventTypes.completion), isEmpty);
+
+      // 预设目标 13（初始 12 字在目标线下，+1 字即跨越）
+      await container
+          .read(writingStoreProvider(chapterId).notifier)
+          .setGoalWords(13);
+      await tester.pumpAndSettle();
+
+      // 输入跨过目标线
+      await tester.enterText(editorTextField(), '这是一个大雪纷飞的夜晚。雪');
+      await tester.pump();
+
+      // (b) SnackBar 照常弹出 = 写作流程未被埋点阻断
+      expect(find.text('本章写作目标达成 🎉'), findsOneWidget);
+
+      // (a) `_recordCompletionEvent` 是 unawaited ⇒ 给异步链几拍落库后再断言
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      final completions = await editRepo.listByChapter(chapterId);
+      expect(
+        completions,
+        hasLength(1),
+        reason:
+            '目标首次达标应经 onContentChanged → _recordCompletionEvent 落一条 completion',
+      );
+      expect(completions.single.eventType, EditDiffEventTypes.completion);
+      expect(completions.single.chapterId, chapterId);
+
+      // 收尾：关 SnackBar，避免 pending timer 泄漏到下一个用例
       await tester.pumpAndSettle();
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();

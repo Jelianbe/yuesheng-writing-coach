@@ -52,7 +52,7 @@ void main() {
       const emptyFrag = CoachPersona(
         id: 'custom_2',
         name: '空嗓门',
-        label: '没写声音',
+        label: '没写语气',
         isSystem: false,
         attitudeLevel: AttitudeLevel.doubao,
         systemPromptFragment: '   ',
@@ -98,7 +98,7 @@ void main() {
 
       expect(r.systemPrompt, contains('你是用户的写作陪练，语气沉稳。'));
       expect(r.systemPrompt, contains('以资深文学编辑口吻说话，多用比喻，少用术语。'));
-      // 人设层紧随基础声音之后（fragment 索引 < layer 索引）
+      // 人设层紧随基础语气之后（fragment 索引 < layer 索引）
       final fragIdx = r.systemPrompt.indexOf('语气沉稳');
       final layerIdx = r.systemPrompt.indexOf('资深文学编辑口吻');
       expect(layerIdx, greaterThan(fragIdx));
@@ -108,7 +108,7 @@ void main() {
       expect(r.loadedSkillIds, contains('persona-layer-custom_layer_1'));
     });
 
-    test('#E2 无 personaLayer（null）→ 只注入基础声音，无 persona-layer 标记', () {
+    test('#E2 无 personaLayer（null）→ 只注入基础语气，无 persona-layer 标记', () {
       final r = buildSystemPromptV2(
         ctx(activePersona: userPersona),
       ); // userPersona 无 layer
@@ -121,14 +121,14 @@ void main() {
       const blankLayer = CoachPersona(
         id: 'custom_blank_layer',
         name: '无层',
-        label: '只有基础声音',
+        label: '只有基础语气',
         isSystem: false,
         attitudeLevel: AttitudeLevel.doubao,
-        systemPromptFragment: '你是基础声音。',
+        systemPromptFragment: '你是基础语气。',
         personaLayer: '   ',
       );
       final r = buildSystemPromptV2(ctx(activePersona: blankLayer));
-      expect(r.systemPrompt, contains('你是基础声音。'));
+      expect(r.systemPrompt, contains('你是基础语气。'));
       expect(r.loadedSkillIds, contains('persona-custom_blank_layer'));
       expect(
         r.loadedSkillIds,
@@ -137,11 +137,101 @@ void main() {
     });
   });
 
+  group('ADR-C132 批2 · 结构化约束 + R-009 边界句（用户预设路径）', () {
+    const constrainedPersona = CoachPersona(
+      id: 'custom_constrained_1',
+      name: '克制教练',
+      label: '结构化约束样例',
+      isSystem: false,
+      attitudeLevel: AttitudeLevel.yuesheng,
+      systemPromptFragment: '你是用户的写作陪练，语气沉稳。',
+      expressionDensity: 'low',
+      questionPreference: 'direct',
+      bufferWordPreference: 'none',
+      emojiAllowed: false,
+    );
+
+    test('#F1 带结构化字段 → 约束块注入（各字段逐条可见）+ loadedIds', () {
+      final r = buildSystemPromptV2(ctx(activePersona: constrainedPersona));
+
+      expect(r.systemPrompt, contains('表达密度：简洁克制'));
+      expect(r.systemPrompt, contains('提问直给偏好：倾向直接指出问题'));
+      expect(r.systemPrompt, contains('缓冲词偏好：避免使用'));
+      expect(r.systemPrompt, contains('emoji：不使用'));
+      expect(
+        r.loadedSkillIds,
+        contains('persona-constraints-custom_constrained_1'),
+      );
+      expect(r.loadedSkillIds, isNot(contains('attitude-yuesheng')));
+    });
+
+    test('#F2 边界句无条件附加（无结构化字段也注入）+ loadedIds', () {
+      final r = buildSystemPromptV2(ctx(activePersona: userPersona));
+
+      expect(r.systemPrompt, contains('【人格红线】'));
+      expect(r.systemPrompt, contains('不替学员写句子、不替学员做决定'));
+      expect(r.loadedSkillIds, contains('persona-redline-custom_1'));
+    });
+
+    test('#F3 全空字段 → 无约束块但仍有边界句', () {
+      const plain = CoachPersona(
+        id: 'custom_plain_1',
+        name: '无约束',
+        label: '没有结构化字段',
+        isSystem: false,
+        attitudeLevel: AttitudeLevel.doubao,
+        systemPromptFragment: '你是基础语气。',
+      );
+      final r = buildSystemPromptV2(ctx(activePersona: plain));
+
+      expect(r.systemPrompt, isNot(contains('表达密度：')));
+      expect(r.systemPrompt, isNot(contains('提问直给偏好：')));
+      expect(r.systemPrompt, contains('【人格红线】'));
+      expect(
+        r.loadedSkillIds,
+        isNot(contains('persona-constraints-custom_plain_1')),
+      );
+      expect(r.loadedSkillIds, contains('persona-redline-custom_plain_1'));
+    });
+
+    test('#F4 注入顺序：fragment < layer < 约束块 < 边界句', () {
+      const layered = CoachPersona(
+        id: 'custom_order_1',
+        name: '顺序样本',
+        label: '验证块顺序',
+        isSystem: false,
+        attitudeLevel: AttitudeLevel.sensei,
+        systemPromptFragment: '你是顺序样本。',
+        personaLayer: '人设层文本。',
+        expressionDensity: 'high',
+      );
+      final r = buildSystemPromptV2(ctx(activePersona: layered));
+
+      final fragIdx = r.systemPrompt.indexOf('顺序样本');
+      final layerIdx = r.systemPrompt.indexOf('人设层文本');
+      final constraintsIdx = r.systemPrompt.indexOf('表达密度：可以铺陈充分');
+      final redlineIdx = r.systemPrompt.indexOf('【人格红线】');
+      expect(fragIdx, lessThan(layerIdx));
+      expect(layerIdx, lessThan(constraintsIdx));
+      expect(constraintsIdx, lessThan(redlineIdx));
+    });
+
+    test('#F5 系统预设路径零漂移：不注入约束块与边界句', () {
+      final system = builtInCoachPersonas.first; // doubao，isSystem=true
+      final r = buildSystemPromptV2(ctx(activePersona: system));
+
+      expect(r.systemPrompt, isNot(contains('表达密度：')));
+      expect(r.systemPrompt, isNot(contains('【人格红线】')));
+      expect(r.loadedSkillIds, isNot(contains('persona-constraints-')));
+      expect(r.loadedSkillIds, isNot(contains('persona-redline-')));
+    });
+  });
+
   group('resolveActiveCoachPersona 纯函数解析', () {
     const custom = CoachPersona(
       id: 'custom_9',
       name: '自定义',
-      label: '自定义声音',
+      label: '自定义语气',
       isSystem: false,
       attitudeLevel: AttitudeLevel.yuesheng,
       systemPromptFragment: '自定义片段',

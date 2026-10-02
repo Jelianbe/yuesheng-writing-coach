@@ -8,6 +8,8 @@
 import 'package:flutter/material.dart';
 
 import '../../data/repositories/app_state_repository.dart';
+import '../../data/repositories/chapter_repository.dart';
+import '../../data/repositories/edit_diff_event_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chapter_providers.dart';
 import '../../providers/writing_providers.dart';
@@ -46,6 +48,9 @@ class WritingPageDocumentController {
     if (ws.goalWords > 0 && ws.wordCount >= ws.goalWords) {
       if (!_host.goalCelebrated) {
         _host.goalCelebrated = true;
+        // ADR-C132 批3：成稿事件（写作目标首次达标 = 北极星漏斗底端）。
+        // 埋点失败仅留痕绝不阻断（与 diff 埋点同纪律）。
+        _recordCompletionEvent();
         ScaffoldMessenger.of(_host.context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
@@ -65,6 +70,23 @@ class WritingPageDocumentController {
     // 批次64（B62g）：记录编辑器活动时间戳，供心流判定（教师建议延迟触发）
     _host.ref.read(editorActivityProvider.notifier).state =
         DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  }
+
+  /// ADR-C132 批3：成稿事件埋点（写作目标首次达标）。失败仅 debugPrint
+  /// 留痕，绝不阻断写作流程（与 saveChapterContent 的 diff 埋点同纪律）。
+  Future<void> _recordCompletionEvent() async {
+    try {
+      final db = _host.ref.read(appDatabaseProvider);
+      final chapterRepo = ChapterRepository(db);
+      final sessionId = await chapterRepo.firstSessionIdForChapter(
+        _host.chapterId,
+      );
+      await EditDiffEventRepository(
+        db,
+      ).recordCompletion(sessionId: sessionId, chapterId: _host.chapterId);
+    } catch (e) {
+      debugPrint('[edit_diff] completion 埋点失败（不阻断）: $e');
+    }
   }
 
   /// 批次86-1：程序化设置编辑器正文 → 同步回收板 diff 基线（防误判）

@@ -1103,7 +1103,7 @@ extension ChatServiceSend on ChatService {
     required SendMessageOptions options,
     required _LoadedContext loaded,
   }) async {
-    // D1/D2 Phase 2：解析当前激活教练人格（用户预设 → 注入其声音；系统预设/null → 原路径）。
+    // D1/D2 Phase 2：解析当前激活教练人格（用户预设 → 注入其语气；系统预设/null → 原路径）。
     final activePersona = await _resolveActivePersona();
     final messages = _buildSystemPrompt(
       loaded.effectivePhase,

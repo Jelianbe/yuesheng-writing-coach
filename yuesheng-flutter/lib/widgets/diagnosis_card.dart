@@ -27,6 +27,7 @@ import 'thinking_chain.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
+import '../data/repositories/edit_diff_event_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../services/decode_guard.dart';
 import '../providers/app_providers.dart';
@@ -105,6 +106,13 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   /// （对齐 RN DiagnosisConfirmationBar：认同/部分认同/不认同）
   final String? sessionId;
 
+  /// ADR-C132 批3（anchor_ack）：诊断所属章节 ID（埋点「确认指认」用）。
+  /// 未传时按 sessionId 反查（见 _DiagnosisCardState._chapterId）。
+  final String? chapterId;
+
+  /// ADR-C132 批3（anchor_ack）：诊断消息 ID（埋点关联触发反馈用）。
+  final String? messageId;
+
   const DiagnosisCard({
     super.key,
     required this.syndromeCount,
@@ -114,6 +122,8 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     this.defaultExpanded = false,
     this.focusReason,
     this.sessionId,
+    this.chapterId,
+    this.messageId,
   });
 
   /// 便利构造：从 Message.content 的 JSON 解析 payload 渲染
@@ -122,6 +132,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     String content, {
     Key? key,
     String? sessionId,
+    String? messageId,
   }) {
     try {
       final payload = DiagnosisResultCardPayload.fromJson(
@@ -135,6 +146,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         confidence: payload.confidence,
         focusReason: payload.focusReason,
         sessionId: sessionId,
+        messageId: messageId,
       );
     } catch (_) {
       // 兜底：空诊断卡
@@ -145,6 +157,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         suggestedActions: const [],
         confidence: 0.0,
         sessionId: sessionId,
+        messageId: messageId,
       );
     }
   }
@@ -166,11 +179,59 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   /// 异步加载，失败静默回退空 map——不阻断卡片渲染。
   Map<String, SyndromeTracked> _trends = const {};
 
+  /// ADR-C132 批3（anchor_ack）：诊断所属章节 ID（未显式传入时按
+  /// sessionId 反查）；空 = 埋点不可用（卡片渲染不受影响）。
+  String _chapterId = '';
+
+  /// 已确认指认的证据文本集合（会话级确认态，只读内存，不跨轮次）。
+  final Set<String> _acknowledgedEvidence = {};
+
   @override
   void initState() {
     super.initState();
     _loadTeachingStates();
     _loadTrends();
+    _resolveChapterId();
+  }
+
+  /// ADR-C132 批3：章节 ID 反查（session → chapter）。失败静默留 ''。
+  Future<void> _resolveChapterId() async {
+    if (widget.chapterId != null && widget.chapterId!.isNotEmpty) {
+      _chapterId = widget.chapterId!;
+      return;
+    }
+    final sid = widget.sessionId;
+    if (sid == null || sid.isEmpty) return;
+    try {
+      final db = ref.read(appDatabaseProvider);
+      final row = await (db.select(
+        db.sessions,
+      )..where((t) => t.id.equals(sid))).getSingleOrNull();
+      if (!mounted) return;
+      _chapterId = row?.chapterId ?? '';
+    } catch (_) {
+      // 反查失败不阻断卡片渲染（埋点降级为不可用）。
+    }
+  }
+
+  /// ADR-C132 批3（anchor_ack）：确认指认一条证据 → 记录事件。
+  /// 失败仅 debugPrint 留痕，绝不阻断 UI。
+  Future<void> _acknowledgeEvidence(String evidenceText) async {
+    final sid = widget.sessionId;
+    if (sid == null || sid.isEmpty || _chapterId.isEmpty) return;
+    setState(() => _acknowledgedEvidence.add(evidenceText));
+    try {
+      await EditDiffEventRepository(
+        ref.read(appDatabaseProvider),
+      ).recordAnchorAcknowledged(
+        sessionId: sid,
+        chapterId: _chapterId,
+        messageId: widget.messageId,
+        anchorText: evidenceText,
+      );
+    } catch (e) {
+      debugPrint('[edit_diff] anchor_ack 埋点失败（不阻断）: $e');
+    }
   }
 
   /// 加载跨轮次症候追踪（复用 SyndromeTracker.loadSyndromeTrends，
@@ -704,7 +765,17 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   Widget _buildSyndromeBlock(DiagnosisSyndromeCard s) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      _SyndromeBlock(syndrome: s, tracked: _trends[s.syndromeId]),
+      _SyndromeBlock(
+        syndrome: s,
+        tracked: _trends[s.syndromeId],
+        // ADR-C132 批3（anchor_ack）：确认指认交互下传（无诊断上下文
+        // 时 onAcknowledge = null，证据块不渲染确认入口）。
+        acknowledgedEvidence: _acknowledgedEvidence,
+        onAcknowledgeEvidence:
+            (widget.sessionId != null && _chapterId.isNotEmpty)
+            ? _acknowledgeEvidence
+            : null,
+      ),
       if (widget.sessionId != null) ...[
         const SizedBox(height: 8),
         _SyndromeConfirmationBar(syndrome: s, sessionId: widget.sessionId!),
@@ -827,7 +898,18 @@ class _SyndromeBlock extends StatefulWidget {
 
   /// 跨轮次追踪（可能为 null：新症候无历史/加载失败时不显示趋势行）
   final SyndromeTracked? tracked;
-  const _SyndromeBlock({required this.syndrome, this.tracked});
+
+  /// ADR-C132 批3（anchor_ack）：已确认指认的证据集合 + 确认回调
+  ///（null = 无诊断上下文，不渲染确认入口）。
+  final Set<String> acknowledgedEvidence;
+  final ValueChanged<String>? onAcknowledgeEvidence;
+
+  const _SyndromeBlock({
+    required this.syndrome,
+    this.tracked,
+    this.acknowledgedEvidence = const {},
+    this.onAcknowledgeEvidence,
+  });
 
   @override
   State<_SyndromeBlock> createState() => _SyndromeBlockState();
@@ -1006,7 +1088,16 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
           ),
         if (_evidenceExpanded && evidence.isNotEmpty) ...[
           const SizedBox(height: 8),
-          for (final e in evidence) _EvidenceQuote(text: e),
+          for (final e in evidence)
+            _EvidenceQuote(
+              text: e,
+              // ADR-C132 批3（anchor_ack）：确认指认 = 学员确认教练
+              // 指认的片段位置（埋点；无诊断上下文时静默不可用）。
+              acknowledged: widget.acknowledgedEvidence.contains(e),
+              onAcknowledge: widget.onAcknowledgeEvidence == null
+                  ? null
+                  : () => widget.onAcknowledgeEvidence!(e),
+            ),
         ],
       ],
     );
@@ -1041,9 +1132,18 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
 }
 
 /// 证据原文引用块：左侧竹青色竖线 + 斜体弱色文本。
+/// ADR-C132 批3（anchor_ack）：可选「确认指认」动作（学员确认教练
+/// 指认的片段 → 埋点；已确认态显示勾选，不重复记录）。
 class _EvidenceQuote extends StatelessWidget {
   final String text;
-  const _EvidenceQuote({required this.text});
+  final bool acknowledged;
+  final VoidCallback? onAcknowledge;
+
+  const _EvidenceQuote({
+    required this.text,
+    this.acknowledged = false,
+    this.onAcknowledge,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1072,7 +1172,45 @@ class _EvidenceQuote extends StatelessWidget {
               ),
             ),
           ),
+          if (onAcknowledge != null) ...[
+            const SizedBox(width: 8),
+            _buildAcknowledgeAction(context),
+          ],
         ],
+      ),
+    );
+  }
+
+  /// R-019 拆出：「确认指认」动作（未确认态可点；已确认态显示勾选，不重复记录）。
+  Widget _buildAcknowledgeAction(BuildContext context) {
+    return InkWell(
+      onTap: acknowledged ? null : onAcknowledge,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: acknowledged
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: context.palette.primary,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    '已确认',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.palette.primary,
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                '确认指认',
+                style: TextStyle(fontSize: 11, color: context.palette.primary),
+              ),
       ),
     );
   }

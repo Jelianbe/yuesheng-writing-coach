@@ -52,7 +52,7 @@ class SkillLoadContext {
   ///
   /// - null / 系统预设：走原态度档位注入（attitude-*，快照锁守护，逐字节不变）。
   /// - 用户自定义人格（isSystem == false）：注入其 [CoachPersona.systemPromptFragment]
-  ///   替代默认态度档位内容（用户人格 = 用户选择的固定声音）。
+  ///   替代默认态度档位内容（用户人格 = 用户选择的固定语气）。
   final CoachPersona? activePersona;
 
   /// P1-4：当前消息措辞触发了诊断协议注入，但 l2Mode 并非 diagnosis 阶段时，

@@ -7,7 +7,7 @@
 //   1. 润色文本进入 system prompt；
 //   2. 默认态度档（态度：豆包）被替换（loadedSkillIds 记 persona-<id>，
 //      不再出现 attitude-doubao）；
-//   3. personaLayer 为空时只注入基础声音，无 persona-layer-<id>。
+//   3. personaLayer 为空时只注入基础语气，无 persona-layer-<id>。
 //
 // 与 coach_persona_injection_test 的区别：那是用例级别的机制守护（样本文本）；
 // 本文件用「真实润色产物」做端到端内容守护，证明润色出来的语气真的能注入诊断。

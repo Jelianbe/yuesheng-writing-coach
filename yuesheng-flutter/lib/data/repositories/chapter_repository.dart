@@ -4,10 +4,13 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../../services/fact_stale_service.dart';
+import '../../services/edit_diff.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 import 'chapter_scoped_keys.dart';
+import 'edit_diff_event_repository.dart';
 import 'repository_write_guard.dart';
 
 class ChapterRepository {
@@ -251,8 +254,13 @@ class ChapterRepository {
 
   /// 保存章节内容（同步更新 word_count + updated_at）
   /// 复刻 saveChapterContent(chapterId, content)
+  /// ADR-C132 批1：保存时自动捕获位置级 diff 事件（埋点地基，北极星漏斗底端
+  /// 「反馈后修改」分析；埋点失败仅留痕，绝不阻断保存）。
   Future<void> saveChapterContent(String chapterId, String content) =>
       guardRepoWrite('chapter', 'saveChapterContent', () async {
+        final chapter = await getChapter(chapterId);
+        if (chapter == null) return;
+        final segments = locateTextDiff(chapter.content, content);
         await (_db.update(
           _db.chapters,
         )..where((t) => t.id.equals(chapterId))).write(
@@ -262,7 +270,44 @@ class ChapterRepository {
             updatedAt: Value(nowSec()),
           ),
         );
+        if (segments.isEmpty) return;
+        // 首次写入（章节原本为空 → 本次有内容）不算「反馈后修改」：
+        // 位置级 diff 只服务「教练指认位置是否被改」分析，空→内容无锚定语义。
+        if (chapter.content.isEmpty) return;
+        try {
+          final sessionId = await firstSessionIdForChapter(chapterId);
+          await _db
+              .into(_db.editDiffEvents)
+              .insert(
+                EditDiffEventsCompanion.insert(
+                  id: generateUuid(),
+                  sessionId: Value(sessionId),
+                  chapterId: chapterId,
+                  eventType: EditDiffEventTypes.diff,
+                  anchorStart: Value(segments.first.start),
+                  anchorEnd: Value(segments.first.end),
+                  beforeText: Value(segments.first.before),
+                  afterText: Value(segments.first.after),
+                  payload: Value('{"diff_segments":${segments.length}}'),
+                ),
+              );
+        } catch (e) {
+          debugPrint('[edit_diff] 记录 diff 事件失败（不阻断保存）: $e');
+        }
       });
+
+  /// 章节关联的第一个会话 id（无 = ''）。位置级 diff / 成稿事件按会话归集，
+  /// 供「反馈 → 修改」时间窗关联分析（北极星研讨 §10-4）。
+  /// public：ADR-C132 批3 埋点接线（completion 事件）复用同一归集口径。
+  Future<String> firstSessionIdForChapter(String chapterId) async {
+    final row =
+        await (_db.selectOnly(_db.sessions)
+              ..addColumns([_db.sessions.id])
+              ..where(_db.sessions.chapterId.equals(chapterId))
+              ..limit(1))
+            .getSingleOrNull();
+    return row?.read(_db.sessions.id) ?? '';
+  }
 
   /// 更新章节标题
   /// 复刻 updateChapterTitle(chapterId, title)

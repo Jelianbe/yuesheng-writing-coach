@@ -515,9 +515,21 @@ class AppStateRepository {
     return null;
   }
 
-  /// 写入/更新单个用户自定义教练人格（按 id upsert）
+  /// 写入/更新单个用户自定义教练人格（按 id upsert）。
+  ///
+  /// ADR-C132 批3（E 查重）：名称（trim 后）与**其他**自定义人格同名
+  /// → 抛 [DuplicateCoachPersonaNameException]（同名拦截；编辑自身不拦）。
+  /// 系统预设名不在查重范围（预设不可被同名覆盖，选人卡按 isSystem 区分）。
   Future<void> saveCustomCoachPersona(CoachPersona persona) async {
     final all = await getCustomCoachPersonas();
+    final name = persona.name.trim();
+    if (name.isNotEmpty) {
+      for (final p in all) {
+        if (p.id != persona.id && p.name.trim() == name) {
+          throw DuplicateCoachPersonaNameException(name);
+        }
+      }
+    }
     final next = <CoachPersona>[];
     var replaced = false;
     for (final p in all) {
@@ -1021,4 +1033,16 @@ class DiagnosisPrefs {
       customized: customized ?? this.customized,
     );
   }
+}
+
+/// 自定义教练人格名称重复（ADR-C132 批3 E 查重）。
+///
+/// 由 [AppStateRepository.saveCustomCoachPersona] 抛出；UI 捕获后提示
+/// 「同名教练已存在」而非静默覆盖。
+class DuplicateCoachPersonaNameException implements Exception {
+  final String name;
+  const DuplicateCoachPersonaNameException(this.name);
+
+  @override
+  String toString() => 'DuplicateCoachPersonaNameException: $name';
 }

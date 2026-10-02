@@ -58,6 +58,8 @@ part 'database.g.dart';
     SettingTags,
     // ADR-C121（小白冷启动试点 v41）：试点埋点事件（追加式事件日志）
     PilotMetricEvents,
+    // ADR-C132 批1（写作修改事件 v43）：位置级 diff / 指认 / 成稿事件
+    EditDiffEvents,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -67,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 42;
+  int get schemaVersion => 43;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -195,6 +197,11 @@ class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_backup_history_created ON backup_history(created_at DESC)',
       );
+      // v43：写作修改事件索引（按章节/会话查事件序列）
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_edit_diff_event_chapter '
+        'ON edit_diff_event(chapter_id, created_at DESC)',
+      );
     },
 
     onUpgrade: (m, from, to) async {
@@ -235,7 +242,8 @@ class AppDatabase extends _$AppDatabase {
       // N12-F3b（fact 层章号身份）：守卫上移到 39（v39 块对 from=38 存量库可达，幂等 ALTER ADD COLUMN）
       // ADR-C121（小白冷启动试点 v41）：守卫上移到 41（v41 块对 from=40 存量库可达，建 pilot_metric_event）
       // C126（教学态落库 pending 标记 v42）：守卫上移到 42（v42 块对 from=41 存量库可达，幂等 ALTER 加 status 列）
-      if (from >= 42) return;
+      // ADR-C132 批1（写作修改事件 v43）：守卫上移到 43（v43 块对 from=42 存量库可达，建 edit_diff_event）
+      if (from >= 43) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1157,6 +1165,31 @@ class AppDatabase extends _$AppDatabase {
             "DEFAULT 'confirmed' CHECK (status IN ('confirmed','pending','replaced'))",
           );
         }
+      }
+      // v43 (ADR-C132 批1): 写作修改事件表（CREATE TABLE，幂等，范式同 v41 pilot_metric_event）
+      // 三项事件：diff（位置级 diff，saveChapterContent 自动捕获）/
+      //   anchor_ack（指认事件，UI 接线批 3）/ completion（成稿事件，UI 接线批 3）
+      if (from < 43) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS edit_diff_event (
+            id           TEXT PRIMARY KEY,
+            session_id   TEXT NOT NULL DEFAULT '',
+            chapter_id   TEXT NOT NULL,
+            message_id   TEXT DEFAULT NULL,
+            event_type   TEXT NOT NULL
+                         CHECK(event_type IN ('diff','anchor_ack','completion')),
+            anchor_start INTEGER DEFAULT NULL,
+            anchor_end   INTEGER DEFAULT NULL,
+            before_text  TEXT DEFAULT NULL,
+            after_text   TEXT DEFAULT NULL,
+            payload      TEXT NOT NULL DEFAULT '',
+            created_at   INTEGER NOT NULL DEFAULT (unixepoch())
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_edit_diff_event_chapter '
+          'ON edit_diff_event(chapter_id, created_at DESC)',
+        );
       }
     },
 

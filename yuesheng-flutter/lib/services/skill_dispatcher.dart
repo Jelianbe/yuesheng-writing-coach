@@ -15,6 +15,7 @@
 library;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:writingcoach/services/persona_structured_constraints.dart';
 import 'package:writingcoach/services/skill_layers.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
@@ -206,7 +207,7 @@ void _buildL1Chunks(
     }
   }
 
-  // 态度/人格声音块（L1 pinned block，紧跟九件套、在全部 L2 之前）。
+  // 态度/人格语气块（L1 pinned block，紧跟九件套、在全部 L2 之前）。
   _injectPersonaOrAttitude(ctx, chunks, loadedIds);
 
   // 教学方式块（L1 — 与人格档正交，按 ctx.teachingMode 加载一个）。
@@ -220,7 +221,7 @@ void _buildL1Chunks(
   }
 }
 
-/// 态度档位 / 自定义人格声音块（L1 pinned block）。
+/// 态度档位 / 自定义人格语气块（L1 pinned block）。
 ///
 /// ★ 人格块契约（Step 3c，2026-09-14）：态度档在装配链中是一个 **pinned block**
 /// —— 无条件注入、位置固定（紧跟九件套、在全部 L2 之前）、**不参与阶段切片**
@@ -229,12 +230,12 @@ void _buildL1Chunks(
 /// 组逐条守护：移动本段位置 / 给态度档挂裁剪钩子 / 把 attitude-* 挂进
 /// l2SkillMap，都会使该组变红。改动本段前先读该组。
 ///
-/// D1/D2 Phase 2：用户自定义人格 → 注入其固定声音文本，替代默认态度档位。
+/// D1/D2 Phase 2：用户自定义人格 → 注入其固定语气文本，替代默认态度档位。
 /// 仅当 ctx.activePersona 为「用户预设」（isSystem == false）且 fragment 非空时走注入；
 /// 系统预设 / 无激活人格 / 空 fragment → 走原 attitude-* 路径（逐字节不变，快照锁守护）。
-/// 空 fragment 回退而非静默跳过：态度/声音块是 L1 必注的 pinned block，
-/// 绝不能因数据缺陷让 prompt 整块失去声音指令。
-/// D2 人设层：personaLayer 为可选叠加层（角色设定/口吻），有则紧随基础声音注入。
+/// 空 fragment 回退而非静默跳过：态度/语气块是 L1 必注的 pinned block，
+/// 绝不能因数据缺陷让 prompt 整块失去语气指令。
+/// D2 人设层：personaLayer 为可选叠加层（角色设定/口吻），有则紧随基础语气注入。
 /// R-019 拆出：_buildL1Chunks 原 60 行 → 拆出本块。
 void _injectPersonaOrAttitude(
   SkillLoadContext ctx,
@@ -249,12 +250,23 @@ void _injectPersonaOrAttitude(
   if (personaFragment.isNotEmpty) {
     chunks.add(personaFragment);
     loadedIds.add('persona-${activePersona!.id}');
-    // D2 人设层：可选，叠加在基础声音片段之上（角色设定/口吻层）。
+    // D2 人设层：可选，叠加在基础语气片段之上（角色设定/口吻层）。
     final layer = activePersona.personaLayer?.trim() ?? '';
     if (layer.isNotEmpty) {
       chunks.add(layer);
       loadedIds.add('persona-layer-${activePersona.id}');
     }
+    // ADR-C132 批2（R-027 已批准）：A 方向结构化约束（表达密度 /
+    // 提问直给 / 缓冲词 / emoji）组装注入；C 方向 R-009 边界句自动附加。
+    // 仅用户预设路径（系统预设 / 无激活人格仍逐字节走 attitude-*，
+    // 快照锁守护）。边界句无条件附加，不依赖字段是否填写。
+    final constraints = buildStructuredConstraints(activePersona);
+    if (constraints.isNotEmpty) {
+      chunks.add(constraints);
+      loadedIds.add('persona-constraints-${activePersona.id}');
+    }
+    chunks.add(kPersonaRedLine);
+    loadedIds.add('persona-redline-${activePersona.id}');
   } else {
     final attitudeSkill = getSkill(attitudeKey);
     if (attitudeSkill != null) {

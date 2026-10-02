@@ -19,7 +19,7 @@ class CoachPersona {
   final String id;
   final String name;
 
-  /// 一句话声音描述（选人卡副标题），如「温和，先肯定再给建议，适合刚起步」。
+  /// 一句话语气描述（选人卡副标题），如「温和，先肯定再给建议，适合刚起步」。
   final String label;
 
   /// 是否系统预设（true = 内置 doubao/yuesheng/sensei；false = 用户自建）。
@@ -42,6 +42,24 @@ class CoachPersona {
   /// one focus / applying the selected teaching method. Default 5.
   final int directExplainThreshold;
 
+  /// ── ADR-C132 结构化人格字段（批 1 数据层，批 2 注入链消费）──
+  /// 全部可空 = 「不覆盖，沿用系统档 / 全局默认」。
+  /// 用户预设激活且非空时，由 skill_dispatcher 组装为结构化约束注入
+  /// （软风格层倾向声明；全局教学方式开关仍为裁决者，ADR-C132 §5）。
+
+  /// 表达密度档：'low' | 'medium' | 'high'（null = 不覆盖）。
+  final String? expressionDensity;
+
+  /// 提问直给偏好：'question' | 'direct'（null = 不覆盖；注入层倾向，
+  /// 不改全局教学方式开关裁决权）。
+  final String? questionPreference;
+
+  /// 缓冲词偏好：'none' | 'light' | 'warm'（null = 不覆盖）。
+  final String? bufferWordPreference;
+
+  /// 是否允许 emoji（null = 不覆盖，沿用系统档）。
+  final bool? emojiAllowed;
+
   const CoachPersona({
     required this.id,
     required this.name,
@@ -52,6 +70,10 @@ class CoachPersona {
     this.personaLayer,
     this.iconKey,
     this.directExplainThreshold = kDefaultDirectExplainThreshold,
+    this.expressionDensity,
+    this.questionPreference,
+    this.bufferWordPreference,
+    this.emojiAllowed,
   });
 
   Map<String, dynamic> toJson() => {
@@ -64,6 +86,10 @@ class CoachPersona {
     'persona_layer': personaLayer,
     'icon_key': iconKey,
     'direct_explain_threshold': directExplainThreshold,
+    'expression_density': expressionDensity,
+    'question_preference': questionPreference,
+    'buffer_word_preference': bufferWordPreference,
+    'emoji_allowed': emojiAllowed,
   };
 
   factory CoachPersona.fromJson(Map<String, dynamic> json) {
@@ -81,6 +107,10 @@ class CoachPersona {
       iconKey: json['icon_key'] as String?,
       directExplainThreshold:
           (json['direct_explain_threshold'] as num?)?.toInt() ?? 5,
+      expressionDensity: json['expression_density'] as String?,
+      questionPreference: json['question_preference'] as String?,
+      bufferWordPreference: json['buffer_word_preference'] as String?,
+      emojiAllowed: json['emoji_allowed'] as bool?,
     );
   }
 
@@ -94,6 +124,10 @@ class CoachPersona {
     String? personaLayer,
     String? iconKey,
     int? directExplainThreshold,
+    String? expressionDensity,
+    String? questionPreference,
+    String? bufferWordPreference,
+    bool? emojiAllowed,
   }) => CoachPersona(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -105,5 +139,9 @@ class CoachPersona {
     iconKey: iconKey ?? this.iconKey,
     directExplainThreshold:
         directExplainThreshold ?? this.directExplainThreshold,
+    expressionDensity: expressionDensity ?? this.expressionDensity,
+    questionPreference: questionPreference ?? this.questionPreference,
+    bufferWordPreference: bufferWordPreference ?? this.bufferWordPreference,
+    emojiAllowed: emojiAllowed ?? this.emojiAllowed,
   );
 }

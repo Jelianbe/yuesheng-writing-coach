@@ -106,6 +106,8 @@ Widget? _cardForMessageType(
     'diagnosis_result' => DiagnosisCard.fromMessageContent(
       msg.content,
       sessionId: msg.sessionId,
+      // ADR-C132 批3（anchor_ack）：关联触发该诊断的教练消息。
+      messageId: msg.id,
     ),
     'teacher_suggestion' => _buildTeacherSuggestionCard(msg, onTeachPrinciple),
     'outline_confirmation' => OutlineConfirmationCard.fromMessageContent(

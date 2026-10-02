@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/data/coach_persona_templates.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/features/app_settings/coach_selector_card.dart';
@@ -25,6 +26,7 @@ import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
+import 'package:writingcoach/widgets/yue_sheet.dart';
 
 /// 返回固定文案的假 LlmClient（仅覆盖 chatCompletion），供 AI 润色测试。
 class _FakeLlmClient extends LlmClient {
@@ -304,5 +306,265 @@ void main() {
       'yuesheng',
       reason: '写库确证（系统预设双写）',
     );
+  });
+
+  // ── #12 角色预设「猫娘」chip：只填语气框、不写回 ──
+  testWidgets('#12 点「猫娘」角色预设 → 语气框填入模板全文（不触发保存）', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+
+    // 角色预设区与「猫娘」chip 可达
+    expect(find.text('角色预设（试听用）'), findsOneWidget);
+    expect(find.text('猫娘'), findsOneWidget);
+
+    final fields = find.byType(TextField);
+    // 主界面仍仅 2 个 TextField（角色预设 chip 不引入新输入框）
+    expect(fields, findsNWidgets(2));
+    // 语气框初始为空
+    expect(tester.widget<TextField>(fields.at(1)).controller?.text, '');
+
+    await tester.tap(find.text('猫娘'));
+    await tester.pump();
+
+    // 语气框被填入猫娘模板全文（引用常量，与真源保持一致）
+    expect(
+      tester.widget<TextField>(fields.at(1)).controller?.text,
+      kCharacterPresetTemplates.first.toneText,
+    );
+    // 只填框不写回：给出「可继续修改或试听」提示，未触发保存
+    expect(find.text('已填入「猫娘」语气，可继续修改或试听'), findsOneWidget);
+  });
+
+  // ════════════════════════════════════════════════════════
+  // ADR-C132 批3（R8）：空语气自定义人格 → 「将使用默认语气」徽标
+  // ════════════════════════════════════════════════════════
+
+  testWidgets('#13 初始仅系统预设 → 不出现「将使用默认语气」徽标', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    // 3 个系统预设都有内置 fragment ⇒ 永不回退徽标
+    expect(find.text('将使用默认语气'), findsNothing);
+  });
+
+  testWidgets('#14 自定义人格语气留空 → 列表行显示「将使用默认语气」徽标', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    // 只填名称、语气留空 → 保存
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '空语气教练'); // 名称
+    // fields.at(1) 语气框保持空
+    await tester.tap(find.widgetWithText(TextButton, '保存'));
+    await tester.pumpAndSettle();
+
+    // 自定义行出现回退徽标（空 fragment ⇒ 注入层回退默认态度档）
+    expect(find.text('空语气教练'), findsWidgets);
+    expect(find.text('将使用默认语气'), findsOneWidget);
+  });
+
+  testWidgets('#15 自定义人格填了语气 → 不显示徽标', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '有语气教练');
+    await tester.enterText(fields.at(1), '说话带刺，直给'); // 语气非空
+    await tester.pump();
+    await tester.tap(find.widgetWithText(TextButton, '保存'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('有语气教练'), findsWidgets);
+    // fragment 非空 ⇒ 无回退徽标
+    expect(find.text('将使用默认语气'), findsNothing);
+  });
+
+  // ════════════════════════════════════════════════════════
+  // ADR-C132 批3：从系统档开始（B 派生入口）
+  // ════════════════════════════════════════════════════════
+
+  testWidgets('#16 新建态出现「从系统档开始」chip 行，点豆包 → 语气框填入系统模板', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+
+    // 弹层内查找（底层选人卡仍渲染系统预设行 ⇒ '豆包' 等文本全树出现两次，
+    // 必须限定在 YueSheetScaffold 弹层内，否则 tap 歧义）。
+    Finder inSheet(String text) => find.descendant(
+      of: find.byType(YueSheetScaffold),
+      matching: find.text(text),
+    );
+
+    // 新建态才展示派生入口（3 个系统档 chip）
+    expect(find.text('从系统档开始'), findsOneWidget);
+    expect(inSheet('豆包'), findsOneWidget);
+    expect(inSheet('月笙如歌'), findsOneWidget);
+    expect(inSheet('sensei'), findsOneWidget);
+
+    final fields = find.byType(TextField);
+    expect(tester.widget<TextField>(fields.at(1)).controller?.text, '');
+
+    await tester.tap(inSheet('豆包'));
+    await tester.pump();
+
+    // 语气框填入 doubao 静态模板（引用真源常量）
+    expect(
+      tester.widget<TextField>(fields.at(1)).controller?.text,
+      kSystemToneTemplates['doubao'],
+    );
+    expect(find.textContaining('的语气起点，可继续修改'), findsOneWidget);
+  });
+
+  testWidgets('#17 编辑态不出现「从系统档开始」派生入口', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    // 先建一个自定义人格
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '待编辑教练');
+    await tester.tap(find.widgetWithText(TextButton, '保存'));
+    await tester.pumpAndSettle();
+
+    // 打开编辑对话框
+    await tester.tap(find.byIcon(Icons.edit_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('编辑自定义教练'), findsOneWidget);
+
+    // 派生入口仅新建态 ⇒ 编辑态不渲染
+    expect(find.text('从系统档开始'), findsNothing);
+  });
+
+  // ════════════════════════════════════════════════════════
+  // ADR-C132 批3（A）：结构化偏好四组 SegmentedButton（可空单选）
+  // ════════════════════════════════════════════════════════
+
+  testWidgets(
+    '#18 高级区展开 → 4 组 SegmentedButton（可空单选）；选「简洁」落库 expressionDensity=low',
+    (tester) async {
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('自定义教练'));
+      await tester.pumpAndSettle();
+
+      // 展开高级选项
+      await tester.tap(find.text('高级选项'));
+      await tester.pumpAndSettle();
+
+      // 四组：表达密度 / 提问直给 / 缓冲词 / emoji
+      expect(find.text('结构化偏好（选填）'), findsOneWidget);
+      final segs = find.byType(SegmentedButton<String>);
+      expect(segs, findsNWidgets(3), reason: '前 3 组是 String 泛型');
+      expect(
+        find.byType(SegmentedButton<bool>),
+        findsOneWidget,
+        reason: 'emoji 组是 bool 泛型',
+      );
+      // 可空单选：emptySelectionAllowed = true（点已选 = 取消 = 不指定）
+      for (final seg in segs.evaluate()) {
+        expect(
+          (seg.widget as SegmentedButton<String>).emptySelectionAllowed,
+          isTrue,
+        );
+      }
+
+      // 选「简洁」（表达密度 low）
+      await tester.tap(find.text('简洁'));
+      await tester.pump();
+
+      // 名称必填 → 保存
+      final fields = find.byType(TextField);
+      await tester.enterText(fields.at(0), '密度教练');
+      await tester.tap(find.widgetWithText(TextButton, '保存'));
+      await tester.pumpAndSettle();
+
+      // 落库确证：结构化字段经表单写进 CoachPersona
+      final saved = await AppStateRepository(db).getCustomCoachPersonas();
+      expect(saved.single.expressionDensity, 'low');
+    },
+  );
+
+  testWidgets('#19 不碰结构化偏好直接保存 → 四字段均为 null（不覆盖默认）', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '默认偏好教练');
+    await tester.tap(find.widgetWithText(TextButton, '保存'));
+    await tester.pumpAndSettle();
+
+    final saved = await AppStateRepository(db).getCustomCoachPersonas();
+    final p = saved.single;
+    expect(p.expressionDensity, isNull);
+    expect(p.questionPreference, isNull);
+    expect(p.bufferWordPreference, isNull);
+    expect(p.emojiAllowed, isNull);
+  });
+
+  // ════════════════════════════════════════════════════════
+  // ADR-C132 批3（D）：试听语气按钮与结果框
+  // ════════════════════════════════════════════════════════
+
+  testWidgets('#20 空语气且无结构化偏好 → 点试听语气给出引导（不发请求）', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(TextButton, '试听语气'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '试听语气'));
+    await tester.pump();
+
+    expect(find.text('先填个语气或选几项结构化偏好，才能试听'), findsOneWidget);
+  });
+
+  testWidgets('#21 已配 Key + 假 client → 试听结果框展示口吻示范（不自动保存）', (tester) async {
+    const canned = '这句写得有画面感，再补一个动作就立住了。';
+    final c = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        llmConfigResolvedProvider.overrideWith(
+          (ref) async => const LlmConfigValues(
+            apiKey: 'k',
+            baseUrl: 'https://api.example.com',
+            model: 'gpt-4o',
+          ),
+        ),
+        llmClientProvider.overrideWithValue(_FakeLlmClient(canned)),
+      ],
+    );
+    addTearDown(c.dispose);
+
+    await tester.pumpWidget(buildHost(c));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('自定义教练'));
+    await tester.pumpAndSettle();
+
+    // 填一句语气（非空才走真试听分支）
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), '犀利直接');
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(TextButton, '试听语气'));
+    await tester.pumpAndSettle();
+
+    // 结果框出现 + 展示模型返回的口吻示范
+    expect(find.text('口吻示范（仅预览，不会自动保存）'), findsOneWidget);
+    expect(find.text(canned), findsOneWidget);
   });
 }

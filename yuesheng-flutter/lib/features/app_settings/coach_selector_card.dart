@@ -16,12 +16,14 @@ import 'package:writingcoach/config/shared_constants.dart';
 import '../../config/app_palette.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_theme.dart';
+import '../../data/coach_persona_templates.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../services/llm_client.dart';
 import '../../services/llm_config_storage.dart';
 import '../../services/llm_usage.dart';
+import '../../services/persona_structured_constraints.dart';
 import '../../types/coach_persona.dart';
 import '../../types/coach_persona_seed.dart';
 import '../../types/teaching_types.dart';
@@ -114,6 +116,12 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       final customs = await repo.getCustomCoachPersonas();
       if (!mounted) return;
       setState(() => _customs = customs);
+    } on DuplicateCoachPersonaNameException {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('已有同名教练，换个名字再保存')));
+      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -349,13 +357,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
-        decoration: BoxDecoration(
-          color: selected ? palette.primarySoft : palette.surface,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: selected ? palette.primary : palette.border,
-          ),
-        ),
+        decoration: _personaDecoration(palette, selected),
         child: Row(
           children: [
             _personaDot(palette, persona),
@@ -364,6 +366,10 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               palette,
               persona.name,
               '${persona.isSystem ? '' : '自定义 · '}${persona.label}',
+              // ADR-C132 批3（R8）：自定义人格语气留空 → 徽标提示回退默认。
+              showEmptyToneBadge:
+                  !persona.isSystem &&
+                  persona.systemPromptFragment.trim().isEmpty,
             ),
             ..._personaTrailing(
               palette,
@@ -376,6 +382,15 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
           ],
         ),
       ),
+    );
+  }
+
+  /// R-019 拆出：_personaRow 的卡片配色（选中态高亮底色 + 描边）。
+  BoxDecoration _personaDecoration(AppPalette palette, bool selected) {
+    return BoxDecoration(
+      color: selected ? palette.primarySoft : palette.surface,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      border: Border.all(color: selected ? palette.primary : palette.border),
     );
   }
 
@@ -458,27 +473,57 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     ),
   );
 
-  Widget _coachNameDesc(AppPalette palette, String name, String desc) =>
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _coachNameDesc(
+    AppPalette palette,
+    String name,
+    String desc, {
+    bool showEmptyToneBadge = false,
+  }) => Expanded(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: palette.textPrimary,
+            Flexible(
+              child: Text(
+                name,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: palette.textPrimary,
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              desc,
-              style: TextStyle(fontSize: 12, color: palette.textSecondary),
-            ),
+            if (showEmptyToneBadge) ...[
+              const SizedBox(width: 6),
+              _emptyToneBadge(palette),
+            ],
           ],
         ),
-      );
+        const SizedBox(height: 2),
+        Text(
+          desc,
+          style: TextStyle(fontSize: 12, color: palette.textSecondary),
+        ),
+      ],
+    ),
+  );
+
+  /// ADR-C132 批3（R8 徽标）：空语气自定义人格 → 「将使用默认语气」。
+  /// 对应实测回退语义 = 当前激活态度档（skill_dispatcher 空 fragment 回退）。
+  Widget _emptyToneBadge(AppPalette palette) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+    decoration: BoxDecoration(
+      color: palette.surface,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      border: Border.all(color: palette.divider),
+    ),
+    child: Text(
+      '将使用默认语气',
+      style: TextStyle(fontSize: 10, color: palette.textTertiary),
+    ),
+  );
 
   Widget _modeHeaderRow(AppPalette palette) => Row(
     children: [
@@ -608,12 +653,30 @@ String _buildPolishUserMessage(String name, String tone) => [
   '用户当前填写的语气想法：${tone.isEmpty ? '（未填写）' : tone}',
 ].join('\n');
 
+/// 试听专用提示词（ADR-C132 批3 · D，独立调用，不进诊断/对话主链路）。
+/// 边界（ADR §5 D）：只示范腔调，**不含诊断结论、不代写诊断、不修改原文**。
+const String _kCoachAuditionSystemPrompt = '''
+你是一位写作教练。用户会给你这位教练的设定（语气 + 结构化偏好 + 红线）。
+请严格按这套设定，用它的口吻，对一段学员习作说一句话（不超过 60 字）。
+要求：
+- 只示范口吻与腔调：可以鼓励、引导、点评方向，但**不要给出诊断结论**、
+  不要评价这段习作写得如何、不要修改原文、不要贴标签；
+- 不要写「教练」「示范」等前缀，直接说话。
+''';
+
+/// 试听样例（固定非诊断内容，无结论可言——边界守住）。
+const String _kAuditionSamplePrompt = '''
+请用上面的设定口吻，对这段学员习作说一句话（鼓励或引导皆可，不超过 60 字，不要诊断结论、不要修改原文）：
+
+窗外下着雨，他把杯子放在桌上，看着窗外发呆。
+''';
+
 /// 新建/编辑自定义教练对话框。
 ///
 /// 2026-09-28 重构（UI + 生效机制）：
 ///  - 名称 = 唯一必填；语气设定选填，留空 → 注入层自动回退默认态度档
 ///    （skill_dispatcher._injectPersonaOrAttitude 的 else 分支，机制现成）；
-///  - 原「一句话声音描述」实为纯展示副标题（不注入 prompt）→ 改名
+///  - 原「一句话语气描述」实为纯展示副标题（不注入 prompt）→ 改名
 ///    「列表简介（仅展示）」并移入高级区，消除「在调语气其实没用」的误导；
 ///  - 原「人设层（D2）」并入语气段（对自定义教练两者都是用户自由文本，
 ///    注入时相邻两段 ⇒ 合并一段语义等价；注入代码不动，旧数据编辑后自然迁移）；
@@ -633,8 +696,15 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
   late final TextEditingController _labelCtrl;
   late final TextEditingController _promptCtrl;
   late final TextEditingController _thresholdCtrl;
+  // ADR-C132 批3（A 结构化偏好）：可空 = 不指定（不覆盖默认）。
+  String? _expressionDensity;
+  String? _questionPreference;
+  String? _bufferWord;
+  bool? _emojiAllowed;
   bool _advancedOpen = false;
   bool _isPolishing = false;
+  bool _isAuditioning = false;
+  String? _auditionResult;
 
   bool get _isEdit => widget.existing != null;
 
@@ -656,6 +726,10 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       text: (e?.directExplainThreshold ?? kDefaultDirectExplainThreshold)
           .toString(),
     );
+    _expressionDensity = e?.expressionDensity;
+    _questionPreference = e?.questionPreference;
+    _bufferWord = e?.bufferWordPreference;
+    _emojiAllowed = e?.emojiAllowed;
   }
 
   @override
@@ -694,6 +768,11 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       directExplainThreshold: threshold < 1
           ? kDefaultDirectExplainThreshold
           : threshold,
+      // ADR-C132 批3（A 结构化偏好）：可空 = 不覆盖（注入层忽略）。
+      expressionDensity: _expressionDensity,
+      questionPreference: _questionPreference,
+      bufferWordPreference: _bufferWord,
+      emojiAllowed: _emojiAllowed,
     );
     Navigator.of(context).pop(persona);
   }
@@ -762,6 +841,89 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     }
   }
 
+  /// ADR-C132 批3（B 系统档派生）：把系统档语气起点模板填入语气框
+  ///（静态 seed 副本，用户可继续改；仅新建态可用）。
+  void _deriveFromSystem(String systemId) {
+    final template = systemToneTemplateById(systemId);
+    if (template == null) return;
+    setState(() {
+      _promptCtrl
+        ..text = template
+        ..selection = TextSelection.fromPosition(
+          TextPosition(offset: template.length),
+        );
+    });
+    _snack('已填入「${systemToneName(systemId)}」的语气起点，可继续修改');
+  }
+
+  /// 试听语气（ADR-C132 批3 · D）：用当前「语气 + 结构化偏好 + 红线」
+  /// 生成一段**非诊断内容的口吻示范**。样例只展示不写回（R-009：
+  /// 不代写教练对用户的输出、不含诊断结论；是否采用由用户自己决定）。
+  Future<void> _audition() async {
+    final tone = _promptCtrl.text.trim();
+    final constraints = buildStructuredConstraints(_personaPreview());
+    if (tone.isEmpty && constraints.isEmpty) {
+      _snack('先填个语气或选几项结构化偏好，才能试听');
+      return;
+    }
+    // 免费测试模式检测：未配置 API Key 时无法真调用，提前给引导。
+    LlmConfigValues? cfg;
+    try {
+      cfg = await ref.read(llmConfigResolvedProvider.future);
+    } catch (_) {
+      _snack('请先在「设置 → API 配置」填好 Key，才能试听');
+      return;
+    }
+    if (!mounted) return;
+    if (cfg == null) {
+      _snack('请先在「设置 → API 配置」填好 Key，才能试听');
+      return;
+    }
+    setState(() => _isAuditioning = true);
+    try {
+      final client = ref.read(llmClientProvider);
+      // 复用润色链路语义（独立调用，不进诊断/对话主链路）。
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.coachPolish),
+      );
+      final system = [
+        _kCoachAuditionSystemPrompt,
+        '教练设定：',
+        if (tone.isNotEmpty) tone,
+        if (constraints.isNotEmpty) constraints,
+        kPersonaRedLine,
+      ].join('\n');
+      final result = await client.chatCompletion([
+        ChatMessage(role: 'system', content: system),
+        const ChatMessage(role: 'user', content: _kAuditionSamplePrompt),
+      ], maxTokens: 150);
+      if (!mounted) return;
+      final trimmed = result.trim();
+      setState(() {
+        _auditionResult = trimmed.isEmpty ? '（未返回内容，请重试）' : trimmed;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      _snack('试听失败，请稍后重试或手动填写');
+    } finally {
+      if (mounted) setState(() => _isAuditioning = false);
+    }
+  }
+
+  /// 用当前表单值构造临时人格（仅供结构化约束组装 / 试听，不落库）。
+  CoachPersona _personaPreview() => CoachPersona(
+    id: '_preview',
+    name: _nameCtrl.text.trim().isEmpty ? '教练' : _nameCtrl.text.trim(),
+    label: '',
+    isSystem: false,
+    attitudeLevel: AttitudeLevel.doubao,
+    systemPromptFragment: _promptCtrl.text.trim(),
+    expressionDensity: _expressionDensity,
+    questionPreference: _questionPreference,
+    bufferWordPreference: _bufferWord,
+    emojiAllowed: _emojiAllowed,
+  );
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
@@ -778,22 +940,96 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     );
   }
 
-  /// R-019 拆出：对话框字段列（名称 / 语气选填 / 高级选项折叠区）。
+  /// R-019 拆出：对话框字段列（派生入口 / 名称 / 语气 / 高级折叠区）。
   /// 名称是唯一主字段；大多数用户到此为止，其余收进折叠区。
   Widget _fields() => Column(
     mainAxisSize: MainAxisSize.min,
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
+      // ADR-C132 批3（B）：仅新建态提供「从系统档开始」派生入口。
+      if (!_isEdit) _deriveRow(),
       _field(_nameCtrl, '名称', '给教练起个名字，如：毒舌编辑'),
       const SizedBox(height: 12),
       _toneField(),
+      if (_auditionResult != null) _auditionResultBox(),
       const SizedBox(height: 4),
       _advancedToggle(),
       if (_advancedOpen) ..._advancedFields(),
     ],
   );
 
-  /// R-019 拆出：语气设定段（文本框 + AI 润色辅助按钮）。
+  /// R-019 拆出：新建态「从系统档开始」入口（B 派生，静态模板）。
+  Widget _deriveRow() {
+    final palette = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '从系统档开始',
+            style: TextStyle(fontSize: 12, color: palette.textSecondary),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              for (final p in builtInCoachPersonas) ...[
+                _deriveChip(palette, p),
+                const SizedBox(width: 8),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _deriveChip(AppPalette palette, CoachPersona p) => InkWell(
+    onTap: () => _deriveFromSystem(p.id),
+    borderRadius: BorderRadius.circular(AppRadius.sm),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: palette.border),
+      ),
+      child: Text(
+        p.name,
+        style: TextStyle(fontSize: 12, color: palette.textPrimary),
+      ),
+    ),
+  );
+
+  /// R-019 拆出：试听结果展示框（口吻示范，仅展示不写回）。
+  Widget _auditionResultBox() {
+    final palette = context.palette;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: palette.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '口吻示范（仅预览，不会自动保存）',
+            style: TextStyle(fontSize: 11, color: palette.textTertiary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _auditionResult ?? '',
+            style: TextStyle(fontSize: 13, color: palette.textPrimary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// R-019 拆出：语气设定段（文本框 + AI 润色 / 试听按钮）。
   /// 按钮仅辅助丰满用户自己填的内容，不代写教练对用户的输出（R-009）。
   Widget _toneField() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -806,9 +1042,91 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
           hintText: '希望教练怎么说话？如：犀利直接，不许废话。留空则用默认语气',
         ),
       ),
+      const SizedBox(height: 8),
+      _characterPresetRow(),
       const SizedBox(height: 6),
-      _polishButton(context.palette),
+      Row(
+        children: [
+          _polishButton(context.palette),
+          const SizedBox(width: 12),
+          _auditionButton(context.palette),
+        ],
+      ),
     ],
+  );
+
+  /// 角色预设便捷入口（试听效果测试用）：点 chip 把预设语气文本填入语气框
+  ///（覆盖当前内容，用户可继续编辑）。只填框不写回，保存仍走现有流程；
+  /// 新建态与编辑态均可点（纯填框便捷入口，不碰系统档/不落库）。
+  Widget _characterPresetRow() {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '角色预设（试听用）',
+          style: TextStyle(fontSize: 12, color: palette.textSecondary),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            for (final t in kCharacterPresetTemplates) ...[
+              _characterPresetChip(palette, t),
+              const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _characterPresetChip(AppPalette palette, CharacterPresetTemplate t) =>
+      InkWell(
+        onTap: () => _applyCharacterPreset(t),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: palette.surface,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(color: palette.border),
+          ),
+          child: Text(
+            t.displayName,
+            style: TextStyle(fontSize: 12, color: palette.textPrimary),
+          ),
+        ),
+      );
+
+  /// 点角色预设：把预设语气文本填入语气框（覆盖当前内容，不写回）。
+  void _applyCharacterPreset(CharacterPresetTemplate t) {
+    final text = t.toneText;
+    setState(() {
+      _promptCtrl
+        ..text = text
+        ..selection = TextSelection.fromPosition(
+          TextPosition(offset: text.length),
+        );
+    });
+    _snack('已填入「${t.displayName}」语气，可继续修改或试听');
+  }
+
+  /// R-019 拆出：试听按钮（加载态内联转圈）。
+  Widget _auditionButton(AppPalette palette) => TextButton.icon(
+    onPressed: _isAuditioning ? null : _audition,
+    icon: _isAuditioning
+        ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Icon(Icons.graphic_eq, size: 18),
+    label: Text(_isAuditioning ? '试听中…' : '试听语气'),
+    style: TextButton.styleFrom(
+      padding: EdgeInsets.zero,
+      foregroundColor: palette.primary,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
   );
 
   /// R-019 拆出：AI 润色按钮（加载态内联转圈）。
@@ -858,8 +1176,10 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     );
   }
 
-  /// R-019 拆出：折叠区字段（列表简介仅展示 + 直接讲解阈值）。
+  /// R-019 拆出：折叠区字段（结构化偏好 / 列表简介 / 直接讲解阈值）。
   List<Widget> _advancedFields() => [
+    _structuredPrefs(),
+    const SizedBox(height: 16),
     _field(_labelCtrl, '列表简介（选填，仅展示）', '显示在教练列表的副标题，如：犀利、直给'),
     const SizedBox(height: 12),
     TextField(
@@ -872,6 +1192,107 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     ),
     const SizedBox(height: 12),
   ];
+
+  /// ADR-C132 批3（A 结构化偏好）：四组可空单选（点选已选项 = 取消 = 不指定）。
+  /// 全部不指定 = 注入层不覆盖默认（与旧人格行为逐字节一致）。
+  Widget _structuredPrefs() {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ..._structuredPrefsHeader(palette),
+        const SizedBox(height: 8),
+        _prefSeg<String>(
+          label: '表达密度',
+          options: const {'low': '简洁', 'medium': '适中', 'high': '铺陈'},
+          selected: _expressionDensity,
+          onSelect: (v) => setState(() => _expressionDensity = v),
+        ),
+        const SizedBox(height: 10),
+        _prefSeg<String>(
+          label: '提问直给偏好',
+          options: const {'question': '倾向提问', 'direct': '倾向直给'},
+          selected: _questionPreference,
+          onSelect: (v) => setState(() => _questionPreference = v),
+          helper: '只是表达倾向，全局「教学方式」开关仍优先',
+        ),
+        const SizedBox(height: 10),
+        _prefSeg<String>(
+          label: '缓冲词',
+          options: const {'none': '避免', 'light': '克制', 'warm': '温和'},
+          selected: _bufferWord,
+          onSelect: (v) => setState(() => _bufferWord = v),
+        ),
+        const SizedBox(height: 10),
+        _prefSeg<bool>(
+          label: 'emoji',
+          options: const {true: '允许', false: '禁用'},
+          selected: _emojiAllowed,
+          onSelect: (v) => setState(() => _emojiAllowed = v),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '提示：可点「试听语气」感受这些偏好组合出来的口吻。',
+          style: TextStyle(fontSize: 11, color: palette.textTertiary),
+        ),
+      ],
+    );
+  }
+
+  /// R-019 拆出：结构化偏好区块的标题与副标题。
+  List<Widget> _structuredPrefsHeader(AppPalette palette) => [
+    Text(
+      '结构化偏好（选填）',
+      style: TextStyle(fontSize: 13, color: palette.textSecondary),
+    ),
+    const SizedBox(height: 4),
+    Text(
+      '比语气设定更精确的约束；不选则用默认。',
+      style: TextStyle(fontSize: 11, color: palette.textTertiary),
+    ),
+  ];
+
+  /// R-019 拆出：单个结构化偏好选择组（可空单选）。
+  Widget _prefSeg<T>({
+    required String label,
+    required Map<T, String> options,
+    required T? selected,
+    required ValueChanged<T?> onSelect,
+    String? helper,
+  }) {
+    final palette = context.palette;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 12, color: palette.textPrimary)),
+        const SizedBox(height: 4),
+        SegmentedButton<T>(
+          segments: [
+            for (final e in options.entries)
+              ButtonSegment(value: e.key, label: Text(e.value)),
+          ],
+          selected: {if (selected != null) selected},
+          emptySelectionAllowed: true,
+          multiSelectionEnabled: false,
+          showSelectedIcon: false,
+          style: ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            textStyle: WidgetStatePropertyAll(
+              TextStyle(fontSize: 12, color: palette.textPrimary),
+            ),
+          ),
+          onSelectionChanged: (s) => onSelect(s.isEmpty ? null : s.first),
+        ),
+        if (helper != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            helper,
+            style: TextStyle(fontSize: 11, color: palette.textTertiary),
+          ),
+        ],
+      ],
+    );
+  }
 
   Widget _field(TextEditingController ctrl, String label, String hint) =>
       TextField(

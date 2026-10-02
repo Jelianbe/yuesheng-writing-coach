@@ -972,3 +972,49 @@ class PilotMetricEvents extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// ============================================================
+/// 19. edit_diff_event — 写作修改事件埋点（ADR-C132 批1 埋点地基，v43）
+/// 北极星研讨 §10-4 三项事件（追加式事件日志，与 pilot_metric_event 同范式）：
+///   diff       — 位置级 diff：反馈后用户对稿件的修改，定位到变化片段
+///                （批 1 在 saveChapterContent 自动捕获）
+///   anchor_ack — 指认事件：用户确认教练指认的片段位置（UI 接线批 3）
+///   completion — 成稿事件：章节被标记完成（UI 接线批 3）
+/// 埋点先行纪律（变体池验收⑤）：A/B 前必须有位置级 diff，无埋点不谈 A/B。
+/// ============================================================
+@DataClassName('EditDiffEvent')
+class EditDiffEvents extends Table {
+  @override
+  String get tableName => 'edit_diff_event';
+
+  TextColumn get id => text()();
+
+  /// 会话 id；无法确定会话（章节级保存无会话上下文）记 ''
+  TextColumn get sessionId => text().withDefault(const Constant(''))();
+
+  TextColumn get chapterId => text()();
+
+  /// 触发该次修改的教练消息 id（可空：无关联反馈的自主修改 / 成稿事件）
+  TextColumn get messageId => text().nullable()();
+
+  /// 事件类型：diff | anchor_ack | completion
+  TextColumn get eventType => text().check(
+    eventType.isIn(const ['diff', 'anchor_ack', 'completion']),
+  )();
+
+  /// 变化片段起止（字符偏移，[start, end) 前含后不含；null = 全章）
+  IntColumn get anchorStart => integer().nullable()();
+  IntColumn get anchorEnd => integer().nullable()();
+
+  /// 变化前后文本（diff 事件必填；anchor_ack 记录被指认片段，completion 可空）
+  TextColumn get beforeText => text().nullable()();
+  TextColumn get afterText => text().nullable()();
+
+  /// JSON payload（如 diff 段数 / 指认来源），无则 ''
+  TextColumn get payload => text().withDefault(const Constant(''))();
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
