@@ -600,6 +600,7 @@ class DiagnosisFlowHandler {
     required ParsedDiagnosis diagnosis,
     required String? refType,
     required String? refId,
+    bool isTeachingRound = false,
   }) async {
     try {
       await _diagnosisService.commitDiagnosisWithHistory(
@@ -609,6 +610,7 @@ class DiagnosisFlowHandler {
           diagnosis: diagnosis,
           refType: refType,
           refId: refId,
+          isTeachingRound: isTeachingRound,
         ),
       );
       try {
@@ -638,6 +640,7 @@ class DiagnosisFlowHandler {
     required ParsedDiagnosis diagnosis,
     required String? refType,
     required String? refId,
+    bool isTeachingRound = false,
   }) {
     return DiagnosisInput(
       sessionId: sessionId,
@@ -653,6 +656,7 @@ class DiagnosisFlowHandler {
       teachingMode: diagnosis.teachingMode?.value,
       targetRefType: refType,
       targetRefId: refId,
+      isTeachingRound: isTeachingRound,
     );
   }
 
@@ -1113,12 +1117,15 @@ class DiagnosisFlowHandler {
 
     // 11：诊断提交 + 阶段迁移 + 诊断结果卡 + 风格画像
     if (diagnosis != null) {
+      // C126：teacherResult != null 即 Teacher 二次流（反问学员）教学轮 →
+      // 落库 status='pending'（全量 syndromes，不做 NO_OP）；否则正常 confirmed。
       await _runDiagnosisCommitSequence(
         sessionId: sessionId,
         diagnosis: diagnosis,
         messageId: messageId,
         refType: primaryRef?.refType,
         refId: primaryRef?.refId,
+        isTeachingRound: teacherResult != null,
       );
     }
 

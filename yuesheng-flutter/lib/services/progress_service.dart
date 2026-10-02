@@ -167,7 +167,9 @@ class ProgressService {
       totalProblems: problems.map((p) => p.syndromeId).toSet().length,
       resolvedProblems: problems.where((p) => p.status == 'resolved').length,
       activeProblems: problems.where((p) => p.status == 'active').length,
-      totalDiagnoses: history.length,
+      // C126：诊断次数只数 confirmed（权威正式诊断）；pending/replaced 未确认不计入。
+      // 明细历史（listDiagnosisHistory）仍保留全部行，含 pending 逐条展示。
+      totalDiagnoses: history.where((h) => h.status == 'confirmed').length,
       firstDiagnosisAt: timestamps.isEmpty ? null : timestamps.reduce(min),
       lastDiagnosisAt: timestamps.isEmpty ? null : timestamps.reduce(max),
       lockedSyndromes: locked,

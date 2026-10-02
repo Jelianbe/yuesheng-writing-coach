@@ -67,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -234,7 +234,8 @@ class AppDatabase extends _$AppDatabase {
       // 批1·N2（FSRS 自评档位）：守卫上移到 38（v38 块对 from=37 存量库可达，幂等 ALTER ADD COLUMN）
       // N12-F3b（fact 层章号身份）：守卫上移到 39（v39 块对 from=38 存量库可达，幂等 ALTER ADD COLUMN）
       // ADR-C121（小白冷启动试点 v41）：守卫上移到 41（v41 块对 from=40 存量库可达，建 pilot_metric_event）
-      if (from >= 41) return;
+      // C126（教学态落库 pending 标记 v42）：守卫上移到 42（v42 块对 from=41 存量库可达，幂等 ALTER 加 status 列）
+      if (from >= 42) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1142,6 +1143,20 @@ class AppDatabase extends _$AppDatabase {
             created_at  INTEGER NOT NULL DEFAULT (unixepoch())
           )
         ''');
+      }
+      // v42 (C126): diagnosis_results 加 status 列（幂等 ALTER，范式同 v40 evidence_confidence）
+      // 取值 confirmed/pending/replaced；存量行默认 'confirmed'（历史正式诊断）。
+      if (from < 42) {
+        final drCols = await customSelect(
+          "SELECT name FROM pragma_table_info('diagnosis_results')",
+        ).get();
+        final drNames = drCols.map((r) => r.read<String>('name')).toSet();
+        if (drCols.isNotEmpty && !drNames.contains('status')) {
+          await customStatement(
+            "ALTER TABLE diagnosis_results ADD COLUMN status TEXT NOT NULL "
+            "DEFAULT 'confirmed' CHECK (status IN ('confirmed','pending','replaced'))",
+          );
+        }
       }
     },
 

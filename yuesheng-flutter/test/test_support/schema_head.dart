@@ -17,7 +17,8 @@
 // 历史（**只追加，不改写旧行** —— 旧行是「当时 head」的记录，不是待更新的值）：
 //   12 → … → 27 → 28 → 29 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38 → 39
 //   40 → 41（ADR-C121 试点埋点表 pilot_metric_event）
+//   41 → 42（C126 diagnosis_results 加 status 列 confirmed/pending/replaced）
 // ─────────────────────────────────────────────────────────────
 
 /// 当前 drift `schemaVersion`（= `AppDatabase.schemaVersion`）的测试侧镜像。
-const int kSchemaHead = 41;
+const int kSchemaHead = 42;

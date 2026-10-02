@@ -170,6 +170,11 @@ class DiagnosisResults extends Table {
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
   TextColumn get currentTeachingFocusId => text().nullable()(); // v11 新增
   TextColumn get focusReason => text().nullable()(); // v11 新增
+  // v42：诊断结论裁决态（confirmed=权威正式诊断；pending=教学轮/反问学员未确认；
+  // replaced=被后续正式诊断替换的旧 pending 行）。历史行默认 confirmed。
+  TextColumn get status => text()
+      .withDefault(const Constant('confirmed'))
+      .check(status.isIn(const ['confirmed', 'pending', 'replaced']))();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -33,6 +33,11 @@ class DiagnosisInput {
   final String? focusReason;
   final String? teachingMode; // S4: socratic/mirror/conflict/direct
 
+  /// C126：是否教学轮（Teacher 二次流/反问学员）。true → 全量写 syndromes 且
+  /// status='pending'（未确认结论，不参与诊断次数计数）；false（默认）→ 现行
+  /// NO_OP 去重 + status='confirmed'。可选命名参数默认 false，不破坏既有构造点。
+  final bool isTeachingRound;
+
   DiagnosisInput({
     required this.sessionId,
     required this.messageId,
@@ -48,6 +53,7 @@ class DiagnosisInput {
     this.currentTeachingFocusId,
     this.focusReason,
     this.teachingMode,
+    this.isTeachingRound = false,
   });
 }
 
@@ -112,10 +118,16 @@ class DiagnosisRepository {
     final id = generateUuid();
     final now = nowSec();
 
-    // 0. 记忆合并（Mem0 风格）：与最近一条诊断比对，同症候同严重度 → NO_OP
-    // 复刻 diagnosis-dao.ts commitDiagnosis 步骤 0
+    // 0. 记忆合并（Mem0 风格）：与最近一条**正式诊断**比对，同症候同严重度 → NO_OP
+    // C126：教学轮（isTeachingRound）全量写、不做 NO_OP；且只有最新行是
+    // status='confirmed' 时才作为 NO_OP 基线（pending/replaced 行不得压制后续正式诊断）。
+    final targetStatus = input.isTeachingRound ? 'pending' : 'confirmed';
     final latestRow = await getLatestDiagnosis(input.sessionId);
-    final latestSyndromes = latestRow != null
+    final useNoOp =
+        !input.isTeachingRound &&
+        latestRow != null &&
+        latestRow.status == 'confirmed';
+    final latestSyndromes = useNoOp
         ? _parseSyndromes(latestRow.syndromes)
         : <Map<String, dynamic>>[];
     final noOpSyndromeIds = <String>{};
@@ -129,9 +141,11 @@ class DiagnosisRepository {
         noOpSyndromeIds.add(sid);
       }
     }
-    final filteredSyndromes = input.syndromes
-        .where((s) => !noOpSyndromeIds.contains(s['syndrome_id']))
-        .toList();
+    final filteredSyndromes = useNoOp
+        ? input.syndromes
+              .where((s) => !noOpSyndromeIds.contains(s['syndrome_id']))
+              .toList()
+        : input.syndromes;
 
     await _db.transaction(() async {
       // 1. INSERT diagnosis_results（仅非 NO_OP 症候）
@@ -159,8 +173,15 @@ class DiagnosisRepository {
               createdAt: Value(now),
               currentTeachingFocusId: Value(input.currentTeachingFocusId),
               focusReason: Value(input.focusReason),
+              status: Value(targetStatus),
             ),
           );
+
+      // C126 §2.3：新正式诊断（confirmed）落库后，裁决同 session 旧 pending 行终态。
+      // 教学轮（写 pending）不触发；pending 行互相不升级。
+      if (targetStatus == 'confirmed') {
+        await _resolvePendingLifecycle(input.sessionId, filteredSyndromes);
+      }
 
       // 2. UPSERT active_problem（不复活已 resolved 的症候）
       // 2.0 evidence confidence (Part B): prior occurrence counts per syndrome
@@ -789,6 +810,44 @@ class DiagnosisRepository {
     evidenceConfidence: r.evidenceConfidence,
     confirmedAt: r.confirmedAt,
   );
+
+  /// C126 §2.3：新 confirmed 行落库后，裁决同 session 旧 pending 行的终态。
+  ///
+  /// pending 行症候 id 集合 ⊆ 新 confirmed 行症候 id 集合 → 被正式诊断验证，升级
+  /// 'confirmed'；否则 → 被后续正式诊断覆盖，置 'replaced'（保留历史，不删）。
+  /// 仅在非教学轮（新写 confirmed 行）路径调用。
+  Future<void> _resolvePendingLifecycle(
+    String sessionId,
+    List<Map<String, dynamic>> confirmedSyndromes,
+  ) async {
+    final confirmedIds = confirmedSyndromes
+        .map((s) => s['syndrome_id'] as String?)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet();
+
+    final pendingRows =
+        await (_db.select(_db.diagnosisResults)..where(
+              (t) => t.sessionId.equals(sessionId) & t.status.equals('pending'),
+            ))
+            .get();
+
+    for (final row in pendingRows) {
+      final pendingIds = _parseSyndromes(row.syndromes)
+          .map((s) => s['syndrome_id'] as String?)
+          .whereType<String>()
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      final upgraded = pendingIds.every(confirmedIds.contains);
+      await (_db.update(
+        _db.diagnosisResults,
+      )..where((t) => t.id.equals(row.id))).write(
+        DiagnosisResultsCompanion(
+          status: Value(upgraded ? 'confirmed' : 'replaced'),
+        ),
+      );
+    }
+  }
 
   /// 安全解析 syndromes JSON
   /// 复刻 safeParseSyndromes

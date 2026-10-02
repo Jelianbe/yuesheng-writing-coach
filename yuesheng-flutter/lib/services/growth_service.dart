@@ -228,8 +228,10 @@ class _GrowthOverviewQuery {
   }
 
   Future<QueryRow?> queryDiagnosisTotal() {
+    // C126：只数 status='confirmed'（权威正式诊断）；pending/replaced 未确认不计入
+    // 「诊断次数 / AI 介入次数」——不把教学轮反问结论当已确认。
     return (_db.customSelect(
-      'SELECT COUNT(*) AS total FROM diagnosis_results',
+      "SELECT COUNT(*) AS total FROM diagnosis_results WHERE status = 'confirmed'",
     )).getSingleOrNull();
   }
 }

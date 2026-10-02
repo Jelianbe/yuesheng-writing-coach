@@ -681,6 +681,7 @@ void main() {
       confidence: 0.8,
       timestamp: 0,
       createdAt: 0,
+      status: 'confirmed',
     );
 
     test('ASC [旧L2→新L1] 趋势=improving（当前取最新一轮）', () {

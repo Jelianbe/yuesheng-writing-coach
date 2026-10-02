@@ -114,7 +114,7 @@ class SyndromeRecord {
   String get v2ActionDisplayName => v2ActionName ?? shortName;
 }
 
-/// 注册表（真源）：33 条（P001-P033），按 ID 升序。
+/// 注册表（真源）：34 条（P001-P034），按 ID 升序。
 /// 增删症候时：
 ///   - 新增：追加一条记录（ID 连续递增）+ 在症候库/训练库编写手册段与训练段
 ///   - 删减：删除记录 + 删对应手册段与训练段（勿复用 ID）
@@ -169,7 +169,6 @@ const Map<String, String> kSyndromeMergeMap = {
   'P030': 'P022',
   'P031': 'P023',
   'P032': 'P024',
-  'P034': 'P025',
   'P037': 'P026',
   'P038': 'P027',
   'P040': 'P028',
