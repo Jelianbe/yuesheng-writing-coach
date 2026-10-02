@@ -10,8 +10,10 @@
 //   c≥2 → N≥3：只问「你发现了吗」（引导学员自主指认，不给答案）
 //
 // 纯函数库（无状态、无 IO）。buildFadingBlock 返回可直接追加进诊断反馈 prompt
-// 的 override 块；无复发（全部 c<1）时返回 null → 调用方不注入，const/无会话
-// 数据用例零漂移。
+// 的介入层级块。ADR-C139（D1 修复）：无复发（全部 c<1，纯首次诊断）时不再返回
+// null——改输出三档介入契约块，使 c=0「指认根因 + 受限示范单句」指令在任何诊断
+// 请求下都可达（此前 c=0 返回 null → C136 真实回放 D1：LLM 指认根因却转引导式
+// 追问、无示范句）。复发明细仅在 prior≥1 时追加。
 //
 // R-009：所有层级不替写学员句子、不打分、不探测；N≥3 为引导自主指认的提问，
 // 不提示答案。提问类仅在学员 highStable 资格时启用，否则安全降级为根因+方向
@@ -23,7 +25,7 @@ import 'feedback_variant_scheduler.dart';
 
 /// 反馈介入层级（fading 支架渐退三档）。
 enum FeedbackTier {
-  /// N=1 首次指认 + 受限示范（默认教学路径，不注入 override）。
+  /// N=1 首次指认 + 受限示范单句（介入契约始终输出此档指令）。
   firstTouch,
 
   /// N=2 只指根因与方向，不给示范句。
@@ -40,11 +42,12 @@ FeedbackTier tierForPriorCount(int priorConfirmed) {
   return FeedbackTier.firstTouch;
 }
 
-/// 由会话内 prior confirmed 计数 + 学员资格构造 fading override 块。
+/// 由会话内 prior confirmed 计数 + 学员资格构造 fading 介入层级块。
 ///
-/// 返回 null = 无任何复发症候（全部 prior<1），走默认教学路径、不注入。
-/// 仅枚举 prior≥1（N≥2）的症候；guidedRecall 在学员非 highStable 时安全降级
-/// 为 rootCauseOnly（资格门：低水平/消沉不得用引导提问）。
+/// 始终返回块（不再因无复发返回 null）：先输出三档介入契约（c=0 指认根因+受限
+/// 示范单句 / c=1 只指根因与方向 / c≥2 引导自主指认），再追加 prior≥1 的复发明细。
+/// guidedRecall 在学员非 highStable 时安全降级为 rootCauseOnly（资格门：低水平/
+/// 消沉不得用引导提问）。
 ///
 /// [excludeIdsBySyndrome]（ADR-C138 项① 近轮去重）：每症候近轮已用变体 id，
 /// 经 `_lineFor` 透传 `selectVariantForRecurrence`，避免跨复发复用同一表达骨架。
@@ -73,10 +76,21 @@ String? buildFadingBlock(
       ),
     );
   });
-  if (lines.isEmpty) return null;
-  return '\n\n【复发症候·渐退反馈（fading）】\n'
-      '本会话此前已诊断过下列症候，再次遇到时按「少示范、多放手」递减介入；'
-      '首次出现的症候仍走默认教学路径（指认 + 受限示范单句）：\n'
+  // ADR-C139（D1 修复）：三档介入契约始终输出。
+  // R-009：契约只给「为说明改法的一句示范」，不改全段、不替写成品段落；不评级。
+  // 刻意不出现「分」字（feedback_tier_test R-009 形态审计断言块内无评分词）。
+  const contract =
+      '\n\n【反馈介入层级（fading）】\n'
+      '按同一症候在本会话内的出现次数递减介入（少示范、多放手）：\n'
+      '· 首次出现（第 1 次）：指认根因，并给一句受限示范单句——为说明改法，'
+      '只示范一句、指向根因；不改全段、不替写成品段落；\n'
+      '· 复发（第 2 次）：只指根因与方向，不给示范句；\n'
+      '· 多次复发（第 3 次起）：不先给答案，先问「你发现这一处的问题了吗」，'
+      '等学员自己说出根因。';
+
+  if (lines.isEmpty) return contract;
+  return '$contract\n'
+      '\n本会话此前已诊断过下列症候，再次遇到时按上述层级递减介入：\n'
       '${lines.join('\n')}';
 }
 

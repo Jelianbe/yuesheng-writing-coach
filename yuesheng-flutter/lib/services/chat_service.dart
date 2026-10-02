@@ -1617,17 +1617,17 @@ extension ChatServiceSend on ChatService {
     );
   }
 
-  /// ADR-C134：fading 支架渐退 override 块（运行时条件注入）。
+  /// ADR-C134/C139：fading 介入层级块（运行时条件注入）。
   ///
-  /// 仅当会话内存在 prior≥1 的复发症候时返回非空块；无复发 / 仓储查询失败 → ''
-  /// （const / 无会话数据用例零漂移）。R-028：诊断仓储为边界层，try/catch 降级
-  /// 留痕，不阻断诊断主链路。
+  /// ADR-C139（D1 修复）：不再因「无复发」提前返回 ''——改为始终输出三档介入
+  /// 契约块，使 c=0「指认根因 + 受限示范单句」在纯首次诊断时可达（此前 c=0 返回
+  /// null → LLM 转引导式追问、无示范句）。复发明细仅 prior≥1 时追加；仓储查询
+  /// 失败仍降级 ''。R-028：诊断仓储为边界层，try/catch 降级留痕，不阻断主链路。
   Future<String> _buildFadingBlock(String sessionId) async {
     try {
       final recurrence = await _diagnosisRepo.countConfirmedDiagnosesBySyndrome(
         sessionId,
       );
-      if (recurrence.values.every((c) => c < 1)) return '';
       final eligibility = await _resolveFadingEligibility(sessionId);
       return buildFadingBlock(recurrence, eligibility) ?? '';
     } catch (e, st) {

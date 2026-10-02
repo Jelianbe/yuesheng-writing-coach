@@ -30,18 +30,44 @@ void main() {
   });
 
   group('buildFadingBlock · 注入块按层级递减', () {
-    test('无复发（空表 / 全部 c<1）→ null（不注入，走默认路径）', () {
-      expect(buildFadingBlock({}, FeedbackEligibility.all), isNull);
-      expect(buildFadingBlock({'P018': 0}, FeedbackEligibility.all), isNull);
+    test('无复发（空表 / 全部 c<1）→ 仍输出三档介入契约块（c=0 指认+受限示范单句可达）', () {
+      // ADR-C139（D1 修复）：此前返回 null → c=0 指令不可达（LLM 转引导式追问、
+      // 无示范句）。现始终输出契约块，纯首次诊断也能看到「指认根因+受限示范单句」。
+      final empty = buildFadingBlock({}, FeedbackEligibility.all);
+      expect(empty, isNotNull);
+      expect(empty, contains('受限示范单句'));
+      expect(empty, contains('首次出现（第 1 次）'));
+      expect(empty, contains('只示范一句'));
+      // c=0 契约不得替写整段
+      expect(empty, contains('不改全段'));
+      final zero = buildFadingBlock({'P018': 0}, FeedbackEligibility.all);
+      expect(zero, isNotNull);
+      expect(zero, isNot(contains('[P018]'))); // c<1 不进复发明细
+    });
+
+    test('D1 契约：三档语义齐全且受限（c=0 示范单句 / c=1 根因方向 / c≥2 引导提问）', () {
+      final block = buildFadingBlock({
+        'P018': 1,
+        'P021': 3,
+      }, FeedbackEligibility.highStableOnly)!;
+      expect(block, contains('首次出现（第 1 次）')); // c=0 契约常驻
+      expect(block, contains('受限示范单句')); // c=0 给一句受限示范
+      expect(block, contains('只指根因与方向')); // c=1
+      expect(block, contains('你发现这一处的问题了吗')); // c≥2
+      // 示范受限：不替写整段、不替写成品
+      expect(block, contains('不改全段'));
+      expect(block, contains('不替写成品段落'));
     });
 
     test('N=2（c=1）→ 根因+方向块，无引导提问', () {
       final block = buildFadingBlock({'P018': 1}, FeedbackEligibility.all);
       expect(block, isNotNull);
       expect(block, contains('[P018]'));
-      expect(block, contains('只指根因与方向'));
-      // N=2 不得出现 N≥3 的引导提问句
-      expect(block, isNot(contains('你发现这一处的问题了吗')));
+      // 契约头常驻三档描述（含 c≥2 提问句），故只对「复发明细段」断言层级归属。
+      final detail = block!.split('本会话此前已诊断过')[1];
+      expect(detail, contains('只指根因与方向'));
+      // N=2 的复发行不得出现 N≥3 的引导提问句
+      expect(detail, isNot(contains('你发现这一处的问题了吗')));
     });
 
     test('N≥3（c≥2）+ highStable → 引导提问「你发现了吗」且不提示答案', () {
@@ -59,8 +85,10 @@ void main() {
         FeedbackEligibility.all, // 低水平/消沉
       );
       expect(block, isNotNull);
-      expect(block, isNot(contains('你发现这一处的问题了吗')));
-      expect(block, contains('只指根因与方向'));
+      // 契约头常驻三档描述，只对「复发明细段」断言降级归属。
+      final detail = block!.split('本会话此前已诊断过')[1];
+      expect(detail, isNot(contains('你发现这一处的问题了吗')));
+      expect(detail, contains('只指根因与方向'));
     });
 
     test('多症候混合：c=1 根因 / c≥2 提问 各自成线', () {
