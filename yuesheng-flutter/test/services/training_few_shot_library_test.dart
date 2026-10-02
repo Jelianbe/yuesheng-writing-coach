@@ -251,6 +251,19 @@ void main() {
       }
     });
 
+    test('#11 C140：P009/P013/P014/P017/P023 划界块契约（key 不变 34 + 各含「不得报」边界块）', () {
+      // ADR-C140：本批只扩质量层（补「✅ 正常写法·不得报」划界块），不新增 key。
+      // ① key 总数仍为 34（无新增 key）
+      expect(kTrainingFewShotLibrary.length, 34, reason: 'C140 不应新增 key');
+      // ② 五症候各含划界块标记「不得报」
+      const boundaryKeys = ['P009', 'P013', 'P014', 'P017', 'P023'];
+      for (final k in boundaryKeys) {
+        final content = kTrainingFewShotLibrary[k]!;
+        expect(content, contains('不得报 $k'), reason: '$k 缺「不得报」划界块');
+        expect(content, contains('✅ 正常写法'), reason: '$k 缺「✅ 正常写法」边界段');
+      }
+    });
+
     test('#8 每条示例必含好/坏对比 + 改善点说明', () {
       for (final entry in kTrainingFewShotLibrary.entries) {
         final content = entry.value;
