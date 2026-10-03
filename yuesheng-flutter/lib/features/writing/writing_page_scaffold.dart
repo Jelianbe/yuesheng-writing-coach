@@ -115,10 +115,12 @@ class WritingPageScaffold extends ConsumerWidget {
 
   /// 批次88-2：对话按钮浮层（长按拖动 + 点击开合面板）
   Widget _buildDraggableFab(Size area) {
-    final size = controllers.fab.fabSize;
+    // 默认右下角位统一走 controller：从 body 底部向上预留系统手势 inset +
+    // 标点栏高度 + 边距，避免 FAB 贴底被手势条切掉 / 压住标点栏。
+    final defaultOffset = controllers.fab.defaultFabOffset(area);
     return WritingDraggableFab(
-      left: host.fabOffset?.dx ?? (area.width - size - 16),
-      top: host.fabOffset?.dy ?? (area.height - size - 16),
+      left: host.fabOffset?.dx ?? defaultOffset.dx,
+      top: host.fabOffset?.dy ?? defaultOffset.dy,
       isPanelOpen: state.isAiPanelOpen,
       onDragStart: (globalPosition) =>
           controllers.fab.handleFabDragStart(globalPosition, area),
