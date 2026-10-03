@@ -15,8 +15,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:xml/xml.dart';
 
 import '../config/shared_constants.dart';
 import 'decode_guard.dart';
@@ -57,12 +59,13 @@ class PickedDocument {
   const PickedDocument({required this.path, required this.name});
 }
 
-/// 打开系统文件选择器（txt / markdown），取消或失败返回 null
+/// 打开系统文件选择器（txt / markdown / docx），取消或失败返回 null
 Future<PickedDocument?> pickDocument() async {
   try {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const ['txt', 'md', 'markdown'],
+      // C144 W1：放行 docx（ZIP→纯文本，readFileContent 按扩展名分流）
+      allowedExtensions: const ['txt', 'md', 'markdown', 'docx'],
     );
     if (result == null || result.files.isEmpty) return null;
     final file = result.files.first;
@@ -92,7 +95,52 @@ Future<String> readFileContent(String path) async {
     throw StateError('文件过大已跳过');
   }
   final bytes = await file.readAsBytes();
+  // C144 W1：.docx = ZIP 容器，字节不是文本，不复用编码探测，走专用提取。
+  // 失败（非 ZIP / 缺 document.xml / XML 损坏）经 decode_guard 留痕后上抛，
+  // 由调用方边界提示（与 txt 路径同一契约：不静默吞、不崩）。
+  if (path.toLowerCase().endsWith('.docx')) {
+    try {
+      return extractDocxText(bytes);
+    } catch (e, st) {
+      logDecodeFailure(field: 'docxContent', error: e, stack: st);
+      rethrow;
+    }
+  }
   return _decodeByBom(bytes);
+}
+
+/// 从 .docx（ZIP 容器）字节提取纯文本（C144 W1，公开以便单测直接喂字节）。
+///
+/// .docx 结构：ZIP 包 `word/document.xml`，正文在 `<w:p>`（段落）内的
+/// `<w:t>`（文本 run）。本函数只取文本层：段落间换行分隔，随后复用既有
+/// [parseDocument] 的 txt 切章——不改 prompt、不解析样式/图片。
+///
+/// 命名按 XML local 名匹配（`p`/`t`），与 `w:` 前缀解耦。
+/// 非 ZIP / 缺 document.xml / XML 损坏时抛异常（R-028 边界由调用方留痕）。
+String extractDocxText(List<int> bytes) {
+  final archive = ZipDecoder().decodeBytes(bytes, verify: true);
+  ArchiveFile? docEntry;
+  for (final f in archive.files) {
+    if (f.isFile && f.name == 'word/document.xml') {
+      docEntry = f;
+      break;
+    }
+  }
+  if (docEntry == null) {
+    throw const FormatException('docx 容器缺少 word/document.xml');
+  }
+  final raw = docEntry.content;
+  final document = XmlDocument.parse(utf8.decode(raw as List<int>));
+  final buffer = StringBuffer();
+  for (final el in document.rootElement.descendants.whereType<XmlElement>()) {
+    if (el.name.local != 'p') continue;
+    // 段落内所有 <w:t> 文本 run 顺序拼接（含 run 内不补空格，还原 Word 连写）
+    for (final t in el.descendants.whereType<XmlElement>()) {
+      if (t.name.local == 't') buffer.write(t.innerText);
+    }
+    buffer.write('\n');
+  }
+  return buffer.toString().trim();
 }
 
 /// 按 BOM / 编码探测解码字节串，返回正文（已剥 BOM）

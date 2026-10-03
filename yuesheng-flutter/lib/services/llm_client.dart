@@ -28,13 +28,62 @@ import 'llm_usage_monitor.dart';
 import 'network_check.dart';
 import 'stream_guard.dart';
 
+/// 多模态内容块（OpenAI Chat Completions content blocks，C144 I1）。
+///
+/// 仅作序列化载体：
+/// - [ChatContentBlock.text]：普通文本块 `{type:text,text:...}`
+/// - [ChatContentBlock.imageUrl]：图片块 `{type:image_url,image_url:{url:...}}`，
+///   url 为 `data:<mime>;base64,...`（本地图片不外传公网 URL）
+///
+/// R-009/R-027：本类型**不携带任何「看图总结/评判」指令文本**——图片只作
+/// 作者引用材料挂到消息，教学解读仍走既有诊断口径，零新增 prompt 面。
+class ChatContentBlock {
+  final String type; // 'text' | 'image_url'
+  final String text;
+  final String imageUrl;
+
+  const ChatContentBlock.text(this.text) : type = 'text', imageUrl = '';
+
+  const ChatContentBlock.imageUrl(this.imageUrl)
+    : type = 'image_url',
+      text = '';
+
+  Map<String, dynamic> toJson() {
+    if (type == 'image_url') {
+      return {
+        'type': 'image_url',
+        'image_url': <String, dynamic>{'url': imageUrl},
+      };
+    }
+    return {'type': 'text', 'text': text};
+  }
+}
+
 /// 聊天消息（OpenAI ChatMessage 格式）
 class ChatMessage {
   final String role; // 'user' | 'assistant' | 'system'
   final String content;
-  const ChatMessage({required this.role, required this.content});
 
-  Map<String, dynamic> toJson() => {'role': role, 'content': content};
+  /// 多模态内容块（C144 I1）。null/空 = 纯文本形态，[toJson] 输出与改造前
+  /// **逐字节一致**（既有请求体锚点测试不受影响）；非空时 content 序列化为
+  /// content blocks 数组（text / image_url）。
+  final List<ChatContentBlock>? contentBlocks;
+
+  const ChatMessage({
+    required this.role,
+    required this.content,
+    this.contentBlocks,
+  });
+
+  Map<String, dynamic> toJson() {
+    if (contentBlocks != null && contentBlocks!.isNotEmpty) {
+      return {
+        'role': role,
+        'content': contentBlocks!.map((b) => b.toJson()).toList(),
+      };
+    }
+    return {'role': role, 'content': content};
+  }
 }
 
 /// 流式响应回调的单帧

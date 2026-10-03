@@ -52,6 +52,15 @@ dependencies:
   gpt_markdown: ^1.1.8
   fast_gbk: ^1.0.0
 
+  # 输入通道（C144 · W1 Word 直读 / I1 图片直读）
+  # archive/xml 原由 flutter_test 传递带入（transitive），lib 现直接 import
+  # 解 .docx（ZIP→word/document.xml→纯文本），按 depend_on_referenced_packages
+  # 提升为直接声明；版本照 pubspec.lock 既有锁定值（4.2.0 / 7.0.1），最小改动。
+  archive: ^4.2.0
+  xml: ^7.0.1
+  # image_picker：聊天/素材图片选择（I1），选图→bytes→base64→image_url content block
+  image_picker: ^1.1.2
+
 # ── 开发时依赖 ──
 dev_dependencies:
   flutter_test:
