@@ -60,6 +60,9 @@ part 'database.g.dart';
     PilotMetricEvents,
     // ADR-C132 批1（写作修改事件 v43）：位置级 diff / 指认 / 成稿事件
     EditDiffEvents,
+    // ADR-C143（书籍资料库 v44）：记录条目 / 资料条目事件表（DDL-only）
+    RecordEntries,
+    MaterialEntries,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -69,7 +72,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 43;
+  int get schemaVersion => 44;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -202,6 +205,15 @@ class AppDatabase extends _$AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_edit_diff_event_chapter '
         'ON edit_diff_event(chapter_id, created_at DESC)',
       );
+      // v44：书籍资料库事件表索引（按作品/会话查记录与资料条目）
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_record_entry_manuscript '
+        'ON record_entry(manuscript_id, status, created_at DESC)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_material_entry_manuscript '
+        'ON material_entry(manuscript_id, created_at DESC)',
+      );
     },
 
     onUpgrade: (m, from, to) async {
@@ -243,7 +255,8 @@ class AppDatabase extends _$AppDatabase {
       // ADR-C121（小白冷启动试点 v41）：守卫上移到 41（v41 块对 from=40 存量库可达，建 pilot_metric_event）
       // C126（教学态落库 pending 标记 v42）：守卫上移到 42（v42 块对 from=41 存量库可达，幂等 ALTER 加 status 列）
       // ADR-C132 批1（写作修改事件 v43）：守卫上移到 43（v43 块对 from=42 存量库可达，建 edit_diff_event）
-      if (from >= 43) return;
+      // ADR-C143（书籍资料库 v44）：守卫上移到 44（v44 块对 from=43 存量库可达，建 record_entry / material_entry）
+      if (from >= 44) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1189,6 +1202,49 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_edit_diff_event_chapter '
           'ON edit_diff_event(chapter_id, created_at DESC)',
+        );
+      }
+      // v44 (ADR-C143 书籍资料库): 记录条目 / 资料条目事件表（CREATE TABLE，幂等，范式同 v41/v43）。
+      // DDL-only、零数据搬迁；manuscript_id 软引用（无外键），回链 message_id 软引用 + excerpt 冗余快照。
+      if (from < 44) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS record_entry (
+            id            TEXT NOT NULL PRIMARY KEY,
+            manuscript_id TEXT NOT NULL,
+            session_id    TEXT NOT NULL DEFAULT '',
+            message_id    TEXT,
+            excerpt       TEXT NOT NULL DEFAULT '',
+            status        TEXT NOT NULL DEFAULT 'pending'
+                          CHECK(status IN ('pending','kept','rejected')),
+            decided_at    INTEGER,
+            created_at    INTEGER NOT NULL DEFAULT (unixepoch())
+          )
+        ''');
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS material_entry (
+            id                  TEXT NOT NULL PRIMARY KEY,
+            manuscript_id       TEXT NOT NULL,
+            url                 TEXT,
+            source_name         TEXT NOT NULL DEFAULT '',
+            source_credibility  TEXT NOT NULL DEFAULT 'unknown',
+            original_text       TEXT NOT NULL DEFAULT '',
+            key_snippet         TEXT NOT NULL DEFAULT '',
+            anchor              TEXT,
+            summary             TEXT,
+            status              TEXT NOT NULL DEFAULT 'pending'
+                                CHECK(status IN ('pending','kept','rejected')),
+            created_at          INTEGER NOT NULL DEFAULT (unixepoch()),
+            updated_at          INTEGER NOT NULL DEFAULT (unixepoch()),
+            UNIQUE(manuscript_id, url)
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_record_entry_manuscript '
+          'ON record_entry(manuscript_id, status, created_at DESC)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_material_entry_manuscript '
+          'ON material_entry(manuscript_id, created_at DESC)',
         );
       }
     },

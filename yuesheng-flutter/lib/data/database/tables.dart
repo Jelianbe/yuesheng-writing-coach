@@ -1020,3 +1020,123 @@ class EditDiffEvents extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// ============================================================
+/// 20. record_entry — 记录条目事件表（ADR-C143 书籍资料库 · 批A，v44）
+///
+/// 提议式留痕（裁定①：自动留痕降级为「AI/作者显式提议 → 作者裁决」）。
+/// 复用 character_fact 既有状态机 pending→kept/rejected（character_types）。
+///
+/// R-009 / 摘录纪律：
+///   - excerpt = 原文整句/整段**原样搬运**，本系统只加 created_at 时间戳 +
+///     message_id 来源指针，**不做 LLM 改写/缩写/提炼**，不打业务定性标签
+///     （定性权归作者）。
+///   - manuscript_id / session_id / message_id 全为**软引用**（无外键）：
+///     messages 有 ON DELETE CASCADE，只存 messageId 会悬空 ⇒ excerpt
+///     冗余快照保回溯。删稿不级联删留痕（「不认识的东西不销毁」）。
+///
+/// 本批不进诊断注入链（未确认记录 ≠ 教学诊断依据，ADR-C143 §1.6）。
+/// ============================================================
+@DataClassName('RecordEntry')
+class RecordEntries extends Table {
+  @override
+  String get tableName => 'record_entry';
+
+  TextColumn get id => text()();
+
+  /// 作品 id（软引用，无外键）
+  TextColumn get manuscriptId => text()();
+
+  /// 会话 id（软引用；无会话上下文记 ''）
+  TextColumn get sessionId => text().withDefault(const Constant(''))();
+
+  /// 来源消息 id（软引用，可空；级联删后由 excerpt 快照回溯）
+  TextColumn get messageId => text().nullable()();
+
+  /// 原文摘录（整句/整段原样搬运，禁改写）
+  TextColumn get excerpt => text().withDefault(const Constant(''))();
+
+  /// 裁决态：pending（提议待裁）| kept（作者确认留档）| rejected（作者拒绝）
+  TextColumn get status => text()
+      .withDefault(const Constant('pending'))
+      .check(status.isIn(const ['pending', 'kept', 'rejected']))();
+
+  /// 裁决时间（确认/拒绝时写；pending 期为 null）
+  IntColumn get decidedAt => integer().nullable()();
+
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// ============================================================
+/// 21. material_entry — 资料条目事件表（ADR-C143 书籍资料库 · 批C，v44）
+///
+/// 外部参考资料（网页/书目原文），与作者自整理的 setting_entry 视觉上分开、
+/// **永不自动升格 canon**（裁定④⑤）。
+///
+/// R-009 / 口径：
+///   - 默认**存原文不提炼**（original_text 原样存）；「关键片段」= key_snippet
+///     **原样截取** + anchor 原网页锚点，不生成摘要句。
+///   - summary 列**仅作者主动点按钮（on-demand）才写**，默认 null——
+///     不后台自动总结。
+///   - source_credibility 默认 'unknown'，AI **不评级**（评级 = 替作者判断
+///     来源靠不靠谱，踩 R-009）；只展示 source_name（域名/来源名）。
+///   - 去重 UNIQUE(manuscript_id, url)；语义去重默认不做。
+///     url 可空：无链接的粘贴原文允许多行（SQLite UNIQUE 视 NULL 互不相同）。
+///   - manuscript_id 软引用（无外键），同 record_entry。
+///
+/// 本批不进诊断注入链（资料库默认不进诊断 prompt）。
+/// ============================================================
+@DataClassName('MaterialEntry')
+class MaterialEntries extends Table {
+  @override
+  String get tableName => 'material_entry';
+
+  TextColumn get id => text()();
+
+  /// 作品 id（软引用，无外键）
+  TextColumn get manuscriptId => text()();
+
+  /// 来源 URL（UNIQUE(manuscript_id, url) 去重；可空 = 粘贴原文无链接）
+  TextColumn get url => text().nullable()();
+
+  /// 来源名/域名（只展示域名/来源名）
+  TextColumn get sourceName => text().withDefault(const Constant(''))();
+
+  /// 来源可信度：默认 unknown；AI 永不评级
+  TextColumn get sourceCredibility =>
+      text().withDefault(const Constant('unknown'))();
+
+  /// 原文（默认存原文不提炼）
+  TextColumn get originalText => text().withDefault(const Constant(''))();
+
+  /// 关键片段 = 原样截取（非 AI 摘要句）
+  TextColumn get keySnippet => text().withDefault(const Constant(''))();
+
+  /// 原网页锚点（可定位；可空）
+  TextColumn get anchor => text().nullable()();
+
+  /// AI 摘要：仅 on-demand 按钮生成；默认 null（不自动总结）
+  TextColumn get summary => text().nullable()();
+
+  /// 裁决态：pending | kept | rejected（同 record_entry 状态机）
+  TextColumn get status => text()
+      .withDefault(const Constant('pending'))
+      .check(status.isIn(const ['pending', 'kept', 'rejected']))();
+
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+  IntColumn get updatedAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {manuscriptId, url},
+  ];
+}

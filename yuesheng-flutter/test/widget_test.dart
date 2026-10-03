@@ -60,8 +60,11 @@ void main() {
         'pilot_metric_event',
         // ADR-C132 批1（写作修改事件 v43）→ edit_diff_event 埋点表
         'edit_diff_event',
+        // ADR-C143（书籍资料库 v44）→ record_entry / material_entry 事件表
+        'record_entry',
+        'material_entry',
       };
-      expect(tableNames.length, 29, reason: '应有 29 张业务表');
+      expect(tableNames.length, 31, reason: '应有 31 张业务表');
       for (final t in expectedTables) {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }

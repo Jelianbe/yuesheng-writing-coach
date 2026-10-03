@@ -19,7 +19,8 @@
 //   40 → 41（ADR-C121 试点埋点表 pilot_metric_event）
 //   41 → 42（C126 diagnosis_results 加 status 列 confirmed/pending/replaced）
 //   42 → 43（ADR-C132 批1 写作修改事件表 edit_diff_event）
+//   43 → 44（ADR-C143 书籍资料库：记录条目 record_entry / 资料条目 material_entry）
 // ─────────────────────────────────────────────────────────────
 
 /// 当前 drift `schemaVersion`（= `AppDatabase.schemaVersion`）的测试侧镜像。
-const int kSchemaHead = 43;
+const int kSchemaHead = 44;

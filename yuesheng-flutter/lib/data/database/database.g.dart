@@ -17640,6 +17640,1256 @@ class EditDiffEventsCompanion extends UpdateCompanion<EditDiffEvent> {
   }
 }
 
+class $RecordEntriesTable extends RecordEntries
+    with TableInfo<$RecordEntriesTable, RecordEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecordEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manuscriptIdMeta = const VerificationMeta(
+    'manuscriptId',
+  );
+  @override
+  late final GeneratedColumn<String> manuscriptId = GeneratedColumn<String>(
+    'manuscript_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _excerptMeta = const VerificationMeta(
+    'excerpt',
+  );
+  @override
+  late final GeneratedColumn<String> excerpt = GeneratedColumn<String>(
+    'excerpt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(const ['pending', 'kept', 'rejected']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _decidedAtMeta = const VerificationMeta(
+    'decidedAt',
+  );
+  @override
+  late final GeneratedColumn<int> decidedAt = GeneratedColumn<int>(
+    'decided_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    manuscriptId,
+    sessionId,
+    messageId,
+    excerpt,
+    status,
+    decidedAt,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'record_entry';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecordEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('manuscript_id')) {
+      context.handle(
+        _manuscriptIdMeta,
+        manuscriptId.isAcceptableOrUnknown(
+          data['manuscript_id']!,
+          _manuscriptIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manuscriptIdMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    }
+    if (data.containsKey('excerpt')) {
+      context.handle(
+        _excerptMeta,
+        excerpt.isAcceptableOrUnknown(data['excerpt']!, _excerptMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('decided_at')) {
+      context.handle(
+        _decidedAtMeta,
+        decidedAt.isAcceptableOrUnknown(data['decided_at']!, _decidedAtMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RecordEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecordEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      manuscriptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manuscript_id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      ),
+      excerpt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}excerpt'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      decidedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}decided_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RecordEntriesTable createAlias(String alias) {
+    return $RecordEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class RecordEntry extends DataClass implements Insertable<RecordEntry> {
+  final String id;
+
+  /// 作品 id（软引用，无外键）
+  final String manuscriptId;
+
+  /// 会话 id（软引用；无会话上下文记 ''）
+  final String sessionId;
+
+  /// 来源消息 id（软引用，可空；级联删后由 excerpt 快照回溯）
+  final String? messageId;
+
+  /// 原文摘录（整句/整段原样搬运，禁改写）
+  final String excerpt;
+
+  /// 裁决态：pending（提议待裁）| kept（作者确认留档）| rejected（作者拒绝）
+  final String status;
+
+  /// 裁决时间（确认/拒绝时写；pending 期为 null）
+  final int? decidedAt;
+  final int createdAt;
+  const RecordEntry({
+    required this.id,
+    required this.manuscriptId,
+    required this.sessionId,
+    this.messageId,
+    required this.excerpt,
+    required this.status,
+    this.decidedAt,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['manuscript_id'] = Variable<String>(manuscriptId);
+    map['session_id'] = Variable<String>(sessionId);
+    if (!nullToAbsent || messageId != null) {
+      map['message_id'] = Variable<String>(messageId);
+    }
+    map['excerpt'] = Variable<String>(excerpt);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || decidedAt != null) {
+      map['decided_at'] = Variable<int>(decidedAt);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  RecordEntriesCompanion toCompanion(bool nullToAbsent) {
+    return RecordEntriesCompanion(
+      id: Value(id),
+      manuscriptId: Value(manuscriptId),
+      sessionId: Value(sessionId),
+      messageId: messageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(messageId),
+      excerpt: Value(excerpt),
+      status: Value(status),
+      decidedAt: decidedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decidedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory RecordEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecordEntry(
+      id: serializer.fromJson<String>(json['id']),
+      manuscriptId: serializer.fromJson<String>(json['manuscriptId']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      messageId: serializer.fromJson<String?>(json['messageId']),
+      excerpt: serializer.fromJson<String>(json['excerpt']),
+      status: serializer.fromJson<String>(json['status']),
+      decidedAt: serializer.fromJson<int?>(json['decidedAt']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'manuscriptId': serializer.toJson<String>(manuscriptId),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'messageId': serializer.toJson<String?>(messageId),
+      'excerpt': serializer.toJson<String>(excerpt),
+      'status': serializer.toJson<String>(status),
+      'decidedAt': serializer.toJson<int?>(decidedAt),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  RecordEntry copyWith({
+    String? id,
+    String? manuscriptId,
+    String? sessionId,
+    Value<String?> messageId = const Value.absent(),
+    String? excerpt,
+    String? status,
+    Value<int?> decidedAt = const Value.absent(),
+    int? createdAt,
+  }) => RecordEntry(
+    id: id ?? this.id,
+    manuscriptId: manuscriptId ?? this.manuscriptId,
+    sessionId: sessionId ?? this.sessionId,
+    messageId: messageId.present ? messageId.value : this.messageId,
+    excerpt: excerpt ?? this.excerpt,
+    status: status ?? this.status,
+    decidedAt: decidedAt.present ? decidedAt.value : this.decidedAt,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  RecordEntry copyWithCompanion(RecordEntriesCompanion data) {
+    return RecordEntry(
+      id: data.id.present ? data.id.value : this.id,
+      manuscriptId: data.manuscriptId.present
+          ? data.manuscriptId.value
+          : this.manuscriptId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      excerpt: data.excerpt.present ? data.excerpt.value : this.excerpt,
+      status: data.status.present ? data.status.value : this.status,
+      decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecordEntry(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('messageId: $messageId, ')
+          ..write('excerpt: $excerpt, ')
+          ..write('status: $status, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    manuscriptId,
+    sessionId,
+    messageId,
+    excerpt,
+    status,
+    decidedAt,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecordEntry &&
+          other.id == this.id &&
+          other.manuscriptId == this.manuscriptId &&
+          other.sessionId == this.sessionId &&
+          other.messageId == this.messageId &&
+          other.excerpt == this.excerpt &&
+          other.status == this.status &&
+          other.decidedAt == this.decidedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
+  final Value<String> id;
+  final Value<String> manuscriptId;
+  final Value<String> sessionId;
+  final Value<String?> messageId;
+  final Value<String> excerpt;
+  final Value<String> status;
+  final Value<int?> decidedAt;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const RecordEntriesCompanion({
+    this.id = const Value.absent(),
+    this.manuscriptId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.excerpt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RecordEntriesCompanion.insert({
+    required String id,
+    required String manuscriptId,
+    this.sessionId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.excerpt = const Value.absent(),
+    this.status = const Value.absent(),
+    this.decidedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       manuscriptId = Value(manuscriptId);
+  static Insertable<RecordEntry> custom({
+    Expression<String>? id,
+    Expression<String>? manuscriptId,
+    Expression<String>? sessionId,
+    Expression<String>? messageId,
+    Expression<String>? excerpt,
+    Expression<String>? status,
+    Expression<int>? decidedAt,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (manuscriptId != null) 'manuscript_id': manuscriptId,
+      if (sessionId != null) 'session_id': sessionId,
+      if (messageId != null) 'message_id': messageId,
+      if (excerpt != null) 'excerpt': excerpt,
+      if (status != null) 'status': status,
+      if (decidedAt != null) 'decided_at': decidedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RecordEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? manuscriptId,
+    Value<String>? sessionId,
+    Value<String?>? messageId,
+    Value<String>? excerpt,
+    Value<String>? status,
+    Value<int?>? decidedAt,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return RecordEntriesCompanion(
+      id: id ?? this.id,
+      manuscriptId: manuscriptId ?? this.manuscriptId,
+      sessionId: sessionId ?? this.sessionId,
+      messageId: messageId ?? this.messageId,
+      excerpt: excerpt ?? this.excerpt,
+      status: status ?? this.status,
+      decidedAt: decidedAt ?? this.decidedAt,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (manuscriptId.present) {
+      map['manuscript_id'] = Variable<String>(manuscriptId.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (excerpt.present) {
+      map['excerpt'] = Variable<String>(excerpt.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (decidedAt.present) {
+      map['decided_at'] = Variable<int>(decidedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecordEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('messageId: $messageId, ')
+          ..write('excerpt: $excerpt, ')
+          ..write('status: $status, ')
+          ..write('decidedAt: $decidedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MaterialEntriesTable extends MaterialEntries
+    with TableInfo<$MaterialEntriesTable, MaterialEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MaterialEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manuscriptIdMeta = const VerificationMeta(
+    'manuscriptId',
+  );
+  @override
+  late final GeneratedColumn<String> manuscriptId = GeneratedColumn<String>(
+    'manuscript_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceNameMeta = const VerificationMeta(
+    'sourceName',
+  );
+  @override
+  late final GeneratedColumn<String> sourceName = GeneratedColumn<String>(
+    'source_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceCredibilityMeta = const VerificationMeta(
+    'sourceCredibility',
+  );
+  @override
+  late final GeneratedColumn<String> sourceCredibility =
+      GeneratedColumn<String>(
+        'source_credibility',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('unknown'),
+      );
+  static const VerificationMeta _originalTextMeta = const VerificationMeta(
+    'originalText',
+  );
+  @override
+  late final GeneratedColumn<String> originalText = GeneratedColumn<String>(
+    'original_text',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _keySnippetMeta = const VerificationMeta(
+    'keySnippet',
+  );
+  @override
+  late final GeneratedColumn<String> keySnippet = GeneratedColumn<String>(
+    'key_snippet',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _anchorMeta = const VerificationMeta('anchor');
+  @override
+  late final GeneratedColumn<String> anchor = GeneratedColumn<String>(
+    'anchor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _summaryMeta = const VerificationMeta(
+    'summary',
+  );
+  @override
+  late final GeneratedColumn<String> summary = GeneratedColumn<String>(
+    'summary',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(const ['pending', 'kept', 'rejected']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    manuscriptId,
+    url,
+    sourceName,
+    sourceCredibility,
+    originalText,
+    keySnippet,
+    anchor,
+    summary,
+    status,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'material_entry';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MaterialEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('manuscript_id')) {
+      context.handle(
+        _manuscriptIdMeta,
+        manuscriptId.isAcceptableOrUnknown(
+          data['manuscript_id']!,
+          _manuscriptIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manuscriptIdMeta);
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('source_name')) {
+      context.handle(
+        _sourceNameMeta,
+        sourceName.isAcceptableOrUnknown(data['source_name']!, _sourceNameMeta),
+      );
+    }
+    if (data.containsKey('source_credibility')) {
+      context.handle(
+        _sourceCredibilityMeta,
+        sourceCredibility.isAcceptableOrUnknown(
+          data['source_credibility']!,
+          _sourceCredibilityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('original_text')) {
+      context.handle(
+        _originalTextMeta,
+        originalText.isAcceptableOrUnknown(
+          data['original_text']!,
+          _originalTextMeta,
+        ),
+      );
+    }
+    if (data.containsKey('key_snippet')) {
+      context.handle(
+        _keySnippetMeta,
+        keySnippet.isAcceptableOrUnknown(data['key_snippet']!, _keySnippetMeta),
+      );
+    }
+    if (data.containsKey('anchor')) {
+      context.handle(
+        _anchorMeta,
+        anchor.isAcceptableOrUnknown(data['anchor']!, _anchorMeta),
+      );
+    }
+    if (data.containsKey('summary')) {
+      context.handle(
+        _summaryMeta,
+        summary.isAcceptableOrUnknown(data['summary']!, _summaryMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {manuscriptId, url},
+  ];
+  @override
+  MaterialEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MaterialEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      manuscriptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manuscript_id'],
+      )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      sourceName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_name'],
+      )!,
+      sourceCredibility: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_credibility'],
+      )!,
+      originalText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_text'],
+      )!,
+      keySnippet: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key_snippet'],
+      )!,
+      anchor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}anchor'],
+      ),
+      summary: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}summary'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MaterialEntriesTable createAlias(String alias) {
+    return $MaterialEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class MaterialEntry extends DataClass implements Insertable<MaterialEntry> {
+  final String id;
+
+  /// 作品 id（软引用，无外键）
+  final String manuscriptId;
+
+  /// 来源 URL（UNIQUE(manuscript_id, url) 去重；可空 = 粘贴原文无链接）
+  final String? url;
+
+  /// 来源名/域名（只展示域名/来源名）
+  final String sourceName;
+
+  /// 来源可信度：默认 unknown；AI 永不评级
+  final String sourceCredibility;
+
+  /// 原文（默认存原文不提炼）
+  final String originalText;
+
+  /// 关键片段 = 原样截取（非 AI 摘要句）
+  final String keySnippet;
+
+  /// 原网页锚点（可定位；可空）
+  final String? anchor;
+
+  /// AI 摘要：仅 on-demand 按钮生成；默认 null（不自动总结）
+  final String? summary;
+
+  /// 裁决态：pending | kept | rejected（同 record_entry 状态机）
+  final String status;
+  final int createdAt;
+  final int updatedAt;
+  const MaterialEntry({
+    required this.id,
+    required this.manuscriptId,
+    this.url,
+    required this.sourceName,
+    required this.sourceCredibility,
+    required this.originalText,
+    required this.keySnippet,
+    this.anchor,
+    this.summary,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['manuscript_id'] = Variable<String>(manuscriptId);
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    map['source_name'] = Variable<String>(sourceName);
+    map['source_credibility'] = Variable<String>(sourceCredibility);
+    map['original_text'] = Variable<String>(originalText);
+    map['key_snippet'] = Variable<String>(keySnippet);
+    if (!nullToAbsent || anchor != null) {
+      map['anchor'] = Variable<String>(anchor);
+    }
+    if (!nullToAbsent || summary != null) {
+      map['summary'] = Variable<String>(summary);
+    }
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  MaterialEntriesCompanion toCompanion(bool nullToAbsent) {
+    return MaterialEntriesCompanion(
+      id: Value(id),
+      manuscriptId: Value(manuscriptId),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      sourceName: Value(sourceName),
+      sourceCredibility: Value(sourceCredibility),
+      originalText: Value(originalText),
+      keySnippet: Value(keySnippet),
+      anchor: anchor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchor),
+      summary: summary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(summary),
+      status: Value(status),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory MaterialEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MaterialEntry(
+      id: serializer.fromJson<String>(json['id']),
+      manuscriptId: serializer.fromJson<String>(json['manuscriptId']),
+      url: serializer.fromJson<String?>(json['url']),
+      sourceName: serializer.fromJson<String>(json['sourceName']),
+      sourceCredibility: serializer.fromJson<String>(json['sourceCredibility']),
+      originalText: serializer.fromJson<String>(json['originalText']),
+      keySnippet: serializer.fromJson<String>(json['keySnippet']),
+      anchor: serializer.fromJson<String?>(json['anchor']),
+      summary: serializer.fromJson<String?>(json['summary']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'manuscriptId': serializer.toJson<String>(manuscriptId),
+      'url': serializer.toJson<String?>(url),
+      'sourceName': serializer.toJson<String>(sourceName),
+      'sourceCredibility': serializer.toJson<String>(sourceCredibility),
+      'originalText': serializer.toJson<String>(originalText),
+      'keySnippet': serializer.toJson<String>(keySnippet),
+      'anchor': serializer.toJson<String?>(anchor),
+      'summary': serializer.toJson<String?>(summary),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  MaterialEntry copyWith({
+    String? id,
+    String? manuscriptId,
+    Value<String?> url = const Value.absent(),
+    String? sourceName,
+    String? sourceCredibility,
+    String? originalText,
+    String? keySnippet,
+    Value<String?> anchor = const Value.absent(),
+    Value<String?> summary = const Value.absent(),
+    String? status,
+    int? createdAt,
+    int? updatedAt,
+  }) => MaterialEntry(
+    id: id ?? this.id,
+    manuscriptId: manuscriptId ?? this.manuscriptId,
+    url: url.present ? url.value : this.url,
+    sourceName: sourceName ?? this.sourceName,
+    sourceCredibility: sourceCredibility ?? this.sourceCredibility,
+    originalText: originalText ?? this.originalText,
+    keySnippet: keySnippet ?? this.keySnippet,
+    anchor: anchor.present ? anchor.value : this.anchor,
+    summary: summary.present ? summary.value : this.summary,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  MaterialEntry copyWithCompanion(MaterialEntriesCompanion data) {
+    return MaterialEntry(
+      id: data.id.present ? data.id.value : this.id,
+      manuscriptId: data.manuscriptId.present
+          ? data.manuscriptId.value
+          : this.manuscriptId,
+      url: data.url.present ? data.url.value : this.url,
+      sourceName: data.sourceName.present
+          ? data.sourceName.value
+          : this.sourceName,
+      sourceCredibility: data.sourceCredibility.present
+          ? data.sourceCredibility.value
+          : this.sourceCredibility,
+      originalText: data.originalText.present
+          ? data.originalText.value
+          : this.originalText,
+      keySnippet: data.keySnippet.present
+          ? data.keySnippet.value
+          : this.keySnippet,
+      anchor: data.anchor.present ? data.anchor.value : this.anchor,
+      summary: data.summary.present ? data.summary.value : this.summary,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MaterialEntry(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('url: $url, ')
+          ..write('sourceName: $sourceName, ')
+          ..write('sourceCredibility: $sourceCredibility, ')
+          ..write('originalText: $originalText, ')
+          ..write('keySnippet: $keySnippet, ')
+          ..write('anchor: $anchor, ')
+          ..write('summary: $summary, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    manuscriptId,
+    url,
+    sourceName,
+    sourceCredibility,
+    originalText,
+    keySnippet,
+    anchor,
+    summary,
+    status,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MaterialEntry &&
+          other.id == this.id &&
+          other.manuscriptId == this.manuscriptId &&
+          other.url == this.url &&
+          other.sourceName == this.sourceName &&
+          other.sourceCredibility == this.sourceCredibility &&
+          other.originalText == this.originalText &&
+          other.keySnippet == this.keySnippet &&
+          other.anchor == this.anchor &&
+          other.summary == this.summary &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MaterialEntriesCompanion extends UpdateCompanion<MaterialEntry> {
+  final Value<String> id;
+  final Value<String> manuscriptId;
+  final Value<String?> url;
+  final Value<String> sourceName;
+  final Value<String> sourceCredibility;
+  final Value<String> originalText;
+  final Value<String> keySnippet;
+  final Value<String?> anchor;
+  final Value<String?> summary;
+  final Value<String> status;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const MaterialEntriesCompanion({
+    this.id = const Value.absent(),
+    this.manuscriptId = const Value.absent(),
+    this.url = const Value.absent(),
+    this.sourceName = const Value.absent(),
+    this.sourceCredibility = const Value.absent(),
+    this.originalText = const Value.absent(),
+    this.keySnippet = const Value.absent(),
+    this.anchor = const Value.absent(),
+    this.summary = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MaterialEntriesCompanion.insert({
+    required String id,
+    required String manuscriptId,
+    this.url = const Value.absent(),
+    this.sourceName = const Value.absent(),
+    this.sourceCredibility = const Value.absent(),
+    this.originalText = const Value.absent(),
+    this.keySnippet = const Value.absent(),
+    this.anchor = const Value.absent(),
+    this.summary = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       manuscriptId = Value(manuscriptId);
+  static Insertable<MaterialEntry> custom({
+    Expression<String>? id,
+    Expression<String>? manuscriptId,
+    Expression<String>? url,
+    Expression<String>? sourceName,
+    Expression<String>? sourceCredibility,
+    Expression<String>? originalText,
+    Expression<String>? keySnippet,
+    Expression<String>? anchor,
+    Expression<String>? summary,
+    Expression<String>? status,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (manuscriptId != null) 'manuscript_id': manuscriptId,
+      if (url != null) 'url': url,
+      if (sourceName != null) 'source_name': sourceName,
+      if (sourceCredibility != null) 'source_credibility': sourceCredibility,
+      if (originalText != null) 'original_text': originalText,
+      if (keySnippet != null) 'key_snippet': keySnippet,
+      if (anchor != null) 'anchor': anchor,
+      if (summary != null) 'summary': summary,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MaterialEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? manuscriptId,
+    Value<String?>? url,
+    Value<String>? sourceName,
+    Value<String>? sourceCredibility,
+    Value<String>? originalText,
+    Value<String>? keySnippet,
+    Value<String?>? anchor,
+    Value<String?>? summary,
+    Value<String>? status,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return MaterialEntriesCompanion(
+      id: id ?? this.id,
+      manuscriptId: manuscriptId ?? this.manuscriptId,
+      url: url ?? this.url,
+      sourceName: sourceName ?? this.sourceName,
+      sourceCredibility: sourceCredibility ?? this.sourceCredibility,
+      originalText: originalText ?? this.originalText,
+      keySnippet: keySnippet ?? this.keySnippet,
+      anchor: anchor ?? this.anchor,
+      summary: summary ?? this.summary,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (manuscriptId.present) {
+      map['manuscript_id'] = Variable<String>(manuscriptId.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (sourceName.present) {
+      map['source_name'] = Variable<String>(sourceName.value);
+    }
+    if (sourceCredibility.present) {
+      map['source_credibility'] = Variable<String>(sourceCredibility.value);
+    }
+    if (originalText.present) {
+      map['original_text'] = Variable<String>(originalText.value);
+    }
+    if (keySnippet.present) {
+      map['key_snippet'] = Variable<String>(keySnippet.value);
+    }
+    if (anchor.present) {
+      map['anchor'] = Variable<String>(anchor.value);
+    }
+    if (summary.present) {
+      map['summary'] = Variable<String>(summary.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MaterialEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('url: $url, ')
+          ..write('sourceName: $sourceName, ')
+          ..write('sourceCredibility: $sourceCredibility, ')
+          ..write('originalText: $originalText, ')
+          ..write('keySnippet: $keySnippet, ')
+          ..write('anchor: $anchor, ')
+          ..write('summary: $summary, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -17683,6 +18933,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PilotMetricEventsTable pilotMetricEvents =
       $PilotMetricEventsTable(this);
   late final $EditDiffEventsTable editDiffEvents = $EditDiffEventsTable(this);
+  late final $RecordEntriesTable recordEntries = $RecordEntriesTable(this);
+  late final $MaterialEntriesTable materialEntries = $MaterialEntriesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -17717,6 +18971,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     settingTags,
     pilotMetricEvents,
     editDiffEvents,
+    recordEntries,
+    materialEntries,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -32327,6 +33583,610 @@ typedef $$EditDiffEventsTableProcessedTableManager =
       EditDiffEvent,
       PrefetchHooks Function()
     >;
+typedef $$RecordEntriesTableCreateCompanionBuilder =
+    RecordEntriesCompanion Function({
+      required String id,
+      required String manuscriptId,
+      Value<String> sessionId,
+      Value<String?> messageId,
+      Value<String> excerpt,
+      Value<String> status,
+      Value<int?> decidedAt,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$RecordEntriesTableUpdateCompanionBuilder =
+    RecordEntriesCompanion Function({
+      Value<String> id,
+      Value<String> manuscriptId,
+      Value<String> sessionId,
+      Value<String?> messageId,
+      Value<String> excerpt,
+      Value<String> status,
+      Value<int?> decidedAt,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$RecordEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $RecordEntriesTable> {
+  $$RecordEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get manuscriptId => $composableBuilder(
+    column: $table.manuscriptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get excerpt => $composableBuilder(
+    column: $table.excerpt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RecordEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $RecordEntriesTable> {
+  $$RecordEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get manuscriptId => $composableBuilder(
+    column: $table.manuscriptId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get excerpt => $composableBuilder(
+    column: $table.excerpt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get decidedAt => $composableBuilder(
+    column: $table.decidedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RecordEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RecordEntriesTable> {
+  $$RecordEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get manuscriptId => $composableBuilder(
+    column: $table.manuscriptId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get excerpt =>
+      $composableBuilder(column: $table.excerpt, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get decidedAt =>
+      $composableBuilder(column: $table.decidedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$RecordEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecordEntriesTable,
+          RecordEntry,
+          $$RecordEntriesTableFilterComposer,
+          $$RecordEntriesTableOrderingComposer,
+          $$RecordEntriesTableAnnotationComposer,
+          $$RecordEntriesTableCreateCompanionBuilder,
+          $$RecordEntriesTableUpdateCompanionBuilder,
+          (
+            RecordEntry,
+            BaseReferences<_$AppDatabase, $RecordEntriesTable, RecordEntry>,
+          ),
+          RecordEntry,
+          PrefetchHooks Function()
+        > {
+  $$RecordEntriesTableTableManager(_$AppDatabase db, $RecordEntriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RecordEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RecordEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RecordEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> manuscriptId = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String?> messageId = const Value.absent(),
+                Value<String> excerpt = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int?> decidedAt = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecordEntriesCompanion(
+                id: id,
+                manuscriptId: manuscriptId,
+                sessionId: sessionId,
+                messageId: messageId,
+                excerpt: excerpt,
+                status: status,
+                decidedAt: decidedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String manuscriptId,
+                Value<String> sessionId = const Value.absent(),
+                Value<String?> messageId = const Value.absent(),
+                Value<String> excerpt = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int?> decidedAt = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RecordEntriesCompanion.insert(
+                id: id,
+                manuscriptId: manuscriptId,
+                sessionId: sessionId,
+                messageId: messageId,
+                excerpt: excerpt,
+                status: status,
+                decidedAt: decidedAt,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RecordEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RecordEntriesTable,
+      RecordEntry,
+      $$RecordEntriesTableFilterComposer,
+      $$RecordEntriesTableOrderingComposer,
+      $$RecordEntriesTableAnnotationComposer,
+      $$RecordEntriesTableCreateCompanionBuilder,
+      $$RecordEntriesTableUpdateCompanionBuilder,
+      (
+        RecordEntry,
+        BaseReferences<_$AppDatabase, $RecordEntriesTable, RecordEntry>,
+      ),
+      RecordEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$MaterialEntriesTableCreateCompanionBuilder =
+    MaterialEntriesCompanion Function({
+      required String id,
+      required String manuscriptId,
+      Value<String?> url,
+      Value<String> sourceName,
+      Value<String> sourceCredibility,
+      Value<String> originalText,
+      Value<String> keySnippet,
+      Value<String?> anchor,
+      Value<String?> summary,
+      Value<String> status,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$MaterialEntriesTableUpdateCompanionBuilder =
+    MaterialEntriesCompanion Function({
+      Value<String> id,
+      Value<String> manuscriptId,
+      Value<String?> url,
+      Value<String> sourceName,
+      Value<String> sourceCredibility,
+      Value<String> originalText,
+      Value<String> keySnippet,
+      Value<String?> anchor,
+      Value<String?> summary,
+      Value<String> status,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$MaterialEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $MaterialEntriesTable> {
+  $$MaterialEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get manuscriptId => $composableBuilder(
+    column: $table.manuscriptId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceCredibility => $composableBuilder(
+    column: $table.sourceCredibility,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalText => $composableBuilder(
+    column: $table.originalText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get keySnippet => $composableBuilder(
+    column: $table.keySnippet,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get anchor => $composableBuilder(
+    column: $table.anchor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MaterialEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MaterialEntriesTable> {
+  $$MaterialEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get manuscriptId => $composableBuilder(
+    column: $table.manuscriptId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceCredibility => $composableBuilder(
+    column: $table.sourceCredibility,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalText => $composableBuilder(
+    column: $table.originalText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get keySnippet => $composableBuilder(
+    column: $table.keySnippet,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get anchor => $composableBuilder(
+    column: $table.anchor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get summary => $composableBuilder(
+    column: $table.summary,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MaterialEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MaterialEntriesTable> {
+  $$MaterialEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get manuscriptId => $composableBuilder(
+    column: $table.manuscriptId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceName => $composableBuilder(
+    column: $table.sourceName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceCredibility => $composableBuilder(
+    column: $table.sourceCredibility,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get originalText => $composableBuilder(
+    column: $table.originalText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get keySnippet => $composableBuilder(
+    column: $table.keySnippet,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get anchor =>
+      $composableBuilder(column: $table.anchor, builder: (column) => column);
+
+  GeneratedColumn<String> get summary =>
+      $composableBuilder(column: $table.summary, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MaterialEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MaterialEntriesTable,
+          MaterialEntry,
+          $$MaterialEntriesTableFilterComposer,
+          $$MaterialEntriesTableOrderingComposer,
+          $$MaterialEntriesTableAnnotationComposer,
+          $$MaterialEntriesTableCreateCompanionBuilder,
+          $$MaterialEntriesTableUpdateCompanionBuilder,
+          (
+            MaterialEntry,
+            BaseReferences<_$AppDatabase, $MaterialEntriesTable, MaterialEntry>,
+          ),
+          MaterialEntry,
+          PrefetchHooks Function()
+        > {
+  $$MaterialEntriesTableTableManager(
+    _$AppDatabase db,
+    $MaterialEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MaterialEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MaterialEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MaterialEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> manuscriptId = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<String> sourceName = const Value.absent(),
+                Value<String> sourceCredibility = const Value.absent(),
+                Value<String> originalText = const Value.absent(),
+                Value<String> keySnippet = const Value.absent(),
+                Value<String?> anchor = const Value.absent(),
+                Value<String?> summary = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MaterialEntriesCompanion(
+                id: id,
+                manuscriptId: manuscriptId,
+                url: url,
+                sourceName: sourceName,
+                sourceCredibility: sourceCredibility,
+                originalText: originalText,
+                keySnippet: keySnippet,
+                anchor: anchor,
+                summary: summary,
+                status: status,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String manuscriptId,
+                Value<String?> url = const Value.absent(),
+                Value<String> sourceName = const Value.absent(),
+                Value<String> sourceCredibility = const Value.absent(),
+                Value<String> originalText = const Value.absent(),
+                Value<String> keySnippet = const Value.absent(),
+                Value<String?> anchor = const Value.absent(),
+                Value<String?> summary = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MaterialEntriesCompanion.insert(
+                id: id,
+                manuscriptId: manuscriptId,
+                url: url,
+                sourceName: sourceName,
+                sourceCredibility: sourceCredibility,
+                originalText: originalText,
+                keySnippet: keySnippet,
+                anchor: anchor,
+                summary: summary,
+                status: status,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MaterialEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MaterialEntriesTable,
+      MaterialEntry,
+      $$MaterialEntriesTableFilterComposer,
+      $$MaterialEntriesTableOrderingComposer,
+      $$MaterialEntriesTableAnnotationComposer,
+      $$MaterialEntriesTableCreateCompanionBuilder,
+      $$MaterialEntriesTableUpdateCompanionBuilder,
+      (
+        MaterialEntry,
+        BaseReferences<_$AppDatabase, $MaterialEntriesTable, MaterialEntry>,
+      ),
+      MaterialEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -32389,4 +34249,8 @@ class $AppDatabaseManager {
       $$PilotMetricEventsTableTableManager(_db, _db.pilotMetricEvents);
   $$EditDiffEventsTableTableManager get editDiffEvents =>
       $$EditDiffEventsTableTableManager(_db, _db.editDiffEvents);
+  $$RecordEntriesTableTableManager get recordEntries =>
+      $$RecordEntriesTableTableManager(_db, _db.recordEntries);
+  $$MaterialEntriesTableTableManager get materialEntries =>
+      $$MaterialEntriesTableTableManager(_db, _db.materialEntries);
 }
