@@ -39,11 +39,15 @@ class RecordEntryRepository {
   /// [excerpt] 必须是原文整句/整段**原样文本**——本方法**逐字落库**，
   /// 不调用 LLM、不做任何改写/缩写/提炼（摘录纪律）。[messageId] 为来源
   /// 消息指针（软引用，可空）；[excerpt] 是冗余快照（messages 级联删后仍可回溯）。
+  ///
+  /// [targetSection] 为作者在确认卡里自选的归入位置（'' 未定 / 'character' /
+  /// 'outline' / 'world'）；仅作者可填，本层不据此定性、不进诊断链（R-009）。
   Future<RecordEntry> proposePending({
     required String manuscriptId,
     String sessionId = '',
     String? messageId,
     required String excerpt,
+    String targetSection = '',
   }) => guardRepoWrite('record_entry', 'proposePending', () async {
     final entry = RecordEntriesCompanion.insert(
       id: generateUuid(),
@@ -51,6 +55,7 @@ class RecordEntryRepository {
       sessionId: Value(sessionId),
       messageId: Value(messageId),
       excerpt: Value(excerpt),
+      targetSection: Value(targetSection),
       status: const Value(RecordEntryStatus.pending),
     );
     await _db.into(_db.recordEntries).insert(entry);
@@ -62,6 +67,14 @@ class RecordEntryRepository {
 
   /// 作者拒绝：pending → rejected。
   Future<void> reject(String id) => _decide(id, RecordEntryStatus.rejected);
+
+  /// C147：作者在资料库收件箱里**编辑 pending 摘录**（可改原文快照）。
+  /// 仅作者可改；本方法原样落库传入文本，不做 LLM 改写。仅作用于 pending。
+  Future<void> updateExcerpt(String id, String excerpt) =>
+      guardRepoWrite('record_entry', 'updateExcerpt', () async {
+        await (_db.update(_db.recordEntries)..where((t) => t.id.equals(id)))
+            .write(RecordEntriesCompanion(excerpt: Value(excerpt)));
+      });
 
   Future<void> _decide(
     String id,

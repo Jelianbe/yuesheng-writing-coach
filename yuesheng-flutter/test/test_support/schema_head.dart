@@ -20,7 +20,8 @@
 //   41 → 42（C126 diagnosis_results 加 status 列 confirmed/pending/replaced）
 //   42 → 43（ADR-C132 批1 写作修改事件表 edit_diff_event）
 //   43 → 44（ADR-C143 书籍资料库：记录条目 record_entry / 资料条目 material_entry）
+//   44 → 45（C147 记录条目加 target_section 列：作者自选归入位置人设/大纲/世界观）
 // ─────────────────────────────────────────────────────────────
 
 /// 当前 drift `schemaVersion`（= `AppDatabase.schemaVersion`）的测试侧镜像。
-const int kSchemaHead = 44;
+const int kSchemaHead = 45;

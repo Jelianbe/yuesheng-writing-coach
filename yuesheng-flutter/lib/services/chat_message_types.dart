@@ -11,6 +11,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart' show CancelToken;
 import 'package:writingcoach/data/database/database.dart' show Message;
+import 'package:writingcoach/services/llm_client.dart' show ChatContentBlock;
 import 'package:writingcoach/types/teaching_types.dart'
     show AttitudeLevel, TeachingMode, TeachingPhase, TrainingResult;
 
@@ -79,6 +80,11 @@ class SendMessageOptions {
   /// （message_sequence 锚点零漂移的依据）。
   final bool wholeChapterModeActive;
 
+  /// C147：本消息附带的图片等多模态内容块（图片直读链）。
+  /// null/空 = 纯文本，用户消息序列化与既有锚点逐字节一致；非空时挂到用户消息
+  /// 的 contentBlocks（text 块 + image_url 块）。R-009：不夹带任何看图评判指令。
+  final List<ChatContentBlock>? attachmentBlocks;
+
   const SendMessageOptions({
     required this.phase,
     required this.attitude,
@@ -88,5 +94,6 @@ class SendMessageOptions {
     this.referencesJson,
     this.chapterFullText,
     this.wholeChapterModeActive = false,
+    this.attachmentBlocks,
   });
 }

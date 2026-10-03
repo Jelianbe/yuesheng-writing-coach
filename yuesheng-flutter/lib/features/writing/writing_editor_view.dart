@@ -36,6 +36,7 @@ class WritingEditorView extends StatelessWidget {
     required this.onTitleChanged,
     required this.onContentChanged,
     required this.onDiagnoseSelection,
+    required this.onSaveToLibrary,
     required this.onUndo,
     required this.onRedo,
     required this.onPunctuationTap,
@@ -59,6 +60,9 @@ class WritingEditorView extends StatelessWidget {
   final ValueChanged<String> onTitleChanged;
   final ValueChanged<String> onContentChanged;
   final VoidCallback onDiagnoseSelection;
+
+  /// C147：划词菜单「存入设定库」回调。
+  final VoidCallback onSaveToLibrary;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
   final ValueChanged<String> onPunctuationTap;
@@ -252,6 +256,7 @@ class WritingEditorView extends StatelessWidget {
             WritingSelectionMenu(
               position: selectionMenuPos!,
               onDiagnose: onDiagnoseSelection,
+              onSaveToLibrary: onSaveToLibrary,
             ),
         ],
       ),

@@ -20,6 +20,7 @@ import '../character/character_list_view.dart';
 import '../world/world_fact_list_view.dart';
 import '../app_settings/outline_entity_list_view.dart';
 import '../app_settings/setting_entry_list_view.dart';
+import 'record_entry_inbox.dart';
 
 /// 四子列表的段标识
 enum _Section { character, outline, world, other }
@@ -41,6 +42,9 @@ class _SettingLibraryTabState extends State<SettingLibraryTab> {
     return Column(
       children: [
         _buildSegmentedRow(),
+        // C147：记录条目收件箱（pending 确认/拒绝/编辑 + kept 区）。
+        // 空态 SizedBox.shrink()，既有四段结构零破坏。
+        RecordEntryInbox(manuscriptId: widget.manuscriptId),
         _buildTagOverviewEntry(),
         Expanded(
           child: IndexedStack(

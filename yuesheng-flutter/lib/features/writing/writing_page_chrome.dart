@@ -57,19 +57,23 @@ class WritingErrorView extends StatelessWidget {
 }
 
 /// B3 划词诊断：浮动菜单（批次82 P0-④ 扩展为 诊断/改写/续写 三动作，
-/// 现收敛为「诊断这段文字」单项）
+/// 现收敛为「诊断这段文字」单项；C147 加「存入设定库」）
 /// 批次95-1：菜单跟随选区（RenderEditable 定位 + 屏幕外翻转）
 class WritingSelectionMenu extends StatelessWidget {
   const WritingSelectionMenu({
     super.key,
     required this.position,
     required this.onDiagnose,
+    this.onSaveToLibrary,
   });
 
   /// 相对正文 Stack 的左上角（已由宿主完成定位与翻转计算）
   final Offset position;
 
   final VoidCallback onDiagnose;
+
+  /// C147：「存入设定库」回调（null 时不渲染该项）。
+  final VoidCallback? onSaveToLibrary;
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +92,12 @@ class WritingSelectionMenu extends StatelessWidget {
               icon: Icons.search,
               onTap: onDiagnose,
             ),
+            if (onSaveToLibrary != null)
+              _WritingSelectionMenuItem(
+                label: '存入设定库',
+                icon: Icons.bookmark_add_outlined,
+                onTap: onSaveToLibrary!,
+              ),
           ],
         ),
       ),

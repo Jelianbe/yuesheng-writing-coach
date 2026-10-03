@@ -72,7 +72,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 44;
+  int get schemaVersion => 45;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -256,7 +256,8 @@ class AppDatabase extends _$AppDatabase {
       // C126（教学态落库 pending 标记 v42）：守卫上移到 42（v42 块对 from=41 存量库可达，幂等 ALTER 加 status 列）
       // ADR-C132 批1（写作修改事件 v43）：守卫上移到 43（v43 块对 from=42 存量库可达，建 edit_diff_event）
       // ADR-C143（书籍资料库 v44）：守卫上移到 44（v44 块对 from=43 存量库可达，建 record_entry / material_entry）
-      if (from >= 44) return;
+      // C147（记录条目目标位置 v45）：守卫上移到 45（v45 块对 from=44 存量库可达，ALTER 加 target_section 列）
+      if (from >= 45) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1245,6 +1246,15 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_material_entry_manuscript '
           'ON material_entry(manuscript_id, created_at DESC)',
+        );
+      }
+
+      // v45 (C147 记录条目目标位置): ALTER record_entry 加 target_section 列
+      // （作者在确认卡里自选归入位置；''=未定/character/outline/world）。
+      // 加法式、零数据搬迁：存量行默认 ''（未定），不影响既有 pending/kept/rejected。
+      if (from < 45) {
+        await customStatement(
+          "ALTER TABLE record_entry ADD COLUMN target_section TEXT NOT NULL DEFAULT ''",
         );
       }
     },

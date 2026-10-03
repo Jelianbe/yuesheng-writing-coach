@@ -1,8 +1,8 @@
 name: writingcoach
 description: "月笙写作教练 - AI 驱动的中文小说写作辅导应用（早期 Electron + React 原型迁移至 Flutter）"
 publish_to: 'none'
-# v0.4.0+2012 — 0.4.0 大版本：教学链路补全 + 症候去重/话术变体池/人格三档 + 测量协议（versionCode 2011→2012，递增不回退）
-version: 0.4.0+2012
+# v0.4.1+2013 — 0.4.1：书籍资料库最小闭环（长按记一下/划词存入设定库/资料库待整理裁决）+ 图片直读并入选择文件（versionCode 2012→2013，递增不回退）
+version: 0.4.1+2013
 
 environment:
   sdk: ^3.12.2

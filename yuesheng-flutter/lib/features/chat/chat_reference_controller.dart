@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,10 +24,12 @@ import '../../data/database/database.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/capability_providers.dart';
+import '../../providers/chat_attachment_provider.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/practice_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../providers/ui_overlay_provider.dart';
+import '../../services/image_attachment.dart';
 import '../../services/message_card_service.dart';
 import '../../services/work_import_service.dart';
 import '../../types/teaching_types.dart';
@@ -47,6 +50,16 @@ class ChatReferenceController {
 
   ChatReferenceController(this.host, this.session);
 
+  /// C147：选图成功 → bytes+mime 编码成 image_url content block 暂存（provider）。
+  /// R-009/R-027：本方法不生成任何「看图总结/评判」指令文本，图片仅作引用材料。
+  void attachPickedImage(Uint8List bytes, String name) {
+    host.ref
+        .read(pendingAttachmentsProvider.notifier)
+        .add(buildImageContentBlock(bytes, mimeTypeFromName(name)));
+    if (!host.mounted) return;
+    host.ref.read(uiOverlayProvider.notifier).showToast('图片已附加，发送消息时随附送给教练');
+  }
+
   /// + 按钮：打开作品导入弹层（对齐 RN chat.tsx onUploadFile → showUploadModal）
   Future<void> handleUploadFile() async {
     final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
@@ -58,6 +71,8 @@ class ChatReferenceController {
         builder: (_) => WorkImportSheet(
           sessionId: bootstrap.sessionId,
           onUploadComplete: handleUploadComplete,
+          // C147：图片分叉——选图即挂为待发附件（不导入章节）
+          onPickedImage: attachPickedImage,
         ),
       ),
     );

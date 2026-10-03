@@ -13,7 +13,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderBox, RenderEditable;
 
 import '../../config/shared_constants.dart';
+import '../../data/repositories/record_entry_repository.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/writing_providers.dart';
+import '../manuscript/remember_entry_sheet.dart';
 import 'writing_page_host.dart';
 
 class WritingPageSelectionAiController {
@@ -145,5 +148,37 @@ class WritingPageSelectionAiController {
           .read(writingStoreProvider(_host.chapterId).notifier)
           .toggleAiPanel();
     }
+  }
+
+  /// C147：划词菜单「存入设定库」→ 确认卡（选段整段可编辑 + 作者自选归入位置）
+  /// → proposePending 落 record_entry.pending（与聊天「记一下」同一两级裁决链）。
+  /// R-009：选段原样搬运进可编辑框，位置作者自选；AI 不替作者定性。
+  Future<void> handleSaveSelectionToLibrary() async {
+    final text = _host.selectedText.trim();
+    final manuscriptId = _host.resolvedManuscriptId;
+    _host.hostSetState(() => _host.showSelectionMenu = false);
+    if (text.isEmpty) return;
+    if (manuscriptId == null || manuscriptId.isEmpty) {
+      ScaffoldMessenger.of(
+        _host.context,
+      ).showSnackBar(const SnackBar(content: Text('未关联作品，无法存入设定库')));
+      return;
+    }
+    final result = await showRememberEntrySheet(
+      _host.context,
+      initialExcerpt: text,
+    );
+    if (result == null) return;
+    await RecordEntryRepository(
+      _host.ref.read(appDatabaseProvider),
+    ).proposePending(
+      manuscriptId: manuscriptId,
+      excerpt: result.excerpt,
+      targetSection: result.targetSection,
+    );
+    if (!_host.mounted) return;
+    ScaffoldMessenger.of(
+      _host.context,
+    ).showSnackBar(const SnackBar(content: Text('已存入设定库待整理')));
   }
 }

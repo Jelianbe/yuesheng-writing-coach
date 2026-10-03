@@ -59,13 +59,42 @@ class PickedDocument {
   const PickedDocument({required this.path, required this.name});
 }
 
-/// 打开系统文件选择器（txt / markdown / docx），取消或失败返回 null
+/// 图片扩展名（C147：图片直读并入「选择文件」入口——舰长明确图片是上传子功能，
+/// 不加独立入口；选中图片不走章节导入，改走 image_attachment 链直送 LLM）。
+const List<String> kImageExtensions = [
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'bmp',
+];
+
+/// 按文件名判断是否图片（小写扩展名匹配）。
+bool isImageFile(String name) {
+  final dot = name.lastIndexOf('.');
+  if (dot < 0) return false;
+  return kImageExtensions.contains(name.substring(dot + 1).toLowerCase());
+}
+
+/// 打开系统文件选择器（txt / markdown / docx / 图片），取消或失败返回 null。
+///
+/// C147：放行图片扩展名——但图片**不走章节导入**（readFileContent 会按文本解码
+/// 失败）；调用方须先 [isImageFile] 分叉：图片走 image_attachment 链直送 LLM，
+/// 其余文本走既有解析/导入。
 Future<PickedDocument?> pickDocument() async {
   try {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       // C144 W1：放行 docx（ZIP→纯文本，readFileContent 按扩展名分流）
-      allowedExtensions: const ['txt', 'md', 'markdown', 'docx'],
+      // C147：放行图片（调用方按 isImageFile 分叉，图片走 LLM 多模态链）
+      allowedExtensions: const [
+        'txt',
+        'md',
+        'markdown',
+        'docx',
+        ...kImageExtensions,
+      ],
     );
     if (result == null || result.files.isEmpty) return null;
     final file = result.files.first;

@@ -196,6 +196,8 @@ class WritingPageScaffold extends ConsumerWidget {
             onContentChanged: controllers.document.onContentChanged,
             onDiagnoseSelection:
                 controllers.selectionAi.handleDiagnoseSelection,
+            onSaveToLibrary:
+                controllers.selectionAi.handleSaveSelectionToLibrary,
             onUndo: controllers.document.undo,
             onRedo: controllers.document.redo,
             onPunctuationTap: controllers.document.handlePunctuationTap,

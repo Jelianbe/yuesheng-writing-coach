@@ -1056,6 +1056,11 @@ class RecordEntries extends Table {
   /// 原文摘录（整句/整段原样搬运，禁改写）
   TextColumn get excerpt => text().withDefault(const Constant(''))();
 
+  /// C147：作者意图归入位置（'' = 未定 / 'character' 人设 / 'outline' 大纲 /
+  /// 'world' 世界观）。仅作者在确认卡里自选，AI 不替作者定性（R-009）；
+  /// 不进诊断注入链。
+  TextColumn get targetSection => text().withDefault(const Constant(''))();
+
   /// 裁决态：pending（提议待裁）| kept（作者确认留档）| rejected（作者拒绝）
   TextColumn get status => text()
       .withDefault(const Constant('pending'))

@@ -19,6 +19,7 @@ import '../../data/repositories/session_repository.dart';
 import '../../data/repositories/student_model_repository.dart';
 import '../../data/repositories/training_result_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/chat_attachment_provider.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/evaluation_providers.dart';
 import '../../providers/practice_providers.dart';
@@ -168,12 +169,16 @@ class ChatTeachingController {
     ).showSnackBar(const SnackBar(content: Text('诊断已完成，教学建议已停止')));
   }
 
-  /// 装配发送选项（阶段/态度/全文注入/心流信号/引用快照/取消令牌）。
+  /// 装配发送选项（阶段/态度/全文注入/心流信号/引用快照/取消令牌/图片附件）。
   SendMessageOptions _buildOptions(
     CancelToken cancelToken,
     String? chapterFullText,
     String? referencesJson,
   ) {
+    // C147：发送前一次性取走待发图片附件（图片直读链，随 user 消息直送 LLM）。
+    final attachmentBlocks = host.ref
+        .read(pendingAttachmentsProvider.notifier)
+        .drain();
     return SendMessageOptions(
       phase: TeachingPhase.p0Engage,
       attitude: host.attitude,
@@ -184,6 +189,8 @@ class ChatTeachingController {
       lastEditorEditAtSec: host.ref.read(editorActivityProvider),
       // 批次71：@ 引用快照随消息落库
       referencesJson: referencesJson,
+      // C147：图片附件（图片直读链，随 user 消息 contentBlocks 直送 LLM）
+      attachmentBlocks: attachmentBlocks,
       // 取消令牌：让用户在生成中可主动中止
       cancelToken: cancelToken,
     );

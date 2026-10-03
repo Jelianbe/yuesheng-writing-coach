@@ -17701,6 +17701,18 @@ class $RecordEntriesTable extends RecordEntries
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _targetSectionMeta = const VerificationMeta(
+    'targetSection',
+  );
+  @override
+  late final GeneratedColumn<String> targetSection = GeneratedColumn<String>(
+    'target_section',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -17742,6 +17754,7 @@ class $RecordEntriesTable extends RecordEntries
     sessionId,
     messageId,
     excerpt,
+    targetSection,
     status,
     decidedAt,
     createdAt,
@@ -17792,6 +17805,15 @@ class $RecordEntriesTable extends RecordEntries
         excerpt.isAcceptableOrUnknown(data['excerpt']!, _excerptMeta),
       );
     }
+    if (data.containsKey('target_section')) {
+      context.handle(
+        _targetSectionMeta,
+        targetSection.isAcceptableOrUnknown(
+          data['target_section']!,
+          _targetSectionMeta,
+        ),
+      );
+    }
     if (data.containsKey('status')) {
       context.handle(
         _statusMeta,
@@ -17839,6 +17861,10 @@ class $RecordEntriesTable extends RecordEntries
         DriftSqlType.string,
         data['${effectivePrefix}excerpt'],
       )!,
+      targetSection: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_section'],
+      )!,
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
@@ -17875,6 +17901,11 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
   /// 原文摘录（整句/整段原样搬运，禁改写）
   final String excerpt;
 
+  /// C147：作者意图归入位置（'' = 未定 / 'character' 人设 / 'outline' 大纲 /
+  /// 'world' 世界观）。仅作者在确认卡里自选，AI 不替作者定性（R-009）；
+  /// 不进诊断注入链。
+  final String targetSection;
+
   /// 裁决态：pending（提议待裁）| kept（作者确认留档）| rejected（作者拒绝）
   final String status;
 
@@ -17887,6 +17918,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
     required this.sessionId,
     this.messageId,
     required this.excerpt,
+    required this.targetSection,
     required this.status,
     this.decidedAt,
     required this.createdAt,
@@ -17901,6 +17933,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
       map['message_id'] = Variable<String>(messageId);
     }
     map['excerpt'] = Variable<String>(excerpt);
+    map['target_section'] = Variable<String>(targetSection);
     map['status'] = Variable<String>(status);
     if (!nullToAbsent || decidedAt != null) {
       map['decided_at'] = Variable<int>(decidedAt);
@@ -17918,6 +17951,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
           ? const Value.absent()
           : Value(messageId),
       excerpt: Value(excerpt),
+      targetSection: Value(targetSection),
       status: Value(status),
       decidedAt: decidedAt == null && nullToAbsent
           ? const Value.absent()
@@ -17937,6 +17971,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
       sessionId: serializer.fromJson<String>(json['sessionId']),
       messageId: serializer.fromJson<String?>(json['messageId']),
       excerpt: serializer.fromJson<String>(json['excerpt']),
+      targetSection: serializer.fromJson<String>(json['targetSection']),
       status: serializer.fromJson<String>(json['status']),
       decidedAt: serializer.fromJson<int?>(json['decidedAt']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
@@ -17951,6 +17986,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
       'sessionId': serializer.toJson<String>(sessionId),
       'messageId': serializer.toJson<String?>(messageId),
       'excerpt': serializer.toJson<String>(excerpt),
+      'targetSection': serializer.toJson<String>(targetSection),
       'status': serializer.toJson<String>(status),
       'decidedAt': serializer.toJson<int?>(decidedAt),
       'createdAt': serializer.toJson<int>(createdAt),
@@ -17963,6 +17999,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
     String? sessionId,
     Value<String?> messageId = const Value.absent(),
     String? excerpt,
+    String? targetSection,
     String? status,
     Value<int?> decidedAt = const Value.absent(),
     int? createdAt,
@@ -17972,6 +18009,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
     sessionId: sessionId ?? this.sessionId,
     messageId: messageId.present ? messageId.value : this.messageId,
     excerpt: excerpt ?? this.excerpt,
+    targetSection: targetSection ?? this.targetSection,
     status: status ?? this.status,
     decidedAt: decidedAt.present ? decidedAt.value : this.decidedAt,
     createdAt: createdAt ?? this.createdAt,
@@ -17985,6 +18023,9 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       messageId: data.messageId.present ? data.messageId.value : this.messageId,
       excerpt: data.excerpt.present ? data.excerpt.value : this.excerpt,
+      targetSection: data.targetSection.present
+          ? data.targetSection.value
+          : this.targetSection,
       status: data.status.present ? data.status.value : this.status,
       decidedAt: data.decidedAt.present ? data.decidedAt.value : this.decidedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -17999,6 +18040,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
           ..write('sessionId: $sessionId, ')
           ..write('messageId: $messageId, ')
           ..write('excerpt: $excerpt, ')
+          ..write('targetSection: $targetSection, ')
           ..write('status: $status, ')
           ..write('decidedAt: $decidedAt, ')
           ..write('createdAt: $createdAt')
@@ -18013,6 +18055,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
     sessionId,
     messageId,
     excerpt,
+    targetSection,
     status,
     decidedAt,
     createdAt,
@@ -18026,6 +18069,7 @@ class RecordEntry extends DataClass implements Insertable<RecordEntry> {
           other.sessionId == this.sessionId &&
           other.messageId == this.messageId &&
           other.excerpt == this.excerpt &&
+          other.targetSection == this.targetSection &&
           other.status == this.status &&
           other.decidedAt == this.decidedAt &&
           other.createdAt == this.createdAt);
@@ -18037,6 +18081,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
   final Value<String> sessionId;
   final Value<String?> messageId;
   final Value<String> excerpt;
+  final Value<String> targetSection;
   final Value<String> status;
   final Value<int?> decidedAt;
   final Value<int> createdAt;
@@ -18047,6 +18092,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
     this.sessionId = const Value.absent(),
     this.messageId = const Value.absent(),
     this.excerpt = const Value.absent(),
+    this.targetSection = const Value.absent(),
     this.status = const Value.absent(),
     this.decidedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -18058,6 +18104,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
     this.sessionId = const Value.absent(),
     this.messageId = const Value.absent(),
     this.excerpt = const Value.absent(),
+    this.targetSection = const Value.absent(),
     this.status = const Value.absent(),
     this.decidedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -18070,6 +18117,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
     Expression<String>? sessionId,
     Expression<String>? messageId,
     Expression<String>? excerpt,
+    Expression<String>? targetSection,
     Expression<String>? status,
     Expression<int>? decidedAt,
     Expression<int>? createdAt,
@@ -18081,6 +18129,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
       if (sessionId != null) 'session_id': sessionId,
       if (messageId != null) 'message_id': messageId,
       if (excerpt != null) 'excerpt': excerpt,
+      if (targetSection != null) 'target_section': targetSection,
       if (status != null) 'status': status,
       if (decidedAt != null) 'decided_at': decidedAt,
       if (createdAt != null) 'created_at': createdAt,
@@ -18094,6 +18143,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
     Value<String>? sessionId,
     Value<String?>? messageId,
     Value<String>? excerpt,
+    Value<String>? targetSection,
     Value<String>? status,
     Value<int?>? decidedAt,
     Value<int>? createdAt,
@@ -18105,6 +18155,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
       sessionId: sessionId ?? this.sessionId,
       messageId: messageId ?? this.messageId,
       excerpt: excerpt ?? this.excerpt,
+      targetSection: targetSection ?? this.targetSection,
       status: status ?? this.status,
       decidedAt: decidedAt ?? this.decidedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -18130,6 +18181,9 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
     if (excerpt.present) {
       map['excerpt'] = Variable<String>(excerpt.value);
     }
+    if (targetSection.present) {
+      map['target_section'] = Variable<String>(targetSection.value);
+    }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
@@ -18153,6 +18207,7 @@ class RecordEntriesCompanion extends UpdateCompanion<RecordEntry> {
           ..write('sessionId: $sessionId, ')
           ..write('messageId: $messageId, ')
           ..write('excerpt: $excerpt, ')
+          ..write('targetSection: $targetSection, ')
           ..write('status: $status, ')
           ..write('decidedAt: $decidedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -33590,6 +33645,7 @@ typedef $$RecordEntriesTableCreateCompanionBuilder =
       Value<String> sessionId,
       Value<String?> messageId,
       Value<String> excerpt,
+      Value<String> targetSection,
       Value<String> status,
       Value<int?> decidedAt,
       Value<int> createdAt,
@@ -33602,6 +33658,7 @@ typedef $$RecordEntriesTableUpdateCompanionBuilder =
       Value<String> sessionId,
       Value<String?> messageId,
       Value<String> excerpt,
+      Value<String> targetSection,
       Value<String> status,
       Value<int?> decidedAt,
       Value<int> createdAt,
@@ -33639,6 +33696,11 @@ class $$RecordEntriesTableFilterComposer
 
   ColumnFilters<String> get excerpt => $composableBuilder(
     column: $table.excerpt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetSection => $composableBuilder(
+    column: $table.targetSection,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -33692,6 +33754,11 @@ class $$RecordEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get targetSection => $composableBuilder(
+    column: $table.targetSection,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
@@ -33733,6 +33800,11 @@ class $$RecordEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get excerpt =>
       $composableBuilder(column: $table.excerpt, builder: (column) => column);
+
+  GeneratedColumn<String> get targetSection => $composableBuilder(
+    column: $table.targetSection,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
@@ -33780,6 +33852,7 @@ class $$RecordEntriesTableTableManager
                 Value<String> sessionId = const Value.absent(),
                 Value<String?> messageId = const Value.absent(),
                 Value<String> excerpt = const Value.absent(),
+                Value<String> targetSection = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int?> decidedAt = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
@@ -33790,6 +33863,7 @@ class $$RecordEntriesTableTableManager
                 sessionId: sessionId,
                 messageId: messageId,
                 excerpt: excerpt,
+                targetSection: targetSection,
                 status: status,
                 decidedAt: decidedAt,
                 createdAt: createdAt,
@@ -33802,6 +33876,7 @@ class $$RecordEntriesTableTableManager
                 Value<String> sessionId = const Value.absent(),
                 Value<String?> messageId = const Value.absent(),
                 Value<String> excerpt = const Value.absent(),
+                Value<String> targetSection = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int?> decidedAt = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
@@ -33812,6 +33887,7 @@ class $$RecordEntriesTableTableManager
                 sessionId: sessionId,
                 messageId: messageId,
                 excerpt: excerpt,
+                targetSection: targetSection,
                 status: status,
                 decidedAt: decidedAt,
                 createdAt: createdAt,

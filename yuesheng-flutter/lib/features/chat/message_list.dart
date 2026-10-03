@@ -21,9 +21,13 @@ import '../../widgets/yue_sheet.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/manuscript_repository.dart';
+import '../../data/repositories/record_entry_repository.dart';
+import '../../features/manuscript/remember_entry_sheet.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/capability_providers.dart';
 import '../../providers/fact_batch_providers.dart';
 import '../../providers/practice_providers.dart';
+import '../../providers/session_providers.dart';
 import '../../router/app_routes.dart';
 import '../../types/display_types.dart';
 import '../../types/teaching_types.dart';
@@ -226,34 +230,47 @@ class _MessageListState extends ConsumerState<MessageList> {
 
   /// 长按消息 → 操作菜单（复制内容 / 删除）。
   /// 复制不依赖 onDelete（任何消息都可用）；删除沿用确认弹窗流程。
+  Widget _buildActionTiles(BuildContext ctx) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: Icon(
+              Icons.copy_rounded,
+              color: context.palette.textPrimary,
+            ),
+            title: Text('复制内容', style: context.text.body),
+            onTap: () => Navigator.pop(ctx, 'copy'),
+          ),
+          // C147：「记一下」第三项（长按消息 → 确认卡 → 落 record_entry pending）。
+          ListTile(
+            leading: Icon(
+              Icons.bookmark_add_outlined,
+              color: context.palette.textPrimary,
+            ),
+            title: Text('记一下', style: context.text.body),
+            onTap: () => Navigator.pop(ctx, 'remember'),
+          ),
+          if (widget.onDelete != null)
+            ListTile(
+              leading: Icon(
+                Icons.delete_outline,
+                color: context.palette.danger,
+              ),
+              title: Text('删除', style: context.text.body),
+              onTap: () => Navigator.pop(ctx, 'delete'),
+            ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showMessageActions(Message message) async {
     final action = await showYueModalBottomSheet<String>(
       context: context,
       backgroundColor: context.palette.surface,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                Icons.copy_rounded,
-                color: context.palette.textPrimary,
-              ),
-              title: Text('复制内容', style: context.text.body),
-              onTap: () => Navigator.pop(ctx, 'copy'),
-            ),
-            if (widget.onDelete != null)
-              ListTile(
-                leading: Icon(
-                  Icons.delete_outline,
-                  color: context.palette.danger,
-                ),
-                title: Text('删除', style: context.text.body),
-                onTap: () => Navigator.pop(ctx, 'delete'),
-              ),
-          ],
-        ),
-      ),
+      builder: _buildActionTiles,
     );
     if (action == 'copy') {
       await Clipboard.setData(ClipboardData(text: message.content));
@@ -267,6 +284,50 @@ class _MessageListState extends ConsumerState<MessageList> {
       }
     } else if (action == 'delete') {
       await _showDeleteConfirm(message);
+    } else if (action == 'remember') {
+      await _handleRemember(message);
+    }
+  }
+
+  /// C147：长按消息「记一下」→ 确认卡（原文整段可编辑 + 作者自选归入位置）
+  /// → proposePending 落 record_entry.pending（两级裁决：作者后续在资料库 kept/rejected）。
+  /// R-009：AI 不替作者决定哪条值得记、不替作者定性——本方法只搬运作者显式触发的摘录。
+  Future<void> _handleRemember(Message message) async {
+    final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
+    if (bootstrap == null || !mounted) return;
+    // 反查主引用作品 id（无主引用回退第一条章节/作品引用，口径同 handleSaveToFile）。
+    final refs = await ref
+        .read(referenceCapabilityProvider)
+        .listReferences(bootstrap.sessionId);
+    final primary =
+        refs.where((r) => r.isPrimary == 1).firstOrNull ??
+        refs.where((r) => r.refType != 'file').firstOrNull;
+    if (primary == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('请先关联一本书籍再记一下')));
+      }
+      return;
+    }
+    final manuscriptId = primary.manuscriptId ?? primary.refId;
+    if (!mounted) return;
+    final result = await showRememberEntrySheet(
+      context,
+      initialExcerpt: message.content,
+    );
+    if (result == null || !mounted) return;
+    await RecordEntryRepository(ref.read(appDatabaseProvider)).proposePending(
+      manuscriptId: manuscriptId,
+      sessionId: bootstrap.sessionId,
+      messageId: message.id,
+      excerpt: result.excerpt,
+      targetSection: result.targetSection,
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已存入资料库待整理')));
     }
   }
 

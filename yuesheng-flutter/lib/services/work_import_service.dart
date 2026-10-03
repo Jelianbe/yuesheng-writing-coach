@@ -51,9 +51,20 @@ class WorkImportService {
   /// 从本地文件导入（对齐 RN handlePickFile）。
   /// 用户取消选择返回 null；读取/解析/入库异常向上抛，由调用方提示。
   Future<WorkImportResult?> importFromFile({required String sessionId}) async {
-    final picked = await pickDocument();
+    final picked = await pickFile();
     if (picked == null) return null;
+    return importPicked(picked, sessionId: sessionId);
+  }
 
+  /// C147：仅选文件（不解析/不导入）——WorkImportSheet 据此先判图片分叉，
+  /// 图片走 image_attachment 链，其余文本再交 [importPicked]。取消返回 null。
+  Future<PickedDocument?> pickFile() => pickDocument();
+
+  /// 对已选中的文本文件执行解析→入库（C147：pick/import 拆分后的共用下半段）。
+  Future<WorkImportResult> importPicked(
+    PickedDocument picked, {
+    String? sessionId,
+  }) async {
     final content = await readFileContent(picked.path);
     final parsed = parseDocument(content, picked.name);
     return importWork(sessionId: sessionId, parsed: parsed);

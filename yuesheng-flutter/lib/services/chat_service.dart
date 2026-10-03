@@ -769,6 +769,7 @@ extension ChatServiceSend on ChatService {
       await _notifyUserMessagePersisted(ctx, callbacks);
       // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
       await _applyDiagnosisInjection(ctx, content, options, sessionId);
+      _attachUserAttachments(ctx.messages, options); // C147 图片挂最后 user 消息
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
         messages: ctx.messages,
@@ -777,7 +778,6 @@ extension ChatServiceSend on ChatService {
       );
       final fullContent = streamResult.fullContent;
       final inDiagnosisBlock = streamResult.inDiagnosisBlock;
-
       // 9-11. 解析 + 提交 + 训练 + onComplete（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
       await _runDiagnosisFlow(
         sessionId: sessionId,
@@ -809,6 +809,24 @@ extension ChatServiceSend on ChatService {
     if (userMessage != null) {
       callbacks.onUserMessagePersisted!(userMessage);
     }
+  }
+
+  /// 把 SendMessageOptions.attachmentBlocks 合并到最后一条 user 消息的
+  /// contentBlocks（text 块保留诊断注入后的正文 + image_url 块）。无附件则零改动。
+  void _attachUserAttachments(
+    List<ChatMessage> messages,
+    SendMessageOptions options,
+  ) {
+    final blocks = options.attachmentBlocks;
+    if (blocks == null || blocks.isEmpty) return;
+    final lastUser = messages.lastIndexWhere((m) => m.role == 'user');
+    if (lastUser < 0) return;
+    final m = messages[lastUser];
+    messages[lastUser] = ChatMessage(
+      role: m.role,
+      content: m.content,
+      contentBlocks: [ChatContentBlock.text(m.content), ...blocks],
+    );
   }
 
   /// 读取并解析 teaching state（批次6 M2：DB currentPhase 优先）。

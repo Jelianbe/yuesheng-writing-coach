@@ -8,6 +8,9 @@
 // 入库复用 WorkImportService（批次2），事务内建稿件+章节+主引用
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,6 +19,7 @@ import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../providers/work_import_providers.dart';
+import '../../services/file_parser.dart';
 import '../../services/work_import_service.dart';
 
 class WorkImportSheet extends ConsumerStatefulWidget {
@@ -24,10 +28,15 @@ class WorkImportSheet extends ConsumerStatefulWidget {
   /// 导入成功回调（RN onUploadComplete 对齐）
   final void Function(WorkImportResult result)? onUploadComplete;
 
+  /// C147：选中图片回调（图片不走章节导入，由聊天控制器挂为待发附件直送 LLM）。
+  /// null 时「选择文件」对图片按导入失败处理（本场景恒非 null）。
+  final void Function(Uint8List bytes, String name)? onPickedImage;
+
   const WorkImportSheet({
     super.key,
     required this.sessionId,
     this.onUploadComplete,
+    this.onPickedImage,
   });
 
   @override
@@ -47,18 +56,42 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
       _progressText = '正在选择文件...';
     });
     try {
-      final result = await ref
-          .read(workImportServiceProvider)
-          .importFromFile(sessionId: widget.sessionId);
-      if (result == null) {
+      final service = ref.read(workImportServiceProvider);
+      final picked = await service.pickFile();
+      if (picked == null) {
         // 用户取消选择：复位，不报错
         if (mounted) setState(() => _uploading = false);
         return;
       }
+      // C147：图片分叉——不走章节导入（图片不是小说文本），交聊天控制器挂待发附件。
+      if (isImageFile(picked.name)) {
+        if (widget.onPickedImage == null) {
+          _finishWithError('图片需在对话页选择');
+          return;
+        }
+        setState(() => _progressText = '正在读取图片...');
+        final bytes = await File(picked.path).readAsBytes();
+        if (!mounted) return;
+        Navigator.of(context).pop();
+        widget.onPickedImage!(bytes, picked.name);
+        return;
+      }
+      final result = await service.importPicked(
+        picked,
+        sessionId: widget.sessionId,
+      );
       _finish(result);
     } catch (e) {
       _handleError(e);
     }
+  }
+
+  void _finishWithError(String msg) {
+    if (!mounted) return;
+    setState(() {
+      _error = msg;
+      _uploading = false;
+    });
   }
 
   // ── 粘贴文本确认 ──
@@ -204,7 +237,7 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
       _OptionCard(
         icon: Icons.description_outlined,
         title: '选择文件',
-        description: '支持 .txt .md 格式，自动识别章节',
+        description: '.txt .md .docx 导入章节，或选图片发给教练',
         onTap: _handlePickFile,
       ),
       const SizedBox(height: 8),
