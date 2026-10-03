@@ -79,8 +79,6 @@ import 'package:writingcoach/services/prompt_sanitizer.dart'; // L2：指令 tok
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/stage_drop_notice.dart';
 import 'package:writingcoach/services/feedback_tier.dart';
-import 'package:writingcoach/services/feedback_variant_pool.dart'
-    show FeedbackEligibility;
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
 import 'package:writingcoach/features/onboarding/novice_mode_guide.dart';

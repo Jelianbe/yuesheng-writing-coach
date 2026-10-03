@@ -20,8 +20,24 @@
 // （低水平/消沉学员不得用引导提问）。
 // ─────────────────────────────────────────────────────────────
 
-import 'feedback_variant_pool.dart';
-import 'feedback_variant_scheduler.dart';
+/// 学员状态资格（fading 引导提问的资格门）。
+///
+/// 规则：引导提问（N≥3 guidedRecall）仅对中高水平 + 情绪平稳开放；低水平 /
+/// 消沉一律安全降级为「根因 + 方向」（rootCauseOnly）。资格裁决由
+/// chat_service._resolveFadingEligibility 按教学阶段完成后传入。
+///
+/// C146：本枚举原属 feedback_variant_pool.dart，话术变体池成句模板摘除后，
+/// 资格门是教学策略决策（非话术），随 fading 层级一并迁入本文件保留。
+enum FeedbackEligibility {
+  /// 所有状态可用（直给 / 根因 + 方向的默认资格）。
+  all('all'),
+
+  /// 仅中高水平 + 情绪平稳可用（引导提问的强制资格）。
+  highStableOnly('high_stable_only');
+
+  final String value;
+  const FeedbackEligibility(this.value);
+}
 
 /// 反馈介入层级（fading 支架渐退三档）。
 enum FeedbackTier {
@@ -48,16 +64,10 @@ FeedbackTier tierForPriorCount(int priorConfirmed) {
 /// 示范单句 / c=1 只指根因与方向 / c≥2 引导自主指认），再追加 prior≥1 的复发明细。
 /// guidedRecall 在学员非 highStable 时安全降级为 rootCauseOnly（资格门：低水平/
 /// 消沉不得用引导提问）。
-///
-/// [excludeIdsBySyndrome]（ADR-C138 项① 近轮去重）：每症候近轮已用变体 id，
-/// 经 `_lineFor` 透传 `selectVariantForRecurrence`，避免跨复发复用同一表达骨架。
-/// 默认空 = 不去重（生产调用方 chat_service 当前不传）；纯函数侧已串联，
-/// 生产侧填充（跨轮变体历史存储）待后续批——见 C134 批2 现场裁定#2。
 String? buildFadingBlock(
   Map<String, int> priorBySyndrome,
-  FeedbackEligibility eligibility, {
-  Map<String, Set<String>> excludeIdsBySyndrome = const {},
-}) {
+  FeedbackEligibility eligibility,
+) {
   final lines = <String>[];
   priorBySyndrome.forEach((sid, c) {
     if (c < 1) return; // N=1 首次：默认路径，不进 override 块
@@ -66,15 +76,7 @@ String? buildFadingBlock(
         eligibility != FeedbackEligibility.highStableOnly) {
       tier = FeedbackTier.rootCauseOnly; // 资格门安全降级
     }
-    lines.add(
-      _lineFor(
-        sid,
-        c,
-        tier,
-        eligibility,
-        excludeIdsBySyndrome[sid] ?? const {},
-      ),
-    );
+    lines.add(_lineFor(sid, c, tier));
   });
   // ADR-C139（D1 修复）：三档介入契约始终输出。
   // R-009：契约只给「为说明改法的一句示范」，不改全段、不替写成品段落；不评级。
@@ -94,17 +96,12 @@ String? buildFadingBlock(
       '${lines.join('\n')}';
 }
 
-/// 单条复发症候的 override 行：层级指令 + 池内表达骨架（若有）。
+/// 单条复发症候的 override 行：层级指令（fading 渐退）。
 ///
-/// 软风格层生产接线：按层级经 scheduler 选一条池内变体作表达骨架；试点外
-/// 症候无池内变体时仅保留层级指令（调用方已在边界层容错，这里不抛错）。
-String _lineFor(
-  String syndromeId,
-  int priorCount,
-  FeedbackTier tier,
-  FeedbackEligibility eligibility, [
-  Set<String> excludeIds = const {},
-]) {
+/// C146：话术变体池成句模板及其生产注入已按 96-17 反硬编码护栏摘除——本块只
+/// 输出教学层级指令（指根因与方向 / 引导自主指认），具体措辞由 AI 现场生成，
+/// 不再注入任何写死成句骨架。
+String _lineFor(String syndromeId, int priorCount, FeedbackTier tier) {
   final occurrenceNo = priorCount + 1; // 本轮是第几次见到它
   final directive = switch (tier) {
     FeedbackTier.rootCauseOnly =>
@@ -115,15 +112,5 @@ String _lineFor(
           '「你发现这一处的问题了吗」，等学员自己说出根因，不要提示答案。',
     FeedbackTier.firstTouch => '',
   };
-  final variant = selectVariantForRecurrence(
-    syndromeId,
-    priorCount,
-    eligibility,
-    excludeIds: excludeIds, // ADR-C138 项①：近轮去重串联进 fading 计数路径
-  );
-  final skeleton = variant == null
-      ? ''
-      : '\n    表达骨架（{anchor}=你标出的原句片段，{word}=具体词，替换后使用）：'
-            '${variant.template}';
-  return '- [$syndromeId] $directive$skeleton';
+  return '- [$syndromeId] $directive';
 }
