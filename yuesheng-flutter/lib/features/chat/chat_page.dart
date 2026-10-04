@@ -81,11 +81,13 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   bool _showTaskPanel = false;
 
   /// ADR-C122：纯新手模式激活态（➕ → 纯新手模式 → 学员回答解析期间）。
-  /// 激活期间学员发送走本地 novice 通道（不调 LLM），解析完成或超限后复位。
+  /// 激活期间学员发送走本地 novice 通道（不调 LLM），解析完成后复位。
   bool _noviceActive = false;
 
-  /// ADR-C122：novice 追问轮数（达到 kNoviceMaxRetries 后按默认值落库兜底）。
-  int _noviceRetries = 0;
+  // ★ 2026-10-04 删除 `_noviceRetries`：甲方案下不再有追问轮次
+  //（见 novice_mode_guide.dart kNoviceModeFollowUpMessage 的 @Deprecated）。
+  // 它是 State 局部变量，页面重建即归零——这正是「没答完会反复触发硬编码
+  // 对话」的机制来源。留着不改会让后来者以为仍存在重试上限。
 
   /// 强制滚底的单帧 flag（build 读取后立即清除，保证 MessageList 下一帧
   /// 收到 true 并滚到底）。两条强意图路径会设置：
@@ -285,6 +287,13 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
       if (bootstrap == null) return;
       _attitudeController.loadAttitude(bootstrap.sessionId);
+      // ★ 2026-10-04 修「教学设置改了必须重启才刷新」：
+      // 教学方式与「直接说明阈值」同属教练全局配置，原先只有 attitude
+      // 跟着 revision 走。_loadTeachingMode() 此前只在 _onBootstrapReady
+      // 调一次 ⇒ 会话开着时改设置，本页读到的永远是旧值。
+      // 阈值本身在诊断时按轮读库（chat_service._resolveDirectExplainThreshold），
+      // 无需本页持有；这里补的是**本页显示**与教学方式。
+      _loadTeachingMode();
     });
 
     // bootstrap 完成后加载已有消息（ADR-C122：问卷退役，不再等待问卷）
@@ -307,6 +316,16 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     // 滚到底，强 flag 不改变首屏落点。
     final isSessionSwitched = _lastBootstrapSessionId != sessionId;
     _lastBootstrapSessionId = sessionId;
+    // ★ 2026-10-04：会话切换时复位 novice 解析态。
+    // `_noviceActive` 是本页 State 局部变量，controller 的
+    // resetSessionScopedState() 管不到它 ⇒ 切到别的会话后若仍为 true，
+    // 学员在**别的对话**里发言会被 novice 通道吞掉（不调 LLM、直接插固定消息）。
+    // 只在「真的换了会话」时复位：_startNoviceMode 内部会先建新会话再置
+    // _noviceActive=true（:419），首次 bootstrap 的 isSessionSwitched=true
+    // 发生在置位之前，不会把刚激活的态清掉。
+    if (isSessionSwitched && _noviceActive) {
+      setState(() => _noviceActive = false);
+    }
     _attitudeController.loadAttitude(sessionId);
     _loadTeachingMode();
     _reference.loadPrimaryRefTitle(); // 头部小字：当前主引用书名
@@ -393,17 +412,22 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
       ),
     );
     if (ok != true || !mounted) return;
-    debugPrint('[C122] _startNoviceMode ok=true, waiting bootstrap future');
+    debugPrint('[C122] _startNoviceMode ok=true, creating new session first');
+    // ★ 2026-10-04 修「新手模式直接加在已有对话后」：舰长要求**新建对话**才开始
+    // 教学内容触发。原先直接往当前会话插首条消息 ⇒ 教学开场白出现在一段已有
+    // 讨论的末尾，AI 前后语境割裂（学员刚抱怨完问题、教练突然从头自我介绍）。
+    // 故先建新会话（复用既有 handleCreateSession，与「＋」按钮同一路径）。
+    await _session.handleCreateSession();
+    if (!mounted) return;
     // 等 bootstrap 就绪再继续：首次 read 时异步 provider 可能仍在加载，
     // valueOrNull 会静默返回 null（真机：弹窗关闭但首条消息不出现）。
     final bootstrap = await ref.read(sessionBootstrapProvider.future);
-    debugPrint('[C122] bootstrap ready: ${bootstrap.sessionId}');
+    debugPrint('[C122] new session ready: ${bootstrap.sessionId}');
     if (!mounted) return;
     // 先激活 novice 态（setState 触发 rebuild，onSendOverride 生效）
     // 再注入首条消息——避免 build 快照在激活前读到 null override
     setState(() {
       _noviceActive = true;
-      _noviceRetries = 0;
     });
     debugPrint('[C122] novice active, injecting first message');
     await _injectAssistantMessage(kNoviceModeFirstMessage);
@@ -437,20 +461,25 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
           ),
         );
 
-    if (isNoviceAnswerComplete(text)) {
+    // ★ 2026-10-04 甲方案：不再有「答完才放行」的闸门，也不再追问。
+    // 原实现在此分三支（识别成功 → 引导 / 未识别且 retries<2 → 追问 /
+    // 超过上限 → 兜底），其中「追问」支配合 State 局部变量 _noviceRetries
+    // 会在页面重建后归零 ⇒ 复读循环（舰长反馈：没答完会反复触发硬编码对话）。
+    // 现语义：**任何非空回答都立刻进正题**；能解析到的字段落库，
+    // 解析不到就整段不注入画像（student_profile_format.dart:102 有则注入、
+    // 无则跳过，缺字段不崩）。引导语按已解析到的水平分支，取不到则 beginner。
+    final complete = isNoviceAnswerComplete(text);
+    if (complete) {
       await _commitNoviceData(bootstrap.sessionId, text);
+      if (!mounted) return;
       final data = buildNoviceOnboardingData(text);
       final guide = isBeginnerGuide(data.proficiency)
           ? kNoviceModeBeginnerGuide
           : kNoviceModeAdvancedGuide;
       setState(() => _noviceActive = false);
       await _injectAssistantMessage(guide);
-    } else if (_noviceRetries < kNoviceMaxRetries) {
-      setState(() => _noviceRetries++);
-      await _injectAssistantMessage(kNoviceModeFollowUpMessage);
     } else {
-      // 两次追问仍无法识别 → 默认值落库 + 兜底引导（不让学员卡死）
-      await _commitNoviceData(bootstrap.sessionId, text);
+      // 仅空回复（理论上进不到，onSendOverride 只在有文本时触发）——兜底不卡死。
       setState(() => _noviceActive = false);
       await _injectAssistantMessage(kNoviceModeFallbackGuide);
     }

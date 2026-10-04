@@ -246,10 +246,31 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
     super.dispose();
   }
 
+  /// 订阅「教练全局配置变更」，重载本面板持有的教学方式副本。
+  ///
+  /// ★ 2026-10-04 修「教学设置改了必须重启才刷新」：教学方式属教练全局配置，
+  /// 原先只在 [_initSession] 读一次 ⇒ 面板开着时改设置，这里永远读旧值。
+  /// 与 `chat_page.dart:286` 的同一处修复对称（两处各自持有副本）。
+  ///
+  /// ★ **必须由 build() 调用、不能放 initState()**：Riverpod 的 `ref.listen`
+  /// 在 ConsumerState 里断言 `debugDoingBuild`（`consumer.dart:600`），
+  /// 放 initState 会抛「ref.listen can only be used within the build method
+  /// of a ConsumerWidget」⇒ **整个面板渲染失败**（实测
+  /// `writing_coach_panel_test` 35 个用例全灭）。与 chat_page 的既有写法一致。
+  ///
+  /// 独立成方法而非 inline：R-019 上限 50 行，本函数已 57 行；
+  /// doc 注释在签名前**不计行数**（R-019 注释纪律）。
+  void _listenCoachConfigRevision() {
+    ref.listen<int>(coachPersonaRevisionProvider, (previous, next) {
+      _loadTeachingMode();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(writingCoachStoreProvider(widget.chapterId));
     _listenAutoScroll();
+    _listenCoachConfigRevision();
 
     // 批次82 P0-④：教练面板改为右侧可收起侧栏（正文不被覆盖）。
     // 面板填满父容器高度，不再有半屏高度比 + 拖拽手柄（收起交给页面侧开关）。

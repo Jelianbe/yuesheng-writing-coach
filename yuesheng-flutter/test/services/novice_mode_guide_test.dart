@@ -35,6 +35,32 @@ void main() {
       expect(parseProficiency('我完全没写过'), ProficiencyLevel.beginner);
       expect(parseProficiency('刚开始想试试'), ProficiencyLevel.beginner);
     });
+
+    // ★ 2026-10-04 新增：首条消息已改成只问「你之前有写作基础吗？」，
+    // 学员最可能给的是**否定式**回答。原词表全是肯定式信号，
+    // 否定回答靠 beginner 兜底「碰巧对」——但「有点基础但没写过完整小说」
+    // 会被原表误判 beginner（该给 elementary）。这两条钉住新词表。
+    group('否定式回答（2026-10-04 首条消息配套）', () {
+      test('明确零基础 → beginner', () {
+        expect(parseProficiency('没有'), ProficiencyLevel.beginner);
+        expect(parseProficiency('没写过'), ProficiencyLevel.beginner);
+        expect(parseProficiency('零基础'), ProficiencyLevel.beginner);
+        expect(parseProficiency('完全没碰过'), ProficiencyLevel.beginner);
+      });
+
+      test('「没写过」+「基础」并存时，否定优先（不能被「基础」字面量抓走）', () {
+        // 顺序判据：否定组必须先判。原实现若把 '有基础' 放在否定之前，
+        // 这条会落到 elementary —— 而学员说的是「没写过完整小说」，
+        // 语义上更接近 beginner/elementary 边界，但**否定优先**是我们
+        // 明写的设计（见 novice_mode_guide.parseProficiency 注释①）。
+        expect(parseProficiency('没写过完整小说'), ProficiencyLevel.beginner);
+      });
+
+      test('「有点基础」但无作品 → elementary（不是 beginner）', () {
+        expect(parseProficiency('有点基础，写过一些'), ProficiencyLevel.elementary);
+        expect(parseProficiency('有一些基础'), ProficiencyLevel.elementary);
+      });
+    });
   });
 
   group('parseFocusAreas', () {
@@ -70,27 +96,35 @@ void main() {
   });
 
   group('isNoviceAnswerComplete', () {
-    test('三字段都给了 → 完整', () {
+    // ★ 2026-10-04 语义变更（甲方案，舰长裁定）：本函数从「三字段是否采齐」
+    // 退化为「是否非空」。原断言里 '不知道'/'没想过'/'跳过' 期望false，
+    // 那正是舰长反馈的「被强制了，必须全部答完」——**旧断言在保护旧缺陷**，
+    // 故随实现同步翻转，不是「改测试迁就实现」。
+    // 判据依据：采集是可选的，阻断学习才是问题；且下游画像段
+    // student_profile_format.dart:102 是 `if (onboarding == null) return`，
+    // 字段缺不缺都不会崩。
+
+    test('任意非空回答 → 放行（不再要求三字段采齐）', () {
       expect(isNoviceAnswerComplete('刚开始写，想提升情节，喜欢先理解再练'), isTrue);
-    });
-
-    test('只有偏好命中 → 也完整（proficiency 有兜底值）', () {
       expect(isNoviceAnswerComplete('我想多练少讲'), isTrue);
-    });
-
-    test('只有方向命中 → 完整', () {
       expect(isNoviceAnswerComplete('想提升人物塑造'), isTrue);
+      // 只有「有/没有基础」一句（首条消息现在只问这一句）
+      expect(isNoviceAnswerComplete('没有'), isTrue);
+      expect(isNoviceAnswerComplete('有点基础，写过一些片段'), isTrue);
     });
 
-    test('空文本 → 不完整', () {
+    test('空文本 → 不放行（唯一仍算不够用的情况）', () {
       expect(isNoviceAnswerComplete(''), isFalse);
       expect(isNoviceAnswerComplete('   '), isFalse);
     });
 
-    test('「不知道」类回复 → 不完整（不放行）', () {
-      expect(isNoviceAnswerComplete('不知道'), isFalse);
-      expect(isNoviceAnswerComplete('没想过，随便吧'), isFalse);
-      expect(isNoviceAnswerComplete('跳过'), isFalse);
+    test('「不知道」类回复 → **放行**（2026-10-04 翻转：不再追问）', () {
+      // 旧期望是 false，配套的是「追问最多 2 轮」的重试机制。
+      // 该机制已随kNoviceModeFollowUpMessage 一起 @Deprecated 退役
+      // （State 局部计数器归零会导致复读循环）。
+      expect(isNoviceAnswerComplete('不知道'), isTrue);
+      expect(isNoviceAnswerComplete('没想过，随便吧'), isTrue);
+      expect(isNoviceAnswerComplete('跳过'), isTrue);
     });
   });
 

@@ -1512,7 +1512,7 @@ extension ChatServiceSend on ChatService {
   /// 诊断协议后缀（ADR-C82）：追加到 user 消息侧，绕过长 prompt 指令淹没。
   /// 实验验证：user 侧注入后 deepseek-v4-flash 稳定输出 [YS_DIAGNOSIS] 块。
   static const String kDiagnosisProtocolSuffix =
-      '\n\n【输出要求·最高优先级】\n'
+      '\n\n[输出要求·最高优先级]\n'
       '用户明确请求诊断。除正文回复外，必须在回复**最末尾**附加结构化诊断块，'
       '严格使用协议标记：\n'
       '[YS_DIAGNOSIS]\n'
@@ -1590,6 +1590,14 @@ extension ChatServiceSend on ChatService {
   ///
   /// TH 五批：判据不只有措辞 —— 弱信号措辞需 [hasDiagnosisContext] 佐证，
   /// 否则教学场景的「这段怎么改」会误触发注入（后果见 intent_classifier）。
+  ///
+  /// ★ 2026-10-04 症状格式污染修复（真机 0.4.1 反馈：说问题时出现
+  /// 「【（症状名）】：（症状说明）」）。根因不在模型，在**同一条 user 消息里
+  /// 混了三套标记**：协议块用 `[YS_DIAGNOSIS]`、全貌块用 `【】` 标题、
+  /// 清单项又用「序号. [P005] 名——落在哪句」。模型在「直接说问题」模式下
+  /// 一旦命中全貌分支（症候数 ≥ threshold，默认 5）就会把三种格式混编。
+  /// 学员看到的是「AI 在念内部协议」，教学感直接崩掉。
+  /// 修法是**纯格式层，不动协议、不动选 P 能力**（详见 _buildDirectExplainBlock）。
   Future<void> _maybeInjectDiagnosisProtocol(
     List<ChatMessage> messages,
     String content, {
@@ -1611,19 +1619,7 @@ extension ChatServiceSend on ChatService {
     final fullTextBlock = chapterFullText == null || chapterFullText.isEmpty
         ? ''
         : '\n\n## 待诊断全文\n\n$chapterFullText';
-    final threshold = await _resolveDirectExplainThreshold();
-    // P0-1：全貌清单必须同时输出 [症候编号]（如「1. [P005] 对话生硬——落在哪句」），
-    // 让 message_injector._parseUserFocusFromMessage 的 P00x 正则能命中学员选择——
-    // 否则学员回「先练 P005」会被静默丢弃，系统回退到 AI 自挑的顶优先级。
-    final directExplain =
-        '\n\n【症候过多时的全貌呈现】\n'
-        '（全貌模式临时覆盖密度约束——选完一条后回到常规密度「一次只抛一个点」。）\n'
-        '若本次识别出的症候数量 ≥ $threshold：\n'
-        '1. 用编号列出全部症候——每条格式为「序号. [症候编号] 症候名称——落在哪一句」，'
-        '如「1. [P005] 对话生硬——落在哪句」，**不要给改法**；\n'
-        '2. 末尾问一句"这些都在，你想先动哪个"，把选择权交给学员；\n'
-        '3. 学员选定一条后，才对那一条展开"怎么改"（走正常教学流程）。\n'
-        '若少于 $threshold，按正常教学方式聚焦讲解 1-2 条。';
+    final directExplain = await _buildDirectExplainBlock();
     // ADR-C134：fading 支架渐退 override 块（运行时条件注入；无复发/失败 → ''）。
     final fadingBlock = await _buildFadingBlock(sessionId);
     messages[lastUser] = ChatMessage(
@@ -1631,6 +1627,33 @@ extension ChatServiceSend on ChatService {
       content:
           '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix$directExplain$fadingBlock',
     );
+  }
+
+  /// 全貌清单块（症状数 ≥ 阈值时逐条列全部症候，让学员选）。
+  ///
+  /// R-019：2026-10-04 从 [_maybeInjectDiagnosisProtocol] 拆出——那个函数因
+  /// 本修复的论证注释涨到 57 行（上限 50）。拆的是**独立职责 + 独立失败模式**
+  /// （它要 await 阈值、且是唯一带格式约束的地方），不是为凑行数的机械切分。
+  ///
+  /// 格式约束（2026-10-04，三条缺一不可）：
+  ///  ① 标题用方括号族（与 `[YS_DIAGNOSIS]` 同族），消掉 `【】`；
+  ///  ② 清单项**显式声明为纯文本、禁用任何括号包裹**；
+  ///  ③ 正面追加「不要把症候名用括号括起来」，堵住混编。
+  /// 保留 `[P005]` 仍是必须 —— 学员回「先练 P005」要能被
+  /// message_injector._parseUserFocusFromMessage 的 P00x 正则命中，
+  /// 否则系统会静默丢弃学员的选择、回退到 AI 自挑的顶优先级。
+  Future<String> _buildDirectExplainBlock() async {
+    final threshold = await _resolveDirectExplainThreshold();
+    return '\n\n[全貌呈现]\n'
+        '（全貌模式临时覆盖密度约束——选完一条后回到常规密度「一次只抛一个点」。）\n'
+        '若本次识别出的症候数量 ≥ $threshold：\n'
+        '1. 用编号列出全部症候——每条写成一行，行首是「序号. [P005] 症候名称」，'
+        '破折号后接「落在哪一句」，如「1. [P005] 对话生硬——落在哪句」，**不要给改法**；\n'
+        '2. 列表里每条就是一行普通文字，**不要把症候名用括号括起来**，'
+        '也不要写成「症状名：说明」这种键值对；\n'
+        '3. 末尾问一句"这些都在，你想先动哪个"，把选择权交给学员；\n'
+        '4. 学员选定一条后，才对那一条展开"怎么改"（走正常教学流程）。\n'
+        '若少于 $threshold，按正常教学方式聚焦讲解 1-2 条。';
   }
 
   /// ADR-C134/C139：fading 介入层级块（运行时条件注入）。

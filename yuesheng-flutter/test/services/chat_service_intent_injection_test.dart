@@ -490,6 +490,49 @@ void main() {
       expect(sent, contains('待诊断全文'));
     });
 
+    // ★ 2026-10-04 新增（舰长真机 0.4.1 反馈：说问题时出现
+    //   「【（症状名称）】：（症状说明）」这种答复结构）。
+    //
+    //   根因不在模型，在**同一条 user 消息里混了三套标记**：
+    //     ·协议块   [YS_DIAGNOSIS]（方括号）
+    //     · 全貌块   【症候过多时的全貌呈现】（六角括号）
+    //     · 清单项   「序号. [P005] 症状名——落在哪句」（方括号 + 破折号）
+    //   模型命中「症状数 ≥ threshold」的全貌分支时会把三套混编。
+    //
+    //   修法是**统一标记族 + 显式禁止括号包裹**。本组钉住两件事：
+    //     ① 注入段内不再出现 【】 这一套标记；
+    //     ② 全貌块带「不要把症候名用括号括起来」的显式约束。
+    //   保留 [P005] 仍属必须——学员回「先练 P005」要能被 P00x 正则命中
+    //   （message_injector._parseUserFocusFromMessage）。
+    test('#22 诊断注入段内无【】标记（症状格式污染源）', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
+
+      final sent = llm.capturedUserContent.join('\n');
+      // 协议块与全貌块都用了【】，模型据此混编 ⇒ 断言已清除
+      expect(
+        sent,
+        isNot(contains('【输出要求·最高优先级】')),
+        reason: '协议块标题应改用方括号族（与 [YS_DIAGNOSIS] 同族）',
+      );
+      expect(sent, isNot(contains('【症候过多时的全貌呈现】')), reason: '全貌块标题应改用方括号族');
+      expect(sent, contains('[全貌呈现]'), reason: '全貌块必须仍存在（选P 能力依赖它）');
+    });
+
+    test('#23 全貌清单显式禁止把症候名用括号包裹（正面堵混编）', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('不要把症候名用括号括起来'), reason: '混编的根因是格式指令含糊，必须正面禁止');
+      // 清单项模板仍带 [P005]（学员选 P00x 要靠它）
+      expect(sent, contains('[P005]'));
+    });
+
     // 小项3（台账§一.17）：`kDiagnosisProtocolSuffix` 注入到 user 消息后，
     // 内嵌的 [YS_DIAGNOSIS] 示例 JSON 必须与解析器 schema 严格一致，否则 AI
     // 即便照抄示例也会因 `syndrome_item_not_object` / `confidence_invalid`

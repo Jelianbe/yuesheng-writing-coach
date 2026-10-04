@@ -92,6 +92,10 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       await AppStateRepository(
         ref.read(appDatabaseProvider),
       ).setCoachTeachingMode(mode.value);
+      // ★ 2026-10-04 同上：教学方式也是全局配置，chat_page 的
+      // _loadTeachingMode() 只在会话 bootstrap 时跑一次，不通知就永远读旧值
+      // ⇒ 这正是「改了必须重启才刷新」最直接的一条路径。
+      ref.read(coachPersonaRevisionProvider.notifier).state++;
       if (mounted) setState(() => _mode = mode);
     } catch (_) {
       if (mounted) {
@@ -184,47 +188,29 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
   }
 
   /// 打开系统预设的直接说明阈值编辑对话框（Part A 补：系统预设可编辑阈值）。
+  ///
+  /// R-019：2026-10-04 拆出对话框 UI 到 [_ThresholdEditDialog]——本函数因
+  /// 「改完必须通知已打开会话」的论证注释涨到 54 行（上限 50）。拆的是
+  /// **UI 与持久化两个职责**，不是为凑行数的机械切分。
   Future<void> _openThresholdEditor(CoachPersona persona) async {
     final repo = AppStateRepository(ref.read(appDatabaseProvider));
     final current =
         await repo.getCoachPersonaDirectThreshold(persona.id) ??
         persona.directExplainThreshold;
     if (!mounted) return;
-    final controller = TextEditingController(text: current.toString());
     final result = await showDialog<int>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('${persona.name} · 症候直接说明阈值'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: '症候数超过该值时，当轮直接逐条说明全部症候',
-            helperText: '默认 5，填 1 及以上',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              final v = int.tryParse(controller.text.trim());
-              if (v == null || v < 1) {
-                Navigator.of(ctx).pop();
-                return;
-              }
-              Navigator.of(ctx).pop(v);
-            },
-            child: const Text('保存'),
-          ),
-        ],
-      ),
+      builder: (ctx) =>
+          _ThresholdEditDialog(personaName: persona.name, current: current),
     );
     if (result == null || !mounted) return;
     try {
       await repo.setCoachPersonaDirectThreshold(persona.id, result);
+      // ★ 2026-10-04 修「教学设置改了必须重启才刷新」：
+      // 阈值属**全局教练配置**，此前只有 setActiveCoachPersona 递增 revision，
+      // 阈值这条写入路径**只落库不通知** ⇒ 已打开的对话页不知道变了。
+      // 与 _select（:79）/_deletePersona（:142）保持同一约定。
+      ref.read(coachPersonaRevisionProvider.notifier).state++;
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -681,6 +667,65 @@ const String _kAuditionSamplePrompt = '''
 ///  - 原「人设层（D2）」并入语气段（对自定义教练两者都是用户自由文本，
 ///    注入时相邻两段 ⇒ 合并一段语义等价；注入代码不动，旧数据编辑后自然迁移）；
 ///  - 阈值与简介一起收进默认收起的「高级选项」折叠区。
+/// 阈值编辑对话框（R-019 2026-10-04 拆出，独立于持久化逻辑）。
+///
+/// 单独成类的理由：输入校验（`< 1` 视为无效并静默取消）与「写库后必须
+/// 递增 revision」是**两件不同的事**，前者属UI、后者在调用方。
+/// 合在一起会让 [_CoachSelectorCardState._openThresholdEditor] 越过 50 行上限。
+class _ThresholdEditDialog extends StatefulWidget {
+  const _ThresholdEditDialog({
+    required this.personaName,
+    required this.current,
+  });
+
+  final String personaName;
+  final int current;
+
+  @override
+  State<_ThresholdEditDialog> createState() => _ThresholdEditDialogState();
+}
+
+class _ThresholdEditDialogState extends State<_ThresholdEditDialog> {
+  late final TextEditingController _ctrl = TextEditingController(
+    text: widget.current.toString(),
+  );
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  /// 「保存」：解析失败或 < 1 视为无效，直接关闭（不写入）。
+  void _submit() {
+    final v = int.tryParse(_ctrl.text.trim());
+    Navigator.of(context).pop((v == null || v < 1) ? null : v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('${widget.personaName} · 症候直接说明阈值'),
+      content: TextField(
+        controller: _ctrl,
+        keyboardType: TextInputType.number,
+        decoration: const InputDecoration(
+          labelText: '症候数超过该值时，当轮直接逐条说明全部症候',
+          helperText: '默认 5，填 1 及以上',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        TextButton(onPressed: _submit, child: const Text('保存')),
+      ],
+    );
+  }
+}
+
+/// 自定义人格编辑弹窗（系统预设不可编辑，故不需处理只读态）。
 class _CustomPersonaDialog extends ConsumerStatefulWidget {
   final CoachPersona? existing;
 

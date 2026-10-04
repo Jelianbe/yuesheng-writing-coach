@@ -308,6 +308,61 @@ void main() {
     );
   });
 
+  // ── ★ 2026-10-04 修「教学设置改了必须重启才刷新」的两条漏网路径 ──
+  // 根因：这两处写入原先**只落库、不递增 revision**，而已打开的对话页只
+  // listen coachPersonaRevisionProvider（chat_page.dart:284）⇒ 改动不通知。
+  // 对称：_select（:79）/_deletePersona（:142）本来就递增，唯独这两处漏了。
+  testWidgets('#13 改教学方式 → coachPersonaRevisionProvider 递增（即时生效不需重启）', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+    final before = container.read(coachPersonaRevisionProvider);
+
+    // 「直接说」教学方式 chip（原为 socratic）
+    await tester.tap(find.text('直接说'));
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(coachPersonaRevisionProvider),
+      before + 1,
+      reason:
+          '教学方式属全局教练配置，不递增 revision ⇒ chat_page 的'
+          '_loadTeachingMode 只在会话 bootstrap 时跑一次，必须重启才生效',
+    );
+    expect(
+      await AppStateRepository(db).getCoachTeachingMode(),
+      isNotNull,
+      reason: '写库确证',
+    );
+  });
+
+  testWidgets('#14 改直接说明阈值 → coachPersonaRevisionProvider 递增', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+    final before = container.read(coachPersonaRevisionProvider);
+
+    // 系统预设「豆包」行的「阈值调音」入口（tune 图标）
+    await tester.tap(find.byIcon(Icons.tune).first);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '3');
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    expect(
+      container.read(coachPersonaRevisionProvider),
+      before + 1,
+      reason:
+          '阈值是诊断时逐轮读库的全局配置（chat_service.'
+          '_resolveDirectExplainThreshold），写入后必须通知已打开的会话',
+    );
+    expect(
+      await AppStateRepository(db).getCoachPersonaDirectThreshold('gentle'),
+      3,
+      reason: '写库确证',
+    );
+  });
+
   // ── #12 角色预设「猫娘」chip：只填语气框、不写回 ──
   testWidgets('#12 点「猫娘」角色预设 → 语气框填入模板全文（不触发保存）', (tester) async {
     await tester.pumpWidget(buildHost());
