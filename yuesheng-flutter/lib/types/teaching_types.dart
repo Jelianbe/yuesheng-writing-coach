@@ -118,7 +118,7 @@ enum TeachingMode {
 
 /// 态度档位
 enum AttitudeLevel {
-  doubao('doubao'),
+  gentle('gentle'),
   yuesheng('yuesheng'),
   sensei('sensei');
 
@@ -127,6 +127,10 @@ enum AttitudeLevel {
 
   static AttitudeLevel? fromString(String? s) {
     if (s == null) return null;
+    // legacy 兼容：旧版持久化值 'doubao'（默认温和档）→ gentle。
+    // 已有用户的 coach_attitude / persona id / teaching_state 落库值不迁移，
+    // 读入时统一映射到默认档（禁止改库结构、禁止清用户数据）。
+    if (s == 'doubao') return AttitudeLevel.gentle;
     for (final v in AttitudeLevel.values) {
       if (v.value == s) return v;
     }

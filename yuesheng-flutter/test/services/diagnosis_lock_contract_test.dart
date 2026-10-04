@@ -387,7 +387,7 @@ void main() {
 
     SendMessageOptions options() => const SendMessageOptions(
       phase: TeachingPhase.p0Engage,
-      attitude: AttitudeLevel.doubao,
+      attitude: AttitudeLevel.gentle,
     );
 
     test('只输出诊断块 + 未装配大纲 → 诊断仍落库（原实现会永久丢失）', () async {

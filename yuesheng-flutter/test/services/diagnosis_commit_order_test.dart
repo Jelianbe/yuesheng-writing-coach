@@ -63,7 +63,7 @@ class FakeLlmClient extends LlmClient {
 
 const _p0Options = SendMessageOptions(
   phase: TeachingPhase.p0Engage,
-  attitude: AttitudeLevel.doubao,
+  attitude: AttitudeLevel.gentle,
 );
 
 void main() {

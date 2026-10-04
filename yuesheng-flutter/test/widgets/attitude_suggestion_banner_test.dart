@@ -46,13 +46,13 @@ void main() {
   testWidgets('降级建议 → 标题/箭头/切换到目标', (tester) async {
     final suggestion = AttitudeSuggestion(
       direction: 'downgrade',
-      targetLevel: AttitudeLevel.doubao,
-      reason: '当前问题较少，建议切换到「豆包」模式，保持轻松学习氛围',
+      targetLevel: AttitudeLevel.gentle,
+      reason: '当前问题较少，建议切换到「温柔语气」模式，保持轻松学习氛围',
     );
     await tester.pumpWidget(_build(suggestion: suggestion));
 
     expect(find.text('建议调整为轻松模式'), findsOneWidget);
-    expect(find.text('切换到豆包'), findsOneWidget);
+    expect(find.text('切换到温柔语气'), findsOneWidget);
     expect(find.textContaining('当前问题较少'), findsOneWidget);
     expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
   });
@@ -76,7 +76,7 @@ void main() {
     var dismissed = false;
     final suggestion = AttitudeSuggestion(
       direction: 'downgrade',
-      targetLevel: AttitudeLevel.doubao,
+      targetLevel: AttitudeLevel.gentle,
       reason: '状态不错',
     );
     await tester.pumpWidget(

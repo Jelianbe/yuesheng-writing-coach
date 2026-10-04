@@ -223,7 +223,7 @@ void main() {
 
   SendMessageOptions options() => const SendMessageOptions(
     phase: TeachingPhase.p1World,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   String diagPrompt() => '请对以下章节内容进行写作诊断分析：\n\n【第一章】\n$_chapterContent';

@@ -473,7 +473,7 @@ class _HostState extends ConsumerState<_HostHarness> implements ChatPageHost {
   );
 
   String _inputText = '';
-  AttitudeLevel _attitude = AttitudeLevel.doubao;
+  AttitudeLevel _attitude = AttitudeLevel.gentle;
   TeachingPhase _phase = TeachingPhase.p0Engage;
   // C129：会话态度锁定标志（applyAttitudeState / setAttitudeLocked 写入）
   bool _attitudeLocked = false;

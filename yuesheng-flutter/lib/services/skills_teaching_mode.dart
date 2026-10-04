@@ -5,7 +5,7 @@
 // 本组只定「提问引导 vs 直给结论」的教学方式，由 coach_teaching_mode 开关经
 // skill_dispatcher 按 ctx.teachingMode 注入（L1 pinned block）。
 // 抽离自 skills_attitude 三档的「诊断方式/发现引导级别/提问上限」句式
-// （R-027 改动：原句式从人格 skill 移除，避免 doubao(疑问式)+开关(直给)冲突）。
+// （R-027 改动：原句式从人格 skill 移除，避免 gentle(疑问式)+开关(直给)冲突）。
 // ─────────────────────────────────────────────────────────────
 part of 'skill_registry.dart';
 

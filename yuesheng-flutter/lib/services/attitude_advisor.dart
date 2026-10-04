@@ -23,7 +23,7 @@ class AttitudeSuggestion {
   });
 }
 
-/// 档位顺序（对齐 RN ATTITUDE_ORDER）：doubao → yuesheng → sensei。
+/// 档位顺序（对齐 RN ATTITUDE_ORDER）：温柔语气 → yuesheng → sensei。
 /// D1/D2 清理：由系统预设 seed 派生，seed 为唯一真源（顺序即展示顺序，
 /// 升级/降级阶梯随之联动）。
 final List<AttitudeLevel> attitudeOrder = builtInCoachPersonas

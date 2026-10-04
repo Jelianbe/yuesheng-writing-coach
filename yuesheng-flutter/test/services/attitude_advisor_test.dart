@@ -16,7 +16,7 @@ void main() {
     group('边界条件返回 null', () {
       test('消息数不足 5', () {
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p0Engage,
           messageCount: 4,
         );
@@ -26,7 +26,7 @@ void main() {
       test('冷却期内不触发', () {
         final now = DateTime.now().millisecondsSinceEpoch;
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p0Engage,
           messageCount: 10,
           lastSuggestionTime: now - 5 * 60 * 1000, // 5 分钟前
@@ -38,7 +38,7 @@ void main() {
       test('冷却期过后可触发（condition 3: ≥15 消息 + 高阶段 + avg≥1.8）', () {
         final now = DateTime.now().millisecondsSinceEpoch;
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p2PracticeLoop,
           syndromes: const [Severity.l2], // 1 个症候不满足 condition1，avg=2.0≥1.8
           messageCount: 15,
@@ -52,7 +52,7 @@ void main() {
       test('冷却期刚过但条件不足时返回 null', () {
         final now = DateTime.now().millisecondsSinceEpoch;
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p0Engage,
           messageCount: 8,
           lastSuggestionTime: now - 11 * 60 * 1000,
@@ -63,7 +63,7 @@ void main() {
 
       test('无诊断数据可返回 null', () {
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p0Engage,
           messageCount: 20,
         );
@@ -72,9 +72,9 @@ void main() {
     });
 
     group('升级建议', () {
-      test('高阶段 + 高严重度 + ≥2症候 → upgrade（doubao→yuesheng）', () {
+      test('高阶段 + 高严重度 + ≥2症候 → upgrade（gentle→yuesheng）', () {
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p2PracticeLoop,
           syndromes: const [Severity.l3, Severity.l2], // avg=(3+2)/2=2.5≥2.2
           messageCount: 10,
@@ -84,9 +84,9 @@ void main() {
         expect(result.targetLevel, AttitudeLevel.yuesheng);
       });
 
-      test('连续正反馈 4 次 → upgrade（doubao→yuesheng）', () {
+      test('连续正反馈 4 次 → upgrade（gentle→yuesheng）', () {
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p0Engage,
           messageCount: 10,
           consecutivePositiveFeedback: 4,
@@ -97,7 +97,7 @@ void main() {
 
       test('≥15 消息 + 高阶段 + avg≥1.8 → upgrade', () {
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p3Training,
           syndromes: const [Severity.l2, Severity.l2], // avg=2.0≥1.8
           messageCount: 20,
@@ -127,7 +127,7 @@ void main() {
     });
 
     group('降级建议', () {
-      test('连续负反馈 3 次 → downgrade（yuesheng→doubao）', () {
+      test('连续负反馈 3 次 → downgrade（yuesheng→gentle）', () {
         final result = suggestAttitudeAdjustment(
           currentAttitude: AttitudeLevel.yuesheng,
           currentPhase: TeachingPhase.p0Engage,
@@ -135,7 +135,7 @@ void main() {
           consecutiveNegativeFeedback: 3,
         );
         expect(result!.direction, 'downgrade');
-        expect(result.targetLevel, AttitudeLevel.doubao);
+        expect(result.targetLevel, AttitudeLevel.gentle);
       });
 
       test('低严重度 + ≤1症候 + ≥10消息 → downgrade（sensei→yuesheng）', () {
@@ -149,9 +149,9 @@ void main() {
         expect(result.targetLevel, AttitudeLevel.yuesheng);
       });
 
-      test('doubao 不再降级', () {
+      test('gentle 不再降级', () {
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p0Engage,
           messageCount: 10,
           consecutiveNegativeFeedback: 5,
@@ -163,7 +163,7 @@ void main() {
     group('reason 文本', () {
       test('升级 reason 包含信息', () {
         final result = suggestAttitudeAdjustment(
-          currentAttitude: AttitudeLevel.doubao,
+          currentAttitude: AttitudeLevel.gentle,
           currentPhase: TeachingPhase.p2PracticeLoop,
           syndromes: const [Severity.l3, Severity.l3],
           messageCount: 10,
@@ -180,14 +180,14 @@ void main() {
           messageCount: 10,
           consecutiveNegativeFeedback: 3,
         );
-        expect(result!.reason, contains('豆包'));
+        expect(result!.reason, contains('温柔语气'));
         expect(result.reason, contains('轻松'));
       });
     });
 
     test('同时满足升降条件时优先升级', () {
       final result = suggestAttitudeAdjustment(
-        currentAttitude: AttitudeLevel.doubao,
+        currentAttitude: AttitudeLevel.gentle,
         currentPhase: TeachingPhase.p2PracticeLoop,
         syndromes: const [Severity.l3, Severity.l2],
         messageCount: 10,
@@ -199,8 +199,8 @@ void main() {
   });
 
   group('getAttitudeLabel', () {
-    test('doubao → 豆包', () {
-      expect(getAttitudeLabel(AttitudeLevel.doubao), '豆包');
+    test('gentle → 温柔语气', () {
+      expect(getAttitudeLabel(AttitudeLevel.gentle), '温柔语气');
     });
 
     test('yuesheng → 月笙', () {
@@ -213,9 +213,9 @@ void main() {
   });
 
   group('attitudeOrder（D1/D2 清理：由系统预设 seed 派生）', () {
-    test('顺序 = doubao → yuesheng → sensei，与 seed 一致', () {
+    test('顺序 = gentle → yuesheng → sensei，与 seed 一致', () {
       expect(attitudeOrder, [
-        AttitudeLevel.doubao,
+        AttitudeLevel.gentle,
         AttitudeLevel.yuesheng,
         AttitudeLevel.sensei,
       ]);

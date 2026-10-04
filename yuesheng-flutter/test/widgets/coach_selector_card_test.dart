@@ -390,14 +390,14 @@ void main() {
   // ADR-C132 批3：从系统档开始（B 派生入口）
   // ════════════════════════════════════════════════════════
 
-  testWidgets('#16 新建态出现「从系统档开始」chip 行，点豆包 → 语气框填入系统模板', (tester) async {
+  testWidgets('#16 新建态出现「从系统档开始」chip 行，点温柔语气 → 语气框填入系统模板', (tester) async {
     await tester.pumpWidget(buildHost());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('自定义教练'));
     await tester.pumpAndSettle();
 
-    // 弹层内查找（底层选人卡仍渲染系统预设行 ⇒ '豆包' 等文本全树出现两次，
+    // 弹层内查找（底层选人卡仍渲染系统预设行 ⇒ '温柔语气' 等文本全树出现两次，
     // 必须限定在 YueSheetScaffold 弹层内，否则 tap 歧义）。
     Finder inSheet(String text) => find.descendant(
       of: find.byType(YueSheetScaffold),
@@ -406,20 +406,20 @@ void main() {
 
     // 新建态才展示派生入口（3 个系统档 chip）
     expect(find.text('从系统档开始'), findsOneWidget);
-    expect(inSheet('豆包'), findsOneWidget);
+    expect(inSheet('温柔语气'), findsOneWidget);
     expect(inSheet('月笙如歌'), findsOneWidget);
     expect(inSheet('sensei'), findsOneWidget);
 
     final fields = find.byType(TextField);
     expect(tester.widget<TextField>(fields.at(1)).controller?.text, '');
 
-    await tester.tap(inSheet('豆包'));
+    await tester.tap(inSheet('温柔语气'));
     await tester.pump();
 
-    // 语气框填入 doubao 静态模板（引用真源常量）
+    // 语气框填入 gentle 静态模板（引用真源常量）
     expect(
       tester.widget<TextField>(fields.at(1)).controller?.text,
-      kSystemToneTemplates['doubao'],
+      kSystemToneTemplates['gentle'],
     );
     expect(find.textContaining('的语气起点，可继续修改'), findsOneWidget);
   });

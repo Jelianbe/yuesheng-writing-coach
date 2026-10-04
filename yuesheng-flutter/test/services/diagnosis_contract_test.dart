@@ -150,7 +150,7 @@ void main() {
         SkillLoadContext(
           phase: TeachingPhase.p2PracticeLoop,
           subphase: TeachingSubphase.diagnosis,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -200,7 +200,7 @@ void main() {
       final result = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           isBeginner: true,
         ),
       );
@@ -218,7 +218,7 @@ void main() {
       final result = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           isBeginner: true,
         ),
       );
@@ -232,12 +232,12 @@ void main() {
     // N34 防复发护栏（A.12.27）：跳阶段阈值三处打架——旧文案
     // 「用户主动请求评价时可跳过前两阶段」无条件跳两级，与 beginner 侧
     // 「200+ 字并请求评价才跳过 P0」条件与目标阶段都不一致；态度档位侧的
-    // 「100+ 字」则被混为同一维度（实际是 doubao→yuesheng 的升档信号）。
+    // 「100+ 字」则被混为同一维度（实际是 gentle→yuesheng 的升档信号）。
     test('N34 护栏：跳级裁决分级 + 态度档位维度已区分', () {
       final result = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           isBeginner: true,
         ),
       );
@@ -258,7 +258,7 @@ void main() {
       final result = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
       expect(result.systemPrompt, contains('条件必填'));

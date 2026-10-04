@@ -216,7 +216,7 @@ void main() {
 
   SendMessageOptions options() => const SendMessageOptions(
     phase: TeachingPhase.p1World,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   /// 诊断请求消息（含诊断标记）

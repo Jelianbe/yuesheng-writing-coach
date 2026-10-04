@@ -466,7 +466,7 @@ bool containsNegativeFeedback(String text) {
 const String kLiveOutputConstraints =
     '# 临场输出约束\n\n'
     '以上注入的教学知识、症候定义、训练素材是你的内部参考，不是让你一次性念给学员听。\n'
-    '每次回复遵守当前态度档位的「表达密度」规则：一次只抛一个点，示范按档位执行（豆包/月笙可给最小示范一例，Sensei 不给示范只指方向），删掉所有铺垫。\n'
+    '每次回复遵守当前态度档位的「表达密度」规则：一次只抛一个点，示范按档位执行（温柔语气/月笙可给最小示范一例，Sensei 不给示范只指方向），删掉所有铺垫。\n'
     '学员问题多时按优先级分轮展开，不堆叠。';
 
 /// 字数格式化（真源：shared-constants.ts WORD_COUNT_FORMAT + formatWordCount）

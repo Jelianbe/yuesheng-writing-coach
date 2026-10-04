@@ -14,10 +14,10 @@
 //     - token 预算合规（validatePrompt）
 //
 // 场景矩阵：
-//   #1 P1 诊断（doubao，非零基础，无活跃症候）→ L2 diagnosis + 无 L3
+//   #1 P1 诊断（gentle，非零基础，无活跃症候）→ L2 diagnosis + 无 L3
 //   #2 P2 训练（training 子阶段 + 活跃症候 P001）→ L2 training + L3 + 画像
 //   #3 零基础（N1_ELEMENTS + P1）→ L2 beginner
-//   #4 Sensei 态度（P1）→ attitude-sensei 注入（不含 doubao）
+//   #4 Sensei 态度（P1）→ attitude-sensei 注入（不含 gentle）
 //   #5 token 预算：场景 #1-#4 的 system prompt 均 validatePrompt 通过
 // ─────────────────────────────────────────────────────────────
 
@@ -197,7 +197,7 @@ void main() {
   Future<CaptureLlmClient> runSendMessage(
     LlmClient llmClient, {
     required TeachingPhase phase,
-    AttitudeLevel attitude = AttitudeLevel.doubao,
+    AttitudeLevel attitude = AttitudeLevel.gentle,
     TeachingSubphase? subphase,
   }) async {
     // 批次6 M2：sendMessage 阶段上下文以 DB currentPhase 为准（DB 优先于 options.phase）。
@@ -228,7 +228,7 @@ void main() {
   }
 
   group('教学环境重验证（应用内构造）', () {
-    test('#1 P1 诊断（doubao，无活跃症候）→ L1+L2(diagnosis)，无 L3', () async {
+    test('#1 P1 诊断（gentle，无活跃症候）→ L1+L2(diagnosis)，无 L3', () async {
       final client = await runSendMessage(
         CaptureLlmClient(),
         phase: TeachingPhase.p1World,
@@ -239,9 +239,9 @@ void main() {
       expect(sys, contains('铁三角'), reason: '缺 L1 核心铁三角');
       expect(sys, contains('位置判断'), reason: '缺位置判断引导语');
       // 态度档位
-      expect(sys, contains('态度：豆包'), reason: '缺 attitude-doubao');
-      // 表达密度小节随档位注入（批次 41）：doubao 示范只给最小可感知的一例
-      expect(sys, contains('一次只抛一个点'), reason: 'doubao 档位缺表达密度小节');
+      expect(sys, contains('态度：温柔语气'), reason: '缺 attitude-gentle');
+      // 表达密度小节随档位注入（批次 41）：gentle 示范只给最小可感知的一例
+      expect(sys, contains('一次只抛一个点'), reason: '温柔语气档缺表达密度小节');
       // L2 diagnosis 组
       expect(sys, contains('教学方法目录'), reason: '缺 L2 diagnosis 组');
       // 无活跃症候 → 不注入 L3
@@ -304,7 +304,7 @@ void main() {
 
       // L1 常驻 + 态度
       expect(sys, contains('铁三角'));
-      expect(sys, contains('态度：豆包'));
+      expect(sys, contains('态度：温柔语气'));
       // L2 training 组（V2 替换后）
       expect(sys, contains('训练循环指南'), reason: '缺 L2 training 组');
       // L3 症候详情 + 技法
@@ -328,7 +328,7 @@ void main() {
       expect(sys, contains('零基础教学路径'), reason: '缺 L2 beginner 组');
     });
 
-    test('#4 Sensei 态度（P1）→ attitude-sensei 注入，不含 doubao', () async {
+    test('#4 Sensei 态度（P1）→ attitude-sensei 注入，不含 gentle', () async {
       final client = await runSendMessage(
         CaptureLlmClient(),
         phase: TeachingPhase.p1World,
@@ -344,15 +344,15 @@ void main() {
       expect(l1Prompt, contains('态度：Sensei'), reason: '缺 attitude-sensei');
       expect(
         l1Prompt,
-        isNot(contains('态度：豆包')),
-        reason: 'sensei 场景不应注入 doubao 档位',
+        isNot(contains('态度：温柔语气')),
+        reason: 'sensei 场景不应注入 gentle 档位',
       );
       // 表达密度小节随档位注入（批次 41）：sensei 无示范只给方向
       expect(l1Prompt, contains('无示范只给方向'), reason: 'sensei 档位缺表达密度小节');
       expect(
         l1Prompt,
         isNot(contains('示范只给最小可感知的一例')),
-        reason: 'sensei 档位不应含 doubao/yuesheng 的示范规则',
+        reason: 'sensei 档位不应含 gentle/yuesheng 的示范规则',
       );
     });
 

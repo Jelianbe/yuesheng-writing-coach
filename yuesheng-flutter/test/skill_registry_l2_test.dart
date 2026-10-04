@@ -26,7 +26,7 @@ void main() {
 
     test('3 个态度档位 skill 已注册', () {
       for (final id in [
-        'attitude-doubao',
+        'attitude-gentle',
         'attitude-yuesheng',
         'attitude-sensei',
       ]) {

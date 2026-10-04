@@ -242,7 +242,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -265,7 +265,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 

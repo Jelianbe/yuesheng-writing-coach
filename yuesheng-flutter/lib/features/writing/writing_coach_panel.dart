@@ -90,9 +90,9 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
   /// B3 划词诊断：已处理的选中文本（防重复触发）
   String? _handledDiagnoseText;
 
-  /// P1（2026-09-11）：本面板态度档位。默认 doubao；会话存在时从
-  /// teaching_state 恢复（与对话页切换保持同步，不再硬编码 doubao）。
-  AttitudeLevel _attitude = AttitudeLevel.doubao;
+  /// P1（2026-09-11）：本面板态度档位。默认 gentle；会话存在时从
+  /// teaching_state 恢复（与对话页切换保持同步，不再硬编码 gentle）。
+  AttitudeLevel _attitude = AttitudeLevel.gentle;
 
   /// 教学方式（疑问式/直接说），与人格档位正交。默认 socratic（疑问式）。
   TeachingMode _teachingMode = TeachingMode.socratic;

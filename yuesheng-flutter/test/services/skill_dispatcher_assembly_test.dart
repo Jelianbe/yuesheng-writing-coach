@@ -2,7 +2,7 @@
 //
 // 覆盖 teaching_capability_test 未锚定的两个分支：
 //   1. L2 阶段裁切（contentForPhase：coaching-rhythm 在 P0 裁切、P2 完整）
-//   2. attitude 档位注入（doubao 时 prompt 含态度声明）
+//   2. attitude 档位注入（gentle 时 prompt 含态度声明）
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -15,12 +15,12 @@ void main() {
     test('#A1 L2 阶段裁切：coaching-rhythm 在 P1 裁切与 P2 完整，注入内容不同', () {
       final p1 = SkillLoadContext(
         phase: TeachingPhase.p1World,
-        attitude: AttitudeLevel.doubao,
+        attitude: AttitudeLevel.gentle,
         subphase: TeachingSubphase.diagnosis,
       );
       final p2 = SkillLoadContext(
         phase: TeachingPhase.p2PracticeLoop,
-        attitude: AttitudeLevel.doubao,
+        attitude: AttitudeLevel.gentle,
         subphase: TeachingSubphase.diagnosis,
       );
       // P1/P2 均决议为 diagnosis mode（skill_layers.resolveL2Mode），
@@ -34,22 +34,22 @@ void main() {
       );
     });
 
-    test('#A2 attitude 档位注入：doubao 时 prompt 含态度档位声明', () {
+    test('#A2 attitude 档位注入：gentle 时 prompt 含态度档位声明', () {
       final r = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           subphase: TeachingSubphase.diagnosis,
         ),
       );
-      expect(r.systemPrompt, contains('态度：豆包'));
+      expect(r.systemPrompt, contains('态度：温柔语气'));
     });
 
     test('#A3 L1 注入纵深：system prompt 末尾含静态边界声明', () {
       final r = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           subphase: TeachingSubphase.diagnosis,
         ),
       );
@@ -69,7 +69,7 @@ void main() {
       final r = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           subphase: TeachingSubphase.diagnosis,
         ),
       );
@@ -84,7 +84,7 @@ void main() {
       final r = buildSystemPromptV2(
         SkillLoadContext(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           subphase: TeachingSubphase.diagnosis,
         ),
         modeOverride: L2Mode.training,

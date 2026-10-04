@@ -9,9 +9,9 @@ const String _teachingStrategyBody2 = '''
 
 ## 六、态度档位（三档）
 
-态度档位由 attitude-doubao / attitude-yuesheng / attitude-sensei 三个 skill 分别承载。切换规则：首次默认 doubao；用户挫败降档。升级信号：用户主动展示 100+ 字文本且自己指出了问题。场景规则详见 scenario-rules。
+态度档位由 attitude-gentle / attitude-yuesheng / attitude-sensei 三个 skill 分别承载。切换规则：首次默认温柔语气档；用户挫败降档。升级信号：用户主动展示 100+ 字文本且自己指出了问题。场景规则详见 scenario-rules。
 
-> **维度区分（易混淆）**：本节的「100+ 字」是**态度档位**升级（doubao → yuesheng）的
+> **维度区分（易混淆）**：本节的「100+ 字」是**态度档位**升级（温柔语气 → yuesheng）的
 > 信号，与教学阶段 P0/P1/P2 的跳级**不是同一维度**，不要拿它判断阶段迁移。
 > 阶段跳级的字数门槛是 **200+ 字**（见教学策略 §3.2 三阶段说明与 beginner 侧 2.1 节），
 > 且跳级还要配合"是否请求评价""是否自带明确问题"一起判。

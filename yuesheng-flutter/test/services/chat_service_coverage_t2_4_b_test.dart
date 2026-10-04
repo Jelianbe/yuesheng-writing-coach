@@ -203,7 +203,7 @@ void main() {
 
   SendMessageOptions options() => const SendMessageOptions(
     phase: TeachingPhase.p0Engage,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   /// 提交一条带焦点/续接字段的诊断，并使其成为活跃症候

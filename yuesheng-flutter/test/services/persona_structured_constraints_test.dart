@@ -21,7 +21,7 @@ void main() {
     name: 'n',
     label: 'l',
     isSystem: false,
-    attitudeLevel: AttitudeLevel.doubao,
+    attitudeLevel: AttitudeLevel.gentle,
     systemPromptFragment: 'f',
     expressionDensity: expressionDensity,
     questionPreference: questionPreference,

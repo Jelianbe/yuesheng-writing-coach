@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────
 // coach_selector_card — 教练人格（全局，设置页）
 //
-// D1/D2 Phase 2：选人卡动态化 —— 列表 = 系统预设（doubao/月笙如歌/sensei，
+// D1/D2 Phase 2：选人卡动态化 —— 列表 = 系统预设（温柔语气/月笙如歌/sensei，
 // 来自 CoachPersona 内置 seed）+ 用户自定义预设（来自 app_state KV
 // coach_personas_custom）。选择写入 coach_persona_active KV（系统预设双写
 // coach_attitude 兼容旧行为），下次启动自动沿用。
-// 系统预设态度色沿用 App 既有语义：doubao=l1Text / yuesheng=l2Text / sensei=l3Text；
+// 系统预设态度色沿用 App 既有语义：gentle=l1Text / yuesheng=l2Text / sensei=l3Text；
 // 用户预设统一 primary。
 // ─────────────────────────────────────────────────────────────
 
@@ -56,7 +56,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       final mode = TeachingMode.fromString(modeRaw) ?? TeachingMode.socratic;
       if (!mounted) return;
       setState(() {
-        _activeId = activeId ?? 'doubao';
+        _activeId = activeId ?? 'gentle';
         _customs = customs;
         _mode = mode;
         _loading = false;
@@ -135,9 +135,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     try {
       final repo = AppStateRepository(ref.read(appDatabaseProvider));
       await repo.removeCustomCoachPersona(persona.id);
-      // 删除的正是当前激活项 → 回退系统预设 doubao。
+      // 删除的正是当前激活项 → 回退系统预设 gentle。
       if (_activeId == persona.id) {
-        await repo.setActiveCoachPersona('doubao');
+        await repo.setActiveCoachPersona('gentle');
         // C129（断点 A）：激活人格回退 = 全局变更，同样递增 revision。
         ref.read(coachPersonaRevisionProvider.notifier).state++;
       }
@@ -145,7 +145,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       if (!mounted) return;
       setState(() {
         _customs = customs;
-        if (_activeId == persona.id) _activeId = 'doubao';
+        if (_activeId == persona.id) _activeId = 'gentle';
       });
     } catch (_) {
       if (mounted) {
@@ -164,7 +164,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
         title: const Text('删除自定义教练'),
         content: Text(
           '确认删除「${persona.name}」？此操作不可恢复。'
-          '${persona.id == _activeId ? '\n\n当前正在使用，删除后将回退到系统预设「豆包」。' : ''}',
+          '${persona.id == _activeId ? '\n\n当前正在使用，删除后将回退到系统预设「温柔语气」。' : ''}',
         ),
         actions: [
           TextButton(
@@ -237,7 +237,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
   Color _personaColor(AppPalette p, CoachPersona persona) {
     if (persona.isSystem) {
       return switch (persona.attitudeLevel) {
-        AttitudeLevel.doubao => p.l1Text,
+        AttitudeLevel.gentle => p.l1Text,
         AttitudeLevel.yuesheng => p.l2Text,
         AttitudeLevel.sensei => p.l3Text,
       };
@@ -759,10 +759,10 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       name: name,
       label: label.isEmpty ? '自定义教练' : label,
       isSystem: false,
-      // 兼容壳占位（R3 字面清理 · ADR-C138）：自定义教练 attitudeLevel=doubao
+      // 兼容壳占位（R3 字面清理 · ADR-C138）：自定义教练 attitudeLevel=gentle
       // 仅取色/取图标用，不决定注入语气——语气以 systemPromptFragment 为准，
       // 见 CoachPersona.attitudeLevel 类注释。字段 required，故保留赋值。
-      attitudeLevel: AttitudeLevel.doubao,
+      attitudeLevel: AttitudeLevel.gentle,
       // 语气选填：留空存 '' → 注入层回退默认态度档（见类注释）。
       systemPromptFragment: _promptCtrl.text.trim(),
       // 人设层已并入语气段，不再单独写值；旧数据读侧仍兼容。
@@ -920,7 +920,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
     label: '',
     isSystem: false,
     // 兼容壳占位（同 _save）：预览不落库，语气以 systemPromptFragment 为准。
-    attitudeLevel: AttitudeLevel.doubao,
+    attitudeLevel: AttitudeLevel.gentle,
     systemPromptFragment: _promptCtrl.text.trim(),
     expressionDensity: _expressionDensity,
     questionPreference: _questionPreference,

@@ -354,7 +354,7 @@ void main() {
 
   const defaultOptions = SendMessageOptions(
     phase: TeachingPhase.p0Engage,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   Future<String> runDiagnosis(String sessionId, LlmClient client) async {

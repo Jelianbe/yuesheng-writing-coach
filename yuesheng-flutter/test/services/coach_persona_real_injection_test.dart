@@ -5,8 +5,8 @@
 // systemPromptFragment，喂给 buildSystemPromptV2（诊断所用生产函数），
 // 断言：
 //   1. 润色文本进入 system prompt；
-//   2. 默认态度档（态度：豆包）被替换（loadedSkillIds 记 persona-<id>，
-//      不再出现 attitude-doubao）；
+//   2. 默认态度档（态度：温柔语气）被替换（loadedSkillIds 记 persona-<id>，
+//      不再出现 attitude-gentle）；
 //   3. personaLayer 为空时只注入基础语气，无 persona-layer-<id>。
 //
 // 与 coach_persona_injection_test 的区别：那是用例级别的机制守护（样本文本）；
@@ -59,13 +59,13 @@ void main() {
           name: label,
           label: '自定义教练',
           isSystem: false,
-          attitudeLevel: AttitudeLevel.doubao,
+          attitudeLevel: AttitudeLevel.gentle,
           systemPromptFragment: polished!,
         );
 
         final ctx = SkillLoadContext(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           subphase: TeachingSubphase.diagnosis,
           activePersona: persona,
         );
@@ -78,9 +78,9 @@ void main() {
           contains(polished),
           reason: '润色文本未注入 system prompt',
         );
-        // 2. 默认态度档被替换（不再出现 attitude-doubao 内容标记）
+        // 2. 默认态度档被替换（不再出现 attitude-gentle 内容标记）
         expect(r.loadedSkillIds, contains('persona-real_$key'));
-        expect(r.loadedSkillIds, isNot(contains('attitude-doubao')));
+        expect(r.loadedSkillIds, isNot(contains('attitude-gentle')));
         // 3. 无 personaLayer → 不应出现 persona-layer 标记
         expect(r.loadedSkillIds, isNot(contains('persona-layer-real_$key')));
       });

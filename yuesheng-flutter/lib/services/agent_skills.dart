@@ -218,7 +218,7 @@ const String kTeacherSkillContent = '''# SKILL: 教学决策（Teacher Decision�
 
 ## 五、自然语言反馈规范
 
-- 含态度档位话术（doubao 温和 / yuesheng 锐利 / sensei 严格）
+- 含态度档位话术（温柔语气温和 / yuesheng 锐利 / sensei 严格）
 - 不暴露症候 ID（P001 等）
 - 不使用判决词（"应该"/"必须"/"务必"/"重写"等）
 - 先肯定优点，再提改进点（encourage 档位尤其重要）

@@ -157,7 +157,7 @@ void main() {
 
   const defaultOptions = SendMessageOptions(
     phase: TeachingPhase.p0Engage,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   /// 取最近一次请求里所有 system 消息拼接文本

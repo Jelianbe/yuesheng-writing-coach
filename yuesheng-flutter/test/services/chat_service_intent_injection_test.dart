@@ -238,7 +238,7 @@ void main() {
 
   SendMessageOptions options() => const SendMessageOptions(
     phase: TeachingPhase.p1World,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   bool hasIntentNote(List<String> systems, String marker) {
@@ -480,7 +480,7 @@ void main() {
         callbacks(),
         const SendMessageOptions(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           chapterFullText: '她推开门，发现房间里没有人。',
         ),
       );
@@ -546,7 +546,7 @@ void main() {
           name: '测',
           label: '测',
           isSystem: false,
-          attitudeLevel: AttitudeLevel.doubao,
+          attitudeLevel: AttitudeLevel.gentle,
           systemPromptFragment: '测试',
           directExplainThreshold: 7,
         ),
@@ -611,7 +611,7 @@ void main() {
     test('#18 兜底：activeId 既非内置也不在自定义列表 → 落空回退默认阈值 5', () async {
       final llm = _CaptureLlmClient();
       final appState = AppStateRepository(db);
-      // 写一个既非 builtin(doubao/yuesheng/sensei)、也未 save 成 custom 的 id：
+      // 写一个既非 builtin(gentle/yuesheng/sensei)、也未 save 成 custom 的 id：
       // builtInCoachPersonaById → null；getCustomCoachPersonas → []；循环不命中 ⇒ 落空分支。
       await appState.setActiveCoachPersona('no_such_persona_xyz');
       final service = buildChatService(llm, appStateRepo: appState);
@@ -671,8 +671,8 @@ void main() {
     test('Case2 反向对照：阈值 99 + 5 条 L2 < 99 ⇒ 非全貌 ⇒ Teacher 1 次', () async {
       final llm = _FiveSyndromeLlmClient();
       final appState = AppStateRepository(db);
-      await appState.setActiveCoachPersona('doubao');
-      await appState.setCoachPersonaDirectThreshold('doubao', 99);
+      await appState.setActiveCoachPersona('gentle');
+      await appState.setCoachPersonaDirectThreshold('gentle', 99);
       final service = buildChatService(llm, appStateRepo: appState);
       await service.sendMessage(
         sessionId,
@@ -694,8 +694,8 @@ void main() {
     test('Case3 边界：阈值 99（非全貌）+「只诊断」⇒ diagnosisOnly 独立阻断 Teacher', () async {
       final llm = _FiveSyndromeLlmClient();
       final appState = AppStateRepository(db);
-      await appState.setActiveCoachPersona('doubao');
-      await appState.setCoachPersonaDirectThreshold('doubao', 99);
+      await appState.setActiveCoachPersona('gentle');
+      await appState.setCoachPersonaDirectThreshold('gentle', 99);
       final service = buildChatService(llm, appStateRepo: appState);
       await service.sendMessage(
         sessionId,

@@ -169,7 +169,7 @@ void main() {
 
   SendMessageOptions opts() => const SendMessageOptions(
     phase: TeachingPhase.p1World,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   /// 诊断请求（含 marker「写作诊断分析」）

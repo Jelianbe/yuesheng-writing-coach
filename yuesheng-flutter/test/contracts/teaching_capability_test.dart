@@ -27,7 +27,7 @@ void main() {
       // buildSystemPrompt：经契约实例方法消费，委托到 buildSystemPromptV2
       final ctx = SkillLoadContext(
         phase: TeachingPhase.p2PracticeLoop,
-        attitude: AttitudeLevel.doubao,
+        attitude: AttitudeLevel.gentle,
         subphase: TeachingSubphase.diagnosis,
       );
       final result = impl.buildSystemPrompt(ctx);
@@ -45,7 +45,7 @@ void main() {
     test('顶层纯函数行为（向后兼容）', () {
       final ctx = SkillLoadContext(
         phase: TeachingPhase.p2PracticeLoop,
-        attitude: AttitudeLevel.doubao,
+        attitude: AttitudeLevel.gentle,
         subphase: TeachingSubphase.diagnosis,
       );
       final result = buildSystemPromptV2(ctx);

@@ -114,14 +114,14 @@ void main() {
           name: label,
           label: '自定义教练',
           isSystem: false,
-          attitudeLevel: AttitudeLevel.doubao,
+          attitudeLevel: AttitudeLevel.gentle,
           systemPromptFragment: polished!,
         );
 
         // 复刻生产 sendMessage：用 buildSystemPromptV2 组装带人设的诊断 prompt。
         final ctx = SkillLoadContext(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           subphase: TeachingSubphase.diagnosis,
           activePersona: persona,
         );
@@ -140,7 +140,7 @@ void main() {
         );
         expect(
           r.loadedSkillIds,
-          isNot(contains('attitude-doubao')),
+          isNot(contains('attitude-gentle')),
           reason: '[$k] 默认态度档未被人设替换',
         );
 

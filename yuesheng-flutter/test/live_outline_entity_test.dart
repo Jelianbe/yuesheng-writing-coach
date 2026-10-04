@@ -361,7 +361,7 @@ void main() {
           ),
           const SendMessageOptions(
             phase: TeachingPhase.p1World,
-            attitude: AttitudeLevel.doubao,
+            attitude: AttitudeLevel.gentle,
           ),
         );
 
@@ -587,7 +587,7 @@ void main() {
           ),
           const SendMessageOptions(
             phase: TeachingPhase.p1World,
-            attitude: AttitudeLevel.doubao,
+            attitude: AttitudeLevel.gentle,
           ),
         );
 

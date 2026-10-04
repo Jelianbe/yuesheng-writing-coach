@@ -274,7 +274,7 @@ void main() {
 
   const p2Options = SendMessageOptions(
     phase: TeachingPhase.p2PracticeLoop,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   // ── M4-B：AI 驱动迁移路径合法性校验 ──
@@ -398,7 +398,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -430,7 +430,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -466,7 +466,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -647,7 +647,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -796,7 +796,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -827,7 +827,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -1006,7 +1006,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -1167,7 +1167,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
 
@@ -1206,7 +1206,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
       var ts = await stateRepo.getTeachingState(sessionId);
@@ -1232,7 +1232,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
       ts = await stateRepo.getTeachingState(sessionId);
@@ -1256,7 +1256,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p2PracticeLoop,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
       ts = await stateRepo.getTeachingState(sessionId);
@@ -1280,7 +1280,7 @@ void main() {
         ),
         const SendMessageOptions(
           phase: TeachingPhase.p3Training,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
         ),
       );
       ts = await stateRepo.getTeachingState(sessionId);

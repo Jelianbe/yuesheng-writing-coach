@@ -17,11 +17,11 @@ import 'coach_persona.dart';
 /// 内置教练人格（顺序即展示顺序，与 coach_selector_card._coaches 一致）。
 const List<CoachPersona> builtInCoachPersonas = [
   CoachPersona(
-    id: 'doubao',
-    name: '豆包',
+    id: 'gentle',
+    name: '温柔语气',
     label: '温和，先肯定再给建议，适合刚起步',
     isSystem: true,
-    attitudeLevel: AttitudeLevel.doubao,
+    attitudeLevel: AttitudeLevel.gentle,
     systemPromptFragment: '你是用户的写作陪练伙伴，氛围轻松友好，语气温和包容。',
   ),
   CoachPersona(
@@ -52,8 +52,8 @@ CoachPersona? builtInCoachPersonaById(String id) {
 
 /// 解析当前激活教练人格（D1/D2 Phase 2）。
 ///
-/// 规则：先在系统预设里按 [activeId] 找（doubao/yuesheng/sensei），
-/// 找不到再在用户自定义 [customList] 里找；两者都找不到 → 回退系统预设 doubao。
+/// 规则：先在系统预设里按 [activeId] 找（gentle/yuesheng/sensei），
+/// 找不到再在用户自定义 [customList] 里找；两者都找不到 → 回退系统预设 gentle。
 /// 纯函数，便于单元测试（不碰 DB）。
 CoachPersona resolveActiveCoachPersona(
   String activeId,

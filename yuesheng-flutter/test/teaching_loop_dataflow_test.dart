@@ -239,7 +239,7 @@ void main() {
 
   const defaultOptions = SendMessageOptions(
     phase: TeachingPhase.p0Engage,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   group('教学闭环·数据流（真实 ChatService + 内存库 + 模拟 LLM 语料）', () {

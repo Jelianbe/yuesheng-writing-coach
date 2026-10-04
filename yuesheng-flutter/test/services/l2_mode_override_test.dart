@@ -28,14 +28,14 @@ void main() {
   /// P2 诊断子阶段 ⇒ 天然决议 diagnosis。
   const diagCtx = SkillLoadContext(
     phase: TeachingPhase.p2PracticeLoop,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
     subphase: TeachingSubphase.diagnosis,
   );
 
   /// P2 练习子阶段 ⇒ 天然决议 training。
   const trainCtx = SkillLoadContext(
     phase: TeachingPhase.p2PracticeLoop,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
     subphase: TeachingSubphase.practice,
   );
 

@@ -6,7 +6,7 @@
 ///
 /// 包含：
 ///   - L1 常驻层 8 个核心 skill
-///   - 3 个态度档位 skill（doubao/yuesheng/sensei）
+///   - 3 个态度档位 skill（温柔语气/yuesheng/sensei）
 ///   - L2 按需层 skill（beginner/diagnosis/training/advanced/outline 各组）
 ///   - L2 虚拟索引 skill（syndrome-diagnosis-index / technique-library-index，
 ///     索引内容来自 L3 知识库文件，完整知识由 L3 检索注入）
@@ -162,7 +162,7 @@ final Map<String, Skill> skillRegistry = {
   // 批次65：回复语气（教练口语化去 AI 味，提炼 humanizer-zh）
   'reply-voice': _replyVoice,
   // 态度档位
-  'attitude-doubao': _attitudeDoubao,
+  'attitude-gentle': _attitudeGentle,
   'attitude-yuesheng': _attitudeYuesheng,
   'attitude-sensei': _attitudeSensei,
   // 教学方式（疑问式 / 直接说）—— 与人格档位正交，由 coach_teaching_mode 开关驱动

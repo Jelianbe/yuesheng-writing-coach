@@ -200,7 +200,7 @@ void main() {
 
   SendMessageOptions options() => const SendMessageOptions(
     phase: TeachingPhase.p1World,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   test('#1 空响应 + 无诊断 + chapter 有 outline 实体 → 兜底判真，不 abort', () async {

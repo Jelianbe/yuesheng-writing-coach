@@ -236,7 +236,7 @@ void main() {
 
   const defaultOptions = SendMessageOptions(
     phase: TeachingPhase.p0Engage,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   test(
@@ -1086,7 +1086,7 @@ void main() {
         ),
         SendMessageOptions(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           cancelToken: token,
         ),
       );

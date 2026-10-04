@@ -4,7 +4,7 @@
 //   1. 用户自定义人格激活 → 注入其 systemPromptFragment，替换默认态度档位，
 //      loadedIds 记 persona-<id>，且不再出现 attitude-* 内容。
 //   2. 系统预设 / 无激活人格 → 走原 attitude-* 路径（快照锁守护，逐字节不变）。
-//   3. resolveActiveCoachPersona 纯函数解析规则（系统预设优先 → 用户自定义 → 回退 doubao）。
+//   3. resolveActiveCoachPersona 纯函数解析规则（系统预设优先 → 用户自定义 → 回退 gentle）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -27,7 +27,7 @@ void main() {
   );
 
   SkillLoadContext ctx({
-    AttitudeLevel attitude = AttitudeLevel.doubao,
+    AttitudeLevel attitude = AttitudeLevel.gentle,
     CoachPersona? activePersona,
   }) => SkillLoadContext(
     phase: TeachingPhase.p2PracticeLoop,
@@ -42,10 +42,10 @@ void main() {
 
       expect(r.systemPrompt, contains('毒舌大师兄'));
       expect(r.systemPrompt, contains('说话带刺但句句在理'));
-      // 态度档被替换：不再出现默认 attitude-doubao 的声明
-      expect(r.systemPrompt, isNot(contains('态度：豆包')));
+      // 态度档被替换：不再出现默认 attitude-gentle 的声明
+      expect(r.systemPrompt, isNot(contains('态度：温柔语气')));
       expect(r.loadedSkillIds, contains('persona-custom_1'));
-      expect(r.loadedSkillIds, isNot(contains('attitude-doubao')));
+      expect(r.loadedSkillIds, isNot(contains('attitude-gentle')));
     });
 
     test('#B2 空 fragment 的用户人格不注入（防御性跳过，走原路径）', () {
@@ -54,12 +54,12 @@ void main() {
         name: '空嗓门',
         label: '没写语气',
         isSystem: false,
-        attitudeLevel: AttitudeLevel.doubao,
+        attitudeLevel: AttitudeLevel.gentle,
         systemPromptFragment: '   ',
       );
       final r = buildSystemPromptV2(ctx(activePersona: emptyFrag));
       // 空格 fragment trim 后为空 → 回退默认态度档
-      expect(r.systemPrompt, contains('态度：豆包'));
+      expect(r.systemPrompt, contains('态度：温柔语气'));
       expect(r.loadedSkillIds, isNot(contains('persona-custom_2')));
     });
   });
@@ -67,18 +67,18 @@ void main() {
   group('Phase 2 · 系统预设 / 无激活人格（快照零漂移护栏）', () {
     test('#C1 无 activePersona → 原 attitude-* 路径', () {
       final r = buildSystemPromptV2(ctx());
-      expect(r.systemPrompt, contains('态度：豆包'));
-      expect(r.loadedSkillIds, contains('attitude-doubao'));
+      expect(r.systemPrompt, contains('态度：温柔语气'));
+      expect(r.loadedSkillIds, contains('attitude-gentle'));
       expect(r.loadedSkillIds, isNot(contains('persona-')));
     });
 
     test('#C2 系统预设激活（isSystem=true）→ 仍走 attitude-*，不注入 fragment', () {
-      final system = builtInCoachPersonas.first; // doubao，isSystem=true
+      final system = builtInCoachPersonas.first; // gentle，isSystem=true
       final r = buildSystemPromptV2(ctx(activePersona: system));
       // 系统预设即便带上 fragment，也绝不替换态度档（快照锁守护的路径不动）
-      expect(r.systemPrompt, contains('态度：豆包'));
-      expect(r.loadedSkillIds, contains('attitude-doubao'));
-      expect(r.loadedSkillIds, isNot(contains('persona-doubao')));
+      expect(r.systemPrompt, contains('态度：温柔语气'));
+      expect(r.loadedSkillIds, contains('attitude-gentle'));
+      expect(r.loadedSkillIds, isNot(contains('persona-gentle')));
     });
   });
 
@@ -103,7 +103,7 @@ void main() {
       final layerIdx = r.systemPrompt.indexOf('资深文学编辑口吻');
       expect(layerIdx, greaterThan(fragIdx));
       // 态度档被替换
-      expect(r.systemPrompt, isNot(contains('态度：豆包')));
+      expect(r.systemPrompt, isNot(contains('态度：温柔语气')));
       expect(r.loadedSkillIds, contains('persona-custom_layer_1'));
       expect(r.loadedSkillIds, contains('persona-layer-custom_layer_1'));
     });
@@ -123,7 +123,7 @@ void main() {
         name: '无层',
         label: '只有基础语气',
         isSystem: false,
-        attitudeLevel: AttitudeLevel.doubao,
+        attitudeLevel: AttitudeLevel.gentle,
         systemPromptFragment: '你是基础语气。',
         personaLayer: '   ',
       );
@@ -179,7 +179,7 @@ void main() {
         name: '无约束',
         label: '没有结构化字段',
         isSystem: false,
-        attitudeLevel: AttitudeLevel.doubao,
+        attitudeLevel: AttitudeLevel.gentle,
         systemPromptFragment: '你是基础语气。',
       );
       final r = buildSystemPromptV2(ctx(activePersona: plain));
@@ -217,7 +217,7 @@ void main() {
     });
 
     test('#F5 系统预设路径零漂移：不注入约束块与边界句', () {
-      final system = builtInCoachPersonas.first; // doubao，isSystem=true
+      final system = builtInCoachPersonas.first; // gentle，isSystem=true
       final r = buildSystemPromptV2(ctx(activePersona: system));
 
       expect(r.systemPrompt, isNot(contains('表达密度：')));
@@ -249,10 +249,10 @@ void main() {
       expect(r.id, 'custom_9');
     });
 
-    test('#D3 两者都找不到 → 回退系统预设 doubao', () {
+    test('#D3 两者都找不到 → 回退系统预设 gentle', () {
       final r = resolveActiveCoachPersona('ghost', const [custom]);
       expect(r.isSystem, isTrue);
-      expect(r.id, 'doubao');
+      expect(r.id, 'gentle');
     });
   });
 
@@ -293,7 +293,7 @@ void main() {
       // 教练设置里选过人格（写 active）
       await repo.setActiveCoachPersona('custom_abc');
       // 修前 bug 路径：头部只写 coach_attitude（不动 active）
-      await repo.setCoachAttitude('doubao');
+      await repo.setCoachAttitude('gentle');
       // 读取端必须仍是 custom_abc（这正是修前「头部切档 UI 变了但语气没变」的根因）
       expect(await repo.getActiveCoachPersonaId(), 'custom_abc');
 

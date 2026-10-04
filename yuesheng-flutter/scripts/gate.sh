@@ -51,7 +51,7 @@
 # 门禁 12: Skill 公共库链接 (scripts/check_skills_links.py) — ADR-C115
 #          「单一真源 .agents/skills + 工作台 Junction」结构守卫：① Junction 目标
 #          必须存在（防悬空死链）② 公共库 SKILL.md frontmatter 合法（name/description）
-#          ③ 旧代 skill 必须带作废标注（防误迁入公共库被豆包误加载）
+#          ③ 旧代 skill 必须带作废标注（防误迁入公共库被助手误加载）
 #
 # 用法:  bash scripts/gate.sh          ← **收尾门禁**：十三道全量（约 4~5 分钟）
 #        bash scripts/gate-fast.sh     ← **迭代快道**：门禁 2 只跑受影响测试、

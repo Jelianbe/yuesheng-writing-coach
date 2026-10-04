@@ -217,7 +217,7 @@ void main() {
 
   const defaultOptions = SendMessageOptions(
     phase: TeachingPhase.p0Engage,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   /// 种子一个活跃症候 s1（severity L2），让 sendMessage 进入 _injectDiagnosisLock
@@ -285,10 +285,10 @@ void main() {
     expect(id, sessionId, reason: '应复用首个既有会话');
   });
 
-  test('A3 loadAttitudeState 无状态 → 默认 doubao / p0Engage（未锁定）', () async {
+  test('A3 loadAttitudeState 无状态 → 默认 gentle / p0Engage（未锁定）', () async {
     final chatService = buildChatService(FakeLlmClient('ok'));
     final state = await chatService.loadAttitudeState(sessionId);
-    expect(state.attitude, AttitudeLevel.doubao);
+    expect(state.attitude, AttitudeLevel.gentle);
     expect(state.phase, TeachingPhase.p0Engage);
     // C129（断点 B）：无持久态度 = 未锁定（回退全局，设置页变更会反映）
     expect(state.isAttitudeLocked, isFalse);
@@ -365,7 +365,7 @@ void main() {
     expect(
       state.attitude,
       AttitudeLevel.yuesheng,
-      reason: '会话无持久态度时应回退全局激活人格态度，而非默认 doubao',
+      reason: '会话无持久态度时应回退全局激活人格态度，而非默认 gentle',
     );
     expect(
       state.activePersonaName,

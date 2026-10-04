@@ -50,7 +50,7 @@ abstract class ChatPageHost {
   bool get isAttitudeLocked;
 
   /// 当前激活的教练人格名（用户自定义人格 → 显示名；系统预设 / 无 → null）。
-  /// 供聊天菜单体现「当前教练」，消除「自定义了却显示豆包」的错觉。
+  /// 供聊天菜单体现「当前教练」，消除「自定义了却显示温柔语气」的错觉。
   String? get activePersonaName;
 
   /// 当前教学方式（疑问式/直接说，正交于态度档位）

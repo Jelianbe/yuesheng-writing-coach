@@ -2,7 +2,7 @@
 // CoachPersona — 教练人格数据模型（D1 用户自定义人格 / D2 人设层 共用主类型）
 //
 // 设计约束见 .ai/reports/2026-09-27-D-vision-design.md §2：
-//  - 系统预设（doubao/yuesheng/sensei）映射回 [AttitudeLevel] 兼容壳，
+//  - 系统预设（gentle/yuesheng/sensei）映射回 [AttitudeLevel] 兼容壳，
 //    颜色/图标沿用旧枚举（见 coach_selector_card._attitudeColor）；
 //  - 用户预设走 app_state KV `coach_personas_custom`（JSON 数组，零迁移，
 //    见 app_state_repository.dart）；
@@ -22,10 +22,10 @@ class CoachPersona {
   /// 一句话语气描述（选人卡副标题），如「温和，先肯定再给建议，适合刚起步」。
   final String label;
 
-  /// 是否系统预设（true = 内置 doubao/yuesheng/sensei；false = 用户自建）。
+  /// 是否系统预设（true = 内置 gentle/yuesheng/sensei；false = 用户自建）。
   final bool isSystem;
 
-  /// 兼容壳：系统预设必填；用户预设默认 [AttitudeLevel.doubao]（取色/取图标用）。
+  /// 兼容壳：系统预设必填；用户预设默认 [AttitudeLevel.gentle]（取色/取图标用）。
   final AttitudeLevel attitudeLevel;
 
   /// 态度/语气段正文（候选注入文本）。
@@ -95,7 +95,7 @@ class CoachPersona {
   factory CoachPersona.fromJson(Map<String, dynamic> json) {
     final level =
         AttitudeLevel.fromString(json['attitude_level'] as String?) ??
-        AttitudeLevel.doubao;
+        AttitudeLevel.gentle;
     return CoachPersona(
       id: (json['id'] as String?) ?? '',
       name: (json['name'] as String?) ?? '',

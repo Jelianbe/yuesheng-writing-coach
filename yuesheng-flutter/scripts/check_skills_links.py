@@ -7,9 +7,9 @@ Junction」结构。本脚本保证该结构不被悄悄破坏：
 
   ① Junction 目标必须存在 —— 悬空链接（如旧 .claude/.qoder 的 find-skills /
      react-component-generator）会让工作台扫到死链接，且曾真实发生（git 全历史无踪迹）；
-  ② 公共库每个 SKILL.md 必须有合法 frontmatter（name + description）—— 缺失时豆包
+  ② 公共库每个 SKILL.md 必须有合法 frontmatter（name + description）—— 缺失时助手
      发现机制静默跳过，skill 隐形无提示；
-  ③ 旧代 skill 必须带作废标注 —— 若被误迁入公共库会被豆包当可用技能加载（误用旧规则）。
+  ③ 旧代 skill 必须带作废标注 —— 若被误迁入公共库会被助手当可用技能加载（误用旧规则）。
 
 用法:
     python3 scripts/check_skills_links.py [REPO_ROOT]

@@ -35,7 +35,7 @@ void main() {
           StudentModelsCompanion.insert(
             id: 'sm-b15',
             sessionId: sessionId,
-            attitudePreference: const Value('豆包'),
+            attitudePreference: const Value('温柔语气'),
             teachingHistory: const Value('[]'),
             createdAt: Value(DateTime.now().millisecondsSinceEpoch),
             updatedAt: Value(DateTime.now().millisecondsSinceEpoch),

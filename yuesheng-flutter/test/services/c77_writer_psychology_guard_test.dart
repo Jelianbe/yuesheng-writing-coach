@@ -34,7 +34,7 @@ void main() {
       expect(content, contains('| 可能观察到的信号 | 值得留意的方向'));
       expect(content, contains('这张表怎么用'));
       expect(content, contains('为什么这一版不写障碍名称'));
-      expect(content, contains('| 障碍类型 | 豆包 | 月笙 | sensei |'));
+      expect(content, contains('| 障碍类型 | 温柔语气 | 月笙 | sensei |'));
       expect(content, contains('## 四、何时说"休息一下"'));
     });
 

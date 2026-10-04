@@ -459,10 +459,11 @@ class AppStateRepository {
       setValue(kReasoningTierKey, tierKey);
 
   // ════════════ 教练人格（全局默认 attitude） ════════════
-  // key='coach_attitude' → 'doubao' | 'yuesheng' | 'sensei'
-  // 无记录 = doubao（默认温和）。chat_header 切档时同步写这里。
+  // key='coach_attitude' → 'gentle' | 'yuesheng' | 'sensei'
+  // （legacy 旧值 'doubao' 由 AttitudeLevel.fromString 兼容映射 gentle，不迁移）
+  // 无记录 = gentle（默认温和）。chat_header 切档时同步写这里。
 
-  /// 读全局教练人格偏好（无记录 = doubao）
+  /// 读全局教练人格偏好（无记录 = gentle）
   Future<String?> getCoachAttitude() => getValue('coach_attitude');
 
   /// 写全局教练人格偏好
@@ -470,7 +471,7 @@ class AppStateRepository {
 
   // ════════════ 教练教学方式（疑问式 / 直接说）═══════════
   // key='coach_teaching_mode' → 'socratic' | 'direct'
-  // 无记录 = socratic（默认疑问式，与 doubao 默认行为一致）
+  // 无记录 = socratic（默认疑问式，与 gentle 默认行为一致）
 
   /// 读全局教练教学方式偏好（无记录 = socratic）
   Future<String?> getCoachTeachingMode() => getValue('coach_teaching_mode');
@@ -559,9 +560,10 @@ class AppStateRepository {
       });
 
   // ════════════ 当前激活教练人格（D1/D2 Phase 2，active persona id）═══════════
-  // key='coach_persona_active' → 人格 id：系统预设 'doubao'|'yuesheng'|'sensei'
+  // key='coach_persona_active' → 人格 id：系统预设 'gentle'|'yuesheng'|'sensei'
   //   或用户自定义 id（coach_personas_custom 内）。无记录 → 回退 coach_attitude
-  //   → 默认 doubao。选系统预设时双写 coach_attitude（与旧行为一致，避免漂移）。
+  //   → 默认 gentle。选系统预设时双写 coach_attitude（与旧行为一致，避免漂移）。
+  //   （legacy 旧人格 id 'doubao' 读入仍识别为系统预设，兼容已有用户数据。）
   static const String _coachPersonaActiveKey = 'coach_persona_active';
 
   /// 读当前激活教练人格 id（无记录 → 回退 coach_attitude → null）。
@@ -574,7 +576,9 @@ class AppStateRepository {
   /// 写当前激活教练人格 id。系统预设双写 coach_attitude 保持兼容。
   Future<void> setActiveCoachPersona(String personaId) async {
     await setValue(_coachPersonaActiveKey, personaId);
-    if (personaId == 'doubao' ||
+    // legacy：旧版持久化人格 id 'doubao' 仍识别为系统预设（兼容读入，不写新值）。
+    if (personaId == 'gentle' ||
+        personaId == 'doubao' ||
         personaId == 'yuesheng' ||
         personaId == 'sensei') {
       await setCoachAttitude(personaId);
@@ -583,10 +587,10 @@ class AppStateRepository {
 
   /// Resolve the global active persona's attitude (new-session fallback).
   /// Active persona is a system preset -> its level; custom -> its attitudeLevel;
-  /// otherwise fall back to coach_attitude -> doubao.
+  /// otherwise fall back to coach_attitude -> gentle.
   Future<AttitudeLevel> resolveGlobalCoachAttitude() async {
     final activeId = await getActiveCoachPersonaId();
-    if (activeId == null) return AttitudeLevel.doubao;
+    if (activeId == null) return AttitudeLevel.gentle;
     final builtIn = builtInCoachPersonaById(activeId);
     if (builtIn != null) return builtIn.attitudeLevel;
     final customs = await getCustomCoachPersonas();
@@ -594,7 +598,7 @@ class AppStateRepository {
       if (p.id == activeId) return p.attitudeLevel;
     }
     final global = await getCoachAttitude();
-    return AttitudeLevel.fromString(global) ?? AttitudeLevel.doubao;
+    return AttitudeLevel.fromString(global) ?? AttitudeLevel.gentle;
   }
 
   // Direct-explain threshold override (Part A; system presets editable).

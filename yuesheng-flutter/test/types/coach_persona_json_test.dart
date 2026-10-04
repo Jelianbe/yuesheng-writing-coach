@@ -28,7 +28,27 @@ void main() {
       expect(p.bufferWordPreference, isNull);
       expect(p.emojiAllowed, isNull);
       expect(p.name, '我的教练');
-      expect(p.attitudeLevel, AttitudeLevel.doubao);
+      expect(p.attitudeLevel, AttitudeLevel.gentle);
+    });
+
+    test('legacy 兼容：旧版持久化值 attitude_level="doubao" → gentle（不迁移用户数据）', () {
+      // 改名批次：旧版落库值仍是 'doubao'，读入必须映射到默认档 gentle，
+      // 禁止改库结构 / 清用户数据（持久化兼容硬约束）。
+      final p = CoachPersona.fromJson(const {
+        'id': 'legacy-1',
+        'name': '老用户',
+        'label': '温和',
+        'is_system': false,
+        'attitude_level': 'doubao',
+      });
+      expect(p.attitudeLevel, AttitudeLevel.gentle);
+      // fromString 直测：旧值 'doubao' → gentle；新值 'gentle' 正常解析。
+      expect(AttitudeLevel.fromString('doubao'), AttitudeLevel.gentle);
+      expect(AttitudeLevel.fromString('gentle'), AttitudeLevel.gentle);
+      expect(AttitudeLevel.fromString('yuesheng'), AttitudeLevel.yuesheng);
+      expect(AttitudeLevel.fromString('sensei'), AttitudeLevel.sensei);
+      expect(AttitudeLevel.fromString(null), isNull);
+      expect(AttitudeLevel.fromString('no-such-tier'), isNull);
     });
 
     test('新字段序列化往返（含 false 与 null 的区别）', () {
@@ -64,7 +84,7 @@ void main() {
         name: '默认型',
         label: '默认',
         isSystem: false,
-        attitudeLevel: AttitudeLevel.doubao,
+        attitudeLevel: AttitudeLevel.gentle,
         systemPromptFragment: '',
       );
       final json = p.toJson();
@@ -78,7 +98,7 @@ void main() {
         name: '旧名',
         label: '旧',
         isSystem: false,
-        attitudeLevel: AttitudeLevel.doubao,
+        attitudeLevel: AttitudeLevel.gentle,
         systemPromptFragment: '旧片段',
         expressionDensity: 'low',
       );

@@ -66,10 +66,10 @@ const List<PromptCase> kPromptCases = [
   ),
   // ── L2Mode.beginner ──
   PromptCase(
-    'beginner_doubao',
+    'beginner_gentle',
     SkillLoadContext(
       phase: TeachingPhase.p0Engage,
-      attitude: AttitudeLevel.doubao,
+      attitude: AttitudeLevel.gentle,
       isBeginner: true,
     ),
   ),

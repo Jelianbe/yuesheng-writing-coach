@@ -207,7 +207,7 @@ void main() {
 
   SendMessageOptions options() => const SendMessageOptions(
     phase: TeachingPhase.p1World,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   test('混合三类引用 → 批量预加载一次填充 chapter/manuscript/file 缓存', () async {

@@ -1099,7 +1099,7 @@ void main() {
       final sessionId = await sesRepo.createBlankSession();
 
       // 首次写入：自动建行
-      await tsRepo.persistAttitude(sessionId, 'doubao');
+      await tsRepo.persistAttitude(sessionId, 'gentle');
       final firstModel = await (db.select(
         db.studentModels,
       )..where((t) => t.sessionId.equals(sessionId))).getSingle();
@@ -1142,11 +1142,11 @@ void main() {
       expect(preState, isNull, reason: '前置：该 session 未建 teaching_state 行');
 
       final tsRepo = TeachingStateRepository(dbObj);
-      await tsRepo.persistAttitude(sessionId, 'doubao');
+      await tsRepo.persistAttitude(sessionId, 'gentle');
 
       final state = await tsRepo.getTeachingState(sessionId);
       expect(state, isNotNull, reason: 'A2 修复：Upsert 应自动创建 teaching_state 行');
-      expect(state!.attitudeLevel, 'doubao');
+      expect(state!.attitudeLevel, 'gentle');
       expect(state.currentPhase, 'P0_ENGAGE', reason: '默认值回退为 P0_ENGAGE');
 
       final model = await (dbObj.select(
@@ -1155,7 +1155,7 @@ void main() {
       expect(model, isNotNull);
       expect(
         model!.attitudePreference,
-        'doubao',
+        'gentle',
         reason: '双写：student_model 一致',
       );
     });

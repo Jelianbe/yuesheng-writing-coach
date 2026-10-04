@@ -34,7 +34,7 @@ CoachPersona _persona({
     name: name,
     label: '测试简介',
     isSystem: false,
-    attitudeLevel: AttitudeLevel.doubao,
+    attitudeLevel: AttitudeLevel.gentle,
     systemPromptFragment: fragment,
   );
 }

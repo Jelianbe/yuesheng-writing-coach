@@ -815,8 +815,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('态度档位'), findsOneWidget);
 
-      // 默认档位 doubao 在行内选项中出现
-      expect(find.text('豆包'), findsOneWidget);
+      // 默认档位 gentle 在行内选项中出现
+      expect(find.text('温柔语气'), findsOneWidget);
 
       // 切换到「月笙如歌」（点击后菜单关闭，态度已切换）
       await tester.tap(find.text('月笙如歌'));

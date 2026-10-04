@@ -57,7 +57,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   List<SessionWithPhase> _sessions = [];
 
   /// T6 态度切换：当前态度档位（bootstrap 后从 teaching_state 加载）
-  AttitudeLevel _attitude = AttitudeLevel.doubao;
+  AttitudeLevel _attitude = AttitudeLevel.gentle;
 
   /// C129（断点 B）：本会话是否已锁定自身态度（persistAttitude 写过
   /// teaching_state.attitudeLevel）。true → 头部态度区显示「本会话已锁定」，
@@ -191,7 +191,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
     // 此前这里只写 coach_attitude，而读取端 getActiveCoachPersonaId 优先读
     // coach_persona_active——一旦用户在教练设置里选过人格，头部切档 UI 变了
     // 但注入语气没变。改走 setActiveCoachPersona：系统预设（value 即
-    // doubao/yuesheng/sensei）会同时双写 coach_persona_active + coach_attitude，
+    // gentle/yuesheng/sensei）会同时双写 coach_persona_active + coach_attitude，
     // 与教练设置页选人完全同路；旧用户只写过 coach_attitude 的读取回退不受影响。
     AppStateRepository(
       ref.read(appDatabaseProvider),

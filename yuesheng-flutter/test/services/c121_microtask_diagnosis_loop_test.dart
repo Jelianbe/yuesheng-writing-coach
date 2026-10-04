@@ -177,7 +177,7 @@ void main() {
 
   const defaultOptions = SendMessageOptions(
     phase: TeachingPhase.p0Engage,
-    attitude: AttitudeLevel.doubao,
+    attitude: AttitudeLevel.gentle,
   );
 
   test('C121-1 微任务素材提交 → 模拟诊断链完整落库（症候/严重度/训练动作）+ 教练安全反馈', () async {

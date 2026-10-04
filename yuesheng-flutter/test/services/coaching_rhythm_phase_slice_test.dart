@@ -141,7 +141,7 @@ void main() {
       final r = buildSystemPromptV2(
         const SkillLoadContext(
           phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           isBeginner: true,
         ),
       );
@@ -154,7 +154,7 @@ void main() {
       final r = buildSystemPromptV2(
         const SkillLoadContext(
           phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
+          attitude: AttitudeLevel.gentle,
           isBeginner: true,
         ),
       );

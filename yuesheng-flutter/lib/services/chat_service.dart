@@ -281,7 +281,7 @@ class ChatService {
   loadAttitudeState(String sessionId) async {
     final ts = await _stateRepo.getTeachingState(sessionId);
     // New session without a persisted attitude -> fall back to the global
-    // active persona's attitude (not hard default doubao).
+    // active persona's attitude (not hard default gentle).
     final persistedLevel = AttitudeLevel.fromString(ts?.attitudeLevel);
     var attitude = persistedLevel ?? await _resolveGlobalAttitude();
     return (
@@ -289,7 +289,7 @@ class ChatService {
       phase:
           TeachingPhase.fromString(ts?.currentPhase) ?? TeachingPhase.p0Engage,
       // 无持久态度且回退到全局激活人格时，带出激活人格名（自定义 → 显示名，系统 → null）。
-      // 供聊天页菜单体现「当前教练」，消除「自定义了却显示豆包」的错觉。
+      // 供聊天页菜单体现「当前教练」，消除「自定义了却显示温柔语气」的错觉。
       activePersonaName: persistedLevel == null
           ? await _resolveActivePersonaName()
           : null,
@@ -308,14 +308,14 @@ class ChatService {
 
   /// Global fallback for a new session with no persisted attitude.
   /// Resolves the active persona (system preset / custom) attitude;
-  /// no AppStateRepository / read failure -> doubao (previous behavior).
+  /// no AppStateRepository / read failure -> gentle (previous behavior).
   Future<AttitudeLevel> _resolveGlobalAttitude() async {
     final repo = _appStateRepo;
-    if (repo == null) return AttitudeLevel.doubao;
+    if (repo == null) return AttitudeLevel.gentle;
     try {
       return await repo.resolveGlobalCoachAttitude();
     } catch (_) {
-      return AttitudeLevel.doubao;
+      return AttitudeLevel.gentle;
     }
   }
 
@@ -1288,7 +1288,7 @@ extension ChatServiceSend on ChatService {
   /// D1/D2 Phase 2：解析当前激活教练人格。
   ///
   /// - 未装配 AppStateRepository 或读取失败 → null（走系统预设路径，行为零变化）。
-  /// - 激活项为系统预设 / 未知（回退 doubao）→ null（原 attitude-* 路径，快照锁守护）。
+  /// - 激活项为系统预设 / 未知（回退 gentle）→ null（原 attitude-* 路径，快照锁守护）。
   /// - 激活项为用户自定义人格（isSystem == false）→ 返回该人格，供注入其 systemPromptFragment。
   Future<CoachPersona?> _resolveActivePersona() async {
     final repo = _appStateRepo;
@@ -1501,7 +1501,7 @@ extension ChatServiceSend on ChatService {
             '长历史易稀释前置约束，此处重申 L1 核心纪律，回复时严格遵守：\n\n'
             '1. 不替用户写句子、不替用户做决定；\n'
             '2. 一次只抛一个点，删掉铺垫；\n'
-            '3. 示范按当前态度档位执行：doubao/yuesheng 最小示范，sensei 零示范只给方向；\n'
+            '3. 示范按当前态度档位执行：温柔语气/yuesheng 最小示范，sensei 零示范只给方向；\n'
             '4. 诊断结论必须基于用户实际文本，不假定被预算闸门裁掉的素材内容；\n'
             '5. 回复去 AI 味，不用"让我来帮你"等套话；\n'
             '6. 诊断块按 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 标记输出（用户请求诊断时），卡片块用对应标签，不裸露 JSON。',

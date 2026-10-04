@@ -49,7 +49,7 @@ void _ignoreCoachSettings() {}
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
 /// P1-6：const List 装不进运行期 palette ⇒ 改 **palette 驱动函数**，随主题翻。
 List<(AttitudeLevel, String, Color)> _attitudeOptionsFor(AppPalette p) => [
-  (AttitudeLevel.doubao, '豆包', p.l1Text),
+  (AttitudeLevel.gentle, '温柔语气', p.l1Text),
   (AttitudeLevel.yuesheng, '月笙如歌', p.l2Text),
   (AttitudeLevel.sensei, 'sensei', p.l3Text),
 ];
@@ -78,7 +78,7 @@ class ChatHeader extends StatelessWidget {
   final String? primaryRefTitle;
 
   /// 当前激活的教练人格名（用户自定义 → 显示名；系统预设 / 无 → null）。
-  /// 非空时菜单「态度档位」区改显「当前教练」，消除「自定义了却显示豆包」的错觉。
+  /// 非空时菜单「态度档位」区改显「当前教练」，消除「自定义了却显示温柔语气」的错觉。
   final String? activePersonaName;
 
   /// 点主引用小字 → 打开引用管理（设主/添加/移除主引用）
@@ -269,7 +269,7 @@ class ChatHeader extends StatelessWidget {
     );
   }
 
-  /// 三个系统态度档位 chips（豆包/月笙如歌/sensei 快速切换）。
+  /// 三个系统态度档位 chips（温柔语气/月笙如歌/sensei 快速切换）。
   Widget _buildSystemAttitudeChips(
     BuildContext context,
     BuildContext sheetCtx,

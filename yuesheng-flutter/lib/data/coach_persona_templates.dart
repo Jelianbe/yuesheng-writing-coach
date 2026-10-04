@@ -8,7 +8,7 @@
 // skills_attitude.dart（skill_registry part，快照锁守护）。模板文本
 // 按各档「五段精髓」面向用户重写，不逐字复制注入资产。
 //
-// 键 = 系统档 id（doubao / yuesheng / sensei），与 builtInCoachPersonas 对齐。
+// 键 = 系统档 id（gentle / yuesheng / sensei），与 builtInCoachPersonas 对齐。
 //
 // 本文件同时承载「角色预设」模板（kCharacterPresetTemplates）：试听效果测试
 // 用的语气便捷起点。与 kSystemToneTemplates 同纪律——静态 seed、进 UI 数据层、
@@ -20,7 +20,7 @@ import '../types/coach_persona_seed.dart';
 
 /// 系统档 → 语气起点模板（B 派生入口的数据源）。
 const Map<String, String> kSystemToneTemplates = {
-  'doubao':
+  'gentle':
       '你是用户的写作陪练伙伴，氛围轻松友好，语气温和包容。'
       '反馈先肯定具体之处，再给一个可操作的练习方向；'
       '回复要短，一次只抛一个点，多用「呀 / 呢 / 哦」拉近距离，'

@@ -48,7 +48,7 @@ const Map<String, PromptStyle> kExpectedPromptStyle = {
   // ── free（10）：纯原则 / 底线 / 索引 ──
   'reply-voice': PromptStyle.free, // 必守规则 + 快速自检，无示例无格式
   'writing-anchors': PromptStyle.free, // 「认知参考，非诊断标准」
-  'attitude-doubao': PromptStyle.free, // 态度档位：风格原则
+  'attitude-gentle': PromptStyle.free, // 态度档位：风格原则
   'attitude-yuesheng': PromptStyle.free,
   'attitude-sensei': PromptStyle.free,
   'coaching-actions-v2': PromptStyle.free, // 「不是话术库，不包含固定话术」

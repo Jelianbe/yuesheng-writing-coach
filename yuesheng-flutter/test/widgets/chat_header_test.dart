@@ -24,7 +24,7 @@ import 'package:writingcoach/features/chat/chat_header.dart';
 
 void main() {
   Widget buildHeader({
-    AttitudeLevel attitude = AttitudeLevel.doubao,
+    AttitudeLevel attitude = AttitudeLevel.gentle,
     void Function(AttitudeLevel)? onAttitudeChange,
     VoidCallback? onOpenSessionDrawer,
     VoidCallback? onOpenProfile,
@@ -259,7 +259,7 @@ void main() {
     expect(find.text('自定义'), findsOneWidget);
     // 系统档位 chips 仍保留（可一键切回系统预设）
     expect(find.text('态度档位'), findsNothing);
-    expect(find.text('豆包'), findsOneWidget);
+    expect(find.text('温柔语气'), findsOneWidget);
   });
 
   testWidgets('#11b 未激活自定义 → 菜单仍显「态度档位」', (tester) async {
