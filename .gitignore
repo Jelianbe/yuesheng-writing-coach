@@ -113,3 +113,24 @@ historical-archive/
 /yuesheng-writing-coach/.agents/
 /yuesheng-writing-coach/.claude/
 /yuesheng-writing-coach/.qoder/
+
+# yuesheng-landing/：对外落地页（GitHub Pages 源）。
+# 2026-10-04 显式放行 —— 此前整个目录只被首行 `/*` 隐式忽略，导致：
+#   ① 页面上的反馈入口（GitHub Issues 链接，:414）与版本信息从未进版本记录，
+#      改坏了找不回来，也无从 review 变更；
+#   ② 这就是「改了但找不回来」的真实成因（不是文件被删，是从未被追踪）。
+# ★ **不要写 `/yuesheng-landing/`（目录级忽略）**：git 不会递归进入被忽略的目录，
+#   其内部的 `!` 放行**一律无效**（实测 `check-ignore -v` 命中的就是这条目录规则本身）。
+# ★ 也**不能只写** `/yuesheng-landing/*` + `!…html`：首行 `/*` 同样匹配该文件，
+#   两条同层规则互相抵消后仍以**最后一条命中者**为准，须实测（本次即栽在这）。
+#   正确做法 = **先重新放行目录本身**（`!/yuesheng-landing/`）让 git 愿意递归进去，
+#   再逐条排除不要的东西。同形写法见下方 `!.vscode/`。
+!/yuesheng-landing/
+# 发布产物与临时脚本 —— 绝不能进 git：downloads/ 121M APK、site/ 78M 构建产物。
+/yuesheng-landing/downloads/
+/yuesheng-landing/site/
+/yuesheng-landing/_shots/
+/yuesheng-landing/_tmp_*.py
+/yuesheng-landing/*.log
+# assets/ 显式放行（1.47 MB / 5 个文件）：HTML 逐字引用这 5 张，缺一张就裂图。
+#   app_icon.png 875K · hero.jpg 456K · screens/*.jpg 44–72K。体积可接受，不再优化。

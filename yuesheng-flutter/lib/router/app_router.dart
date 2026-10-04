@@ -35,6 +35,7 @@ import '../services/syndrome_learner_notes.dart';
 import '../features/manuscript/manuscript_detail_page.dart';
 import '../widgets/placeholder_page.dart';
 import '../widgets/progress_detail_page.dart';
+import '../features/app_settings/free_tier_guide_page.dart';
 import '../features/app_settings/project_settings_page.dart';
 import '../features/app_settings/settings_page.dart';
 import '../features/app_settings/setting_tag_overview_page.dart';
@@ -322,6 +323,13 @@ final GoRouter appRouter = GoRouter(
           manuscriptId: manuscriptId,
         );
       },
+    ),
+
+    // ── 免费获取 API Key 引导页（设置页 API 配置卡入口）──
+    // 顶层路由（非 shell 内）：引导页自带 AppBar + 返回，与写作页同构处理。
+    GoRoute(
+      path: AppRoutes.freeTierGuide,
+      builder: (context, state) => const FreeTierGuidePage(),
     ),
 
     // ── Tab 布局：StatefulShellRoute.indexedStack ──

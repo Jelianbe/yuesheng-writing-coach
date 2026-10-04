@@ -49,14 +49,24 @@ const String _feedbackQQGroup = '470562649';
 
 /// OpenAI 兼容供应商预设（ADR-C83：扩展多模型）。选中自动填 Base URL +
 /// Model 默认值；API Key 各供应商独立，仍需用户自行填写（R-029 零硬编码）。
-/// 模型时效性核验（2026-09-10，以各供应商官方 API 文档为准）：
+/// 模型时效性核验（2026-10-04，以各供应商官方 API 文档为准）：
 /// - deepseek-v4-flash：DeepSeek 现行主模型（deepseek-chat/reasoner 已于
 ///   2026-07-24 弃用，分别映射至 v4-flash 非思考/思考模式）
 /// - gpt-4.1：OpenAI chat/completions 稳定模型（gpt-4o 已从 ChatGPT 淘汰，
 ///   gpt-5 系为 reasoning-only，走 responses/max_completion_tokens 语义）
 /// - kimi-k3：Kimi 现行旗舰（moonshot-v1 系列已于 2026-08-31 下线）
 /// - qwen-plus：通义稳定别名，仍可用
-/// - glm-4.6：智谱现行旗舰（glm-4 已过时，glm-4.5-X 即将下线）
+/// - glm-4.7-flash：智谱**免费档**（2026-10-04 核验：官方文档归入 free 分类，
+///   输入/输出/缓存全免，非「新用户赠额」——赠额烧完不影响本档；200K 上下文 /
+///   128K 最大输出）。选它而非付费的 glm-4.7（¥0.6/¥2.2 每 M token），让用户
+///   无需充值即可先体验。三个注意点：
+///   ① 旧免费档下线会自动路由（glm-4.5-flash 已于 2026-01-30 下线 → 路由至
+///      glm-4.7-flash），故只写当前档位 ID 即可，无需跟随换代改代码；
+///   ② glm-4.7-**flashx** 是**收费**档（¥0.07/¥0.4），与本档仅差一个字母 x
+///      且上下文同为 200K —— 引导文案必须给全模型名，勿简称「flash 档」；
+///   ③ 智谱另有 glm-4.6v-flash 同样免费（128K，仅文本/视觉），按需另加预设。
+///   另注：网传「GLM-4-Flash 永久免费」在官方当前文档已查无此 ID
+///   （zhipuai provider 下不存在 glm-4-flash），勿填该旧名。
 /// - doubao-seed-2.1-turbo：火山方舟现行主力（doubao-pro-32k 已过时）
 const List<({String name, String baseUrl, String model})> _llmPresets = [
   (
@@ -74,7 +84,7 @@ const List<({String name, String baseUrl, String model})> _llmPresets = [
   (
     name: '智谱 GLM',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    model: 'glm-4.6',
+    model: 'glm-4.7-flash',
   ),
   (
     name: '豆包（火山方舟）',
@@ -501,7 +511,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           '1. 在所选 AI 服务商官网注册 / 登录（DeepSeek 为 platform.deepseek.com）；\n'
           '2. 进入「API keys」页面，创建并复制你的密钥（多为 sk- 开头）；\n'
           '3. 回到本页，粘贴到上方 API Key 输入框保存。\n\n'
-          '费用按实际用量计入你对应服务商账户余额，具体价格见各平台充值页。',
+          '费用：取决于你选的模型与服务商。\n'
+          '· 智谱 GLM 的 glm-4.7-flash 为免费档，输入/输出/缓存全免，无需充值；\n'
+          '· 其余服务商通常按实际用量从你的账户余额扣除，请先充值再用。\n'
+          '免费档会随服务商策略调整而变化，若某天不可用，换用上表其他模型即可。',
           style: context.text.body,
         ),
         actions: [
@@ -1207,6 +1220,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         onPressed: _handleShowKeyGuide,
         child: Text(
           '如何获取 API Key →',
+          style: TextStyle(
+            color: context.palette.primary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      TextButton(
+        onPressed: () => context.push(AppRoutes.freeTierGuide),
+        child: Text(
+          '免费获取 API Key →',
           style: TextStyle(
             color: context.palette.primary,
             fontWeight: FontWeight.w500,

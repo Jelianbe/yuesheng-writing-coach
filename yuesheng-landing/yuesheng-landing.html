@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 · 中文小说作者的 AI 写作教练</title>
+<meta name="description" content="月笙写作教练是面向中文小说作者的 Android AI 写作教练。不替你写句子，只帮你看见问题、完成练习、记录进步。稿件不出手机，密钥自带。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M68 10a40 40 0 1 0 22 72A44 44 0 0 1 68 10z' fill='%232D5A52'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap">
+<style>
+  :root {
+    --bamboo: #2D5A52;
+    --bamboo-deep: #244A43;
+    --bamboo-soft: #E7EFEC;
+    --bg: #F7F8F6;
+    --paper: #FCFCF9;
+    --ink: #22302C;
+    --ink-2: #5C6B66;
+    --line: #DCE4E0;
+    --warm: #C9A227;
+    --shadow: 0 1px 2px rgba(34,48,44,.05), 0 8px 24px rgba(34,48,44,.06);
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  a { color: inherit; text-decoration: none; }
+  img { display: block; max-width: 100%; }
+  section { scroll-margin-top: 76px; }
+
+  /* ===== 顶部导航 ===== */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(247,248,246,.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding-top: 6px; padding-bottom: 6px; }
+  .brand img { width: 32px; height: 32px; border-radius: 8px; }
+  .brand-name { font-family: "Noto Serif SC", serif; font-weight: 600; font-size: 1.06rem; letter-spacing: .02em; }
+  .nav-links { display: flex; align-items: center; gap: 28px; font-size: .92rem; color: var(--ink-2); }
+  .nav-links a { transition: color .18s; }
+  .nav-links a:hover { color: var(--bamboo); }
+  .nav-dl {
+    display: inline-block; background: var(--bamboo); color: #F7F8F6;
+    padding: 7px 18px; border-radius: 999px; font-size: .88rem;
+    transition: background .18s;
+  }
+  .nav-dl:hover { background: var(--bamboo-deep); color: #F7F8F6; }
+  .nav-toggle { display: none; background: none; border: 1px solid var(--line); border-radius: 8px; width: 44px; height: 44px; cursor: pointer; color: var(--ink); }
+  .nav-toggle svg { width: 20px; height: 20px; }
+
+  /* ===== Hero ===== */
+  .hero { padding-top: 72px; padding-bottom: 64px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .82rem; letter-spacing: .12em; color: var(--ink-2);
+    margin-bottom: 22px;
+  }
+  .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--bamboo); }
+  .hero h1 {
+    font-family: "Noto Serif SC", serif;
+    font-size: clamp(2.1rem, 4.6vw, 3.3rem);
+    font-weight: 600; line-height: 1.28; letter-spacing: .01em;
+    margin-bottom: 20px;
+  }
+  .hero h1 em { font-style: normal; color: var(--bamboo); }
+  .hero .lead {
+    font-size: 1.02rem; color: var(--ink-2); max-width: 46ch;
+    margin-bottom: 32px; font-weight: 300;
+  }
+  .hero-cta { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bamboo); color: #F7F8F6;
+    padding: 12px 26px; border-radius: 10px; font-size: .98rem; font-weight: 500;
+    transition: background .18s, transform .18s;
+  }
+  .btn-primary:hover { background: var(--bamboo-deep); transform: translateY(-1px); }
+  .btn-primary svg { width: 17px; height: 17px; }
+  .btn-ghost {
+    display: inline-flex; align-items: center;
+    color: var(--bamboo); font-size: .96rem; font-weight: 500;
+    padding: 12px 6px; border-bottom: 1px solid transparent;
+    transition: border-color .18s;
+  }
+  .btn-ghost:hover { border-color: var(--bamboo); }
+  .hero-note { margin-top: 18px; font-size: .8rem; color: var(--ink-2); }
+  .hero-fig { position: relative; }
+  .hero-fig img { width: 100%; border-radius: 18px; box-shadow: var(--shadow); }
+  .hero-badge {
+    position: absolute; left: 12px; bottom: 22px;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 16px; font-size: .8rem; color: var(--ink-2);
+    box-shadow: var(--shadow);
+  }
+  .hero-badge b { display: block; color: var(--bamboo); font-size: .92rem; }
+
+  /* ===== 三支柱 ===== */
+  .pillars { padding-top: 40px; padding-bottom: 72px; }
+  .sec-head { margin-bottom: 40px; }
+  .sec-kicker { font-size: .8rem; letter-spacing: .16em; color: var(--bamboo); margin-bottom: 10px; }
+  .sec-head h2 { font-family: "Noto Serif SC", serif; font-size: 1.8rem; font-weight: 600; }
+  .sec-head p { color: var(--ink-2); margin-top: 10px; max-width: 60ch; }
+  .pillar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .pillar {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 30px 26px; transition: border-color .18s, transform .18s;
+  }
+  .pillar:hover { border-color: #BFCFC8; transform: translateY(-2px); }
+  .pillar svg { width: 30px; height: 30px; stroke: var(--bamboo); margin-bottom: 18px; }
+  .pillar h3 { font-family: "Noto Serif SC", serif; font-size: 1.12rem; font-weight: 600; margin-bottom: 10px; }
+  .pillar p { font-size: .9rem; color: var(--ink-2); }
+
+  /* ===== 核心闭环 ===== */
+  .loop { background: #EEF2F0; padding: 72px 0; }
+  .loop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .step { position: relative; background: var(--paper); border-radius: var(--radius); padding: 26px 22px; border: 1px solid var(--line); }
+  .step-num { font-family: "Noto Serif SC", serif; font-size: .86rem; color: var(--bamboo); letter-spacing: .08em; margin-bottom: 12px; }
+  .step h3 { font-size: 1.04rem; font-weight: 600; margin-bottom: 8px; }
+  .step p { font-size: .86rem; color: var(--ink-2); }
+  .step-arrow {
+    position: absolute; right: -15px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; color: var(--bamboo); z-index: 2; display: none;
+  }
+  .loop-note { margin-top: 26px; font-size: .82rem; color: var(--ink-2); }
+
+  /* ===== 界面预览 ===== */
+  .screens { padding-top: 72px; padding-bottom: 72px; }
+  .screens-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .screen-card { display: flex; flex-direction: column; align-items: center; }
+  .phone {
+    width: 100%; max-width: 262px;
+    border-radius: 28px; border: 6px solid #22302C;
+    box-shadow: var(--shadow); overflow: hidden; background: #22302C;
+    line-height: 0;
+  }
+  .phone img { width: 100%; height: auto; }
+  .screen-cap { margin-top: 16px; font-size: .9rem; color: var(--ink-2); text-align: center; max-width: 32ch; line-height: 1.7; }
+  .screen-cap b { color: var(--ink); font-weight: 600; display: block; margin-bottom: 4px; font-size: .95rem; }
+
+  /* ===== 隐私 ===== */
+  .privacy { padding-top: 72px; padding-bottom: 72px; }
+  .privacy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .privacy-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px 26px; }
+  .privacy-card svg { width: 28px; height: 28px; stroke: var(--bamboo); margin-bottom: 16px; }
+  .privacy-card h3 { font-size: 1.04rem; font-weight: 600; margin-bottom: 8px; }
+  .privacy-card p { font-size: .88rem; color: var(--ink-2); }
+
+  /* ===== 下载 ===== */
+  .download { padding-top: 72px; padding-bottom: 84px; }
+  .download-card {
+    background: var(--bamboo); color: #F7F8F6; border-radius: 20px;
+    padding: 44px 48px; display: grid; grid-template-columns: 1.2fr .8fr; gap: 36px; align-items: center;
+  }
+  .download-card h2 { font-family: "Noto Serif SC", serif; font-size: 1.7rem; font-weight: 600; margin-bottom: 12px; }
+  .download-card .dl-sub { opacity: .88; font-size: .92rem; margin-bottom: 22px; max-width: 46ch; font-weight: 300; }
+  .version-tag { display: inline-flex; gap: 10px; align-items: center; background: rgba(255,255,255,.12); border-radius: 999px; padding: 5px 14px; font-size: .8rem; margin-bottom: 18px; }
+  .version-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: #9BD1C4; }
+  .btn-download {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #F7F8F6; color: var(--bamboo-deep);
+    padding: 13px 28px; border-radius: 10px; font-weight: 600; font-size: 1rem;
+    transition: background .18s, transform .18s;
+  }
+  .btn-download:hover { background: #fff; transform: translateY(-1px); }
+  .btn-download svg { width: 18px; height: 18px; }
+  .btn-download svg { width: 18px; height: 18px; }
+  .dl-specs { font-size: .8rem; opacity: .75; margin-top: 14px; }
+  .dl-specs a { border-bottom: 1px solid rgba(255,255,255,.45); transition: border-color .18s; }
+  .dl-specs a:hover { border-color: #F7F8F6; }
+  .dl-steps { display: flex; flex-direction: column; gap: 16px; }
+  .dl-step { display: flex; gap: 12px; align-items: flex-start; font-size: .86rem; opacity: .92; }
+  .dl-step .no { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,.4); display: flex; align-items: center; justify-content: center; font-size: .76rem; margin-top: 2px; }
+
+  /* ===== footer ===== */
+  footer { background: #22302C; color: #C9D5D0; padding: 52px 0 40px; }
+  .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; }
+  .foot-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .foot-brand img { width: 30px; height: 30px; border-radius: 7px; }
+  .foot-brand span { font-family: "Noto Serif SC", serif; color: #EFF4F1; font-weight: 600; font-size: 1rem; }
+  .foot-grid p { font-size: .82rem; line-height: 1.9; color: #9FB2AC; }
+  .foot-col h4 { color: #EFF4F1; font-size: .86rem; margin-bottom: 12px; font-weight: 600; }
+  .foot-bottom { border-top: 1px solid rgba(255,255,255,.1); margin-top: 40px; padding-top: 20px; font-size: .76rem; color: #7E958E; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 960px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 36px; }
+    .hero-fig { order: 2; }
+    .loop-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .pillar-grid { grid-template-columns: repeat(2, 1fr); }
+    .screens-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-toggle { display: inline-flex; align-items: center; justify-content: center; }
+    .nav-links.open {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+      position: absolute; top: 64px; left: 0; right: 0;
+      background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 24px 20px;
+    }
+    .nav-links.open a { padding: 8px 0; width: 100%; }
+    .nav-links.open .nav-dl { margin-top: 8px; text-align: center; }
+    .hero { padding-top: 48px; padding-bottom: 48px; }
+    .loop-grid, .pillar-grid { grid-template-columns: 1fr; }
+    .privacy-grid { grid-template-columns: 1fr; }
+    .download-card { grid-template-columns: 1fr; padding: 34px 26px; }
+    .foot-grid { grid-template-columns: 1fr; gap: 28px; }
+    .pillar p, .step p, .privacy-card p, .loop-note, .dl-step, .dl-specs, .hero-note { font-size: .95rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部导航 ===== -->
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top">
+      <img src="assets/app_icon.png" alt="月笙写作教练图标">
+      <span class="brand-name">月笙写作教练</span>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#loop">怎么帮写</a>
+      <a href="#screens">界面</a>
+      <a href="#privacy">隐私与数据</a>
+      <a href="#download">下载</a>
+      <a class="nav-dl" href="#download">下载 v0.4.1</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" aria-label="打开菜单">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===== Hero ===== -->
+<section class="hero wrap">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow">中文小说作者 · Android</div>
+      <h1>写作教练，<em>不是</em>写作助手</h1>
+      <p class="lead">月笙不替你写句子，也不替你做决定。它读取你的一段文字，指出问题出在哪里、读者为什么会困惑，然后给你一次可以完成的练习——并记住你改进了多少。</p>
+      <div class="hero-cta">
+        <a class="btn-primary" href="#download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          下载 Android 版
+        </a>
+        <a class="btn-ghost" href="#loop">看看它怎么帮写</a>
+      </div>
+      <p class="hero-note">自带密钥（BYOK） · 稿件不出手机 · 源码公开可验证</p>
+    </div>
+    <figure class="hero-fig">
+      <img src="assets/hero.jpg" alt="月夜竹林书案插画——月笙的写作氛围">
+      <div class="hero-badge"><b>v0.4.1</b>书籍资料库 · 记一下 / 图片直读 · 2026-10-03</div>
+    </figure>
+  </div>
+</section>
+
+<!-- ===== 三个支柱 ===== -->
+<section class="pillars wrap">
+  <div class="sec-head">
+    <div class="sec-kicker">三条底线</div>
+    <h2>像一位资深编辑，而不是又一个 AI 助手</h2>
+    <p>月笙把判断权留给你：诊断给事实与证据，训练给路径与对比，从不自动覆盖你的原文。</p>
+  </div>
+  <div class="pillar-grid">
+    <div class="pillar">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z"/><path d="M9.5 12l2 2 3.5-4"/></svg>
+      <h3>不替你写</h3>
+      <p>给"事实 + 证据"，给"路径 + 对比"，永远保留你的判断与修改权。</p>
+    </div>
+    <div class="pillar">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/><path d="M8.5 11l2 2 3.5-4"/></svg>
+      <h3>直指根因</h3>
+      <p>识别开篇拖沓、对话失焦这类具体症候，并定位到原文证据，不泛泛而谈。</p>
+    </div>
+    <div class="pillar">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-8"/><path d="M14 7h6v6"/></svg>
+      <h3>进步可见</h3>
+      <p>每一次诊断、练习、复盘都是成长记录里的节点，能回看好转或复发。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 新特性：教练人格 ===== -->
+<section class="pillars wrap" style="padding-top:0">
+  <div class="sec-head">
+    <div class="sec-kicker">v0.4.0 新</div>
+    <h2>教练的说话方式，你说了算</h2>
+    <p>三位预设教练各有脾气——温和的豆包、有主张的月笙如歌、严格的 sensei。也可以自己写一个：名字、语气、角色口吻全自定义，切换后下次启动沿用。</p>
+  </div>
+</section>
+
+<!-- ===== 新特性：书籍资料库（0.4.1） ===== -->
+<section class="pillars wrap" style="padding-top:0">
+  <div class="sec-head">
+    <div class="sec-kicker">v0.4.1 新</div>
+    <h2>读到哪句好，就「记一下」，它替你存进资料库</h2>
+    <p>聊天里长按任意一条消息、或在正文里划一段文字，都能一键「记一下 / 存入设定库」：原文整段填进一张可编辑小卡，你再决定它归入人设、大纲还是世界观。确认后进资料库「待整理」，由你亲自确认或拒绝——教练只记录、不替你判断哪句值得留。</p>
+    <p>选文件时也能直接发图片和 docx：教练能看你贴的分镜图、参考页，不用再手敲一遍。</p>
+  </div>
+</section>
+
+<!-- ===== 核心闭环 ===== -->
+<section class="loop" id="loop">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-kicker">怎么帮写</div>
+      <h2>一个片段 → 一个问题 → 一次练习 → 一次复测</h2>
+      <p>整个应用围绕一条可验证的改进路径展开，而不是一个会聊天的框。</p>
+    </div>
+    <div class="loop-grid">
+      <div class="step">
+        <div class="step-num">01 / 诊断</div>
+        <h3>定位问题与证据</h3>
+        <p>导入或粘贴一段文字，月笙识别症候，指出具体位置和读者困惑的原因。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02 / 教学</div>
+        <h3>一次只教一件事</h3>
+        <p>不倾倒建议，只给一个可执行的专项任务，并解释背后的技法。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03 / 训练</div>
+        <h3>练完有反馈</h3>
+        <p>完成练习后获得反馈与自评，通过与否有标准，不空喊"写得很好"。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">04 / 复盘</div>
+        <h3>同标准复测</h3>
+        <p>回到同一片段对比修改前后，成长里记录每一次好转与复发。</p>
+      </div>
+    </div>
+    <p class="loop-note">教学由五阶段状态机驱动（初始 → 教学 → 训练 → 评估 → 复盘），每次对话都知道你学到哪一步。</p>
+  </div>
+</section>
+
+<!-- ===== 界面预览 ===== -->
+<section class="screens wrap" id="screens">
+  <div class="sec-head">
+    <div class="sec-kicker">界面预览</div>
+    <h2>在手机上看，它就是长这样</h2>
+    <p>诊断给证据、训练给任务、成长给画像——三张图对应三条底线。</p>
+  </div>
+  <div class="screens-grid">
+    <div class="screen-card">
+      <div class="phone"><img src="assets/screens/screen-chat.jpg" alt="教练对话：月笙逐句指出片段的问题与证据"></div>
+      <p class="screen-cap"><b>把片段交给月笙</b>它指出具体问题："五个动作过去了，读者一个瞬间都没真的在场"。</p>
+    </div>
+    <div class="screen-card">
+      <div class="phone"><img src="assets/screens/screen-train.jpg" alt="训练建议：只给一个可完成的专项任务"></div>
+      <p class="screen-cap"><b>一次只教一件事</b>把最想让人记住的瞬间单独撑成一段，其余保持原样。</p>
+    </div>
+    <div class="screen-card">
+      <div class="phone"><img src="assets/screens/screen-growth.jpg" alt="成长主页：能力画像与当前焦点"></div>
+      <p class="screen-cap"><b>进步可见</b>能力画像与当前焦点——练什么、为什么、到哪一步，一目了然。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 隐私与数据 ===== -->
+<section class="privacy wrap" id="privacy">
+  <div class="sec-head">
+    <div class="sec-kicker">隐私与数据</div>
+    <h2>你的稿件和密钥，都留在你的手机上</h2>
+    <p>月笙是本地优先的写作教练——没有云端账号，也不经过任何中转服务器。</p>
+  </div>
+  <div class="privacy-grid">
+    <div class="privacy-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <h3>稿件不出手机</h3>
+      <p>小说草稿、诊断结果、训练记录只写入本机数据库，不上传、不共享。</p>
+    </div>
+    <div class="privacy-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8"/><path d="M16 7l2 2"/><path d="M13 10l2 2"/></svg>
+      <h3>密钥自备（BYOK）</h3>
+      <p>内置 DeepSeek、OpenAI、Kimi、通义千问、智谱 GLM、豆包六家预设，也支持自定义地址；密钥只存本机加密存储。</p>
+    </div>
+    <div class="privacy-card">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7L3 12l5 5"/><path d="M16 7l5 5-5 5"/></svg>
+      <h3>源码公开可验证</h3>
+      <p>"不内置密钥、不经中转"不是一句承诺——源码开源，任何人都能查证应用究竟做了什么。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 下载 ===== -->
+<section class="download wrap" id="download">
+  <div class="download-card">
+    <div>
+      <div class="version-tag"><span class="dot"></span>v0.4.1 · 书籍资料库与图片直读 · 2026-10-03</div>
+      <h2>下载月笙，带上你的第一段文字</h2>
+      <p class="dl-sub">Android 安装包（APK）。明面上没有已知问题，可作为日常使用的稳定基线；产品仍在完善中，欢迎反馈。</p>
+      <a class="btn-download" href="downloads/yuesheng-v0.4.1-arm64.apk" download>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        下载 v0.4.1 APK
+      </a>
+      <p class="dl-specs">64 位 Android 7.0 及以上 · 安装包约 40 MB · 32 位旧机型可向作者索取完整版</p>
+      <p class="dl-specs">问题与建议：<a href="https://github.com/Jelianbe/yuesheng-writing-coach/issues/new?title=%5B%E5%8F%8D%E9%A6%88%5D" target="_blank" rel="noopener noreferrer">在 GitHub 提 Issue</a>（已安装、卡顿、识别不准、练习做不动，都欢迎写在这里）；<a href="https://github.com/Jelianbe/yuesheng-writing-coach/issues" target="_blank" rel="noopener noreferrer">先看看别人提过什么</a></p>
+    </div>
+    <div class="dl-steps">
+      <div class="dl-step"><span class="no">1</span>下载安装包，安装时允许"安装未知来源应用"。</div>
+      <div class="dl-step"><span class="no">2</span>首次使用，申请并填入一家大模型服务的 API Key。</div>
+      <div class="dl-step"><span class="no">3</span>导入你的片段，开始第一次诊断与练习。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 页脚 ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand"><img src="assets/app_icon.png" alt=""><span>月笙写作教练</span></div>
+        <p>写作教练 + 成长记录器。让作者从"反复写同一个问题"，走到"系统性突破"。</p>
+      </div>
+      <div class="foot-col">
+        <h4>产品</h4>
+        <p>诊断 → 教学 → 训练 → 复盘</p>
+        <p>Android · 本地存储 · BYOK</p>
+      </div>
+      <div class="foot-col">
+        <h4>数据与反馈</h4>
+        <p>稿件与密钥仅存本机</p>
+        <p>问题与建议：项目仓库 Issues</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 月笙写作教练</span>
+      <span>写作教练，不是写作助手</span>
+    </div>
+  </div>
+</footer>
+
+</main>
+<script>
+  var toggle = document.getElementById('navToggle');
+  var links = document.getElementById('navLinks');
+  if (toggle && links) {
+    toggle.addEventListener('click', function () {
+      links.classList.toggle('open');
+    });
+  }
+</script>
+</body>
+</html>

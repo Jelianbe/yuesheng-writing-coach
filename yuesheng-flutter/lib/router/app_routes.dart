@@ -44,4 +44,7 @@ class AppRoutes {
   /// 列表页 / 症候详情页（详情带 :id 参数 + extra 传 SyndromeLearnerNote）
   static const String diagnosticReference = '/diagnostic-reference';
   static const String syndromeLearnerDetail = '/syndrome-learner-detail/:id';
+
+  /// 免费获取 API Key 引导页（设置页 API 配置卡入口）
+  static const String freeTierGuide = '/settings/free-tier-guide';
 }

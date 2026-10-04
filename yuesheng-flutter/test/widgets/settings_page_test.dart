@@ -710,15 +710,26 @@ void main() {
     );
   });
 
-  testWidgets('#B 预设点选 → 智谱/豆包新模型名生效（批次A 时效性锚定）', (tester) async {
+  testWidgets('#B 预设点选 → 智谱/豆包新模型名生效（时效性锚定 2026-10-04）', (tester) async {
     await tester.pumpWidget(buildSettings());
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(ActionChip, '智谱 GLM'));
     await tester.pumpAndSettle();
+    // 智谱取免费档 glm-4.7-flash（官方 free 分类，输入/输出/缓存全免），
+    // 而非付费的 glm-4.7。锚定此值以防被无意改回收费档 —— 若要升级/降级
+    // 模型，必须同步复核该模型是否仍在智谱官方免费分类内。
+    // 鉴别力实测：预设改回 glm-4.6 或误写收费档 glm-4.7-flashx，本用例红。
     expect(
       tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      'glm-4.6',
+      'glm-4.7-flash',
+    );
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
+      isNot(contains('flashx')),
+      reason:
+          'glm-4.7-flashx 是收费档（与免费档仅差一个字母 x，上下文同为 '
+          '200K），不得出现在智谱预设里',
     );
 
     await tester.tap(find.widgetWithText(ActionChip, '豆包（火山方舟）'));
