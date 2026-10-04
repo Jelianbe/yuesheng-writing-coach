@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
+import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/services/training_input_builder.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -474,6 +475,158 @@ void main() {
         input2.stateTransitionInput.daysSinceLastObservation,
         greaterThanOrEqualTo(8),
         reason: '无训练时以最近诊断为准（≈9 天）',
+      );
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════
+  // B0-1：`_filterTrainingRecords` 不对称归一（活bug 止血）
+  //
+  // 缺陷：`training_input_builder.dart:407` 写的是
+  //     effectiveSyndromeId(stored) == syndromeId      ← 右边没归一
+  // 而同文件其余6 处（:73/:123/:388）+ `diagnosis_service:108/123` +
+  // `message_injector:553/559` 全都是双边归一。
+  //
+  // 为什么会出事（2026-10-04 实测）：
+  //   `kSyndromeMergeMap` 有 **33 个键同时是现行活跃 ID**（P001–P033）
+  //   ⇒ `effectiveSyndromeId('P005') == 'P003'`
+  //   ⇒ 拿「现行ID」查「现行ID」时，单边归一把 store侧改掉 → 不等 → 漏读。
+  //   实测自匹配：**双边式 34/34 · 不对称式 1/34**。
+  //
+  // 之前为何没被抓住：本文件所有夹具都用 `'s1'`/`'s2'` 这类**假ID**，
+  // 而 merge map 只含`P\d+`/`H\d+` ⇒ 假 ID 恒过 `?? id` 分支，
+  // 对称与不对称**行为完全一致** ⇒ 缺陷对它不可见。
+  // ⇒ 所以必须用**真ID**（P0xx）造夹具，本组用例才有鉴别力。
+  // ═════════════════════════════════════════════════════════════
+
+  group('B0-1 _filterTrainingRecords 归一对称性', () {
+    // 真ID 造夹具：诊断与训练都用同一个现行 ID。
+    Future<void> seedWithRealId(
+      String sessionId, {
+      required String syndromeId,
+      String result = 'passed',
+    }) async {
+      await appendDiagnosis(
+        sessionId,
+        maxSeverity: 'L2',
+        timestamp: 1000,
+        syndromeId: syndromeId,
+      );
+      await appendDiagnosis(
+        sessionId,
+        maxSeverity: 'L1',
+        timestamp: 2000,
+        syndromeId: syndromeId,
+      );
+      await studentModelRepo.appendTeachingHistory(sessionId, {
+        'type': 'training',
+        'syndromeId': syndromeId,
+        'result': result,
+        'timestamp': 3000,
+        'sessionId': sessionId,
+      });
+    }
+
+    test('#B1 ★★★ 现行ID 查自己 →训练记录必须被数进来', () async {
+      // 夹具ID 取 P005（句式节奏单一）。merge: P005 → P003，
+      // 所以旧实现会把 store 侧 P005 归一成 P003，
+      // 而 query侧仍是 P005 ⇒ 不等 ⇒ trainingCount = 0（本用例红）。
+      const realId = 'P005';
+      final sessionId = await seedSession();
+      await seedWithRealId(sessionId, syndromeId: realId);
+
+      final input = await buildTrainingInputForActiveSyndrome(
+        studentModelRepo,
+        sessionId,
+        realId,
+        const ActiveProblemMeta(currentSeverity: Severity.l1),
+      );
+
+      expect(input, isNotNull);
+      expect(
+        input!.minDataInput.trainingCount,
+        1,
+        reason:
+            '库里存的是**现行** ID $realId（v46 迁移后存量行已被改写为现行 ID），'
+            '查询也是现行 ID ⇒ 必须自匹配。若得到 0，说明单边归一把 store 侧'
+            '改到了别的号码上⇒ 该症候的训练历史读不出来。',
+      );
+    });
+
+    test('#B2 全34 个现行 ID 逐一自匹配（防止只修好一个）', () async {
+      // 迭代**现行注册表全量**而不是抽样：实测 33/34 会被改写，
+      // 若只断言单个 ID，修成「只对 P005 特判」也会绿。
+      final broken = <String>[];
+      for (final id in kSyndromeIds) {
+        final sessionId = await seedSession();
+        await seedWithRealId(sessionId, syndromeId: id);
+        final input = await buildTrainingInputForActiveSyndrome(
+          studentModelRepo,
+          sessionId,
+          id,
+          const ActiveProblemMeta(currentSeverity: Severity.l1),
+        );
+        final cnt = input?.minDataInput.trainingCount ?? -1;
+        if (cnt != 1) broken.add('$id→count=$cnt');
+      }
+      expect(
+        broken,
+        isEmpty,
+        reason: '以下现行 ID 自匹配失败（漏读训练历史）：${broken.join(", ")}',
+      );
+    });
+
+    test('#B3 不对称归一会造成跨症候串号（漏读之外的第二重后果）', () async {
+      // ★ 串号窗口 = `merge[stored] == query` 恰好成立的那一对。
+      //   owner = P005（现行「句式节奏单一」），merge[P005] == P003。
+      //   victim = P003（现行「视角漂移」）。
+      //   ⇒ 查 P003 时，库里 P005 的记录会被当成 P003 的历史。
+      //   注意这与 #B1 是**同一个 merge 键的两个方向**：
+      //     #B1 = store 侧被改走导致漏读（自己查自己都不中）
+      //     #B3 = store 侧被改走导致串号（查到别人头上）
+      const owner = 'P005';
+      const victim = 'P003';
+      expect(
+        effectiveSyndromeId(owner),
+        victim,
+        reason:
+            '本用例的前置假设：merge[$owner] == $victim。'
+            '若将来 merge map 改了，这条前提失效 ⇒ 本用例会「莫名其妙地绿」，'
+            '届时应重新评估其鉴别力，而不是直接删掉。',
+      );
+
+      final sessionId = await seedSession();
+      // 库里只有 owner 的数据：2 条诊断 + 1 条训练。
+      await seedWithRealId(sessionId, syndromeId: owner);
+
+      // 查victim：诊断数不够 2 → 返回 null。先补victim 的诊断让它过阈值。
+      // ★ 这两条诊断**不含任何训练记录** ⇒ 若最终 trainingCount > 0，
+      //   那个数字只可能来自 owner 的记录被误认。
+      for (final ts in [4000, 5000]) {
+        await appendDiagnosis(
+          sessionId,
+          maxSeverity: 'L1',
+          timestamp: ts,
+          syndromeId: victim,
+        );
+      }
+
+      final input = await buildTrainingInputForActiveSyndrome(
+        studentModelRepo,
+        sessionId,
+        victim,
+        const ActiveProblemMeta(currentSeverity: Severity.l1),
+      );
+
+      expect(input, isNotNull, reason: '诊断数 2 已过阈值，应返回非 null');
+      expect(
+        input!.minDataInput.trainingCount,
+        0,
+        reason:
+            '库里只有 $owner（句式节奏单一）的训练记录，'
+            '查 $victim（视角漂移）⇒ 必须 0。'
+            '若 >0，说明单边归一把 $owner 归一成了 $victim，'
+            '把别的症候的训练历史当成本症候的喂给了教练。',
       );
     });
   });

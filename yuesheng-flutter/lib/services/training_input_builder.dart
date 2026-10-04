@@ -395,6 +395,18 @@ List<Map<String, dynamic>> _filterDiagnosisRecords(
 }
 
 /// 筛选目标症候训练记录（按时间正序）（R-019 拆出）。
+///
+/// ★ **双边归一**（与 `_filterDiagnosisRecords` / `countTrainingForSyndrome` 一致）。
+///   本函数曾写成 `effectiveSyndromeId(stored) == syndromeId`—— **右边少归一一次**，
+///   因为 `kSyndromeMergeMap` 有 33 个键同时是现行活跃 ID（`P001`–`P033`），
+///   单边归一把store 侧改到别的号码上，导致：
+///     · 漏读：拿现行 ID 查自己都不匹配（实测 34个现行 ID 只 1 个中）
+///     · 串号：库里 P005（句式节奏单一）的记录被当成 P003（视角漂移）的历史
+///   详见 `test/services/training_input_builder_test.dart` group `B0-1`。
+///
+/// ⚠️ 同一条纪律适用于**任何**拿 ID 做等值比较的地方：只要两侧有一侧来自
+///   DB/历史（可能是旧号），两侧就**必须**都过 `effectiveSyndromeId`。
+///   「双边都错得一样」才等于「双边都对」——单边归一是纯漏。
 List<Map<String, dynamic>> _filterTrainingRecords(
   List<Map<String, dynamic>> history,
   String syndromeId,
@@ -404,7 +416,8 @@ List<Map<String, dynamic>> _filterTrainingRecords(
         (r) =>
             r['type'] == 'training' &&
             r['syndromeId'] is String &&
-            effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
+            effectiveSyndromeId(r['syndromeId'] as String) ==
+                effectiveSyndromeId(syndromeId),
       )
       .toList()
     ..sort((a, b) {
