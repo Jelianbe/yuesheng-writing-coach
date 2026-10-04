@@ -9,6 +9,7 @@ import '../database/database.dart';
 import '../database/utils.dart';
 import '../../services/decode_guard.dart';
 import '../../services/style_fingerprint.dart';
+import '../../services/syndrome_registry.dart';
 import '../../types/teaching_types.dart';
 import 'repository_write_guard.dart';
 
@@ -132,7 +133,24 @@ class StudentModelRepository {
         // JSON decode 产出 Map<String, dynamic>；用精确类型测试以保持类型安全
         if (rec is! Map<String, dynamic>) continue;
         if (rec['type'] != 'training') continue;
-        if (syndromeId != null && rec['syndromeId'] != syndromeId) continue;
+        // ★ B1（M1 语义）：ID 比较必须双边归一。
+        //
+        //   归一函数 `effectiveSyndromeId` 的语义 = **现行 ID 恒等 + 真旧号单跳**
+        //   （见 `syndrome_registry.dart` 的文档注释与
+        //   `test/services/syndrome_merge_map_test.dart` 的四条性质锁）。
+        //
+        //   本行曾写裸比较 `rec['syndromeId'] != syndromeId`——
+        //   而 `student_models.teaching_history` 是 **JSON 文本、未被 v46 迁移改写**
+        //   ⇒ 旧号行仍可能存在 ⇒ 裸比较会看不见它们（静默 `continue`，
+        //   导致「最近一条 training 评分」写到别的症候上）。
+        //
+        //   归一必须**双边**：只有 store侧（历史行）过归一时，
+        //   query 侧（现行 ID）也要过，否则两侧不在同一口径上。
+        if (syndromeId != null &&
+            effectiveSyndromeId(rec['syndromeId'] as String? ?? '') !=
+                effectiveSyndromeId(syndromeId)) {
+          continue;
+        }
         rec['userRating'] = rating;
         updated = true;
         break;

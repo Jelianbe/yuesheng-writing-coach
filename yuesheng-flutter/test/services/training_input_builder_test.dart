@@ -576,23 +576,39 @@ void main() {
       );
     });
 
-    test('#B3 不对称归一会造成跨症候串号（漏读之外的第二重后果）', () async {
-      // ★ 串号窗口 = `merge[stored] == query` 恰好成立的那一对。
-      //   owner = P005（现行「句式节奏单一」），merge[P005] == P003。
-      //   victim = P003（现行「视角漂移」）。
-      //   ⇒ 查 P003 时，库里 P005 的记录会被当成 P003 的历史。
-      //   注意这与 #B1 是**同一个 merge 键的两个方向**：
-      //     #B1 = store 侧被改走导致漏读（自己查自己都不中）
-      //     #B3 = store 侧被改走导致串号（查到别人头上）
-      const owner = 'P005';
-      const victim = 'P003';
+    test('#B3 跨症候串号（漏读之外的第二重后果）', () async {
+      // ★ 本用例的前置假设在 **B1 · M1 落地后已改变**，须重新表述：
+      //
+      //   旧语义（`map[id] ?? id`）：串号窗口 = `merge[stored] == query`
+      //     恰好成立的那一对。owner=P005、victim=P003、merge[P005]=P003
+      //     ⇒ 查 P003 时，库里 P005 的记录被当成 P003 的历史。修前实测 count=1。
+      //
+      //   M1 语义（现行 ID 恒等 + 真旧号单跳）：
+      //     **现行 ID 恒等 ⇒ 这一对不再构成串号窗口**
+      //     （`effectiveSyndromeId('P005') == 'P005'`，不等于 P003）
+      //     ⇒ 本用例的语义从「验证修复后串号被堵」升级为
+      //        **「验证任意两个不同现行 ID 之间都不会串号」**——
+      //        这比原来更强：原来只测了一对，现在遍历全34×34。
+      //
+      //   保留 owner/victim 配对是为了**保留一个具体可读的回归点**，
+      //   同时用 `#B2`（全 34 个 ID 自匹配）与本例（跨号不串）夹住两侧。
+      const owner = 'P005'; // 句式节奏单一
+      const victim = 'P003'; // 视角漂移
+      // M1 下现行 ID 恒等 ⇒ 前置断言改为「两者归一后仍是各自」
       expect(
         effectiveSyndromeId(owner),
+        owner,
+        reason: 'M1 语义：现行 ID 恒等，$owner 不应被改写',
+      );
+      expect(
+        effectiveSyndromeId(victim),
         victim,
-        reason:
-            '本用例的前置假设：merge[$owner] == $victim。'
-            '若将来 merge map 改了，这条前提失效 ⇒ 本用例会「莫名其妙地绿」，'
-            '届时应重新评估其鉴别力，而不是直接删掉。',
+        reason: 'M1 语义：现行 ID 恒等，$victim 不应被改写',
+      );
+      expect(
+        effectiveSyndromeId(owner) == effectiveSyndromeId(victim),
+        isFalse,
+        reason: 'M1 下两个不同现行 ID 归一后仍不同 ⇒ 不存在串号窗口',
       );
 
       final sessionId = await seedSession();

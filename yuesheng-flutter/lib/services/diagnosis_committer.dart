@@ -48,6 +48,7 @@ import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/fact_stale_service.dart';
 import 'package:writingcoach/services/message_card_service.dart';
 import 'package:writingcoach/services/outline_parser.dart';
+import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/conflict_detector.dart'
@@ -327,7 +328,16 @@ class DiagnosisCommitter {
               .where(
                 (r) =>
                     r['type'] == 'training' &&
-                    r['syndromeId'] == focusSyndromeId,
+                    r['syndromeId'] is String &&
+                    // ★ B1（M1 语义）：ID 比较双边归一。
+                    // 本行曾写裸比较 `r['syndromeId'] == focusSyndromeId`，
+                    // 而 `teaching_history` 是 JSON 文本、**未被 v46 迁移改写**
+                    // ⇒ 旧号行不可见 ⇒ 连续失败计数会把别的症候的记录算进来
+                    //   （本函数算的是「连续失败训练次数」，直接驱动介入级别提升）。
+                    // 归一语义见 `syndrome_registry.dart` 的
+                    // `effectiveSyndromeId` 文档注释（现行 ID 恒等 + 真旧号单跳）。
+                    effectiveSyndromeId(r['syndromeId'] as String) ==
+                        effectiveSyndromeId(focusSyndromeId),
               )
               .toList()
             ..sort((a, b) {

@@ -128,19 +128,55 @@ void main() {
       // 彻底删除后注册表无退役记录：注册表即活跃集合
       expect(active.length, kSyndromeRegistry.length);
 
-      // 归一映射：value 均为活跃症候；effectiveSyndromeId 归一正确
+      // 归一映射：value 均为活跃症候
       for (final entry in kSyndromeMergeMap.entries) {
         expect(
           active.contains(entry.value),
           true,
           reason: '归一映射 ${entry.key} → ${entry.value} 目标非活跃症候',
         );
-        expect(
-          effectiveSyndromeId(entry.key),
-          entry.value,
-          reason: 'effectiveSyndromeId(${entry.key}) 未归一',
-        );
       }
+
+      // ★ M1（B1 批）后归一断言**按键的类型分两类**，不再一刀切。
+      //
+      //   背景：merge map 有 **33 个键同时是现行活跃 ID**（P001–P033），
+      //   而「旧 P005」与「现行 P005」是**同一个字符串** ⇒ 程序无从区分。
+      //   M1 语义 = 现行 ID 恒等 + 真旧号单跳，故：
+      //
+      //   · 键 ∈ 现行注册表（33 个）⇒ **原样返回**（不得被改写）
+      //   · 键 ∉ 现行注册表（17 个：P035–P049 + H001/H002）⇒ 归一到 value
+      //
+      //   ⚠️ 本断言原先写的是「所有键都应归一到 value」，那是**旧语义**
+      //   （`map[id] ?? id`）的写照，会把 33 个现行 ID 拖进别的实体
+      //   ⇒ 实测 18 对现行 ID 因此互撞（详见 syndrome_merge_map_test #M1-4）。
+      var legacyChecked = 0;
+      var activeChecked = 0;
+      for (final entry in kSyndromeMergeMap.entries) {
+        if (active.contains(entry.key)) {
+          // 现行 ID：恒等，不得被 merge map 改写
+          expect(
+            effectiveSyndromeId(entry.key),
+            entry.key,
+            reason:
+                '现行 ID ${entry.key}（${syndromeRecordOf(entry.key)?.name}）'
+                '必须恒等——它同时是某个旧号的映射目标，'
+                '但 M1 语义下现行实体优先，不得被拉去别处',
+          );
+          activeChecked++;
+        } else {
+          // 真旧号：单跳归一到 value
+          expect(
+            effectiveSyndromeId(entry.key),
+            entry.value,
+            reason: '真旧号 ${entry.key} 应归一到 ${entry.value}',
+          );
+          legacyChecked++;
+        }
+      }
+      // 实测读数（2026-10-04）：33 个现行键 + 17 个真旧号= 50
+      expect(activeChecked, 33, reason: '撞现行 ID 的键实测 33 个');
+      expect(legacyChecked, 17, reason: '真旧号实测 17 个（P035–P049 + H001/H002）');
+
       // 未在映射表中的 ID 原样返回
       expect(effectiveSyndromeId('P999'), 'P999', reason: '非映射 ID 应原样返回');
     });
