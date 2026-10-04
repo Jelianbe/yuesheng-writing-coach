@@ -21,22 +21,13 @@ import 'repository_write_guard.dart';
 export 'package:writingcoach/contracts/reference_capability.dart'
     show ReferencedItem, AttachedFileRow;
 
-class ReferenceRepository implements ReferenceCapability {
-  final AppDatabase _db;
-
-  ReferenceRepository(this._db);
-
-  /// 契约方法：列出会话的所有引用（别名 → listReferencesOfSession）
-  @override
-  Future<List<ReferencedItem>> listReferences(String sessionId) =>
-      listReferencesOfSession(sessionId);
-
-  /// 列出会话的所有引用（UNION ALL manuscripts/chapters/attached_files）
-  /// 复刻 reference-dao.ts listReferencesOfSession
-  Future<List<ReferencedItem>> listReferencesOfSession(String sessionId) async {
-    // 三段 UNION：manuscripts / chapters / attached_files
-    // ORDER BY is_primary DESC
-    final sql = '''
+/// 会话引用的三段 UNION 查询（manuscripts / chapters / attached_files）。
+///
+/// 抽出为顶层常量（纯数据）：SQL 与 [ReferenceRepository] 的行为无关，
+/// 原先内联在方法体里占 23 行，把方法体撑到 56 行（R-019 上限 50）。
+/// 前置换行：紧跟声明行（自带起首换行，勿手工删）；三个 `?` 依次
+/// 绑定 sessionId（manuscript / chapter / file 三段各一个）。
+const String _kListReferencesOfSessionSql = '''
       SELECT sr.ref_id AS ref_id, sr.ref_type AS ref_type, sr.is_primary AS is_primary,
              sr.excerpt_range AS excerpt_range,
              m.title AS title, NULL AS manuscript_id
@@ -58,7 +49,23 @@ class ReferenceRepository implements ReferenceCapability {
         JOIN attached_files f ON f.id = sr.ref_id
        WHERE sr.session_id = ? AND sr.ref_type = 'file'
        ORDER BY is_primary DESC
-    ''';
+''';
+
+class ReferenceRepository implements ReferenceCapability {
+  final AppDatabase _db;
+
+  ReferenceRepository(this._db);
+
+  /// 契约方法：列出会话的所有引用（别名 → listReferencesOfSession）
+  @override
+  Future<List<ReferencedItem>> listReferences(String sessionId) =>
+      listReferencesOfSession(sessionId);
+
+  /// 列出会话的所有引用（UNION ALL manuscripts/chapters/attached_files）
+  /// 复刻 reference-dao.ts listReferencesOfSession
+  /// SQL 见 [_kListReferencesOfSessionSql]（三段 UNION + ORDER BY is_primary DESC）。
+  Future<List<ReferencedItem>> listReferencesOfSession(String sessionId) async {
+    final sql = _kListReferencesOfSessionSql;
     final rows = await _db
         .customSelect(
           sql,

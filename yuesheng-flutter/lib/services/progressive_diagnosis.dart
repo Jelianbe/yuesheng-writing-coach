@@ -390,16 +390,13 @@ const String _kMergeRelevanceGate = '''叙事合理性判定（最终裁决步�
 
 拿不准是否真的损害了读者体验时，一律判为"否"，不输出该条。''';
 
-/// 构造跨分片合并的系统 prompt。
+/// 把分片分析结果组装成 merge prompt 里的「## 分片 N」笔记块列表。
 ///
-/// [diagnosisContext] 来自前次活跃症候累积（对齐 RN buildDiagnosisContext）。
-/// [disabledSyndromeIds] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
-String buildMergePrompt(
-  List<ChunkAnalysisResult> chunkResults, {
-  String diagnosisContext = '',
-  Set<String> disabledSyndromeIds = const {},
-  TeachingMode teachingMode = TeachingMode.socratic,
-}) {
+/// 抽出为独立函数（职责级）：组装笔记是**纯数据变换**，与 merge prompt
+/// 的文本拼装无关；原 buildMergePrompt 64 行里本块21 行，
+/// R-019（函数 ≤ 50 行）计的是函数体。
+/// 跳过 [ChunkAnalysisResult.success] 为 false 或 notes 为空的分片。
+List<String> _buildChunkNotesBlocks(List<ChunkAnalysisResult> chunkResults) {
   final allNotesJson = <String>[];
 
   for (var i = 0; i < chunkResults.length; i++) {
@@ -421,6 +418,42 @@ String buildMergePrompt(
       allNotesJson.add('## 分片 ${i + 1}\n```json\n$encoded\n```');
     }
   }
+  return allNotesJson;
+}
+
+/// merge prompt 的静态指引块：合并注意事项 + 叙事合理性判定门 + 数量原则。
+///
+/// 抽出为顶层常量（纯数据）：本块不依赖 buildMergePrompt 的任何参数，
+/// 只有 [_kMergeRelevanceGate] 一个 const 插值，故合并规则与判定门在
+/// merge 链路上仍只此一份（与 syndrome_kb_content.dart 尾部那份副本无关，
+/// 那份落在按ID 切片注入的手册尾部，从不注入）。
+final String _kMergeGuidanceBlock =
+    '''
+注意事项：
+- 同一个症候在不同分片中出现的信号 → 合并为一条诊断，严重度取最高
+- 某个症候只在单一分片出现但证据充分 → 保留
+- 跨分片一致的信号（如 P003 在开头和结尾都出现）→ 说明这是个系统性问题，提升严重度
+- 互相矛盾的信号 → 做权衡判断，只输出合理的结论
+
+$_kMergeRelevanceGate
+
+数量原则：不限制输出问题数量——识别到多少就报多少。候选较多时按以下优先级排序输出（排序而非截断）：
+1. 对读者体验影响最大的问题优先
+2. 学员最可能愿意改的问题优先
+3. 更基础的问题优先（如 P001 情绪标签化优先于 P006 语言堆砌）
+''';
+
+/// 构造跨分片合并的系统 prompt。
+///
+/// [diagnosisContext] 来自前次活跃症候累积（对齐 RN buildDiagnosisContext）。
+/// [disabledSyndromeIds] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
+String buildMergePrompt(
+  List<ChunkAnalysisResult> chunkResults, {
+  String diagnosisContext = '',
+  Set<String> disabledSyndromeIds = const {},
+  TeachingMode teachingMode = TeachingMode.socratic,
+}) {
+  final allNotesJson = _buildChunkNotesBlocks(chunkResults);
 
   final contextSection = diagnosisContext.isNotEmpty
       ? '$diagnosisContext\n---\n\n'
@@ -435,19 +468,7 @@ String buildMergePrompt(
 
 ${allNotesJson.join('\n\n')}
 
-注意事项：
-- 同一个症候在不同分片中出现的信号 → 合并为一条诊断，严重度取最高
-- 某个症候只在单一分片出现但证据充分 → 保留
-- 跨分片一致的信号（如 P003 在开头和结尾都出现）→ 说明这是个系统性问题，提升严重度
-- 互相矛盾的信号 → 做权衡判断，只输出合理的结论
-
-$_kMergeRelevanceGate
-
-数量原则：不限制输出问题数量——识别到多少就报多少。候选较多时按以下优先级排序输出（排序而非截断）：
-1. 对读者体验影响最大的问题优先
-2. 学员最可能愿意改的问题优先
-3. 更基础的问题优先（如 P001 情绪标签化优先于 P006 语言堆砌）
-
+$_kMergeGuidanceBlock
 syndrome 对象格式要求：
 - syndrome_id (string): 症候编号 ${_syndromeIdRange(disabledSyndromeIds)}（由注册表派生，ADR-C69）
 - name (string): 症候名称

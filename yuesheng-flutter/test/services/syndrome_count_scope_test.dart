@@ -174,9 +174,10 @@ void main() {
     test('说明在 kSyndromeIndexContent 区间、不在 kSyndromeManualContent 区间', () {
       final src = _readSrc(kSyndromeKb);
 
-      final idxIndex = src.indexOf(
-        'String buildSyndromeIndexContent([Set<String> disabled',
-      );
+      // 锚点用 _kIndexHeader（index 正文的真实起点）而非函数签名：
+      // R-019 清偿把头部/尾部字面量搬成了顶层常量，函数签名已不再是内容起点，
+      // 但「必须落在会被注入的 index 区间内」这条判据的本意不变。
+      final idxIndex = src.indexOf("const String _kIndexHeader = r'''");
       final idxManual = src.indexOf('final String kSyndromeManualContent =');
       final idxNote = src.indexOf(kUncappedScopeNote);
 

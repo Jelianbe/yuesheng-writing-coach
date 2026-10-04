@@ -1,20 +1,22 @@
 // ─────────────────────────────────────────────────────────────
 // SettingsPage widget 测试 — 设置页（缺口清单第 6 项）
 //
+// ★ B5 第三批：**表单相关用例已迁至 `api_config_page_test.dart`**
+//   （#2 #F7 #3 #4 #5 #B5-1~#B5-4 #6 #7 #7b #A #B #M2 #M6 #E2）。
+//   原因：「填表单 + 测试 + 保存」整块已下沉为子页 /settings/api-config
+//   （360x640 竖屏 = 平台唯一形态，主 CTA 在本页实测 bottom=721 超首屏）。
+//   本页只留：账号列表 / 外观 / 模型行为 / 用量 / 维护 / 关于 / 学习进度。
+//
 // 覆盖路径：
 //   1. 初始渲染 3 区块（API 配置/维护/关于）+ 未配置警告
-//   2. 表单加载已有配置（fake storage）
-//   3. 保存配置 → 写入 storage + 成功提示
-//   4. 空表单保存 → 完整提示
-//   5. 测试连接 → 成功结果框（fake llm）
-//   6. 填充示例 → 字段填充
-//   7. 清空配置 → 确认后字段 + storage 清空
-//   8. 清除缓存 → 删除无消息的孤儿会话（保留有消息的）
-//   9. 关于区块 → 应用名称/版本/包名
-//  10. 反馈对话框 → 邮箱展示
-//  11. `N7` 本周调用统计区块 → 总消耗/次数/token 拆解/命中率与坏行提示
+//   2. ADR-C91 账号列表：渲染 / 设默认 / 删除（含最后账号拒绝）
+//   3. 进入 API 配置子页的入口行 + 返回后列表刷新（R-009）
+//   4. 清除缓存 → 删除无消息的孤儿会话（保留有消息的）
+//   5. 关于区块 → 应用名称/版本/包名
+//   6. 反馈对话框 → QQ 群展示 + 复制
+//   7. `N7` 本周调用统计区块 → 总消耗/次数/token 拆解/命中率与坏行提示
 //      （★ 埋点由**真写入方** `LlmCallLogEntry.toJson()` 生成，见 #N7 段注释）
-//      （2026-09-20 改造：原「金额 / 峰时提示」断言随计价移除而重写）
+//   8. 学习进度区块（批次38）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -41,8 +43,6 @@ import '../helpers/mock_last_session_storage.dart';
 import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/services/llm_call_log_sink.dart';
-import 'package:writingcoach/services/llm_client.dart';
-import 'package:writingcoach/services/llm_config_resolver.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
 import 'package:writingcoach/services/llm_cost.dart';
 import 'package:writingcoach/services/llm_usage.dart';
@@ -63,21 +63,6 @@ class _FakeConfigStorage extends LlmConfigStorage {
   @override
   Future<void> clearLlmConfig() async {
     stored = null;
-  }
-}
-
-/// Fake LLM 客户端：固定返回成功，避免真实网络
-class _FakeLlmClient extends LlmClient {
-  TestConnectionResult? result;
-  LlmConfigValues? lastConfig;
-
-  @override
-  Future<TestConnectionResult> testLlmConnection({
-    LlmConfigValues? config,
-  }) async {
-    lastConfig = config;
-    return result ??
-        const TestConnectionResult(success: true, message: '连接成功（42ms）');
   }
 }
 
@@ -115,7 +100,6 @@ void main() {
   tearDown(() async => db.close());
 
   Widget buildSettings({
-    _FakeLlmClient? llm,
     MemoryLastSessionStorage? lastStorage,
     ThemeData? theme,
   }) {
@@ -128,10 +112,7 @@ void main() {
       ],
       child: MaterialApp(
         theme: theme,
-        home: SettingsPage(
-          configStorage: storage,
-          llmClient: llm ?? _FakeLlmClient(),
-        ),
+        home: SettingsPage(configStorage: storage),
       ),
     );
   }
@@ -142,7 +123,10 @@ void main() {
 
     // 首屏（ListView 懒加载：「维护」「关于」在 #9 滚动后验证）
     expect(find.text('API 配置'), findsOneWidget);
-    expect(find.text('尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能'), findsOneWidget);
+    expect(
+      find.text('尚未配置 API，当前为免费测试模式（离线示例）。点击下方「添加 / 编辑 API 配置」以启用完整功能'),
+      findsOneWidget,
+    );
   });
 
   // P1 轨道B 成对断言：迁移后本屏区块标题色随主题翻（端到端，非仅令牌层）
@@ -166,197 +150,21 @@ void main() {
     );
   });
 
-  testWidgets('#2 表单加载已有配置', (tester) async {
-    storage.stored = const LlmConfigValues(
-      apiKey: 'sk-existing',
-      baseUrl: 'https://api.example.com',
-      model: 'model-x',
-    );
-
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    // 表单已填充 → 未配置警告消失
-    expect(find.text('尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能'), findsNothing);
-    final keyField = tester.widget<TextField>(find.byType(TextField).at(0));
-    expect(keyField.controller!.text, 'sk-existing');
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text,
-      'https://api.example.com',
-    );
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      'model-x',
-    );
-  });
-
   // FIX-7：API Key 输入框显隐切换（默认密码态，可临时显示支持粘贴）
-  testWidgets('#F7 API Key 显隐切换', (tester) async {
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
 
-    final keyField = tester.widget<TextField>(find.byType(TextField).at(0));
-    expect(keyField.obscureText, isTrue, reason: '默认应为密码态');
-    expect(find.byIcon(Icons.visibility), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.visibility));
-    await tester.pump();
-
-    final shownField = tester.widget<TextField>(find.byType(TextField).at(0));
-    expect(shownField.obscureText, isFalse, reason: '点击眼睛后应明文显示');
-    expect(find.byIcon(Icons.visibility_off), findsOneWidget);
-
-    await tester.tap(find.byIcon(Icons.visibility_off));
-    await tester.pump();
-
-    final hiddenAgain = tester.widget<TextField>(find.byType(TextField).at(0));
-    expect(hiddenAgain.obscureText, isTrue, reason: '再点应回到密码态');
-  });
-  testWidgets('#3 保存配置 → 建账号（ADR-C91 多账号）', (tester) async {
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).at(0), 'sk-abc');
-    await tester.enterText(
-      find.byType(TextField).at(1),
-      'https://api.deepseek.com/',
-    );
-    await tester.enterText(find.byType(TextField).at(2), 'deepseek-v4-flash');
-    await tester.tap(find.text('保存配置'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('API 配置已保存'), findsOneWidget);
-    // 多账号：保存落 DB 账号（而非旧三键 storage）
-    final accounts = await AIAccountRepository(db).listAccounts();
-    expect(accounts, hasLength(1));
-    expect(accounts.first.isDefault, isTrue); // 首建自动默认
-    expect(accounts.first.baseUrl, 'https://api.deepseek.com'); // 去尾部斜杠
-    expect(accounts.first.model, 'deepseek-v4-flash');
-  });
-
-  testWidgets('#4 空表单保存 → 完整提示', (tester) async {
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('保存配置'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('请填写完整的 API 配置'), findsOneWidget);
-    expect(storage.stored, isNull);
-  });
-
-  testWidgets('#5 测试连接 → 成功结果框（直接用当前表单，不依赖保存）', (tester) async {
-    final llm = _FakeLlmClient();
-    await tester.pumpWidget(buildSettings(llm: llm));
-    await tester.pumpAndSettle();
-
-    await tester.enterText(find.byType(TextField).at(0), 'sk-abc');
-    await tester.enterText(
-      find.byType(TextField).at(1),
-      'https://api.deepseek.com/',
-    );
-    await tester.enterText(find.byType(TextField).at(2), 'deepseek-v4-flash');
-    await tester.tap(find.text('测试连接'));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('✓ 连接成功'), findsOneWidget);
-    // 测试连接直接使用当前表单（所见即所得），尾斜杠已清洗，不落库
-    expect(llm.lastConfig?.apiKey, 'sk-abc');
-    expect(llm.lastConfig?.baseUrl, 'https://api.deepseek.com');
-    expect(llm.lastConfig?.model, 'deepseek-v4-flash');
-    final accounts = await AIAccountRepository(db).listAccounts();
-    expect(accounts, isEmpty);
-  });
-
-  testWidgets('#6 填充示例 → 字段填充', (tester) async {
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    await tester.dragUntilVisible(
-      find.text('填充示例配置'),
-      find.byType(ListView),
-      const Offset(0, -200),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('填充示例配置'));
-    await tester.pumpAndSettle();
-
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text,
-      'https://api.deepseek.com',
-    );
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      'deepseek-v4-flash',
-    );
-  });
-
-  testWidgets('#7 清空配置 → 确认后字段 + storage 清空', (tester) async {
-    storage.stored = const LlmConfigValues(
-      apiKey: 'sk-x',
-      baseUrl: 'https://api.example.com',
-      model: 'model-x',
-    );
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    await tester.dragUntilVisible(
-      find.text('清空配置'),
-      find.byType(ListView),
-      const Offset(0, -200),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('清空配置'));
-    await tester.pumpAndSettle();
-    expect(find.text('确定清空所有 API 配置吗？'), findsOneWidget);
-
-    await tester.tap(find.text('清空'));
-    await tester.pumpAndSettle();
-
-    expect(storage.stored, isNull);
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
-      '',
-    );
-  });
-
-  testWidgets('#7b 清空配置 → resolveLlmConfig 返回 null（D01 验收：账号表 + 旧键全清）', (
-    tester,
-  ) async {
-    // 清空前种入默认账号 + 旧三键，证明「清空前确有可用配置」
-    final repo = AIAccountRepository(db);
-    await repo.createAccount(
-      name: '默认账号',
-      baseUrl: 'https://api.example.com',
-      model: 'model-x',
-      apiKey: 'sk-seed',
-      isDefault: true,
-    );
-    storage.stored = const LlmConfigValues(
-      apiKey: 'sk-seed',
-      baseUrl: 'https://api.example.com',
-      model: 'model-x',
-    );
-    // 清空前：默认账号优先 → 解析器给出非 null 配置
-    expect(await resolveLlmConfig(db, legacyStorage: storage), isNotNull);
-
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-    await tester.dragUntilVisible(
-      find.text('清空配置'),
-      find.byType(ListView),
-      const Offset(0, -200),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('清空配置'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('清空'));
-    await tester.pumpAndSettle();
-
-    // 清空后：账号表删空 + 旧键清空 → 解析器返回 null（无可用配置）
-    expect(await repo.listAccounts(), isEmpty);
-    expect(await resolveLlmConfig(db, legacyStorage: storage), isNull);
-  });
+  // ══════════════════════════════════════════════════════════════
+  // B5 第二批：「测试并保存」主 CTA（2026-10-04）
+  //
+  // 判据来源：360dp 竖屏实测（探针已回收）——
+  //   · 三并排每按钮 90~92.7dp，「测试并保存」5 字**换行**（文字高 40/60，非单行 20）⇒ 不可行
+  //   · 主+次方案：主按钮 294 满宽文字单行 20，次行各 141，总高 104 ⇒ 可行
+  //   · 直接 tap 集合（会被下移影响的用例）：:225 / :241 / :259 / :799
+  // ══════════════════════════════════════════════════════════════
+  //
+  // ★ 2026-10-04 删除原 `fillForm` helper：B5 第二批把 API 表单相关用例迁到
+  //   api_config_page_test.dart 后它零引用（`dart analyze` 报 unused_element，
+  //   门禁 1 会红）。保留孤儿 helper 会让「本批没动这个文件」变成假象。
+  // ══════════════════════════════════════════════════════════════
 
   testWidgets('#8 清除缓存 → 删除孤儿会话（保留有消息的）', (tester) async {
     final sessionRepo = SessionRepository(db);
@@ -588,32 +396,14 @@ void main() {
       await tester.pumpWidget(buildSettings());
       await tester.pumpAndSettle();
 
-      // API 区在首屏
-      expect(find.text('如何获取 API Key →'), findsOneWidget);
+      // API 区在首屏：入口行（表单已下沉到子页，本页只有账号列表 + 入口）
+      expect(find.text('添加 / 编辑 API 配置'), findsOneWidget);
 
       await scrollTo(tester, '导出会话记录（JSON）');
       expect(find.text('导出会话记录（JSON）'), findsOneWidget);
 
       await scrollTo(tester, '隐私与费用说明');
       expect(find.text('隐私与费用说明'), findsOneWidget);
-    });
-
-    testWidgets('#E2 Key 指引：平台路径 + 费用一句话', (tester) async {
-      await tester.pumpWidget(buildSettings());
-      await tester.pumpAndSettle();
-
-      // API 区在首屏但按钮贴近视口底部，先滚动确保命中
-      await scrollTo(tester, '如何获取 API Key →');
-      await tester.tap(find.text('如何获取 API Key →'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('如何获取 API Key'), findsOneWidget);
-      expect(find.textContaining('platform.deepseek.com'), findsOneWidget);
-      expect(find.textContaining('账户余额'), findsOneWidget);
-
-      await tester.tap(find.text('知道了'));
-      await tester.pumpAndSettle();
-      expect(find.text('如何获取 API Key'), findsNothing);
     });
 
     testWidgets('#E3 隐私与费用说明（设置页常驻入口）', (tester) async {
@@ -691,55 +481,6 @@ void main() {
     });
   });
 
-  testWidgets('#A 预设点选 → Kimi 自动填 kimi-k3 + api.moonshot.cn（批次A 时效性锚定）', (
-    tester,
-  ) async {
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(ActionChip, 'Kimi（月之暗面）'));
-    await tester.pumpAndSettle();
-
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text,
-      'https://api.moonshot.cn/v1',
-    );
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      'kimi-k3',
-    );
-  });
-
-  testWidgets('#B 预设点选 → 智谱/豆包新模型名生效（时效性锚定 2026-10-04）', (tester) async {
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(ActionChip, '智谱 GLM'));
-    await tester.pumpAndSettle();
-    // 智谱取免费档 glm-4.7-flash（官方 free 分类，输入/输出/缓存全免），
-    // 而非付费的 glm-4.7。锚定此值以防被无意改回收费档 —— 若要升级/降级
-    // 模型，必须同步复核该模型是否仍在智谱官方免费分类内。
-    // 鉴别力实测：预设改回 glm-4.6 或误写收费档 glm-4.7-flashx，本用例红。
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      'glm-4.7-flash',
-    );
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      isNot(contains('flashx')),
-      reason:
-          'glm-4.7-flashx 是收费档（与免费档仅差一个字母 x，上下文同为 '
-          '200K），不得出现在智谱预设里',
-    );
-
-    await tester.tap(find.widgetWithText(ActionChip, '豆包（火山方舟）'));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      'doubao-seed-2.1-turbo',
-    );
-  });
-
   // ── ADR-C91 多账号（批次 D-1） ──
 
   Future<void> seedAccounts(AppDatabase target) async {
@@ -758,6 +499,8 @@ void main() {
     );
   }
 
+  // B5 第二批 · 编辑态判据（放在此处：依赖上面的 seedAccounts）
+
   testWidgets('#M1 已有账号 → 列表渲染（名称/默认徽标/model·baseUrl）', (tester) async {
     await seedAccounts(db);
     await tester.pumpWidget(buildSettings());
@@ -772,36 +515,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('kimi-k3 · https://api.moonshot.cn/v1'), findsOneWidget);
-  });
-
-  testWidgets('#M2 添加新账号 → 表单清空 + 保存后列表 +1', (tester) async {
-    await seedAccounts(db);
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    // 当前编辑默认账号 → 点「添加新账号」清空表单
-    await tester.tap(find.text('添加新账号'));
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
-      '',
-    );
-
-    // 填新账号并保存（账号列表推高内容 → 先滚到保存按钮）
-    await tester.enterText(find.byType(TextField).at(0), 'sk-new');
-    await tester.enterText(
-      find.byType(TextField).at(1),
-      'https://new.example.com',
-    );
-    await tester.enterText(find.byType(TextField).at(2), 'new-model');
-    await tester.ensureVisible(find.text('保存配置'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('保存配置'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('API 配置已保存'), findsOneWidget);
-    expect(find.text('已保存的账号（3）'), findsOneWidget);
-    expect(find.text('new-model · https://new.example.com'), findsOneWidget);
   });
 
   testWidgets('#M3 删除非默认账号 → 确认后列表 -1', (tester) async {
@@ -861,28 +574,6 @@ void main() {
       matching: find.byType(Container),
     );
     expect(kimiRow, findsWidgets);
-  });
-
-  testWidgets('#M6 点击账号行 → 编辑模式（表单载入该账号）', (tester) async {
-    await seedAccounts(db);
-    await tester.pumpWidget(buildSettings());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Kimi 备选'));
-    await tester.pumpAndSettle();
-
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
-      'sk-kimi',
-    );
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text,
-      'https://api.moonshot.cn/v1',
-    );
-    expect(
-      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
-      'kimi-k3',
-    );
   });
 
   // ── `N7`（批次 3）：设置页「本周调用统计」 ──
@@ -1074,5 +765,113 @@ void main() {
     await tester.tap(find.text('暗色'));
     await tester.pumpAndSettle();
     expect(await AppStateRepository(db).getValue(kThemeIdKey), 'dark');
+  });
+
+  // ── B5 第三批：API 配置子页入口 + 返回刷新（R-009）──
+
+  /// 用真 router 启动（子页是 GoRoute 顶层路由，非go() 不可达）。
+  /// 形状照抄 #13（已验证可跑通 app-level router）。
+  Future<void> pumpRouter(WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+        child: MaterialApp.router(routerConfig: appRouter),
+      ),
+    );
+    await tester.pumpAndSettle();
+    appRouter.go(AppRoutes.settings);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('#N1 「添加 / 编辑 API 配置」入口 → 进子页', (tester) async {
+    await pumpRouter(tester);
+
+    expect(find.text('添加 / 编辑 API 配置'), findsOneWidget);
+    await tester.tap(find.text('添加 / 编辑 API 配置'));
+    await tester.pumpAndSettle();
+
+    // 子页特征：AppBar 标题 + 三输入框 + 主 CTA
+    expect(find.text('API 配置'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(3));
+    expect(find.text('测试并保存'), findsOneWidget);
+  });
+
+  testWidgets('#N2 点账号行 → 进子页（不再载入本页表单）', (tester) async {
+    await seedAccounts(db);
+    await pumpRouter(tester);
+
+    // 本页没有输入框了 —— 点行只能导航
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.text('Kimi 备选'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('测试并保存'), findsOneWidget);
+  });
+
+  testWidgets('#R9-3 子页保存后返回 → 设置页账号列表立刻出现新账号（R-009）', (tester) async {
+    await pumpRouter(tester);
+
+    // 起始：无账号 ⇒ 列表区不渲染
+    expect(find.textContaining('已保存的账号'), findsNothing);
+
+    // 进子页 → 填表 → 「保存配置」（不测连接，故无需网络）
+    await tester.tap(find.text('添加 / 编辑 API 配置'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), 'sk-new');
+    await tester.enterText(
+      find.byType(TextField).at(1),
+      'https://new.example.com',
+    );
+    await tester.enterText(find.byType(TextField).at(2), 'new-model');
+    await tester.scrollUntilVisible(
+      find.text('保存配置'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存配置'));
+    await tester.pumpAndSettle();
+
+    // 返回设置页（子页无保存后自动返回，故显式 pop —— 与用户按返回键同路径）
+    appRouter.pop();
+    await tester.pumpAndSettle();
+
+    // ★ 核心判据：设置页列表已刷新，用户立刻看到刚存的账号
+    expect(find.text('已保存的账号（1）'), findsOneWidget);
+    expect(find.text('new-model · https://new.example.com'), findsOneWidget);
+  });
+
+  testWidgets('#R9-4 仅旧单键（无账号行）→ **不**弹「尚未配置」假警报', (tester) async {
+    // ADR-C91 之前的用户：只有旧三键存储，没有账号行。
+    // 若按「账号列表为空」判未配置，会对着已配好的用户弹警告 —— 这条钉住它。
+    storage.stored = const LlmConfigValues(
+      apiKey: 'sk-legacy',
+      baseUrl: 'https://api.example.com',
+      model: 'model-x',
+    );
+
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('尚未配置 API'),
+      findsNothing,
+      reason: '旧单键已构成可用配置，不该报未配置',
+    );
+  });
+
+  // ★ 正对照（2026-10-04）：#R9-4 是「findsNothing」否定式断言，若警告机制
+  //   整体没跑（storage 未注入 / 判据写死 false / 区块被误删）它照样会绿。
+  //   这条在**同一 buildSettings 路径、同样不注入 storage** 的条件下要求警告
+  //   必须出现 —— 它绿，才说明 #R9-4 测的真是判据而不是机制缺席。
+  testWidgets('#R9-4c 零配置 → 「尚未配置」警告**必须**出现（#R9-4 的正对照）', (tester) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('尚未配置 API'),
+      findsOneWidget,
+      reason: '对照组：警告机制本身要能触发，否则 #R9-4 的 findsNothing 无意义',
+    );
   });
 }

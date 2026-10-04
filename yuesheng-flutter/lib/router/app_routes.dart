@@ -45,6 +45,10 @@ class AppRoutes {
   static const String diagnosticReference = '/diagnostic-reference';
   static const String syndromeLearnerDetail = '/syndrome-learner-detail/:id';
 
-  /// 免费获取 API Key 引导页（设置页 API 配置卡入口）
+  /// 免费获取 API Key 引导页（API 配置子页入口）
   static const String freeTierGuide = '/settings/free-tier-guide';
+
+  /// API 配置子页（设置页 API 卡的「添加 / 编辑 API 配置」入口）
+  /// 表单整块在此页：设置页首屏在 360x640 竖屏下放不下主 CTA。
+  static const String apiConfig = '/settings/api-config';
 }

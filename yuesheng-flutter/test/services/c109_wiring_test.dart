@@ -24,13 +24,27 @@ String _src(String rel) => File(rel).readAsStringSync();
 
 void main() {
   group('C109 源码装配扫描', () {
-    test('B2：设置页自建 LlmClient 接持久 sink', () {
-      final src = _src('lib/features/app_settings/settings_page.dart');
-      expect(
-        src.contains('LlmCallLogSink().call'),
-        isTrue,
-        reason: '设置页 new LlmClient 必须接 LlmCallLogSink().call，否则连通性用量零落库',
-      );
+    test('B2：API 配置侧自建 LlmClient 接持久 sink', () {
+      //★ 2026-10-04 随 B5 第二批调整判据落点（B5-2）：API 表单与「测试连接/并保存」
+      //  已从 settings_page.dart 下沉到 api_config_page.dart，`LlmClient` 自建
+      //  （含 sink 接线）随之搬走。原判据**硬编码 settings_page.dart 路径**
+      //  ⇒ 搬运后恒红，但功能其实没丢（已核 api_config_page.dart 仍在该行）。
+      //  教训：判据若钉在「某个文件必须有某行」，重构搬运后它会变成假红；
+      //  此类判据应钉「**该能力所在处**必须有该行」，且能力搬家时要同步改。
+      //  这里不写死单一文件 —— 未来若再下沉一层，只需改这一处列表。
+      const files = <String>[
+        'lib/features/app_settings/api_config_page.dart',
+        'lib/providers/session_providers.dart',
+      ];
+      for (final f in files) {
+        expect(
+          _src(f).contains('LlmCallLogSink().call'),
+          isTrue,
+          reason:
+              '$f 自建/提供的 LlmClient 必须接 LlmCallLogSink().call，'
+              '否则连通性测试用量零落库',
+        );
+      }
     });
 
     test('C13：调用点各出现 markCallContext 恰好 N 次（逐处断言、不求和）', () {
