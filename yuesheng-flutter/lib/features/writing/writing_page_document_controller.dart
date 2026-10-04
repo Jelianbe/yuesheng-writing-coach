@@ -112,6 +112,8 @@ class WritingPageDocumentController {
   void syncEditorText(String text) {
     _host.editorController.text = text;
     _host.lastEditorText = text;
+    // ADR-0002 阶段4：flag 开时回灌块模型（undo/redo/排版/时光机/store 同步）。
+    _host.pushBlockEditorText(text);
   }
 
   /// 批次 36：标题变更 → 即时保存（对齐 RN handleTitleChange，无防抖）
@@ -200,6 +202,7 @@ class WritingPageDocumentController {
       selection: TextSelection.collapsed(offset: cursor),
     );
     _host.suppressSelectionMenu = false;
+    _host.pushBlockEditorText(newText, caretOffset: cursor);
     onContentChanged(newText);
     if (!_host.mounted) return;
     ScaffoldMessenger.of(_host.context)
@@ -260,10 +263,12 @@ class WritingPageDocumentController {
     final start = sel.isValid ? sel.start : text.length;
     final end = sel.isValid ? sel.end : start;
     final newText = text.replaceRange(start, end, char);
+    final caret = start + char.length;
     _host.editorController.value = TextEditingValue(
       text: newText,
-      selection: TextSelection.collapsed(offset: start + char.length),
+      selection: TextSelection.collapsed(offset: caret),
     );
+    _host.pushBlockEditorText(newText, caretOffset: caret);
     onContentChanged(newText);
   }
 }

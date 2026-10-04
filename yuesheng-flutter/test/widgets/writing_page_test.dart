@@ -63,6 +63,8 @@ import 'package:writingcoach/features/growth/writing_curve_chart.dart';
 import 'package:writingcoach/features/writing/writing_page.dart';
 import 'package:writingcoach/features/writing/writing_page_breadcrumb.dart';
 import 'package:writingcoach/features/writing/focus_aware_editing_controller.dart';
+import 'package:writingcoach/features/writing/writing_page_host.dart';
+import 'package:writingcoach/features/writing/writing_page_selection_ai_controller.dart';
 
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
@@ -138,6 +140,195 @@ class _FailingSaveStore extends WritingStore {
     // 与真实 saveNow 失败语义一致：标记 saveError，不切换整页错误视图
     state = state.copyWith(isSaving: false, saveError: '模拟保存失败');
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 批次95-1 判别力夹具（守住「取聚焦 editable + 用它自身的 controller 偏移」）
+//
+// 动因：现网 `kBlockEditorEnabled = false`（blocked_text/block_readonly_view.dart:16）
+// 时，`editorStackKey`（writing_editor_view.dart:255）子树里**只有一个** TextField
+// ⇒「取子树首个」与「取聚焦」在真实写作页上必然同解，批次95-1 原有 2 个用例零鉴别力
+// （实测：把实现退回「取首个 + 全局 controller 偏移」，那 2 个用例仍全绿）。
+//
+// 本夹具绕开页面结构、直接给控制器喂一棵**双 EditableText** 的 Stack：
+// 上方诱饵（永不聚焦）+ 下方目标（唯一聚焦），并让宿主 controller 与目标自身
+// controller 的选区**落在不同行** ⇒「取谁」与「用谁的偏移」两处改动都体现在 dy 上。
+// ─────────────────────────────────────────────────────────────
+
+/// 最小宿主：只实现划词菜单定位链路真正触碰的成员，其余经 noSuchMethod 显式炸出
+/// （免得夹具缺成员时静默走 no-op，测出假绿）。
+class _SelectionMenuHostFake implements WritingPageHost {
+  _SelectionMenuHostFake({
+    required this.editorStackKey,
+    required this.editorController,
+  });
+
+  @override
+  final GlobalKey editorStackKey;
+  @override
+  final FocusAwareEditingController editorController;
+
+  @override
+  bool suppressSelectionMenu = false;
+  @override
+  String selectedText = '';
+  @override
+  bool showSelectionMenu = false;
+  @override
+  Offset? selectionMenuPos;
+
+  @override
+  void hostSetState(VoidCallback fn) => fn();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    '未使用的 WritingPageHost 成员被调用：${invocation.memberName}',
+  );
+}
+
+/// 双 EditableText 的 `editorStackKey` 子树：诱饵在上（top 0）、目标在下（top 300）。
+Widget buildDualEditableStack({
+  required GlobalKey stackKey,
+  required TextEditingController decoyCtrl,
+  required FocusNode decoyFocus,
+  required TextEditingController targetCtrl,
+  required FocusNode targetFocus,
+}) {
+  return MaterialApp(
+    home: Scaffold(
+      body: SizedBox(
+        width: 400,
+        height: 600,
+        child: Stack(
+          key: stackKey,
+          children: [
+            Positioned(
+              left: 0,
+              top: 0,
+              width: 360,
+              child: TextField(
+                key: const Key('decoyField'),
+                controller: decoyCtrl,
+                focusNode: decoyFocus,
+                maxLines: null,
+              ),
+            ),
+            Positioned(
+              left: 0,
+              top: 300,
+              width: 360,
+              child: TextField(
+                key: const Key('targetField'),
+                controller: targetCtrl,
+                focusNode: targetFocus,
+                maxLines: null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+/// oracle：某 editable 在指定偏移处的 caret 矩形，映射回 stack 局部坐标后的 dy。
+double caretStackDy(EditableTextState state, int offset, RenderBox stackBox) {
+  final rect = state.renderEditable.getLocalRectForCaret(
+    TextPosition(offset: offset),
+  );
+  return stackBox
+      .globalToLocal(state.renderEditable.localToGlobal(rect.topLeft))
+      .dy;
+}
+
+/// 泵入双 EditableText 夹具、只聚焦目标字段，并返回就绪的宿主。
+Future<_SelectionMenuHostFake> _pumpDualEditable(
+  WidgetTester tester, {
+  required GlobalKey stackKey,
+  required TextEditingController decoyCtrl,
+  required FocusNode decoyFocus,
+  required TextEditingController targetCtrl,
+  required FocusNode targetFocus,
+  required FocusAwareEditingController hostCtrl,
+}) async {
+  await tester.pumpWidget(
+    buildDualEditableStack(
+      stackKey: stackKey,
+      decoyCtrl: decoyCtrl,
+      decoyFocus: decoyFocus,
+      targetCtrl: targetCtrl,
+      targetFocus: targetFocus,
+    ),
+  );
+  await tester.pumpAndSettle();
+  // 夹具前提：子树内确有两个 EditableText，且只有目标聚焦
+  expect(find.byType(EditableText), findsNWidgets(2));
+  targetFocus.requestFocus();
+  await tester.pumpAndSettle();
+  expect(targetFocus.hasFocus, isTrue);
+  expect(decoyFocus.hasFocus, isFalse);
+  return _SelectionMenuHostFake(
+    editorStackKey: stackKey,
+    editorController: hostCtrl,
+  );
+}
+
+/// 批次95-1 判别力夹具的搭建结果（夹具一次成型，测试体只留断言）。
+class _DualEditableFixture {
+  _DualEditableFixture({
+    required this.stackKey,
+    required this.decoyCtrl,
+    required this.decoyFocus,
+    required this.targetCtrl,
+    required this.targetFocus,
+    required this.hostCtrl,
+  });
+
+  final GlobalKey stackKey;
+  final TextEditingController decoyCtrl;
+  final FocusNode decoyFocus;
+  final TextEditingController targetCtrl;
+  final FocusNode targetFocus;
+  final FocusAwareEditingController hostCtrl;
+}
+
+/// 搭建双 EditableText 夹具并把两处选区**刻意错开到不同行**。
+///
+/// · 诱饵 decoy：短文本、永不聚焦、位于 stack 顶部（top 0）
+/// · 目标 target：多行文本、唯一聚焦、位于下方（top 300），选区在第 2 行
+/// · 宿主 hostCtrl：选区在第 1 行（⇒ 「用谁的偏移」两实现结果不同）
+///
+/// 于是：取「聚焦的 target」+ 其自身偏移 ⇒ dy 落下方；
+/// 取「首个 decoy」+ 全局偏移 ⇒ dy 落顶部。两候选相距 >300px。
+Future<_DualEditableFixture> _setUpDualEditable(WidgetTester tester) async {
+  final stackKey = GlobalKey();
+  final decoyCtrl = TextEditingController(text: '甲甲甲');
+  final decoyFocus = FocusNode();
+  final body = List.filled(6, '霜叶红于二月花。').join('\n');
+  final targetCtrl = TextEditingController(text: body);
+  final targetFocus = FocusNode();
+  final hostCtrl = FocusAwareEditingController(text: body);
+  addTearDown(decoyCtrl.dispose);
+  addTearDown(targetCtrl.dispose);
+  addTearDown(hostCtrl.dispose);
+  addTearDown(decoyFocus.dispose);
+  addTearDown(targetFocus.dispose);
+
+  final firstLineEnd = hostCtrl.text.indexOf('\n');
+  final secondLineStart = firstLineEnd + 1;
+  hostCtrl.selection = TextSelection(baseOffset: 0, extentOffset: firstLineEnd);
+  targetCtrl.selection = TextSelection(
+    baseOffset: secondLineStart,
+    extentOffset: secondLineStart + 1,
+  );
+  return _DualEditableFixture(
+    stackKey: stackKey,
+    decoyCtrl: decoyCtrl,
+    decoyFocus: decoyFocus,
+    targetCtrl: targetCtrl,
+    targetFocus: targetFocus,
+    hostCtrl: hostCtrl,
+  );
 }
 
 void main() {
@@ -4007,6 +4198,61 @@ void main() {
       final menuTop = tester.getTopLeft(find.text('诊断这段文字')).dy;
       // 菜单翻到选区上方（纯纯/笔落跟随）
       expect(menuTop, lessThan(caretTop));
+    });
+
+    // 判别力用例：现网 flag 关时 editorStackKey 子树只有一个 EditableText，
+    // 「取首个」与「取聚焦」同解 ⇒ 上面 2 例守不住本批改动（实测变异仍全绿）。
+    // 本例改喂双 EditableText 子树（上方诱饵不聚焦 / 下方目标聚焦），并让宿主
+    // controller 与目标自身 controller 的选区落在**不同行**：
+    //   · 正确实现 → 取目标(target) + 目标自身偏移 ⇒ dy 落在下方；
+    //   · 退回旧实现 → 取首个(decoy) + 全局 controller 偏移 ⇒ dy 落在上方。
+    // 断言只锚「菜单位置相对光标的 dy」这一两实现必然不同的量。
+    testWidgets('#95-1 判别力：双 EditableText 下定位「聚焦那个」而非「首个」', (tester) async {
+      final f = await _setUpDualEditable(tester);
+      final host = await _pumpDualEditable(
+        tester,
+        stackKey: f.stackKey,
+        decoyCtrl: f.decoyCtrl,
+        decoyFocus: f.decoyFocus,
+        targetCtrl: f.targetCtrl,
+        targetFocus: f.targetFocus,
+        hostCtrl: f.hostCtrl,
+      );
+
+      // 驱动真实生产逻辑（划词控制器 → _computeSelectionMenuPos）
+      WritingPageSelectionAiController(host).onSelectionChanged();
+      await tester.pump();
+
+      expect(host.showSelectionMenu, isTrue);
+      final pos = host.selectionMenuPos;
+      expect(pos, isNotNull, reason: '两实现都应算出位置（区别在位置，不在有无）');
+
+      final stackBox =
+          f.stackKey.currentContext!.findRenderObject()! as RenderBox;
+      // Key 挂在 TextField 上（其 state 是 _TextFieldState）⇒ 需下钻到 EditableText
+      Finder editableOf(String fieldKey) => find.descendant(
+        of: find.byKey(Key(fieldKey)),
+        matching: find.byType(EditableText),
+      );
+      final decoy = tester.state<EditableTextState>(editableOf('decoyField'));
+      final target = tester.state<EditableTextState>(editableOf('targetField'));
+
+      // 正确实现的期望值：取「聚焦的 target」+ target 自身 controller 的偏移（第 2 行）
+      final expectedDy =
+          caretStackDy(target, f.targetCtrl.selection.baseOffset, stackBox) +
+          24; // belowGap
+      // 旧实现的期望值：取「首个 decoy」+ 全局 controller 偏移（第 1 行）
+      final mutatedDy =
+          caretStackDy(decoy, f.hostCtrl.selection.baseOffset, stackBox) + 24;
+
+      // 前置自检：两个候选值必须真的不同，否则本例无鉴别力
+      expect(
+        expectedDy - mutatedDy,
+        greaterThan(50),
+        reason: '夹具失效：两实现的候选位置已重合，断言无鉴别力',
+      );
+      // 核心断言：菜单位置跟「聚焦 editable 的光标」，而非「子树首个的光标」
+      expect(pos!.dy, closeTo(expectedDy, 1.0));
     });
   });
 

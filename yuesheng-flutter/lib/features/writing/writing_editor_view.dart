@@ -16,6 +16,8 @@ import '../../config/editor_background_presets.dart';
 import '../../providers/writing_providers.dart';
 import '../../widgets/paragraph_format_formatter.dart';
 import '../../widgets/punctuation_bar.dart';
+import 'blocked_text/block_editable_view.dart';
+import 'blocked_text/block_readonly_view.dart';
 import 'smart_punctuation_formatter.dart';
 import 'writing_page_chrome.dart';
 import 'writing_status_views.dart';
@@ -29,6 +31,7 @@ class WritingEditorView extends StatelessWidget {
     required this.contentController,
     required this.focusNode,
     required this.editorStackKey,
+    this.blockEditorKey,
     required this.punctBarIds,
     required this.punctCustomItems,
     required this.showSelectionMenu,
@@ -49,6 +52,10 @@ class WritingEditorView extends StatelessWidget {
 
   /// 正文编辑区 Stack 的 GlobalKey（划词菜单位置反查用，需与宿主共用同一实例）
   final GlobalKey editorStackKey;
+
+  /// ADR-0002 阶段4：分块编辑器句柄 GlobalKey（外部整串回灌 + locateCaret）。
+  /// 可空：flag 关路径不构建块视图时不需要；flag 开由宿主传入。
+  final GlobalKey<BlockEditableViewState>? blockEditorKey;
 
   final List<String>? punctBarIds;
   final List<PunctuationItem> punctCustomItems;
@@ -264,6 +271,10 @@ class WritingEditorView extends StatelessWidget {
   }
 
   Widget _buildContentField(Color titleColor, Color hintColor) {
+    // ADR-0002 §8 阶段2：flag 开 → 分块可编辑渲染；flag 关（默认）→ 现网单 TextField。
+    if (kBlockEditorEnabled) {
+      return _buildBlockEditorContent(titleColor, hintColor);
+    }
     return TextField(
       key: const Key('chapterContentField'),
       controller: contentController,
@@ -298,6 +309,34 @@ class WritingEditorView extends StatelessWidget {
           height: state.lineSpacing,
         ),
       ),
+      onChanged: onContentChanged,
+    );
+  }
+
+  /// ADR-0002 阶段2：分块可编辑渲染（flag 开）。
+  /// 块级 controller/focusNode + 逐块智能标点（定制1）+ palette 配色（定制6），
+  /// 只构建视口块；块内编辑经 join() 回流原 onContentChanged 通路。
+  Widget _buildBlockEditorContent(Color titleColor, Color hintColor) {
+    return BlockEditableView(
+      key: blockEditorKey,
+      initialText: contentController.text,
+      style: TextStyle(
+        fontSize: state.fontSize,
+        height: state.lineSpacing,
+        color: titleColor,
+      ),
+      hintStyle: TextStyle(
+        color: hintColor,
+        fontSize: state.fontSize,
+        height: state.lineSpacing,
+      ),
+      smartPunctOn: state.smartPunctOn,
+      focusMode: state.focusMode,
+      indentParagraph: state.indentParagraph,
+      blankLineBetween: state.blankLineBetween,
+      // flag-on：块内整串/绝对选区镜像回现网 contentController，使划词诊断
+      // 通路（selectionAi 监听该 controller）原样消费；onChanged 走 autosave。
+      onValue: (v) => contentController.value = v,
       onChanged: onContentChanged,
     );
   }

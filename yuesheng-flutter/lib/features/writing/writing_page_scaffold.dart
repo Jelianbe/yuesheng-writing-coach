@@ -190,6 +190,7 @@ class WritingPageScaffold extends ConsumerWidget {
             contentController: host.editorController,
             focusNode: host.focusNode,
             editorStackKey: host.editorStackKey,
+            blockEditorKey: host.blockEditorKey,
             punctBarIds: host.punctBarIds,
             punctCustomItems: host.punctCustomItems,
             showSelectionMenu: host.showSelectionMenu,

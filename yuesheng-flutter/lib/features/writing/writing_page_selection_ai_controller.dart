@@ -10,7 +10,6 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show RenderBox, RenderEditable;
 
 import '../../config/shared_constants.dart';
 import '../../data/repositories/record_entry_repository.dart';
@@ -63,13 +62,21 @@ class WritingPageSelectionAiController {
       if (stackCtx == null) return null;
       final stackBox = stackCtx.findRenderObject();
       if (stackBox is! RenderBox || !stackBox.hasSize) return null;
-      final editable = _findRenderEditable(stackCtx);
-      if (editable == null) return null;
-      final offset = selection.baseOffset.clamp(
+      final editableState = _findFocusedEditable(stackCtx);
+      if (editableState == null) return null;
+      final editable = editableState.renderEditable;
+      // 用「聚焦 editable 自身 controller 的选区」定位光标矩形：
+      //   - flag 关：聚焦 editable = 整章字段，其选区即绝对选区（与原逻辑等价）；
+      //   - flag 开：聚焦 editable = 当前块，其选区是块内局部偏移（块模型下唯一
+      //     能正确 getLocalRectForCaret 的坐标）。
+      final ctrl = editableState.widget.controller;
+      final localOffset = (ctrl.selection.baseOffset).clamp(
         0,
-        _host.editorController.text.length,
+        editable.plainText.length,
       );
-      final rect = editable.getLocalRectForCaret(TextPosition(offset: offset));
+      final rect = editable.getLocalRectForCaret(
+        TextPosition(offset: localOffset),
+      );
       if (rect.size.isEmpty) return null;
       final local = stackBox.globalToLocal(
         editable.localToGlobal(rect.topLeft),
@@ -92,16 +99,22 @@ class WritingPageSelectionAiController {
     }
   }
 
-  /// 在元素树中查找正文 EditableText 的 RenderEditable（取选区矩形用）
-  RenderEditable? _findRenderEditable(BuildContext context) {
-    if (context is StatefulElement && context.state is EditableTextState) {
-      return (context.state as EditableTextState).renderEditable;
+  /// 在元素树中查找**聚焦**的正文 EditableTextState（取选区矩形用）。
+  /// flag 关时树中唯一且聚焦；flag 开时多块并存，取当前聚焦块。
+  EditableTextState? _findFocusedEditable(BuildContext context) {
+    EditableTextState? focused;
+    EditableTextState? fallback;
+    void walk(Element e) {
+      if (e is StatefulElement && e.state is EditableTextState) {
+        final s = e.state as EditableTextState;
+        fallback ??= s;
+        if (s.widget.focusNode.hasFocus) focused = s;
+      }
+      e.visitChildElements(walk);
     }
-    RenderEditable? result;
-    context.visitChildElements((e) {
-      result ??= _findRenderEditable(e);
-    });
-    return result;
+
+    walk(context as Element);
+    return focused ?? fallback;
   }
 
   /// B3 划词诊断：校验选中文本（≥20 字）→ 打开 AI 面板并注入选段诊断

@@ -54,6 +54,7 @@ class WritingPageFindReplaceController {
       selection: TextSelection.collapsed(offset: cursorOffset),
     );
     _host.suppressSelectionMenu = false;
+    _host.pushBlockEditorText(newText, caretOffset: cursorOffset);
     _host.onContentChanged(newText);
   }
 

@@ -19,6 +19,8 @@ import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/writing_providers.dart';
 import 'focus_aware_editing_controller.dart';
+import 'blocked_text/block_editable_view.dart';
+import 'blocked_text/block_readonly_view.dart' show kBlockEditorEnabled;
 import '../../widgets/punctuation_bar.dart';
 import 'writing_page_controllers.dart';
 import 'writing_page_scaffold.dart';
@@ -77,6 +79,10 @@ class _WritingPageState extends ConsumerState<WritingPage>
 
   /// 批次95-1：正文编辑区 Stack 的 GlobalKey（划词菜单位置反查 RenderEditable）
   final GlobalKey _editorStackKey = GlobalKey();
+
+  /// ADR-0002 阶段4：分块编辑器句柄（flag 开时外部整串回灌 + locateCaret 用）。
+  final GlobalKey<BlockEditableViewState> _blockEditorKey =
+      GlobalKey<BlockEditableViewState>();
   String? _pendingDiagnoseText;
   // 批次84-2：查找替换定位期间抑制划词菜单（程序化选区 ≠ 用户划词）
   bool _suppressSelectionMenu = false;
@@ -217,6 +223,20 @@ class _WritingPageState extends ConsumerState<WritingPage>
   @override
   GlobalKey get editorStackKey => _editorStackKey;
   @override
+  GlobalKey<BlockEditableViewState> get blockEditorKey => _blockEditorKey;
+
+  /// flag 开时外部整串写入后回灌块模型（块内编辑走 onValue，不经此）。
+  /// flag 关时本调用空转，不影响现网通路。
+  @override
+  void pushBlockEditorText(String text, {int? caretOffset}) {
+    if (!kBlockEditorEnabled) return;
+    _blockEditorKey.currentState?.applyExternalText(
+      text,
+      caretOffset: caretOffset,
+    );
+  }
+
+  @override
   GlobalKey<ScaffoldState> get scaffoldKey => _scaffoldKey;
   @override
   WritingStore? get store => _store;
@@ -318,6 +338,11 @@ class _WritingPageState extends ConsumerState<WritingPage>
   @override
   bool locateCursor(int offset) {
     if (offset < 0 || offset > _controller.text.length) return false;
+    // ADR-0002 阶段4：flag 开时直接定位块模型（跨章搜索/查找替换跳转）。
+    if (kBlockEditorEnabled) {
+      _blockEditorKey.currentState?.locateCaret(offset);
+      return _blockEditorKey.currentState != null;
+    }
     _suppressSelectionMenu = true;
     _controller.selection = TextSelection.collapsed(offset: offset);
     _suppressSelectionMenu = false;

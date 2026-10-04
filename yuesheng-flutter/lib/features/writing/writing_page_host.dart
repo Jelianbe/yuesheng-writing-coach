@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/writing_providers.dart';
+import 'blocked_text/block_editable_view.dart';
 import 'focus_aware_editing_controller.dart';
 import '../../widgets/punctuation_bar.dart';
 
@@ -53,6 +54,12 @@ abstract interface class WritingPageHost {
   TextEditingController get titleController;
   FocusNode get focusNode;
   GlobalKey get editorStackKey;
+
+  /// ADR-0002 阶段4：分块编辑器句柄（外部整串回灌 + locateCaret）。
+  GlobalKey<BlockEditableViewState> get blockEditorKey;
+
+  /// flag 开时外部整串写入后回灌块模型；flag 关时空转。
+  void pushBlockEditorText(String text, {int? caretOffset});
   GlobalKey<ScaffoldState> get scaffoldKey;
   WritingStore? get store;
   void setStore(WritingStore store);
