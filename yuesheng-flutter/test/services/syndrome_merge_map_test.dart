@@ -167,13 +167,16 @@ void main() {
       final legacyKeys = kSyndromeMergeMap.entries
           .where((e) => !active.contains(e.key))
           .toList();
-      // 真旧号 = P035–P049（15 个）+ H001/H002（2 个）= 17 个。
+      // 真旧号 = P038–P049（12 个）+ H001/H002（2 个）= 14 个。
       // 它们**必须**仍走 merge 归一——否则 DB 里的旧行会读不出来。
+      // ⚠️ A2 批（ADR-0003 阶段一）删掉 P035/P036/P037 后由 17 变 14：
+      //    那三个槽位即将被复用为新症候，merge map 里不能再留其映射。
+      //    存量行的归一改由 v46 migration 负责（其平铺表 50 条**故意不清**）。
       expect(
         legacyKeys.length,
-        17,
+        14,
         reason:
-            '实测 17 个（P035–P049 + H001/H002）。'
+            '实测 14 个（P038–P049 + H001/H002）。'
             '若此数变了，说明 merge map 结构变了（M1 只保护键侧，值侧变会让本用例红）。',
       );
       for (final e in legacyKeys) {

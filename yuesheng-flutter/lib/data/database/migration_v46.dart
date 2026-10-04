@@ -13,6 +13,10 @@
 //   · `active_problems.syndrome_id`（`tables.dart:240`）
 //   · `training_results.syndrome_id`（`tables.dart:728`）
 //   · `diagnosis_results.syndromes`（`tables.dart:153`，JSON 内嵌）
+//   · `student_model.teaching_history`（`tables.dart:298`，JSON 内嵌）
+//     ⚠️ A3 批补的第四处。初版漏了它，而它正是 B1 批修的两处形态③ 的数据源
+//     （`student_model_repository.dart:150` / `diagnosis_committer.dart:339`）。
+//     **表名是 `student_model` 单数**，Dart 类名 `StudentModels` 是复数，两者不一致。
 // 而 ADR-0003 阶段一要**复用 P035/P036/P037** 三个槽位。一旦复用，
 // 库里残留的旧 P035 行会被新槽位**静默当成新症候**（ID 合法、有名字、能渲染
 // ⇒ 表面上完全正常）。⇒ 必须在复用**之前**把存量行改写成归一目标。
@@ -65,6 +69,11 @@ import '../../services/syndrome_registry.dart';
 const _activeProblems = 'active_problem';
 const _trainingResults = 'training_results';
 const _diagnosisResults = 'diagnosis_results';
+
+/// ⚠️ 表名是 **`student_model`（单数）**，不是 `student_models`。
+/// 实测依据：`tables.dart:292` 的 `String get tableName => 'student_model'`；
+/// Dart 类名 `StudentModels` 是复数，**与表名不一致** ⇒ 凭类名拼 SQL 会静默零命中。
+const _studentModels = 'student_model';
 
 /// 归一映射的**键清单**（按`kSyndromeMergeMap` 全量展开）。
 ///
@@ -127,7 +136,30 @@ const Map<String, String> _legacyToCanonical = {
 /// v46 使用的 legacy → 规范 ID 映射（供测试断言「迁移后无 legacy 残留」）。
 Map<String, String> get legacyIdMigrationMap => _legacyToCanonical;
 
-/// 校验 [_legacyToCanonical] 与 `kSyndromeMergeMap` 逐条一致。**返回不一致项**（空 = 一致）。
+/// 校验 [_legacyToCanonical] **覆盖** `kSyndromeMergeMap` 且逐条 value 一致。
+/// **返回不一致项**（空 = 一致）。
+///
+/// ## 为什么是「子集校验」而不是「逐条一致」（A1 批 · ADR-0003 阶段一）
+///
+/// 守卫的**本意**是「防忘了同步平铺映射 ⇒ migration 按过期映射改数据 ⇒ 静默数据损坏」。
+/// 要防的只有一件事：**真源里有的键，平铺里缺了或值不一样**。
+///
+/// 而「两集合必须逐条一致」是**过严的约束**，它连带禁止了一个正当操作：
+/// **清理历史遗留映射**。A2 批删掉 merge map 的 P035/P036/P037（三键即将被
+/// ADR-0003 阶段一复用为新槽位），旧写法会报「条目数不一致：平铺 50 vs 真源 47」
+/// + 三项「平铺里多出的键」⇒ `assertLegacyMapInSync()` 抛 `StateError`
+/// **阻断所有用户升级** —— 为清理历史付出「全量用户打不开 App」的代价。
+///
+/// ## 两个集合各自的性质（这决定了正确形式）
+///
+/// | | [_legacyToCanonical]（平铺） | `kSyndromeMergeMap`（真源） |
+/// |:--|:--|:--|
+/// | 性质 | **一次性历史动作**：v46 出闸时按它改写存量行，改写完使命完成 | **长期读路径真源**：每次归一都读它 |
+/// | 会不会长键 | 不会（存量只会越来越少） | 会（将来新增旧号归一时要加） |
+/// | 该不该清 | **不该**（清了就永久漏归一那批存量数据） | 该清时随时可清 |
+///
+/// ⇒ 正确关系是**平铺 ⊇ 真源**（平铺可以多，真源不能多）。
+/// 反过来写会让「平铺比真源干净」这种状态永远无法表达。
 ///
 /// ⚠️ 这里**刻意不用 `assert`**：`assert` 在测试模式与发布模式下会被剥离，
 /// 实测变异①（把 `P035→P009` 改错）时本函数**没有任何效果**——
@@ -135,21 +167,13 @@ Map<String, String> get legacyIdMigrationMap => _legacyToCanonical;
 /// 用返回值把不一致项**显式抛出去**，才能在生产升级路径上也真正生效。
 List<String> findLegacyMapMismatches() {
   final bad = <String>[];
-  if (_legacyToCanonical.length != kSyndromeMergeMap.length) {
-    bad.add(
-      '条目数不一致：平铺 ${_legacyToCanonical.length} vs '
-      '真源 ${kSyndromeMergeMap.length}',
-    );
-  }
+  // 反向检查：真源的每个键，平铺里必须存在且 value 相同。
+  // ⚠️ 这里**只报「值不同」**；「键缺失」由下面的循环一并覆盖
+  //（`mine == null != e.value` 必然成立），不必单列一条。
   for (final e in kSyndromeMergeMap.entries) {
     final mine = _legacyToCanonical[e.key];
     if (mine != e.value) {
       bad.add('${e.key}: 平铺=$mine vs 真源=${e.value}');
-    }
-  }
-  for (final k in _legacyToCanonical.keys) {
-    if (!kSyndromeMergeMap.containsKey(k)) {
-      bad.add('$k: 平铺里多出的键（真源已无）');
     }
   }
   return bad;
@@ -158,12 +182,15 @@ List<String> findLegacyMapMismatches() {
 /// [_legacyToCanonical] 是手抄进 SQL 的平铺版，一旦有人改了
 /// `kSyndromeMergeMap` 却忘了同步这里，migration 就会按过期映射改写数据
 /// ⇒ **静默数据损坏**。故生产路径上也要硬失败（不靠 assert）。
-/// 校验平铺映射与真源一致，不一致则抛（阻断升级，绝不带着过期映射改数据）。
+///
+/// 判据是**子集校验**（平铺 ⊇ 真源）—— 理由与允许的差异形态见
+/// [findLegacyMapMismatches] 的文档注释。
+/// 不一致则抛（阻断升级，绝不带着过期映射改数据）。
 void assertLegacyMapInSync() {
   final bad = findLegacyMapMismatches();
   if (bad.isEmpty) return;
   throw StateError(
-    'v46 迁移的平铺映射与 kSyndromeMergeMap 不一致，已阻断升级：\n'
+    'v46 迁移的平铺映射未覆盖 kSyndromeMergeMap，已阻断升级：\n'
     '  ${bad.join('\n  ')}\n'
     '请同步 lib/data/database/migration_v46.dart 的 _legacyToCanonical。',
   );
@@ -188,9 +215,13 @@ Future<void> migrateLegacySyndromeIds(Migrator m) async {
     if (!await _tableExists(db, table)) continue;
     await _rewritePlainColumn(db, table);
   }
-  // ── 第三处：JSON 内嵌 ──
+  // ── 第三处：JSON 内嵌（diagnosis_results.syndromes）──
   if (await _tableExists(db, _diagnosisResults)) {
     await _migrateDiagnosisJson(db);
+  }
+  // ── 第四处：JSON 内嵌（student_model.teaching_history）· A3 批新增 ──
+  if (await _tableExists(db, _studentModels)) {
+    await _migrateTeachingHistoryJson(db);
   }
 }
 
@@ -269,4 +300,91 @@ Future<void> _migrateDiagnosisJson(GeneratedDatabase e) async {
       [jsonEncode(decoded), id],
     );
   }
+}
+
+/// `student_model.teaching_history` 归一（A3 批 · ADR-0003 阶段一）。
+///
+/// ## 为什么必须补这一处（A3 批存在的唯一理由）
+///
+/// v46 初版只覆盖三张表（`active_problem` / `training_results` / `diagnosis_results`），
+/// **漏了 `student_model`**（实测 `grep -c student_models migration_v46.dart` = 0）。
+/// 而 `teaching_history` 正是 B1 批刚修的两处形态③ 的数据来源：
+/// - `student_model_repository.dart:150`（写「最近一条 training 评分」）
+/// - `diagnosis_committer.dart:339`（算「连续失败训练次数」，**直接驱动介入级别提升**）
+///
+/// ⇒ 不补这一处，ADR-0003 阶段一复用槽位后，这两条链路会读到旧号行。
+/// **补的时机是现在**：v46 尚未出闸（实测 `git tag --contains 8a629c4e` 为空），
+/// 现在补是一张表的工作量；出闸后再补就得写 v47 并再走一轮门禁。
+///
+/// ## ⚠️ 三种 ID 形态（照抄 `_migrateDiagnosisJson` 会静默漏掉两处）
+///
+/// `teaching_history` 的元素按 `type` 分三种，**ID 键名与类型都不同**：
+///
+/// | `type` | ID 键 | 形态 | 写入点（实测 4 处全覆盖）
+/// |:--|:--|:--|:--|
+/// | `training` | `syndromeId` | **字符串** | `diagnosis_flow_handler.dart:1350`
+/// | `confirmation` | `syndromes` | **字符串数组** | `diagnosis_service.dart:232`（确认）
+/// | `confirmation` | `syndromes` | **字符串数组** | `diagnosis_service.dart:258`（质疑）
+/// | `diagnosis` | `syndromes` | **字符串数组** | `diagnosis_service.dart:388`
+///
+/// 对比：`diagnosis_results.syndromes` 用的是**蛇形 `syndrome_id`（字符串）**。
+/// **键名不同（`syndromeId` vs `syndrome_id`）** ⇒ 照抄会**零命中且不报错**
+/// ——迁移「成功」了但一条没改，是最坏的失败形态。
+Future<void> _migrateTeachingHistoryJson(GeneratedDatabase e) async {
+  final rows = await e
+      .customSelect("SELECT id, teaching_history FROM $_studentModels")
+      .get();
+  for (final row in rows) {
+    final id = row.read<String>('id');
+    final raw = row.read<String>('teaching_history');
+    List<dynamic>? decoded;
+    try {
+      final d = jsonDecode(raw);
+      if (d is List) decoded = d;
+    } on FormatException {
+      continue;
+    }
+    if (decoded == null || decoded.isEmpty) continue;
+
+    var changed = false;
+    for (final item in decoded) {
+      if (item is Map && _normalizeHistoryItem(item)) changed = true;
+    }
+    if (!changed) continue;
+    await e.customStatement(
+      "UPDATE $_studentModels SET teaching_history = ? WHERE id = ?",
+      [jsonEncode(decoded), id],
+    );
+  }
+}
+
+/// 归一 `teaching_history` 的**单个元素**（原地改写），返回是否改动过。
+///
+/// 两种 ID 形态各占一段，**都必须覆盖** —— 漏掉任一段就是静默漏归一
+/// （迁移「成功」了但那部分数据没改）。
+bool _normalizeHistoryItem(Map<dynamic, dynamic> item) {
+  var changed = false;
+  // 形态①`type=='training'`：驼峰 `syndromeId`，字符串
+  final single = item['syndromeId'];
+  if (single is String) {
+    final to = _legacyToCanonical[single];
+    if (to != null && to != single) {
+      item['syndromeId'] = to;
+      changed = true;
+    }
+  }
+  // 形态②/③`syndromes`：字符串数组（confirmation 与 diagnosis 两型共用）
+  final many = item['syndromes'];
+  if (many is List) {
+    for (var i = 0; i < many.length; i++) {
+      final s = many[i];
+      if (s is! String) continue;
+      final to = _legacyToCanonical[s];
+      if (to != null && to != s) {
+        many[i] = to;
+        changed = true;
+      }
+    }
+  }
+  return changed;
 }
