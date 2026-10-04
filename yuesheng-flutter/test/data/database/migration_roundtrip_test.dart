@@ -10,6 +10,9 @@
 //   1. 升级后 user_version = kSchemaHead
 //   2. 存量数据零丢失（manuscripts/chapters/sessions/messages/
 //      student_model/teaching_state/active_problem/teacher_suggestion）
+//      ★唯一例外 = `active_problem.syndrome_id`：v46 会按 `kSyndromeMergeMap`
+//        做**单跳同义改写**（'P005'→'P003'），见用例 #1 第 7 处的详细注释。
+//        读路径本就经 `effectiveSyndromeId` 归一 ⇒ 两者等价，非数据损失。
 //   3. v13+ 增量列正确补齐（tags / references_json / style_profile /
 //      style_fingerprint / volume_id / teaching_state / updated_at / adopted_at）
 //   4. v16+ 新建表存在且可写（volumes / character_fact / outline_entity 等）
@@ -602,12 +605,26 @@ void main() {
     expect(ts.read<String?>('beginner_level'), 'N1_ELEMENTS');
 
     // 7. active_problem 存量保留 + teaching_state/updated_at 列补齐
+    //
+    // ⚠️ `syndrome_id` 的期望值是 **P003 而非建库时写入的 P005**——
+    // 这是 **v46 迁移（ADR-0003 阶段一前置）的设计意图**，不是缺陷：
+    //   · 建库时写入的 'P005' 是 **0.3.6 重编号之前的旧编号**；
+    //   · `kSyndromeMergeMap['P005'] == 'P003'`（`syndrome_registry.dart:150`），
+    //     v46 按它把存量行**单跳**归一为现行规范 ID 'P003'（视角漂移）；
+    //   · 读路径本来就一律经 `effectiveSyndromeId` 归一后才比对
+    //     （`diagnosis_service.dart:108` / `message_injector.dart:553` /
+    //     `training_input_builder.dart:73`）⇒ **P005 与 P003 在所有读路径上等价**，
+    //     v46 只是把这个等价从「运行时计算」提前到「落库时固化」。
+    //   · 「存量数据零丢失」承诺的是**行本身不被删/字段不被清空**，
+    //     而 v46 做的是**同义改写**——两者不冲突（本行的
+    //     `teaching_state` / `updated_at` 断言即证明其余字段逐字未动）。
+    //⇒ 修改本断言时**不可**简单改回 'P005'，那会让v46 的效果被测试掩盖。
     final ap = await db
         .customSelect(
           "SELECT syndrome_id, teaching_state, updated_at FROM active_problem WHERE id = 'ap1'",
         )
         .getSingle();
-    expect(ap.read<String>('syndrome_id'), 'P005');
+    expect(ap.read<String>('syndrome_id'), 'P003');
     expect(
       ap.read<String?>('teaching_state'),
       isNull,

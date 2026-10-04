@@ -17,6 +17,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'backup_retention.dart';
+import 'migration_v46.dart';
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -72,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 45;
+  int get schemaVersion => 46;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -257,7 +258,9 @@ class AppDatabase extends _$AppDatabase {
       // ADR-C132 批1（写作修改事件 v43）：守卫上移到 43（v43 块对 from=42 存量库可达，建 edit_diff_event）
       // ADR-C143（书籍资料库 v44）：守卫上移到 44（v44 块对 from=43 存量库可达，建 record_entry / material_entry）
       // C147（记录条目目标位置 v45）：守卫上移到 45（v45 块对 from=44 存量库可达，ALTER 加 target_section 列）
-      if (from >= 45) return;
+      // ADR-0003 阶段一前置（v46）：守卫上移到 46（v46 块对 from=45 存量库可达，
+      // 把 legacy 症候 ID 按 kSyndromeMergeMap 单跳改写为规范 ID）
+      if (from >= 46) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1256,6 +1259,16 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           "ALTER TABLE record_entry ADD COLUMN target_section TEXT NOT NULL DEFAULT ''",
         );
+      }
+
+      // v46: 归一 legacy 症候 ID（ADR-0003 阶段一前置）
+      // 0.3.6 去重（e64096db）是纯代码重编号、无数据迁移 ⇒ 库中残留旧 ID。
+      // 读路径有 effectiveSyndromeId 兜底，但**落库行不会自愈**。
+      // 一旦 ADR-0003 阶段一复用 P035/P036/P037，残留旧行会被新槽位静默误读
+      // ⇒ 必须在复用之前把存量行改写为规范 ID。
+      // 语义为**单跳**（与 effectiveSyndromeId 一致，链上有环、不可迭代）。
+      if (from < 46) {
+        await migrateLegacySyndromeIds(m);
       }
     },
 
