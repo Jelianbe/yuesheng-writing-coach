@@ -166,6 +166,28 @@ const List<PromptCase> kPromptCases = [
       isOutlineContext: true,
     ),
   ),
+  // ★★ A2 批新增（2026-10-05）：`forceDiagnosisSceneFirst=true` 的覆盖缺口。
+  //
+  // 缺口成因（实测）：`_kDiagnosisSceneFirst` 的注入条件是
+  //   `l2Mode == L2Mode.diagnosis || ctx.forceDiagnosisSceneFirst`
+  // （`skill_dispatcher.dart:170`），而该 flag 由「**用户消息措辞是否触发诊断
+  // 协议**」决定（`chat_service.dart:1255`），**与 l2Mode 无关** ⇒ 非 diagnosis
+  // 组（beginner / training / outline / advanced）也会注入这块。
+  // 原 13 个用例**全部**不带该 flag（`grep forceDiagnosisSceneFirst` 在本文件
+  // 零命中）⇒ 这条路径曾**完全没有体积基线覆盖**，扩写该块时对照组红线会
+  // 「凭 13 个用例全绿」而漏掉真实增长。
+  //
+  // 本例选 P3+零基础（resolveL2Mode 走 beginner 组）+ force=true：
+  // 这是线上最易命中的组合（学员在训练阶段说「帮我看看这段」）。
+  PromptCase(
+    'beginner_p3_yuesheng_forceSceneFirst',
+    SkillLoadContext(
+      phase: TeachingPhase.p3Training,
+      attitude: AttitudeLevel.yuesheng,
+      isBeginner: true,
+      forceDiagnosisSceneFirst: true,
+    ),
+  ),
 ];
 
 /// L3 注入用例（injectL3 不依赖 L2 模式，统一取 diagnosis 结果调用）
@@ -320,6 +342,33 @@ void main() {
           '锚点用例未覆盖全部 L2Mode：'
           '已覆盖 ${coveredModes.map((m) => m.name).join(',')}，'
           '共 ${L2Mode.values.length} 组',
+    );
+
+    // ★★ A2 批新增（2026-10-05）：`forceDiagnosisSceneFirst` 覆盖缺口的**牙齿**。
+    //
+    // 为什么必须断言「force=true 时非 diagnosis 组也注入该块」：
+    //   若某天注入条件被改成只看 `l2Mode == diagnosis`，本例会静默变成
+    //   「beginner 组 + 不含该块」，而**快照照样能生成、门禁照样全绿**——
+    //   覆盖缺口复现且无人察觉。断言打在**条件本身**，不是打在快照上。
+    const forceCaseName = 'beginner_p3_yuesheng_forceSceneFirst';
+    final forceCase = kPromptCases.firstWhere((c) => c.name == forceCaseName);
+    expect(
+      resolveL2Mode(forceCase.ctx),
+      isNot(L2Mode.diagnosis),
+      reason: '$forceCaseName 必须走非 diagnosis 组，否则测不到 force 分支',
+    );
+    final forcePrompt = buildSystemPromptV2(forceCase.ctx).systemPrompt;
+    expect(
+      forcePrompt.contains('## 诊断前置：先定层级'),
+      isTrue,
+      reason:
+          '$forceCaseName 应注入 _kDiagnosisSceneFirst —— '
+          'force=true 且非 diagnosis 组时也必须注入（skill_dispatcher.dart:170）',
+    );
+    expect(
+      forcePrompt.contains('## 诊断前置：先认对的地方'),
+      isTrue,
+      reason: '裁定 6 的「先认对的地方」块应与卡点层级块同体注入',
     );
 
     final current = _buildCurrent();

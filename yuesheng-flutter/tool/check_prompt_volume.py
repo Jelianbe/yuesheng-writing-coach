@@ -2,10 +2,25 @@
 
 背景
 ----
-ADR-0003 §5 判据 9 要求「阶段一注入后 diagnosis 组体积实测，**不得回涨到C99 减编前水平**」。
-舰长 2026-10-05 裁定：红线 = 「不超当前实测值」，并**认可本阶段必要增量**——
-`diagnosis_yuesheng` 由 53,907 → **54,285**（+378，源于三条新症候的索引行自动渲染），
-基准上移至 54,285。
+ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测，**不得回涨到C99 减编前水平**」。
+
+⚠️ **2026-10-05 判据 9 措辞已改写（原措辞不可执行）**：
+   原句的「C99 减编前水平」经查 `docs/ADR-C99-diagnosis-skill-pruning.md` §4
+   只记「diagnosis 组常驻 tokens 从 ~12k → ~8k」，**没有任何字符数**；
+   而本脚本量的是快照 `prompt[*].len`（**整条 system prompt**，当前 5.5万）。
+   两者口径差 **4.5 倍**（12,000 vs 54,285）⇒ 照字面判，**注入前就已"超了 4.5 倍"**，
+   该判据恒红且无意义。
+   ⇒ 改写为：**「不得超本脚本 `REDLINE` 常量」**，并在此把 REDLINE 的来源钉死。
+   这是 `DECISIONS §4-155` 的实例：规格里的「不得回涨到 X」若X 是**另一口径的
+   估计值**，它只是措辞、不是约束。
+
+红线沿革（红线的每次变更都须有舰长裁定 + 逐键对账）
+------------------------------------------------
+· 2026-10-05 第一次：舰长裁「不超当前实测 53,907」→ 实测三条新症候索引行
+  自动渲染致 54,285（+378）→ 二次请裁 → 「认可增量，基准上移至 54,285」。
+· 2026-10-05 第二次（A2/A3 批）：舰长批准五块注入（裁定 2/4/5/6/7），
+  预估 +1,058 → **实测 +1,077**（diagnosis 两组同增）⇒ 基准上移至 55,362 /
+  53,579。
 
 ⚠️ **为什么必须做成脚本而不是只写进文档**：
    规格里每个「不得 / 必须 / 恰」都要有一条**能变红**的判据，
@@ -16,10 +31,22 @@ ADR-0003 §5 判据 9 要求「阶段一注入后 diagnosis 组体积实测，**
 · 权威数据源 = `test/snapshots/skill_prompt_anchor.json` 的 `prompt[*].len`
   （与 ADR 判据 7 的「skill_prompt_anchor 重冻」同一口径）。
 · 单位 = **字符数**。
-· ⚠️ **只对 diagnosis 组设红线**，不对全项目最大组设 ——
+· ⚠️ **只对 diagnosis 组设红线**，不对全项目最大组设——
   实测training(68,475) / beginner(64,167) 等组在 ADR 阶段一**之前就已超 53,907**
   （HEAD 值即超），拿它当全局红线会让判据一开局就红、且与本批无关。
   真正的判据语义是「**不得回涨**」（相对变化），不是「绝对值须小于某数」。
+· **受控组 vs 对照组**：`MUST_NOT_GROW` 是「本批不该动」的组；
+  `REDLINE` 是「本批允许增长但有上限」的组。
+
+force 分支的覆盖缺口（A2 批补上）
+--------------------------------
+`_kDiagnosisSceneFirst` 的注入条件是
+`l2Mode == diagnosis || ctx.forceDiagnosisSceneFirst`，而该 flag 由
+「用户消息措辞是否触发诊断协议」决定（`chat_service.dart:1255`）、**与 l2Mode 无关**
+⇒ 非 diagnosis 组也会注入它。
+★ 原 13 个快照用例**全不带**该 flag ⇒ 该路径**零体积基线覆盖**。
+A2 批已补 `beginner_p3_yuesheng_forceSceneFirst`（66,237 = 65,628 + 609），
+并列入 `REDLINE` 受控（给它上限，而不是当对照组 —— 它本来就该随该块增长）。
 
 用法
 ----
@@ -36,10 +63,13 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'skill_prompt_anchor.json')
 
-# 舰长 2026-10-05 裁定的红线（= 阶段一落地后的实测值）
+# 舰长 2026-10-05 裁定的红线（= A2/A3 批落地后的实测值）
 REDLINE = {
-    'diagnosis_yuesheng': 54285,
-    'diagnosis_p1_yuesheng': 52502,
+    'diagnosis_yuesheng': 55362,
+    'diagnosis_p1_yuesheng': 53579,
+    # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
+    # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
+    'beginner_p3_yuesheng_forceSceneFirst': 66237,
 }
 # 对照组：这些组本批不应增长（beginner 组不涉及新症候）
 MUST_NOT_GROW = [
@@ -74,7 +104,7 @@ def main():
 
     out = {'redline': REDLINE, 'actual': {}, 'violations': []}
 
-    print('=== diagnosis 组体积（红线来源：舰长 2026-10-05 裁定）===')
+    print('=== 受控组（允许增长·有上限；上限来源：舰长裁定）===')
     for k, lim in sorted(REDLINE.items()):
         act = lens.get(k)
         if act is None:
@@ -117,12 +147,13 @@ def main():
         for v in out['violations']:
             print('  - ' + v)
         return 1
-    print('[OK] diagnosis 组未超红线 %d，且对照组零增长'
-          % REDLINE['diagnosis_yuesheng'])
-    return 0
+    print('[OK] 受控组均未超红线，且对照组零增长')
 
 
-# 2026-10-05 实测的 HEAD 值（阶段一动手前）—— 对照组基线
+# 对照组基线 = 2026-10-05 A2/A3 批**动手前**的 HEAD 实测值。
+# ⚠️ 刻意**不**因A2/A3 批上移：实测那6 个 beginner 组 + none_p0 **逐个不变**
+#   （扩写的 _kDiagnosisSceneFirst 只在 `force=true` 时进入非 diagnosis 组，
+#   而对照组 6 个用例都没设该 flag）⇒ 上移反而会**放松**对照，属越界。
 MUST_NOT_GROW_BASE = {
     'beginner_gentle': 64167,
     'beginner_yuesheng': 64154,
