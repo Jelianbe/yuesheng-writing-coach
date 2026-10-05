@@ -42,11 +42,6 @@
     ],
     [
       "(跨文件)",
-      93,
-      "**position_sensitivity**:global… (另见于 syndrome_kb_content_manual_2.dart, syndrome_kb_content_manual_3.dart, syndrome_kb_content_manual_4.dart, syndrome_kb_content_manual_5.dart, syndrome_kb_content_manual_6.dart)"
-    ],
-    [
-      "(跨文件)",
       106,
       "是从A突然跳到Z，还是经过了B→C→D……Y的渐变… (另见于 training_kb_content_2.dart)"
     ],
@@ -59,11 +54,6 @@
       "(跨文件)",
       29,
       "**position_sensitivity**:serial… (另见于 syndrome_kb_content_manual_5.dart, syndrome_kb_content_manual_6.dart)"
-    ],
-    [
-      "(跨文件)",
-      29,
-      "**position_sensitivity**:chapter… (另见于 syndrome_kb_content_manual_5.dart, syndrome_kb_content_manual_6.dart)"
     ]
   ]
 }
