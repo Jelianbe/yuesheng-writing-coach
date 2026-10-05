@@ -79,7 +79,8 @@ void main() {
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
     test(
-      '#7 覆盖高频症候（0.3.6+9 聚类去重后 34 条（C135：P029–P033 二批）；原 P012/P001/P013/P019/P011/P005 示例块已并入其保留症候）',
+      '#7 覆盖高频症候（0.3.6+9 聚类去重后 34 条（C135：P029–P033 二批）；原 P012/P001/P013/P019/P011/P005 示例块已并入其保留症候。'
+      '⚠️ 2026-10-05 ADR-0003 阶段一补 P035/P036/P037 ⇒ 34 → 37）',
       () {
         // 首批
         expect(kTrainingFewShotLibrary.keys, contains('P001'));
@@ -126,7 +127,7 @@ void main() {
         expect(kTrainingFewShotLibrary.keys, contains('P031'));
         expect(kTrainingFewShotLibrary.keys, contains('P032'));
         expect(kTrainingFewShotLibrary.keys, contains('P033'));
-        expect(kTrainingFewShotLibrary.length, 34);
+        expect(kTrainingFewShotLibrary.length, 37);
       },
     );
 
@@ -251,10 +252,13 @@ void main() {
       }
     });
 
-    test('#11 C140：P009/P013/P014/P017/P023 划界块契约（key 不变 34 + 各含「不得报」边界块）', () {
+    test('#11 C140：P009/P013/P014/P017/P023 划界块契约（key 基线 37 + 各含「不得报」边界块）', () {
       // ADR-C140：本批只扩质量层（补「✅ 正常写法·不得报」划界块），不新增 key。
-      // ① key 总数仍为 34（无新增 key）
-      expect(kTrainingFewShotLibrary.length, 34, reason: 'C140 不应新增 key');
+      // ① key 总数须为 37（**不新增 key** 的牙齿：任何未登记的偷加都会红）
+      // ⚠️ 2026-10-05 ADR-0003 阶段一补 P035/P036/P037 ⇒ 基线 34 → 37；
+      //   本断言的**意图（防偷加）不变**，只是基线数随真源上移。
+      //   ⚠️ 刻意**不**改成 `greaterThanOrEqualTo` —— 那会让它失去牙齿。
+      expect(kTrainingFewShotLibrary.length, 37, reason: 'C140 不应新增 key');
       // ② 五症候各含划界块标记「不得报」
       const boundaryKeys = ['P009', 'P013', 'P014', 'P017', 'P023'];
       for (final k in boundaryKeys) {

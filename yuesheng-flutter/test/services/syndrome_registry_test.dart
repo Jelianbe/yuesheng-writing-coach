@@ -181,4 +181,57 @@ void main() {
       expect(effectiveSyndromeId('P999'), 'P999', reason: '非映射 ID 应原样返回');
     });
   });
+
+  // ── ADR-0003 阶段一（A1 批 · 2026-10-05）──────────────────────────
+  // ⚠️ 本组的作用是**给注册表条数与新号身份钉上「非派生」的硬锚**。
+  //
+  // 【为什么必须硬编码】上方 #R1 的连续性断言写的是 `P001..P{ids.length}`
+  // —— 它是**派生的**：删掉 P037 后 `length` 同步变 36，断言自动退化成
+  // `P001..P036` 并**照样通过**。同理 `four_libraries_consistency_test`
+  // 全用 `kSyndromeIds.length` 派生 ⇒「删一条注册 + 同步删一份载体」
+  // 这类改动会**全链路静默通过**。本组用三条断言堵住这个洞。
+  group('ADR-0003 阶段一（34 → 37 条 · 新号身份锁）', () {
+    test('#A1-A 注册表条数硬锚 = 37（非派生）', () {
+      expect(
+        kSyndromeRegistry.length,
+        37,
+        reason:
+            '注册表应为 37 条（34 + P035/P036/P037）。'
+            '若你确实要增减条目，必须同步更新本断言并说明理由——'
+            '否则 #R1 的派生连续性会让「少一条」静默通过。',
+      );
+      expect(kSyndromeIds.length, 37, reason: 'kSyndromeIds 应与注册表同长');
+    });
+
+    test('#A1-B P035/P036/P037 三号在册且名字与本批锁定值一致', () {
+      const expectNames = {'P035': '撞文同质化症', 'P036': '细节失真症', 'P037': '故事核缺失症'};
+      expectNames.forEach((id, name) {
+        final rec = syndromeRecordOf(id);
+        expect(rec, isNotNull, reason: '$id 应在注册表内');
+        expect(rec!.name, name, reason: '$id 名字应锁定为 $name');
+      });
+    });
+
+    test('#A1-C 三号的旧 legacy 别名键不得残留在映射表中（变异点）', () {
+      // 【断言方向的修正记录 · 2026-10-05】
+      // 初版写的是 `expect(effectiveSyndromeId(id), id)`（自聚）。
+      // 变异实测（M1：往 map 里加 `'P035': 'P040'`）发现**该断言恒绿**——
+      // 因为 M1 语义（`syndrome_registry.dart`「归一后的有效症候 ID」）规定
+      // 「ID ∈ 现行注册表 ⇒ 原样返回，**不查 merge map**」。
+      // ⇒ 加回 legacy 键根本走不到归一逻辑，断言形同虚设。
+      // 变异实测真正变红的是 `syndrome_registry_test#R8`（退役标记自洽）。
+      //
+      // 现改为**直接断言映射表里没有这三个键**——这是能被真实变异打红的形态。
+      for (final id in const ['P035', 'P036', 'P037']) {
+        expect(
+          kSyndromeMergeMap.containsKey(id),
+          isFalse,
+          reason:
+              '$id 的旧 legacy 别名键不得残留在 kSyndromeMergeMap。'
+              '残留会让 v46 迁移把存量行的现行实体错误改写'
+              '（旧实体：对话注水症 / 流水账叙述症 / 心理内耗症）。',
+        );
+      }
+    });
+  });
 }

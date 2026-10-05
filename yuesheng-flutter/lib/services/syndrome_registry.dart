@@ -825,4 +825,58 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     techniques: ['T012'],
     actions: ['A002'],
   ),
+  // ── ADR-0003 阶段一新增3 条（2026-10-05）──
+  // ⚠️ P035/P036/P037 三号原为 `kSyndromeMergeMap` 的 legacy 别名键
+  // （旧实体：P035 对话注水症 / P036 流水账叙述症 / P037 心理内耗症），
+  //   已于 A 批（`754638c9`）清键+ v46 迁移归一，**故本处注册安全**：
+  //   `effectiveSyndromeId('P035')` 现返回 'P035' 自身（不再被改写），
+  //   退役档案里三条的kind = `RetirementKind.recycled`（槽位待复用，非实体合并）。
+  // ⚠️ 同号字符串承载过两种含义（§4-136 编码碰撞），但**指向不同实体**：
+  //   旧 P037「心理内耗症」幸存为现行 P026，故 v46 平铺表仍保留 P037→P026 归一
+  //   （存量库归一必需），而**读路径 merge map 已无此键**（新槽位不被改写）。
+  SyndromeRecord(
+    id: 'P035',
+    name: '撞文同质化症',
+    shortName: '撞文同质',
+    keyword: '模板化撞文/陌生感缺失',
+    oneLine: '遮掉地名与人名后，读者认不出写的是哪部作品——场景可与同题材任意一部互换，缺少只属于这一处的具体性',
+    typeLine: '细节可任意置换说明文本只消费了类型标签，未落到具体对象的独有属性上',
+    trainingLine: '做「遮名测试」：遮掉人名地名与专有名词，若段落能原样搬到另一部同类作品里，说明撞文',
+    type: SyndromeType.commercialAppeal,
+    level: SkillLevel.l5,
+    group: MaxAttemptsGroup.deep,
+    position: 'global',
+    techniques: ['T016', 'T020', 'T024'],
+    actions: ['A004', 'A011'],
+  ),
+  SyndromeRecord(
+    id: 'P036',
+    name: '细节失真症',
+    shortName: '细节失真',
+    keyword: '生活逻辑断裂/物象缺失',
+    oneLine: '只有形容没有物象——关键生活细节经不起一次设问追问（那时她没有女佣使唤吗），逻辑链在常识层断裂',
+    typeLine: '细节是表达的承重结构；抽掉物象后只剩评价，读者会在常识层察觉被糊弄',
+    trainingLine: '对每处抽象形容追问一句「具体是什么样」；补一个可被角色实际使用的物象，而非更华丽的形容词',
+    type: SyndromeType.expressiveDeficit,
+    level: SkillLevel.l1,
+    group: MaxAttemptsGroup.expression,
+    position: 'local',
+    techniques: ['T003', 'T012', 'T027'],
+    actions: ['A002', 'A005'],
+  ),
+  SyndromeRecord(
+    id: 'P037',
+    name: '故事核缺失症',
+    shortName: '故事核缺失',
+    keyword: '主线失焦/剪裁无主干',
+    oneLine: '素材都好但彼此散落，找不到贯穿全篇的单一矛盾或红线——每个单场都合格，合起来不成篇',
+    typeLine: '故事核是取舍的裁决依据；缺它时作者无法判断哪场该留，剪裁就退化为删减字数',
+    trainingLine: '用一句话写出「主角此刻最想得到什么、谁挡着」；写不出就把当前素材按这句话重排，删掉不服务它的',
+    type: SyndromeType.structuralDisorder,
+    level: SkillLevel.l4,
+    group: MaxAttemptsGroup.structure,
+    position: 'global',
+    techniques: ['T001', 'T017', 'T030'],
+    actions: ['A001', 'A006', 'A013'],
+  ),
 ];

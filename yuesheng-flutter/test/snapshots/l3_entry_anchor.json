@@ -1,22 +1,22 @@
 {
   "meta": {
     "note": "L3 知识库词条级行为锚点（字节级：长度 + FNV-1a 指纹）",
-    "syndromeCount": 34,
+    "syndromeCount": 37,
     "techniqueCount": 32,
-    "trainingCount": 34
+    "trainingCount": 37
   },
   "syndrome": {
     "P001": {
-      "len": 1144,
-      "fnv": "5cbd0ccbb42eacf9"
+      "len": 1845,
+      "fnv": "5f83b081bb1fce83"
     },
     "P002": {
       "len": 1202,
       "fnv": "14bdd9b6fd09344d"
     },
     "P003": {
-      "len": 2091,
-      "fnv": "60a5bbc544d95e92"
+      "len": 2924,
+      "fnv": "47f0ede639fffb6c"
     },
     "P004": {
       "len": 1036,
@@ -141,6 +141,18 @@
     "P034": {
       "len": 1932,
       "fnv": "6b5c38f2e7208b50"
+    },
+    "P035": {
+      "len": 1873,
+      "fnv": "ad115b23c328a80"
+    },
+    "P036": {
+      "len": 1610,
+      "fnv": "7df39183f5df63ae"
+    },
+    "P037": {
+      "len": 1674,
+      "fnv": "246127a3ce0798fe"
     }
   },
   "technique": {
@@ -407,8 +419,20 @@
       "fnv": "61a56cbe2ce0eb48"
     },
     "P034": {
-      "len": 518,
-      "fnv": "21502e4eb6e1dab7"
+      "len": 513,
+      "fnv": "742067850bcdd70e"
+    },
+    "P035": {
+      "len": 927,
+      "fnv": "7cd6e2d4ed579dbf"
+    },
+    "P036": {
+      "len": 852,
+      "fnv": "22f9eb0a38151310"
+    },
+    "P037": {
+      "len": 932,
+      "fnv": "7664de44aa3c8359"
     }
   }
 }
