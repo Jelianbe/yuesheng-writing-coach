@@ -99,7 +99,10 @@ void main() {
       final args = clipCall.arguments as Map<dynamic, dynamic>;
       expect(
         args['text'],
-        'https://open.bigmodel.cn/usercenter/proj-mgmt/apikeys',
+        // ★ 与 kFreeTierEntries 里智谱那条的 consoleUrl **逐字一致**。
+        //   这里是指向注册页的邀请链接（含 icode），不是 API Key 管理页
+        //   —— 用户点开后需先注册/登录，再自行进入 API Keys 页。
+        'https://www.bigmodel.cn/invite?icode=fkd95bPdOlYyP1vLEXZGVunfet45IvM%2BqDogImfeLyI%3D',
       );
 
       // 复制后必须告诉用户下一步（否则复制完不知道要干嘛）

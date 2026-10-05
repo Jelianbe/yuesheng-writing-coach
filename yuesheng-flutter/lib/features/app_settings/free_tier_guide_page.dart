@@ -68,7 +68,11 @@ const List<FreeTierEntry> kFreeTierEntries = [
     key: 'glm-4.7-flash',
     contextLabel: '200K 上下文 · 128K 最大输出',
     notice: '免费档：输入 / 输出 / 缓存全免',
-    consoleUrl: 'https://open.bigmodel.cn/usercenter/proj-mgmt/apikeys',
+    // ⚠️ 这里是指向**注册页**（/invite?icode=…），不是 API Key 管理页。
+    //   用户点开后需先完成注册/登录，再自行进入「API Keys」页创建密钥
+    //   ⇒ 卡片的步骤说明已按此路径撰写（原 URL 直达 Key 页，现为两步）。
+    consoleUrl:
+        'https://www.bigmodel.cn/invite?icode=fkd95bPdOlYyP1vLEXZGVunfet45IvM%2BqDogImfeLyI%3D',
   ),
 ];
 
