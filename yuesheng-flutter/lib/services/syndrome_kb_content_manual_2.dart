@@ -12,7 +12,7 @@ part of 'syndrome_knowledge_base.dart';
 // | 依赖数据 | 症候注册表（kSyndromeRegistry：P006–P013 的 id/名称/severity 必须与本分片段标题一致） |
 // | 数据缺失兜底 | 注册表缺条目即 four_libraries_consistency_test 红，禁止先写手册段后补注册表 |
 // | 引用目标 | 技法 A008/A006（推荐教学动作） |
-// | 冲突与优先级 | 原 P011↔P035 消歧裁决已失效——0.3.6 症候去重已将 P035（对话注水症）并入 P009（对话疲劳症）；双侧对称消歧句随之删除（ADR-C79 记录留档） |
+// | 冲突与优先级 | 无（原 P011↔P035 消歧裁决已随 0.3.6 去重失效；双侧对称消歧句随之删除，ADR-C79 记录留档）。★ 2026-10-05 单轨收口：`P035` 现为现行实体「撞文同质化症」，**不得**在本库按「对话注水症」理解它 —— 历史沿革见 `lib/services/syndrome_retirement.dart` |
 // | 副本登记 | 无 V-05 登记 |
 // | 示例标注 | 诊断锚点示例均为 few-shot 参考（段内已标「few-shot 参考」） |
 // | 校验方式 | four_libraries_consistency_test + progressive_chunk_syndrome_coverage_test + 锚点 l3Inject 指纹 |

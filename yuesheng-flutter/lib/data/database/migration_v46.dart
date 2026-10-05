@@ -55,25 +55,22 @@
 // 杜绝前缀误伤。
 // ─────────────────────────────────────────────────────────────
 
-import 'dart:convert';
-
-import 'package:drift/drift.dart';
-
-import '../../services/syndrome_registry.dart';
-
-/// 表名。权威来源 = 生成代码的 `static const String $name`（`database.g.dart`），
-/// **不是** `tables.dart` 的类名——`ActiveProblems` 有
-/// `@override String get tableName => 'active_problem'`（单数！`tables.dart:235`）。
-/// 若按类名推蛇形写成 `active_problems`，UPDATE 会打在不存在的表上⇒
-/// SQLite 不报错、`rowsAffected = 0` ⇒ **迁移静默失效**。
-const _activeProblems = 'active_problem';
-const _trainingResults = 'training_results';
-const _diagnosisResults = 'diagnosis_results';
-
-/// ⚠️ 表名是 **`student_model`（单数）**，不是 `student_models`。
-/// 实测依据：`tables.dart:292` 的 `String get tableName => 'student_model'`；
-/// Dart 类名 `StudentModels` 是复数，**与表名不一致** ⇒ 凭类名拼 SQL 会静默零命中。
-const _studentModels = 'student_model';
+// ⚠️ 留档的**表名知识**（Dart 类名 ≠ 表名，这类坑的症状是**零命中而非报错**
+//   ⇒ 易复发，删掉就等于把踩坑经验丢掉）：
+//
+//   | Dart 类 |真实表名 | 坑 |
+//   |:--|:--|:--|
+//   | `ActiveProblems` | `active_problem`（**单数**） | 按类名推蛇形写成
+//     `active_problems` ⇒ UPDATE 打在不存在的表上 ⇒ SQLite 不报错、
+//     `rowsAffected = 0` ⇒ **迁移静默失效**（依据 `tables.dart:235`）|
+//   | `TrainingResults` | `training_results` | 复数，与类名一致，无坑 |
+//   | `DiagnosisResults` | `diagnosis_results` | 复数，与类名一致，无坑 |
+//   | `StudentModels` | `student_model`（**单数**） | ⚠️ Dart 类名是**复数**、
+//     **与表名不一致** ⇒ 凭类名拼 SQL 会静默零命中（依据 `tables.dart:292`）|
+//
+//   ▸ 权威来源 = 生成代码的 `static const String $name`（`database.g.dart`），
+//     **不是** `tables.dart` 的类名。若将来有工具要按表名操作症状数据，
+//     以 `database.g.dart` 为准，不要照抄这张表（它只是留档）。
 
 /// 归一映射的**键清单**（退役档案**全量 50 条**，含 recycled 3 条）。
 ///
@@ -88,7 +85,10 @@ const _studentModels = 'student_model';
 const Map<String, String> _legacyToCanonical = {
   // ⚠️ 本段由 tool/gen_syndrome_retirement.py 生成，请勿手改。
   // 真源 = lib/services/syndrome_retirement.dart（kSyndromeRetirement）
-  // 全量 50 条（含 recycled 3 条：存量库里仍有这些旧号的历史行）
+  // ⚠️ 本表仅供**历史留档** —— v46 迁移已退役、永不执行。
+  // 全量 50 条，含 recycled 3 条 —— 而这 3 条正是v46 必须退役的原因：
+  //   单跳语义会把存量库里任何 P035/P036/P037 行改写成旧实体，而那三个号
+  //   如今已是现行实体（撞文同质化症 / 细节失真症 / 故事核缺失症）。
   'H001': 'P011',
   'H002': 'P011',
   'P001': 'P002',
@@ -144,264 +144,35 @@ const Map<String, String> _legacyToCanonical = {
 /// v46 使用的 legacy → 规范 ID 映射（供测试断言「迁移后无 legacy 残留」）。
 Map<String, String> get legacyIdMigrationMap => _legacyToCanonical;
 
-/// 校验 [_legacyToCanonical] **覆盖** `kSyndromeMergeMap` 且逐条 value 一致。
-/// **返回不一致项**（空 = 一致）。
-///
-/// ## 为什么是「子集校验」而不是「逐条一致」（A1 批 · ADR-0003 阶段一）
-///
-/// 守卫的**本意**是「防忘了同步平铺映射 ⇒ migration 按过期映射改数据 ⇒ 静默数据损坏」。
-/// 要防的只有一件事：**真源里有的键，平铺里缺了或值不一样**。
-///
-/// 而「两集合必须逐条一致」是**过严的约束**，它连带禁止了一个正当操作：
-/// **清理历史遗留映射**。A2 批删掉 merge map 的 P035/P036/P037（三键即将被
-/// ADR-0003 阶段一复用为新槽位），旧写法会报「条目数不一致：平铺 50 vs 真源 47」
-/// + 三项「平铺里多出的键」⇒ `assertLegacyMapInSync()` 抛 `StateError`
-/// **阻断所有用户升级** —— 为清理历史付出「全量用户打不开 App」的代价。
-///
-/// ## 两个集合各自的性质（这决定了正确形式）
-///
-/// | | [_legacyToCanonical]（平铺） | `kSyndromeMergeMap`（真源） |
-/// |:--|:--|:--|
-/// | 性质 | **一次性历史动作**：v46 出闸时按它改写存量行，改写完使命完成 | **长期读路径真源**：每次归一都读它 |
-/// | 会不会长键 | 不会（存量只会越来越少） | 会（将来新增旧号归一时要加） |
-/// | 该不该清 | **不该**（清了就永久漏归一那批存量数据） | 该清时随时可清 |
-///
-/// ⇒ 正确关系是**平铺 ⊇ 真源**（平铺可以多，真源不能多）。
-/// 反过来写会让「平铺比真源干净」这种状态永远无法表达。
-///
-/// ⚠️ 这里**刻意不用 `assert`**：`assert` 在测试模式与发布模式下会被剥离，
-/// 实测变异①（把 `P035→P009` 改错）时本函数**没有任何效果**——
-/// 只有测试 `#5` 因为期望值写死才抓到。
-/// 用返回值把不一致项**显式抛出去**，才能在生产升级路径上也真正生效。
-///
-/// ── 转换机落地后（2026-10-05 · R 批）本守卫的角色变了 ──
-/// [_legacyToCanonical] 与 `kSyndromeMergeMap` **现在都是生成物**
-/// （真源 = `kSyndromeRetirement`，退役档案），漂移由
-/// `tool/gen_syndrome_retirement.py --check` 在**生成期**拦。
-/// ⇒ 本函数退化为**第二道防线**：万一有人手改了产物而没重跑生成器，
-///   升级路径上仍然硬失败。
-/// ⚠️ 但**不要**把子集校验改回「逐条一致」—— 那是 A 批已裁定的正确形态，
-///   理由见上方「两个集合各自的性质」表。
-List<String> findLegacyMapMismatches() {
-  final bad = <String>[];
-  // 反向检查：真源的每个键，平铺里必须存在且 value 相同。
-  // ⚠️ 这里**只报「值不同」**；「键缺失」由下面的循环一并覆盖
-  //（`mine == null != e.value` 必然成立），不必单列一条。
-  for (final e in kSyndromeMergeMap.entries) {
-    final mine = _legacyToCanonical[e.key];
-    if (mine != e.value) {
-      bad.add('${e.key}: 平铺=$mine vs 真源=${e.value}');
-    }
-  }
-  return bad;
-}
-
-/// [_legacyToCanonical] 是手抄进 SQL 的平铺版，一旦有人改了
-/// `kSyndromeMergeMap` 却忘了同步这里，migration 就会按过期映射改写数据
-/// ⇒ **静默数据损坏**。故生产路径上也要硬失败（不靠 assert）。
-///
-/// 判据是**子集校验**（平铺 ⊇ 真源）—— 理由与允许的差异形态见
-/// [findLegacyMapMismatches] 的文档注释。
-/// 不一致则抛（阻断升级，绝不带着过期映射改数据）。
-void assertLegacyMapInSync() {
-  final bad = findLegacyMapMismatches();
-  if (bad.isEmpty) return;
-  throw StateError(
-    'v46 迁移的平铺映射未覆盖 kSyndromeMergeMap，已阻断升级：\n'
-    '  ${bad.join('\n  ')}\n'
-    '请同步 lib/data/database/migration_v46.dart 的 _legacyToCanonical。',
-  );
-}
-
-/// v46 迁移主体：把三张表的 legacy 症候 ID 按 merge map **单跳**重写。
-///
-/// 参数是 drift `Migrator`（`onUpgrade` 回调第一参），
-/// 不用 `Executor`——后者是 drift **内部**类型（`src/runtime/api/db_base.dart`），
-/// 依赖它等于依赖私有 API，drift 升级即可能断裂。
-/// 也不直接用 `Migrator.runCustomStatement`——**它没有这个方法**
-/// （`Migrator` 只暴露 create/alter/createAll 之类，见
-/// `drift/src/runtime/query_builder/migration.dart`）⇒ 走
-/// `m.database.customStatement`，那才是跑任意 SQL 的公开入口
-/// （`database.dart` 的 v2–v45 全部迁移块都用它）。
-Future<void> migrateLegacySyndromeIds(Migrator m) async {
-  assertLegacyMapInSync();
-  final db = m.database;
-
-  // ── 两处普通列：同构，一条 helper 走两次 ──
-  for (final table in const [_activeProblems, _trainingResults]) {
-    if (!await _tableExists(db, table)) continue;
-    await _rewritePlainColumn(db, table);
-  }
-  // ── 第三处：JSON 内嵌（diagnosis_results.syndromes）──
-  if (await _tableExists(db, _diagnosisResults)) {
-    await _migrateDiagnosisJson(db);
-  }
-  // ── 第四处：JSON 内嵌（student_model.teaching_history）· A3 批新增 ──
-  if (await _tableExists(db, _studentModels)) {
-    await _migrateTeachingHistoryJson(db);
-  }
-}
-
-/// 目标表是否存在于当前库。
-///
-/// 判据与 `AppDatabase.tableExists`（`database.dart:89`）**逐字一致**
-/// （`sqlite_master` + `type='table'`），但这里只能操作 `Migrator` 拿到的
-/// `GeneratedDatabase`——`AppDatabase.tableExists` 是实例方法，
-/// 迁移体内拿不到 `this`。故就地复刻，**并在上面的文件头注明这处必须与
-/// `database.dart` 同步**。
-///
-/// ⚠️ 关于 `PRAGMA table_info`：**判表**与**判列**的失效方向相反，别混用。
-/// `database.dart:80-83` 记载的坑是「**判列**」场景——`table_info` 对缺列表返回
-/// 空集，会让「缺列」判定**恒为真** ⇒ 误 `ALTER`。
-/// 而**判表**时，空集恰好=「表不存在」= 判对（变异⑤b 实测：换成
-/// `PRAGMA table_info` 后测试仍全绿 ⇒ **等价变异**，非覆盖缺口）。
-/// 本处仍用 `sqlite_master`，是为了与 `AppDatabase.tableExists` **逐字一致**——
-/// 同一判据在两处各写一遍必然走偏，这是仓库既有的教训，不是风格洁癖。
-Future<bool> _tableExists(GeneratedDatabase db, String table) async {
-  final rows = await db
-      .customSelect(
-        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
-        variables: [Variable.withString(table)],
-      )
-      .get();
-  return rows.isNotEmpty;
-}
-
-/// 按 [_legacyToCanonical] 逐键 UPDATE 某一列。
-///
-/// 逐键而非一条 `IN` + `CASE`：迁移量级是几十行，一次性 CASE 写起来长且难 diff；
-/// 逐键 UPDATE 的 SQL 在 git 里可读，且天然幂等（值已是目标时不匹配）。
-Future<void> _rewritePlainColumn(GeneratedDatabase db, String table) async {
-  for (final entry in _legacyToCanonical.entries) {
-    await db.customStatement(
-      "UPDATE $table SET syndrome_id = '${entry.value}' "
-      "WHERE syndrome_id = '${entry.key}'",
-    );
-  }
-}
-
-/// `diagnosis_results.syndromes` 是 JSON 数组字符串，须逐行解析 → 改 `syndrome_id` → 写回。
-///
-/// ⚠️ 跳过**解析失败**的行而非抛错：一条脏JSON 不应让整个迁移失败
-/// （那会让 App 无法升级）。失败行原样保留，由`diagnosis_parser` 侧既有校验兜底。
-Future<void> _migrateDiagnosisJson(GeneratedDatabase e) async {
-  final rows = await e
-      .customSelect("SELECT id, syndromes FROM $_diagnosisResults")
-      .get();
-  for (final row in rows) {
-    final id = row.read<String>('id');
-    final raw = row.read<String>('syndromes');
-    List<dynamic>? decoded;
-    try {
-      final d = jsonDecode(raw);
-      if (d is List) decoded = d;
-    } on FormatException {
-      continue;
-    }
-    if (decoded == null || decoded.isEmpty) continue;
-
-    var changed = false;
-    for (final item in decoded) {
-      if (item is! Map) continue;
-      final sid = item['syndrome_id'];
-      if (sid is! String) continue;
-      final to = _legacyToCanonical[sid];
-      if (to != null && to != sid) {
-        item['syndrome_id'] = to;
-        changed = true;
-      }
-    }
-    if (!changed) continue;
-    await e.customStatement(
-      "UPDATE $_diagnosisResults SET syndromes = ? WHERE id = ?",
-      [jsonEncode(decoded), id],
-    );
-  }
-}
-
-/// `student_model.teaching_history` 归一（A3 批 · ADR-0003 阶段一）。
-///
-/// ## 为什么必须补这一处（A3 批存在的唯一理由）
-///
-/// v46 初版只覆盖三张表（`active_problem` / `training_results` / `diagnosis_results`），
-/// **漏了 `student_model`**（实测 `grep -c student_models migration_v46.dart` = 0）。
-/// 而 `teaching_history` 正是 B1 批刚修的两处形态③ 的数据来源：
-/// - `student_model_repository.dart:150`（写「最近一条 training 评分」）
-/// - `diagnosis_committer.dart:339`（算「连续失败训练次数」，**直接驱动介入级别提升**）
-///
-/// ⇒ 不补这一处，ADR-0003 阶段一复用槽位后，这两条链路会读到旧号行。
-/// **补的时机是现在**：v46 尚未出闸（实测 `git tag --contains 8a629c4e` 为空），
-/// 现在补是一张表的工作量；出闸后再补就得写 v47 并再走一轮门禁。
-///
-/// ## ⚠️ 三种 ID 形态（照抄 `_migrateDiagnosisJson` 会静默漏掉两处）
-///
-/// `teaching_history` 的元素按 `type` 分三种，**ID 键名与类型都不同**：
-///
-/// | `type` | ID 键 | 形态 | 写入点（实测 4 处全覆盖）
-/// |:--|:--|:--|:--|
-/// | `training` | `syndromeId` | **字符串** | `diagnosis_flow_handler.dart:1350`
-/// | `confirmation` | `syndromes` | **字符串数组** | `diagnosis_service.dart:232`（确认）
-/// | `confirmation` | `syndromes` | **字符串数组** | `diagnosis_service.dart:258`（质疑）
-/// | `diagnosis` | `syndromes` | **字符串数组** | `diagnosis_service.dart:388`
-///
-/// 对比：`diagnosis_results.syndromes` 用的是**蛇形 `syndrome_id`（字符串）**。
-/// **键名不同（`syndromeId` vs `syndrome_id`）** ⇒ 照抄会**零命中且不报错**
-/// ——迁移「成功」了但一条没改，是最坏的失败形态。
-Future<void> _migrateTeachingHistoryJson(GeneratedDatabase e) async {
-  final rows = await e
-      .customSelect("SELECT id, teaching_history FROM $_studentModels")
-      .get();
-  for (final row in rows) {
-    final id = row.read<String>('id');
-    final raw = row.read<String>('teaching_history');
-    List<dynamic>? decoded;
-    try {
-      final d = jsonDecode(raw);
-      if (d is List) decoded = d;
-    } on FormatException {
-      continue;
-    }
-    if (decoded == null || decoded.isEmpty) continue;
-
-    var changed = false;
-    for (final item in decoded) {
-      if (item is Map && _normalizeHistoryItem(item)) changed = true;
-    }
-    if (!changed) continue;
-    await e.customStatement(
-      "UPDATE $_studentModels SET teaching_history = ? WHERE id = ?",
-      [jsonEncode(decoded), id],
-    );
-  }
-}
-
-/// 归一 `teaching_history` 的**单个元素**（原地改写），返回是否改动过。
-///
-/// 两种 ID 形态各占一段，**都必须覆盖** —— 漏掉任一段就是静默漏归一
-/// （迁移「成功」了但那部分数据没改）。
-bool _normalizeHistoryItem(Map<dynamic, dynamic> item) {
-  var changed = false;
-  // 形态①`type=='training'`：驼峰 `syndromeId`，字符串
-  final single = item['syndromeId'];
-  if (single is String) {
-    final to = _legacyToCanonical[single];
-    if (to != null && to != single) {
-      item['syndromeId'] = to;
-      changed = true;
-    }
-  }
-  // 形态②/③`syndromes`：字符串数组（confirmation 与 diagnosis 两型共用）
-  final many = item['syndromes'];
-  if (many is List) {
-    for (var i = 0; i < many.length; i++) {
-      final s = many[i];
-      if (s is! String) continue;
-      final to = _legacyToCanonical[s];
-      if (to != null && to != s) {
-        many[i] = to;
-        changed = true;
-      }
-    }
-  }
-  return changed;
-}
+// ─────────────────────────────────────────────────────────────
+// ★★ 以上是本文件保留下来的**全部**内容：平铺映射表 + 一个 getter。
+//
+// ── 为什么删掉守卫与迁移主体（2026-10-05 · 层 2 单轨收口批）──
+//
+// 1) **迁移主体 `migrateLegacySyndromeIds` 退役**：它在
+//    `database.dart` 的 `onUpgrade` 调用点已删除，**永不执行**。
+//    退役理由见 `database.dart` 里的「v46 迁移退役说明」整段注释，
+//    决定性理由摘录：
+//      · 本表**含 3 条 recycled**（`P035→P009` / `P036→P004` / `P037→P026`），
+//        单跳语义下会把存量库里**任何** `P035` 行**一律**改写成 `P009`
+//      · 而按单轨决策 `P035` 早已是**现行注册表实体**（撞文同质化症）
+//        ⇒ 撞文同质化症的历史数据会被静默改成「对话疲劳症」
+//        （ID 合法、有名字、能渲染 ⇒ 最隐蔽的一种数据损坏）
+//
+// 2) **守卫 `assertLegacyMapInSync` / `findLegacyMapMismatches` 一并退役**：
+//    它们存在的唯一目的是「防忘了同步平铺映射 ⇒ 迁移按过期映射改数据」。
+//    迁移不再执行 ⇒ 这类数据损坏**不可能发生** ⇒ 守卫失去对象。
+//    另一层：它依赖的 `kSyndromeMergeMap`（读路径真源）**已整张删除**
+//    （单轨收口批）⇒ 守卫的对照对象不复存在，保留它只会编译失败。
+//
+// ── 为什么保留这张表 ──
+// 这是「0.3.6 纯代码重编号时，库里实际可能残留哪些旧号、并进了谁」的
+// **唯一完整记录**。删掉它，这段知识就只能从 git 历史里考古。
+// 退役档案（`lib/services/syndrome_retirement.dart`，50 条）记的是
+// 「旧号 → 现行号」；而这张平铺表额外记了一件档案表达不了的事：
+//**这三个 recycled 号当年是「槽位待复用」，而它们如今已经被真的复用了。**
+//
+// ⚠️ 本表由 `tool/gen_syndrome_retirement.py` 生成，请勿手改。
+// ⚠️ 运行时**零消费**（除 `test/data/database/migration_v46_test.dart`
+//    与 `test/services/syndrome_retirement_ledger_test.dart` 的档案断言）。
+// ─────────────────────────────────────────────────────────────

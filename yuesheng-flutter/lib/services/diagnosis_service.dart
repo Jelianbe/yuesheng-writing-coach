@@ -20,7 +20,6 @@ import 'package:flutter/foundation.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
-import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 /// 解锁触发判断结果
@@ -102,11 +101,7 @@ class DiagnosisService {
       if (r['type'] != 'confirmation') return false;
       final syndromes = r['syndromes'];
       if (syndromes is! List) return false;
-      return syndromes.any(
-        (id) =>
-            id is String &&
-            effectiveSyndromeId(id) == effectiveSyndromeId(syndromeId),
-      );
+      return syndromes.any((id) => id is String && id == syndromeId);
     }).toList();
   }
 
@@ -120,8 +115,7 @@ class DiagnosisService {
           (r) =>
               r['type'] == 'training' &&
               r['syndromeId'] is String &&
-              effectiveSyndromeId(r['syndromeId'] as String) ==
-                  effectiveSyndromeId(syndromeId),
+              r['syndromeId'] == syndromeId,
         )
         .toList()
       ..sort((a, b) {

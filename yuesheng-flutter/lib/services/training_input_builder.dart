@@ -24,7 +24,6 @@ library;
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/services/student_profile_compute.dart';
-import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/spaced_repetition.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -70,8 +69,7 @@ Future<int> countTrainingForSyndrome(
           (r) =>
               r['type'] == 'training' &&
               r['syndromeId'] is String &&
-              effectiveSyndromeId(r['syndromeId'] as String) ==
-                  effectiveSyndromeId(syndromeId),
+              r['syndromeId'] == syndromeId,
         )
         .length;
   } catch (e, st) {
@@ -120,8 +118,7 @@ Future<TrainingPerformance?> computeTrainingPerformance(
               (r) =>
                   r['type'] == 'training' &&
                   r['syndromeId'] is String &&
-                  effectiveSyndromeId(r['syndromeId'] as String) ==
-                      effectiveSyndromeId(syndromeId),
+                  r['syndromeId'] == syndromeId,
             )
             .toList()
           ..sort((a, b) {
@@ -382,11 +379,7 @@ List<Map<String, dynamic>> _filterDiagnosisRecords(
   return history.where((r) => r['type'] == 'diagnosis').where((r) {
     final syndromes = r['syndromes'];
     if (syndromes is! List) return false;
-    return syndromes.any(
-      (id) =>
-          id is String &&
-          effectiveSyndromeId(id) == effectiveSyndromeId(syndromeId),
-    );
+    return syndromes.any((id) => id is String && id == syndromeId);
   }).toList()..sort((a, b) {
     final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
     final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
@@ -396,17 +389,25 @@ List<Map<String, dynamic>> _filterDiagnosisRecords(
 
 /// 筛选目标症候训练记录（按时间正序）（R-019 拆出）。
 ///
-/// ★ **双边归一**（与 `_filterDiagnosisRecords` / `countTrainingForSyndrome` 一致）。
-///   本函数曾写成 `effectiveSyndromeId(stored) == syndromeId`—— **右边少归一一次**，
-///   因为 `kSyndromeMergeMap` 有 33 个键同时是现行活跃 ID（`P001`–`P033`），
-///   单边归一把store 侧改到别的号码上，导致：
-///     · 漏读：拿现行 ID 查自己都不匹配（实测 34个现行 ID 只 1 个中）
-///     · 串号：库里 P005（句式节奏单一）的记录被当成 P003（视角漂移）的历史
-///   详见 `test/services/training_input_builder_test.dart` group `B0-1`。
+/// ★ **单轨 ID（2026-10-05 层 2 单轨收口批）：直接等值比较**。
 ///
-/// ⚠️ 同一条纪律适用于**任何**拿 ID 做等值比较的地方：只要两侧有一侧来自
-///   DB/历史（可能是旧号），两侧就**必须**都过 `effectiveSyndromeId`。
-///   「双边都错得一样」才等于「双边都对」——单边归一是纯漏。
+/// ── 为什么这一段的历史注释全部作废──
+/// 本函数曾写成 `effectiveSyndromeId(stored) == syndromeId` —— **右边少归一一次**，
+/// 因为当时的 `kSyndromeMergeMap` 有 33 个键同时是现行活跃 ID（`P001`–`P033`），
+/// 单边归一把store 侧改到别的号码上，导致：
+///   · 漏读：拿现行 ID 查自己都不匹配（实测 34 个现行 ID 只 1 个中）
+///   · 串号：库里 P005（句式节奏单一）的记录被当成 P003（视角漂移）的历史
+/// 于是当时定下「双边都必须过 `effectiveSyndromeId`」的纪律。
+///
+/// **现在这条纪律的对象不存在了** —— 归一函数连同映射表**整张删除**
+/// （见 `syndrome_registry.dart` 的单轨说明）。号码一旦分配便永不复用，
+/// 于是「两侧归一后相等」不再等价于「两侧本来就相等」，而是**本就应当相等**。
+///
+/// ▸ **单边归一这个 bug 类别已从根上消失**：它之所以可能发生，是因为存在
+///   「一个转换函数只作用于一侧」的写法空间。现在两侧都是**原始值直比**，
+///   不对称无从发生。
+/// ▸ 历史教训保留：若将来引入任何「ID 变换函数」（大小写折叠、别名、
+///   规范化），**两侧必须同时过它**—— 单边变换是纯漏，不因函数名而异。
 List<Map<String, dynamic>> _filterTrainingRecords(
   List<Map<String, dynamic>> history,
   String syndromeId,
@@ -416,8 +417,7 @@ List<Map<String, dynamic>> _filterTrainingRecords(
         (r) =>
             r['type'] == 'training' &&
             r['syndromeId'] is String &&
-            effectiveSyndromeId(r['syndromeId'] as String) ==
-                effectiveSyndromeId(syndromeId),
+            r['syndromeId'] == syndromeId,
       )
       .toList()
     ..sort((a, b) {

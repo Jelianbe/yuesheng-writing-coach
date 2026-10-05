@@ -8,8 +8,11 @@
 // 内容型段落（手册正文/训练知识/重叠规则）不在此处，保留各库人工编写。
 //
 // 0.3.6+10：聚类去重后彻底删除被合并的 14 个症候，不再保留退役标记；
-// 33 个存活症候按旧 ID 升序连续重编号为 P001–P033。历史旧 ID 的读取归一
-// 见 kSyndromeMergeMap（legacyMap[id] ?? id）。
+// 33 个存活症候按旧 ID 升序连续重编号为 P001–P033。
+//
+// ★ 2026-10-05（层 2 单轨收口批）：**读路径归一已整张删除**。
+// 本项目现在走**单轨 ID**——「P001–P037 之外永不再分配编号，历史号永不复用」。
+// 历史沿革见 `syndrome_retirement.dart`（纯文档，运行时零消费）与 git 历史。
 // ─────────────────────────────────────────────────────────────
 
 // ADR-C70：原本 import 的是 syndrome_skill_levels.dart，但那边反过来依赖
@@ -43,7 +46,7 @@ enum MaxAttemptsGroup {
 
 /// 症候元数据（增删症候的唯一入口）
 class SyndromeRecord {
-  /// 症候 ID（P0XX，连续编号；被合并的旧 ID 见 kSyndromeMergeMap 归一）
+  /// 症候 ID（`P0XX`，连续编号，**永不复用**）。
   final String id;
 
   /// 全名（手册标题 / 训练段标题 / 索引关键词可用时）
@@ -132,124 +135,22 @@ final List<SyndromeRecord> kSyndromeRegistry = List.unmodifiable([
 List<String> get kSyndromeIds =>
     List.unmodifiable(kSyndromeRegistry.map((s) => s.id));
 
-/// legacy 归一映射（任意历史旧 ID → 新规范 ID；读取聚合前归一，写入不归一）。
-///
-/// ⚠️ **本段由 `tool/gen_syndrome_retirement.py` 生成，请勿手改。**
-/// 真源 = [`kSyndromeRetirement`]（`syndrome_retirement.dart`）—— 退役档案
-/// 唯一手写真源。改动流程：改真源 → 跑生成器 → 跑 `--check` 验同步。
-///
-/// 覆盖三类（分类判据见 [RetirementKind]，实测 50 条档案）：
-///   - ghost 编号 4 个：P001/P002/H001/H002（早于注册表起点，旧名不可考）
-///   - 纯改号 31 个：P003→P001 … P049→P033（实体未变）
-///   - 实体合并 12 个：0.3.6 标 `retired: true` 的那批，旧名 ≠ 目标名
-/// 老 DB 行无论存的是删除 ID 还是存活旧 ID，都能归到新规范 ID。
-///
-/// ⚠️ **recycled 3 条（P035/P036/P037）不在本表**：那三个槽位即将被
-/// ADR-0003 阶段一复用为**新**症候，留着映射会把新槽位改写成旧实体。
-/// 存量行的归一由 v46 迁移的平铺表负责（它**全量 50 条**）。
-const Map<String, String> kSyndromeMergeMap = {
-  // ⚠️ 本段由 tool/gen_syndrome_retirement.py 生成，请勿手改。
-  // 真源 = lib/services/syndrome_retirement.dart（kSyndromeRetirement）
-  // 含 50 条；**排除 recycled 3 条**（槽位待复用为新症候）
-  'H001': 'P011', // ghost
-  'H002': 'P011', // ghost
-  'P001': 'P002', // ghost
-  'P002': 'P007', // ghost
-  'P003': 'P001', // renumber
-  'P004': 'P002', // renumber
-  'P005': 'P003', // renumber
-  'P006': 'P004', // renumber
-  'P007': 'P005', // renumber
-  'P008': 'P006', // renumber
-  'P009': 'P007', // renumber
-  'P010': 'P008', // renumber
-  'P011': 'P009', // renumber
-  'P012': 'P010', // renumber
-  'P013': 'P011', // renumber
-  'P014': 'P012', // renumber
-  'P015': 'P013', // renumber
-  'P016': 'P014', // renumber
-  'P018': 'P015', // renumber
-  'P020': 'P016', // renumber
-  'P021': 'P017', // renumber
-  'P022': 'P018', // renumber
-  'P026': 'P019', // renumber
-  'P027': 'P020', // renumber
-  'P028': 'P021', // renumber
-  'P030': 'P022', // renumber
-  'P031': 'P023', // renumber
-  'P032': 'P024', // renumber
-  'P038': 'P027', // renumber
-  'P040': 'P028', // renumber
-  'P041': 'P029', // renumber
-  'P042': 'P030', // renumber
-  'P043': 'P031', // renumber
-  'P046': 'P032', // renumber
-  'P049': 'P033', // renumber
-  'P017': 'P012', // merge
-  'P019': 'P001', // merge
-  'P023': 'P013', // merge
-  'P024': 'P019', // merge
-  'P025': 'P011', // merge
-  'P029': 'P005', // merge
-  'P033': 'P024', // merge
-  'P039': 'P007', // merge
-  'P044': 'P011', // merge
-  'P045': 'P007', // merge
-  'P047': 'P001', // merge
-  'P048': 'P018', // merge
-};
-
-/// 归一后的有效症候 ID。
-///
-/// ## 语义（M1 · B1 批，2026-10-04）——**现行 ID 恒等 + 真旧号单跳**
-///
-/// - ID ∈ 现行注册表 ⇒ **原样返回**，不查 merge map
-/// - 否则 ⇒ 单跳 `kSyndromeMergeMap[id] ?? id`
-///
-/// ## 为什么必须这样（改这段前先读）
-///
-/// `kSyndromeMergeMap` 的键里，**33 个同时是现行活跃 ID**（P001–P033），
-/// 且映射**有环**（`P003→P001→P002→P007→P005→P003`）
-/// ⇒ 直接写 `map[id] ?? id` 得到的函数**不是等价关系**：
-///
-/// | 性质 | 旧实现实测 |
-/// |:--|--:|
-/// | 自反（现行 ID 恒等） | ✗ 33/34 被改写 |
-/// | 幂等 `eff(eff(x))==eff(x)` | ✗ 违反 34/34 |
-/// | 传递 | ✗ 违例 106 |
-/// | 现行 ID 两两不互撞 | ✗ **18 对互撞** |
-///
-/// ⇒ **不能拿它做等值判定**。两种写法都会坏，且坏法不同：
-/// -单边 `eff(s)==q` ⇒ 漏读 33/34（拿现行 ID 查自己都不中）
-/// - 双边 `eff(s)==eff(q)` ⇒ **18 对串号**（把不同症候并成一个，更隐蔽）
-///
-/// ## 「33 个键撞现行 ID」是编码问题，不是算法问题
-///
-/// 「旧 P005」= 视角漂移，「现行 P005」= 句式节奏单一——**同一个字符串**。
-/// 程序拿到 `'P005'` 时**没有任何信息**能判断它是哪个。
-/// merge map 里只有 **14 条**的键不在现行注册表（P038–P049 共 12 条 + H001/H002），
-/// 它们才是**真旧号**，走单跳归一；那 33 条**无法救**（只能放弃）。
-/// ⚠️ 原为 17 条，A2 批（ADR-0003 阶段一）删掉 P035/P036/P037 后变 14 条；
-///    键总数 50 → 47。这三个槽位即将被 ADR-0003 阶段一**复用为新症候**。
-/// 真正治本要让旧号不再占用现行号段（另批立项），纯逻辑层无解。
-///
-/// ## 不变量（改动后必须仍成立，锁在 syndrome_merge_map_test）
-///
-/// 1. **自反**：任一现行 ID 归一后原样 ⇒ 拿现行 ID 查自己恒成立
-/// 2. **幂等**：连归一次不变 ⇒ 可反复归一
-/// 3. **现行 ID 两两不互撞** ⇒ 双边比较不会串号
-/// 4. **与 v46 迁移同口径**：对真旧号，M1 与 `kSyndromeMergeMap` 单跳一致
-///    ⇒ 已迁移行与存量行不在读路径上分叉成两个实体
-///
-/// ⚠️ [syndromeNameOf] 刻意**不**走本函数（它精确查注册表优先），
-/// 理由见该函数注释。
-String effectiveSyndromeId(String id) {
-  // 现行 ID 优先：这是 M1 的全部关键——不在这里短路，
-  // 后面 33 个现行 ID 会被 merge map 改写到别的实体上。
-  if (syndromeRecordOf(id) != null) return id;
-  return kSyndromeMergeMap[id] ?? id;
-}
+// ★ 2026-10-05（层 2 单轨收口批）：`kSyndromeMergeMap` 与 `effectiveSyndromeId`
+// **已整张删除**。本项目现在走单轨 ID —— 号码一旦分配便永不复用，
+// 于是「读到历史号时该归一到哪」这个问题不再存在。
+//
+// 为什么能删（不是「缓解」而是「源头消失」）：
+// 映射表存在的原因是 0.3.6 的纯代码重编号（`e64096db`）留下了同号跨代
+// 复用 —— 同一个 `P005` 既是旧「视角漂移」又是现行「句式节奏单一」，
+// 程序拿到字符串时无从判别年代。50 条档案里 36 条与现行 ID 编号空间重叠。
+// 单轨之后：历史号永不复用 ⇒ 新的重叠不会发生 ⇒ 映射表失去存在理由。
+//
+// ⚠️ 改这段前先读`syndrome_retirement.dart`（退役档案，50 条，纯文档）——
+//   它记录了每个旧号原来叫什么、并进了谁。**不再被任何运行时代码消费**，
+//   但「P035 这个字符串历史上是别的东西」这条知识不能丢。
+//
+// ⚠️ 若将来要引入第二个编号段（如 `S0xx`），**必须重新评估**：
+//   跨前缀不会撞字符串，但「新号段的号会不会与历史号重复」是另一个问题。
 
 /// 症候 → 技能层级映射（四库一致性测试的权威集合来源）
 Map<String, SkillLevel> get kSyndromeSkillLevelsDerived => {
@@ -270,21 +171,18 @@ SyndromeRecord? syndromeRecordOf(String? id) {
   return null;
 }
 
-/// 症候 ID → 显示名（**精确匹配优先，legacy 归一兜底**；未知 → null）。
+/// 症候 ID → 显示名（**只精确匹配**；未知 → null）。
 ///
-/// ⚠️ 刻意**不**直接用 [effectiveSyndromeId]：mergeMap 是给**历史 DB 行**做归一的
-/// （`'P001' -> 'P002'` 指的是早年 ghost 编号"世界观膨胀"，而**当前** P001 是
-/// "情绪标签化"）。对**新输出**里的编号先归一，会把当前 P001 改写成 P002 的名。
-/// 故此处先精确查注册表，查不到才回退 mergeMap——后者只覆盖"LLM 偶发旧编号"
-/// （如 P048 语法层语病症 → P018），两者语义不冲突。
+/// ★ 2026-10-05（层 2 单轨收口批）：legacy 归一回退**已删除**。
+/// 理由：回退分支处理的是「LLM 偶发输出历史旧编号」（如 `P048` 语法层语病症
+/// → `P018` 重复用词/基础语病）。单轨下**这种输入本身就是缺陷** —— 若模型
+/// 吐出一个不在注册表里的号，正确处置是让它**被拒**（`diagnosis_parser`
+/// 的 `syndrome_id_format`），而不是猜一个名字回填。
+/// 保留回退会掩盖问题：V-03 把越界编号替换成「【症候】」占位符是**底线**
+/// （编号不外泄），而回退分支会让越界号看起来像已知号。
 ///
 /// 消费方：diagnosis_validator 的 V-03 编号回填（P0'-3，2026-09-30）。
-String? syndromeNameOf(String? id) {
-  if (id == null || id.isEmpty) return null;
-  final exact = syndromeRecordOf(id);
-  if (exact != null) return exact.name;
-  return syndromeRecordOf(kSyndromeMergeMap[id])?.name;
-}
+String? syndromeNameOf(String? id) => syndromeRecordOf(id)?.name;
 
 /// kSyndromeRegistry 数据段（P001-P011，11 条）
 const List<SyndromeRecord> _syndromeRegistryP1 = [
@@ -826,14 +724,23 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     actions: ['A002'],
   ),
   // ── ADR-0003 阶段一新增3 条（2026-10-05）──
-  // ⚠️ P035/P036/P037 三号原为 `kSyndromeMergeMap` 的 legacy 别名键
-  // （旧实体：P035 对话注水症 / P036 流水账叙述症 / P037 心理内耗症），
-  //   已于 A 批（`754638c9`）清键+ v46 迁移归一，**故本处注册安全**：
-  //   `effectiveSyndromeId('P035')` 现返回 'P035' 自身（不再被改写），
-  //   退役档案里三条的kind = `RetirementKind.recycled`（槽位待复用，非实体合并）。
-  // ⚠️ 同号字符串承载过两种含义（§4-136 编码碰撞），但**指向不同实体**：
-  //   旧 P037「心理内耗症」幸存为现行 P026，故 v46 平铺表仍保留 P037→P026 归一
-  //   （存量库归一必需），而**读路径 merge map 已无此键**（新槽位不被改写）。
+  // ⚠️ P035/P036/P037 三号在 0.3.6 之前曾被用作**别的实体**的别名键：
+  //   旧 P035 = 对话注水症（并入 P009 对话疲劳症）
+  //   旧 P036 = 流水账叙述症（并入 P004 信息倾泻症）
+  //   旧 P037 = 心理内耗症（幸存为现行 P026 心理内耗症）
+  // 退役档案里三条的 `kind` = `RetirementKind.recycled`（槽位待复用，非实体合并）。
+  //
+  // ★ 2026-10-05（层 2 单轨收口批）**同号跨代歧义已彻底消除**：
+  //   ① 读路径归一（`kSyndromeMergeMap` / `effectiveSyndromeId`）**整张删除**
+  //      ⇒ 本文件成为ID 的**唯一**运行时权威，查不到就是查不到。
+  //   ② v46 迁移**已退役**（`database.dart` 调用点删除）—— 它那张平铺表**含**
+  //      这三条（`P035→P009` 等），单轨下执行它会把撞文同质化症的历史数据
+  //      静默改成「对话疲劳症」，是最隐蔽的一种数据损坏。
+  //   ③ 用户手动重装即全新库，无 legacy 行 ⇒ 无需任何清库代码。
+  //
+  // ⚠️ §4-136（同一字符串跨年代承载多种含义）的教训仍留在这里作为警示：
+  //   **本项目从此不再分配任何已用过的字符串**（新号从 P038 起，永不复用）。
+  //   若将来有人想复用某个空号，先确认它在 `kSyndromeRetirement` 里不存在。
   SyndromeRecord(
     id: 'P035',
     name: '撞文同质化症',

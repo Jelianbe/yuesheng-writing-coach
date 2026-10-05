@@ -139,68 +139,55 @@ void main() {
   });
 
   group('R-2 档案 ⇄ 产物（生成器漂移的第一道锁）', () {
-    test('#6 ★★★ merge map 键集 == 档案中非 recycled 的旧 ID', () {
-      expect(
-        kSyndromeMergeMap.keys.toSet(),
-        kMergeMappedSyndromeIds,
-        reason:
-            'merge map 是生成物，键集必须 == 档案（排除 recycled）。'
-            '变异：手删 merge map 里任意一行 ⇒ 本用例红；'
-            '或把某 recycled 档案混进 merge map ⇒ 本用例红',
-      );
-    });
-
-    test('#7 ★★★ merge map 的值 == 档案的并入目标（值侧也要对）', () {
-      final bad = <String>[];
-      for (final r in kSyndromeRetirement) {
-        if (r.kind == RetirementKind.recycled) continue;
-        final mine = kSyndromeMergeMap[r.oldId];
-        if (mine != r.mergedInto) {
-          bad.add('${r.oldId}: merge map=$mine vs 档案=${r.mergedInto}');
-        }
-      }
-      expect(
-        bad,
-        isEmpty,
-        reason:
-            '键对了值错了同样是静默串号。'
-            '变异：任改 merge map 里一个 value ⇒ 本用例红',
-      );
-    });
-
-    test('#8 ★★★ v46 平铺表 == 档案全量（含 recycled 3 条）', () {
-      expect(
-        legacyIdMigrationMap,
-        {for (final r in kSyndromeRetirement) r.oldId: r.mergedInto},
-        reason:
-            'v46 平铺表必须 == 档案**全量**。'
-            '⚠️ 它比 merge map 多 recycled 3 条是**有意**的：'
-            '槽位待复用为新症候（不能留在读路径映射），'
-            '但存量库里确有这些旧号的历史行 ⇒ 必须归一。'
-            '变异：① 从平铺表删掉 P035 ⇒ 本用例红；'
-            '② 把某 recycled 档案从平铺表删掉 ⇒ 本用例红',
-      );
-    });
-
-    test('#9 ★★★ recycled 槽位绝不在 merge map（否则新槽位被旧映射改写）', () {
-      // 这是 A2 批清三键的**原意**，转换机必须把它固化成断言。
-      // 危害：ADR-0003 阶段一把 P035 分给新症候后，读路径仍会按旧映射
-      // 把它改写成 P009 ⇒ 新症候读到的是旧实体数据，且**表面上完全正常**。
-      final leaked = kSyndromeRetirement
-          .where(
-            (r) =>
-                r.kind == RetirementKind.recycled &&
-                kSyndromeMergeMap.containsKey(r.oldId),
-          )
-          .map((r) => r.oldId)
+    test('#6 ★★★ merge map 已退役；recycled 3 条仍在 v46 留档表（退役原因留证）', () {
+      // 【本用例合并了原 #6 / #7 / #9 三条 · 2026-10-05 层 2 单轨收口批】
+      //
+      //   原三条守的是「merge map（读路径归一真源）↔ 退役档案」的键集/值集对齐：
+      //     #6  merge map 键集 == 档案中非 recycled 的旧 ID
+      //     #7  merge map 的值  == 档案的并入目标
+      //     #9  recycled 槽位绝不在 merge map
+      //   ⇒ `kSyndromeMergeMap` 已整张删除（读路径不再有任何 ID 变换），
+      //      三条的**断言对象不存在**，全部退役。
+      //
+      //   本用例改为钉住两件**仍然为真、且必须留证**的事：
+      //
+      //   ① 退役档案与 v46 留档表仍**逐条对齐**（原 #8 的判据，此处不重复）；
+      //      本条查的是**反向**事实 ——
+      //
+      //   ② ★★ `P035/P036/P037` 三条映射**仍在** v46 留档表里
+      //      （`P035→P009` / `P036→P004` / `P037→P026`）。
+      //      这不是「漏删」，是**必须保留的有害残留留证**：
+      //      它精确记录了「若 v46 迁移执行，存量库里任何 P035 行都会被
+      //      改写成对话疲劳症」——而 `P035` 如今是现行实体「撞文同质化症」。
+      //      ⇒ 这是 v46 被退役的**决定性证据**，删掉它就等于删掉决策依据。
+      //
+      //   ⚠️ 本条的鉴别力：若有人「顺手把留档表里的 recycled 三条清掉」
+      //      （看起来像在清理历史遗留），本用例立刻变红。
+      final recycled = kSyndromeRetirement
+          .where((r) => r.kind == RetirementKind.recycled)
           .toList();
       expect(
-        leaked,
-        isEmpty,
-        reason:
-            'recycled 槽位进了 merge map ⇒ 新槽位会被旧映射改写成旧实体。'
-            '变异：把 P035 加回 kSyndromeMergeMap ⇒ 本用例红'
-            '（同时 #6 也会红）',
+        recycled.map((r) => r.oldId).toSet(),
+        {'P035', 'P036', 'P037'},
+        reason: 'recycled 槽位实测为 P035/P036/P037（ADR-0003 阶段一复用的三号）',
+      );
+      for (final r in recycled) {
+        expect(
+          legacyIdMigrationMap[r.oldId],
+          r.mergedInto,
+          reason:
+              '${r.oldId} 的有害映射必须原样留在 v46 留档表里：'
+              '${r.oldId}→${r.mergedInto}（旧实体「${r.oldName}」）'
+              '正是 v46 会造成静默数据损坏的证据。'
+              '清掉它等于删掉退役决策的依据。',
+        );
+      }
+      // 正对照：留档表键集仍 == 档案全量（旧 ID 唯一），
+      // 保证上面三条不是「碰巧对上了」。
+      expect(
+        legacyIdMigrationMap.keys.toSet(),
+        {for (final r in kSyndromeRetirement) r.oldId},
+        reason: 'v46 留档表键集必须 == 档案全量旧 ID（否则上面的逐条比对无意义）',
       );
     });
   });
@@ -282,42 +269,63 @@ void main() {
       );
     });
 
-    test('#13 ★★ 豁免集合 ⊇ merge map 键集（超集方向不可反）', () {
-      // A1 批的子集校验：平铺 ⊇ 真源。方向反了会让「平铺比真源干净」
-      // 这种合法状态无法表达 ⇒ 曾让「清理历史遗留」触发 StateError 阻断升级。
+    test('#13 ★★ 豁免集合 ⊇ v46 留档表键集（超集方向不可反）', () {
+      // 【2026-10-05 层 2 单轨收口批：判据对象由 `merge map 键集`
+      //   换成 `v46 留档表键集`。原判据的 merge map 已整张删除。】
+      //
+      // 保留这条的方向性校验（子集 ⊆ 超集）是有价值的：A1 批曾因把
+      // 「逐条一致」改成「子集校验」而删掉长度断言，导致「清理历史遗留」
+      // 触发 StateError 阻断全量用户升级。方向反了会让「留档比真源干净」
+      // 这种合法状态无法表达。
       expect(
-        kMergeMappedSyndromeIds.difference(kRetiredSyndromeIds),
+        legacyIdMigrationMap.keys.toSet().difference(kRetiredSyndromeIds),
         isEmpty,
         reason:
-            'merge map（47）⊆ 档案全量（50）。'
-            '变异：从档案里删掉任一非 recycled 条目 ⇒ 本用例红',
+            'v46 留档表（50）⊆ 豁免集合 kRetiredSyndromeIds（档案全量 50）。'
+            '变异：从档案里删掉任一条目 ⇒ 本用例红',
       );
     });
   });
 
   group('R-5 生成器产物无残留（生成物必须自标注）', () {
-    test('#14 ★ 两份产物都带「请勿手改」标记', () {
-      // 防呆：任何人手改了产物，至少能在文件里看到该重跑生成器。
-      // ⚠️ 这是**弱**判据（只查字符串存在），它的价值在于让违规可被 grep 到。
-      final reg = File(
-        'lib/services/syndrome_registry.dart',
-      ).readAsStringSync();
+    test('#14 ★ 唯一的留档产物带「请勿手改」标记（原为两份）', () {
+      // 【2026-10-05 层 2 单轨收口批：产物从 2 份降到 1 份】
+      //
+      //   原用例查两份产物：
+      //     ① `syndrome_registry.dart` 的 `kSyndromeMergeMap`（读路径归一真源）
+      //     ② `migration_v46.dart` 的 `_legacyToCanonical`（v46 留档表）
+      //   ① 已随读路径归一**整张删除** ⇒ 零命中 ⇒ 本用例变红。
+      //
+      //   ⇒ 现在只剩 ① 的替代：v46 留档表（纯留档，运行时零消费）。
+      //     它的留存理由见 `syndrome_retirement_ledger_test.dart#6`
+      //     （50 条平铺表是「某号历史上是什么」的唯一完整记录，
+      //      且含 recycled 3 条 = v46 退役的决定性证据）。
+      //
+      //   ⚠️ 这是**弱**判据（只查字符串存在），价值仅在于让违规可被 grep 到。
+      //   ⚠️ 若将来恢复第二份生成产物（任何形式的代码生成表），
+      //      **记得把这条扩回去** —— 只查一份会漏掉新增那份。
       final v46 = File(
         'lib/data/database/migration_v46.dart',
       ).readAsStringSync();
-      for (final pair in {
-        'kSyndromeMergeMap': reg,
-        '_legacyToCanonical': v46,
-      }.entries) {
-        final seg = pair.value;
-        expect(
-          seg.contains('本段由 tool/gen_syndrome_retirement.py 生成'),
-          isTrue,
-          reason:
-              '${pair.key} 段必须带「生成物·请勿手改」标记。'
-              '变异：删掉该行注释 ⇒ 本用例红',
-        );
-      }
+      expect(
+        v46.contains('本段由 tool/gen_syndrome_retirement.py 生成'),
+        isTrue,
+        reason:
+            'v46 留档表必须带「生成物·请勿手改」标记。'
+            '变异：删掉该行注释 ⇒ 本用例红',
+      );
+      // 反向确认：`syndrome_registry.dart` 里**不该**再有生成物标记 ——
+      // 那说明有人把已退役的归一表又生成回来了。
+      final reg = File(
+        'lib/services/syndrome_registry.dart',
+      ).readAsStringSync();
+      expect(
+        reg.contains('本段由 tool/gen_syndrome_retirement.py 生成'),
+        isFalse,
+        reason:
+            'syndrome_registry.dart 不该再有任何生成物段（读路径归一已整张删除）。'
+            '若此变红 ⇒ 有人重建了 `kSyndromeMergeMap`，与 §4-167 单轨裁定冲突。',
+      );
     });
 
     test('#15 ★★★ 真源必须被 dart format off 包住（否则生成器静默丢条目）', () {

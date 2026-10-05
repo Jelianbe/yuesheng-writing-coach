@@ -123,62 +123,98 @@ void main() {
       expect(syndromeRecordOf(null), isNull);
     });
 
-    test('#R8 legacy 归一映射自洽（彻底删除后无退役标记）', () {
+    test('#R8 ★ 单轨：读路径无 ID 变换，注册表即唯一真源', () {
+      // ★ 2026-10-05（层 2 单轨收口批）：本用例**整体改写**。
+      //
+      //   旧形态测的是「legacy 归一映射自洽」：逐条遍历 `kSyndromeMergeMap`，
+      //   键 ∈ 现行注册表的断言恒等、键 ∉ 的断言单跳归一，再钉住
+      //   「33 个现行键 + 14 个真旧号 = 47」。
+      //   ⇒ 归一（`kSyndromeMergeMap` + `effectiveSyndromeId`）已整张删除，
+      //      该断言的**对象不存在**了。
+      //
+      //   单轨下的等价命题（本用例现测的内容）：
+      //     ① 注册表即全集：ID 唯一，无重复、无第二编号段；
+      //     ② 读路径**没有任何 ID 变换** —— 库里那个 ID 是什么，读出来就是什么；
+      //     ③ 未知 ID **不得**被猜成已知（`syndromeNameOf` 去回退后的行为）。
+      //
+      //   ⚠️ ② 不能写成 `effectiveSyndromeId(id) == id`（旧形态）——
+      //      那是 `a == a`，恒真、零鉴别力。也不能新造一个恒等函数来测，
+      //      那只是把已删的复杂度换个名字装回来。②的真判据是**结构性的**：
+      //      生产代码里不存在 ID 变换函数（由 analyzer 的 unused_import 与
+      //      下面的 #S-1 共同保证），不是由某条运行时断言保证。
       final active = kSyndromeIds.toSet();
-      // 彻底删除后注册表无退役记录：注册表即活跃集合
-      expect(active.length, kSyndromeRegistry.length);
 
-      // 归一映射：value 均为活跃症候
-      for (final entry in kSyndromeMergeMap.entries) {
+      // ① 注册表即全集：ID 唯一、无重复
+      expect(
+        active.length,
+        kSyndromeRegistry.length,
+        reason: '注册表内 ID 必须唯一（重复即两个实体抢一个号）',
+      );
+
+      // ③ 未知 ID 一律查不到名字 —— 单轨下越界编号**本身就是缺陷**，
+      //   正确处置是让它被 `diagnosis_parser` 的 `syndrome_id_format` 拒掉，
+      //   而不是猜一个名字回填（回退会掩盖越界，且让 V-03 的「编号不外泄」
+      //   底线失效）。
+      for (final unknown in const [
+        'P999',
+        'P050',
+        '',
+        'P01',
+        'P0001',
+        'X001',
+        'ZZZ',
+      ]) {
         expect(
-          active.contains(entry.value),
-          true,
-          reason: '归一映射 ${entry.key} → ${entry.value} 目标非活跃症候',
+          syndromeRecordOf(unknown),
+          isNull,
+          reason: '$unknown 不在注册表内，必须查不到（未知不能变成已知）',
+        );
+        expect(
+          syndromeNameOf(unknown),
+          isNull,
+          reason: '$unknown 不得被回退猜出名字 —— legacy 归一回退已删除',
         );
       }
 
-      // ★ M1（B1 批）后归一断言**按键的类型分两类**，不再一刀切。
+      // ★ 真旧号（14 个：P038–P049 + H001/H002）同样必须查不到。
+      //   这 14 个是「曾经用过、已永不复用」的号；单轨纪律的第一条就是
+      //   **号码一旦分配便永不复用** ⇒ 它们在读路径上必须是「纯未知」。
       //
-      //   背景：merge map 有 **33 个键同时是现行活跃 ID**（P001–P033），
-      //   而「旧 P005」与「现行 P005」是**同一个字符串** ⇒ 程序无从区分。
-      //   M1 语义 = 现行 ID 恒等 + 真旧号单跳，故：
-      //
-      //   · 键 ∈ 现行注册表（33 个）⇒ **原样返回**（不得被改写）
-      //   · 键 ∉ 现行注册表（14 个：P038–P049 + H001/H002）⇒ 归一到 value
-      //
-      //   ⚠️ 本断言原先写的是「所有键都应归一到 value」，那是**旧语义**
-      //   （`map[id] ?? id`）的写照，会把 33 个现行 ID 拖进别的实体
-      //   ⇒ 实测 18 对现行 ID 因此互撞（详见 syndrome_merge_map_test #M1-4）。
-      var legacyChecked = 0;
-      var activeChecked = 0;
-      for (final entry in kSyndromeMergeMap.entries) {
-        if (active.contains(entry.key)) {
-          // 现行 ID：恒等，不得被 merge map 改写
-          expect(
-            effectiveSyndromeId(entry.key),
-            entry.key,
-            reason:
-                '现行 ID ${entry.key}（${syndromeRecordOf(entry.key)?.name}）'
-                '必须恒等——它同时是某个旧号的映射目标，'
-                '但 M1 语义下现行实体优先，不得被拉去别处',
-          );
-          activeChecked++;
-        } else {
-          // 真旧号：单跳归一到 value
-          expect(
-            effectiveSyndromeId(entry.key),
-            entry.value,
-            reason: '真旧号 ${entry.key} 应归一到 ${entry.value}',
-          );
-          legacyChecked++;
-        }
+      //   ⚠️ 本条是单轨纪律的**执行点**：任何「把 P038 分给新症候」的改动
+      //      都会在这里变红。这比在退役档案里查（#R-1 系列）更靠前 ——
+      //      档案是「历史上用过什么」，注册表是「现在是什么」，
+      //      两者相交即事故。
+      const retiiredOldIds = [
+        'P038',
+        'P039',
+        'P040',
+        'P041',
+        'P042',
+        'P043',
+        'P044',
+        'P045',
+        'P046',
+        'P047',
+        'P048',
+        'P049',
+        'H001',
+        'H002',
+      ];
+      expect(retiiredOldIds.length, 14, reason: '真旧号清单长度是硬锚（防有人悄悄删项）');
+      for (final old in retiiredOldIds) {
+        expect(
+          active.contains(old),
+          isFalse,
+          reason:
+              '$old 是真旧号，**永不复用** —— 它若出现在注册表里，'
+              '说明有人把新症候分到了一个已用过的号上',
+        );
+        expect(
+          syndromeNameOf(old),
+          isNull,
+          reason: '$old 必须读不出名字（不得回退到它退役时的旧实体）',
+        );
       }
-      // 实测读数（2026-10-05，A2 批清 P035/P036/P037 后）：33 个现行键 + 14 个真旧号 = 47
-      expect(activeChecked, 33, reason: '撞现行 ID 的键实测 33 个');
-      expect(legacyChecked, 14, reason: '真旧号实测 14 个（P038–P049 + H001/H002）');
-
-      // 未在映射表中的 ID 原样返回
-      expect(effectiveSyndromeId('P999'), 'P999', reason: '非映射 ID 应原样返回');
     });
   });
 
@@ -212,26 +248,45 @@ void main() {
       });
     });
 
-    test('#A1-C 三号的旧 legacy 别名键不得残留在映射表中（变异点）', () {
-      // 【断言方向的修正记录 · 2026-10-05】
-      // 初版写的是 `expect(effectiveSyndromeId(id), id)`（自聚）。
-      // 变异实测（M1：往 map 里加 `'P035': 'P040'`）发现**该断言恒绿**——
-      // 因为 M1 语义（`syndrome_registry.dart`「归一后的有效症候 ID」）规定
-      // 「ID ∈ 现行注册表 ⇒ 原样返回，**不查 merge map**」。
-      // ⇒ 加回 legacy 键根本走不到归一逻辑，断言形同虚设。
-      // 变异实测真正变红的是 `syndrome_registry_test#R8`（退役标记自洽）。
+    test('#A1-C ★★★ 三号撞现行号时，必须指向不同实体（变异点）', () {
+      // 【断言方向的三次演进 —— 别退回任何一版】
       //
-      // 现改为**直接断言映射表里没有这三个键**——这是能被真实变异打红的形态。
-      for (final id in const ['P035', 'P036', 'P037']) {
+      //   v0（原始）：`expect(effectiveSyndromeId(id), id)`（自聚）。
+      //     变异实测（M1：往 map 里加 `'P035': 'P040'`）发现**该断言恒绿**
+      //     ⇒ 形同虚设。
+      //   v1（ADR-0003 阶段一）：改成直接断言
+      //     `kSyndromeMergeMap.containsKey(id) == false`。
+      //     这版能被真实变异打红，但**对象已退役**（归一整张删除）。
+      //   v2（单轨，2026-10-05 · 本版）：
+      //     归一没了，「映射表里不该有这三个键」这件事**无从谈起**。
+      //     单轨下真正要守的是**语义层**判据：
+      //
+      //       字符串 `P035` 如今是「撞文同质化症」，
+      //       而它退役时是「对话注水症」（并入 P009）。
+      //     ⇒ 同一个字符串、两个不同实体。若哪天两者的**名字变成一样**，
+      //        那才是真事故 —— 任何形式的自动归一都会把新实体的数据
+      //        改写到旧实体上，且表面完全正常。
+      //
+      //   ⚠️ 本版比 v1 更强的原因：v1 只能证明「表里没这个键」，
+      //      而「表里没键」与「语义不冲突」**不是一回事** ——
+      //      键不在表里，代码仍可能按别的方式（如未来的迁移脚本）
+      //      把新实体当旧实体处理。本版直接查名字，堵的是语义本身。
+      const slots = {'P035': '撞文同质化症', 'P036': '细节失真症', 'P037': '故事核缺失症'};
+      const oldEntities = {'P035': '对话注水症', 'P036': '流水账叙述症', 'P037': '心理内耗症'};
+      slots.forEach((id, curName) {
         expect(
-          kSyndromeMergeMap.containsKey(id),
-          isFalse,
-          reason:
-              '$id 的旧 legacy 别名键不得残留在 kSyndromeMergeMap。'
-              '残留会让 v46 迁移把存量行的现行实体错误改写'
-              '（旧实体：对话注水症 / 流水账叙述症 / 心理内耗症）。',
+          syndromeNameOf(id),
+          curName,
+          reason: '$id 现为「$curName」，不得回退成旧实体',
         );
-      }
+        expect(
+          syndromeNameOf(id),
+          isNot(oldEntities[id]),
+          reason:
+              '$id 若读出旧实体 ⇒ 任何自动归一都会把新实体的历史数据'
+              '静默改写到旧实体上',
+        );
+      });
     });
   });
 }

@@ -322,10 +322,42 @@ void main() {
       expect(r.cleaned.contains('信息倾泻症'), isFalse);
     });
 
-    test('LLM 偶发旧编号 → 经 mergeMap 回填吸收方名字', () {
-      final r = validateNaturalLanguage('这里有 P048 的问题'); // 语法层语病症 → P018
-      expect(r.cleaned.contains('P048'), isFalse);
-      expect(r.cleaned, contains('重复用词/基础语病'));
+    test('★ 旧编号不再被回填成现行症候（单轨：越界即被拒，不被猜）', () {
+      // 【2026-10-05 层 2 单轨收口批 · 断言方向已反转】
+      //
+      //   原用例名「LLM 偶发旧编号 → 经 mergeMap 回填吸收方名字」，
+      //   断言 `P048` 被回填成「重复用词/基础语病」（= P018 的名字）。
+      //
+      //   ★ 这条断言在**保护一个掩盖缺陷的行为**。实测确认：
+      //     P048 退役时的旧实体是「语法层语病症」（并入 P018），
+      //     而 P018 如今是现行实体「重复用词/基础语病」。
+      //     ⇒ LLM 吐了 `P048` 这个**废号**，界面却显示成
+      //       **一个完全合法的现行症候名**。用户无从察觉模型答错了，
+      //       教练会拿着一个不存在的症候名开始诊断。
+      //
+      //   单轨下的正确处置：越界编号**不被猜**。
+      //     `syndromeNameOf` 的 legacy 归一回退已删除 ⇒ 返回 null ⇒
+      //     V-03 的 `syndrome_id_format` 把它替换成「【症候】」占位符
+      //     （编号不外泄 = 底线，见下面 #越界编号 那条）。
+      final r = validateNaturalLanguage('这里有 P048 的问题');
+      expect(
+        r.cleaned.contains('P048'),
+        isFalse,
+        reason: '★ 编号绝不能外泄到学员可见文本（V-03 的底线）',
+      );
+      expect(r.cleaned, contains('【症候】'), reason: '旧编号应落到占位符（被拒），而不是被猜成某个现行症候');
+      expect(
+        r.cleaned,
+        isNot(contains('重复用词/基础语病')),
+        reason:
+            '★ 绝不能把废号 P048 显示成现行实体 P018 的名字 —— '
+            '那会让「模型答错」看起来像「模型答对」',
+      );
+      expect(
+        r.cleaned,
+        isNot(contains('语法层语病症')),
+        reason: '旧实体的名字同样不该出现（它已不是任何现行实体）',
+      );
     });
 
     test('越界编号 → 退化为占位符（底线：编号不外泄）', () {
@@ -336,10 +368,49 @@ void main() {
   });
 
   group('syndromeNameOf（P0\'-3 新增解析器）', () {
-    test('精确匹配优先、legacy 归一兜底、未知返回 null', () {
+    test('★ 只精确匹配：现行号命中、真旧号与未知号一律 null（单轨）', () {
+      // 【2026-10-05 层 2 单轨收口批 · 断言方向已反转，标题也从
+      //   「精确匹配优先、legacy 归一兜底」改为「只精确匹配」】
+      //
+      //   legacy 归一兜底**已删除**。理由（`syndrome_registry.dart` 的
+      //   `syndromeNameOf` 文档注释里有完整版）：单轨下「LLM 偶发输出
+      //   历史旧编号」本身就是**缺陷**，正确处置是让它**被拒**
+      //   （`diagnosis_parser` 的 `syndrome_id_format`），
+      //   而不是猜一个名字回填。
+      //
+      //   保留兜底会掩盖问题：V-03 把越界编号替换成「【症候】」占位符
+      //   是**底线**（编号不外泄），而兜底分支会让越界号看起来像已知号。
       expect(syndromeNameOf('P002'), '信息倾泻症');
-      expect(syndromeNameOf('P048'), '重复用词/基础语病'); // legacy → P018
-      expect(syndromeNameOf('P001'), '情绪标签化'); // 当前语义，不被 ghost 归一改写
+      expect(syndromeNameOf('P001'), '情绪标签化'); // 不被任何历史映射改写
+
+      // ★ 真旧号：必须 null（曾被兜底成 P018 的名字「重复用词/基础语病」）
+      expect(
+        syndromeNameOf('P048'),
+        isNull,
+        reason:
+            'P048 是已退役旧号（语法层语病症 → P018）。'
+            '单轨下它必须读不出名字，绝不能被猜成 P018 的名字。',
+      );
+      // 全部 14 个真旧号一并核（永不复用 ⇒ 读路径上必须是纯未知）
+      for (final old in const [
+        'P038',
+        'P039',
+        'P040',
+        'P041',
+        'P042',
+        'P043',
+        'P044',
+        'P045',
+        'P046',
+        'P047',
+        'P048',
+        'P049',
+        'H001',
+        'H002',
+      ]) {
+        expect(syndromeNameOf(old), isNull, reason: '$old 是真旧号，单轨下不得被回退猜出名字');
+      }
+
       expect(syndromeNameOf('P099'), isNull);
       expect(syndromeNameOf(''), isNull);
       expect(syndromeNameOf(null), isNull);

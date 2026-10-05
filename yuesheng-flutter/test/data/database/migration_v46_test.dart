@@ -1,43 +1,80 @@
 // ─────────────────────────────────────────────────────────────
-// migration_v46_test — ADR-0003 阶段一前置：legacy 症候 ID 归一
+// migration_v46_test — **v46 迁移已退役（2026-10-05 · 层 2 单轨收口批）**
 //
-// 背景：0.3.6 去重（e64096db）是**纯代码重编号、无数据迁移**，
-//       库里残留旧 ID。ADR-0003 阶段一要复用 P035/P036/P037，
-//       而这三个 ID 本身是 legacy 别名键 ⇒ 残留旧行会被新槽位静默误读。
-//       v46 迁移在升级时把存量行按 `kSyndromeMergeMap` **单跳**改写。
+// ── 本文件现在的身份 ──
 //
-// 覆盖（含四类「假绿」防线）：
-//   #1 可达性：v45 存量库升级后 user_version = kSchemaHead
-//   #2 四张表**都**被改写（含两处 JSON 内嵌：diagnosis_results / student_model）
-//   #2c ★★ student_model.teaching_history 的**三种 ID 形态**都被归一（A3 批新增）
-//   #3 ★ 单跳契约：结果恰为一次查表值、**未被二次改写**
-//      （⚠️ 不是「零 legacy 残留」——单跳下P035→P009 而 P009 自身也是 legacy 键，
-//        「零残留」在单跳下不可能成立；强求它就得迭代⇒ 撞环死循环）
-//   #3b ★ **ADR-0003 的真正目标**：三个待复用槽位 P035/P036/P037 已腾空
-//   #3c 单跳契约在 teaching_history 上同样成立（A3 批）
-//   #3d ★★ 槽位腾空判据**必须覆盖 teaching_history**（A3 批；漏一张表就会假绿）
-//   #4 teaching_state 的两段式阶段 ID（P0_ENGAGE 等）**不被误伤**
-//   #5 平铺映射**覆盖** kSyndromeMergeMap（子集校验·A1 批改判据方向）
-//   #5b 子集校验的鉴别力：清三键后守卫仍放行（否则「逐条一致」回归无人拦）
-//   #5e ★★ 守卫仍拦 value 不一致（子集校验没把「防过期映射」能力丢掉）
-//   #6 幂等：已是 v46 的库重复打开不报错、数据不变
+//   它**不再测试 v46 迁移**，而是测试「v46 迁移**没有**被执行」这件事。
+//   这是一次**断言方向的整体反转**，不是把断言改弱：
 //
-// ⚠️ 为什么 #4 是独立用例：迁移若图省事用 `LIKE 'P0%'` 前缀匹配，
-//    会把教学阶段 ID 一并改写⇒ 教学状态机直接错乱。必须单独钉死。
+//     原方向：升级后 P035 被改写成 P009 ⇒ 期望为真
+//     现方向：升级后 P035 **原样保留**   ⇒ 期望为真
 //
-// ⚠️ A3 批的「零覆盖」陷阱（本文件自己踩过）：夹具里若**不建** `student_model`
-//    表，A3 的迁移会走「表不存在」分支静默跳过，而**所有既有断言仍全绿**。
-//    ⇒ 凡是给迁移加新目标表，必须同时在夹具里建表 + 塞存量数据。
+//   ★ 反转后的用例是**退役决策的机器执行点**：若有人把 v46 调用点
+//     加回 `database.dart` 的 `onUpgrade`，本文件会立刻变红。
+//     换言之，这 12 条从「保护一个有害行为」变成了「挡住数据损坏复活」。
+//
+// ── 为什么必须反转（而不是删掉）──
+//
+//   0.3.6 去重（e64096db）是纯代码重编号、无数据迁移 ⇒ 库里残留旧 ID。
+//   v46 迁移原本要按 `_legacyToCanonical` 把它们单跳改写。**但那份平铺表
+//   含有 `P035→P009` / `P036→P004` / `P037→P026` 三条**，而这三个号
+//   如今是**现行注册表实体**（撞文同质化症 / 细节失真症 / 故事核缺失症）。
+//   ⇒ 执行 v46 会把存量库里**任何** `P035` 行改写成「对话疲劳症」——
+//     改写后 ID 合法、有名字、能渲染 ⇒ **最隐蔽的数据损坏**。
+//
+//   v46 从未在任何装机包上跑过（实测 `git log 8a629c4e..HEAD -- pubspec.yaml`
+//   零命中 ⇒ v46 提交晚于 0.4.1 版本 bump，当前 `0.4.1+2013` 包不含它），
+//   加上本项目是单机离线 App、无对外接口、无审计义务 ⇒ 不做自动迁移，
+//   用户侧处置为**手动重装**。完整论证见 `.ai/DECISIONS.md §4-167`。
+//
+// ── 当前覆盖清单（12 条）──
+//
+//   仍为真、原样保留（与「迁移是否跑」无关的独立性质）：
+//     #1  可达性：v45 存量库升级后 user_version = kSchemaHead
+//     #4  teaching_state 的两段式阶段 ID（P0_ENGAGE 等）不被误伤
+//     #4b 升级只碰目标表，不越界碰 teaching_state
+//     #6  幂等：重复打开数据不变
+//     #7  四张目标表全不存在 → 升级不抛错（表存在守卫）
+//
+//   ★ 已反转为「原样保留」（退役决策的执行点）：
+//     #2a  active_problem / training_results 的 legacy ID 原样保留
+//     #2b  diagnosis_results 的 JSON 内嵌 ID 原样保留
+//     #2c  student_model.teaching_history 的**三种 ID 形态**都原样保留
+//          （★ 覆盖面不变：驼峰键 / confirmation 数组 / diagnosis 数组；
+//            这三种形态若被漏改，症状与本用例完全相同 ⇒ 都绿）
+//     #3   无任何改写发生（比原「单跳契约」更强：原版只查「没多跳」，
+//          本版查「一个字节都没动」）
+//     #3b  ★★ 三号**不被腾空** —— 它们如今是现行实体，槽位已被合法占用。
+//          ← 这是本批最关键的一处方向修正：原用例把「三个待复用槽位已腾空」
+//            当作期望行为，而达成它**只能**靠 v46 改写 ⇒ 原断言在保护
+//            有害行为。
+//     #3c / #3d  teaching_history 上同样无改写
+//
+//   已随归一一并退役（原对象已不存在）：
+//     #5 / #5b / #5e —— 测的是 `findLegacyMapMismatches` 守卫与
+//     `kSyndromeMergeMap` 的子集校验方向。守卫随迁移退役（迁移不执行 ⇒
+//     「按过期映射改数据」不可能发生），merge map 已整张删除。
+//     残留档表与退役档案的对齐改由 `syndrome_retirement_ledger_test.dart`
+//     的 #8 / #6 / #13 承担（v46 留档表仍保留为**决策依据**，运行时零消费）。
+//
+// ── 两条不能丢的「假绿」防线（仍然成立）──
+//
+//   ⚠️ #4 的独立性：若将来有人再加 ID 改写逻辑并图省事用 `LIKE 'P0%'`
+//      前缀匹配，会把教学阶段 ID 一并改写 ⇒ 教学状态机直接错乱。
+//      必须单独钉死。
+//   ⚠️ A3 批的「零覆盖」陷阱（本文件自己踩过）：夹具里若**不建**
+//      `student_model` 表，改写逻辑会走「表不存在」分支静默跳过，
+//      而**所有既有断言仍全绿**。
+//      ⇒ 今后若再加 ID 改写逻辑，必须同时在夹具里建表 + 塞存量数据。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
-import 'package:writingcoach/data/database/migration_v46.dart';
-import 'package:writingcoach/services/syndrome_registry.dart';
 
 import '../../test_support/schema_head.dart';
 
@@ -255,6 +292,41 @@ Future<List<String>> _column(AppDatabase db, String table, String col) async {
   return rows.map((r) => r.read<String>('v')).toList();
 }
 
+/// 读某表某行的某列（**按行**判定用）。
+///
+/// ⚠️ 为什么需要它：判据「表里不得出现 P009」是**错的** ——
+///   P009/P004/P026 本身都是现行注册表实体（实测 P009=对话疲劳症、
+///   P004=节奏停滞、P026=心理内耗症），它们是 `_legacyToCanonical` 里
+///   `P035→P009` 这类映射的**目标号**，完全合法。
+///   ⇒ 判据只能按行：夹具塞进行 ap1(P035) 的那一行，其 syndrome_id
+///      必须仍是 P035。
+Future<String?> _cell(
+  AppDatabase db,
+  String table,
+  String id,
+  String col,
+) async {
+  final rows = await db
+      .customSelect(
+        'SELECT $col AS v FROM $table WHERE id = ?',
+        variables: [Variable.withString(id)],
+      )
+      .get();
+  if (rows.isEmpty) return null;
+  return rows.single.read<String>('v');
+}
+
+/// 读 `student_model` 某行的 `teaching_history` 原文。
+Future<String> _history(AppDatabase db, String id) async {
+  final rows = await db
+      .customSelect(
+        'SELECT teaching_history FROM student_model WHERE id = ?',
+        variables: [Variable.withString(id)],
+      )
+      .get();
+  return rows.single.read<String>('teaching_history');
+}
+
 void main() {
   test('#1 可达性：v45 存量库升级后 user_version = kSchemaHead', () async {
     final db = await _openUpgraded('t1');
@@ -262,22 +334,66 @@ void main() {
     expect(v.read<int>('user_version'), kSchemaHead);
   });
 
-  test('#2a active_problems / training_results 的 legacy ID 被单跳改写', () async {
-    final db = await _openUpgraded('t2a');
+  test(
+    '#2a ★★★ 反转：升级后 active_problem / training_results 的 legacy ID **原样保留**',
+    () async {
+      // 【2026-10-05 层 2 单轨收口批 · 断言方向已整体反转】
+      //
+      //   原用例（'#2a ... 的 legacy ID 被单跳改写'）断言
+      //     P035 → P009、P037 → P026、P036 → P004、P009 → P007
+      //   在 v46 迁移退役后**必然失败**（迁移不跑 ⇒ 数据原样）。
+      //
+      //   ★ 反转后的断言不是「把测试改绿」，而是**把测试指向当前正确行为**：
+      //     库里那个 `P035` 应当**保持** `P035`（= 现行实体「撞文同质化症」），
+      //     **不得**被改写成 `P009`（= 旧实体「对话注水症」的并入目标）。
+      //
+      //   这条用例现在的身份 = **v46 退役决策的机器执行点**：
+      //     变异①：把 `onUpgrade` 里的 v46 调用点加回来 ⇒ 本用例红。
+      //     变异②：任何形式的「按 `_legacyToCanonical` 平铺表改写存量行」
+      //             ⇒ 本用例红。
+      //   ⇒ 谁把数据损坏改回来，谁就被这条挡住。
+      //
+      //   ⚠️ 数据现状说明：装机会残留旧号行（如某行 `P035` 其实是退役前的
+      //     「对话注水症」）。本项目对此的处置是**用户手动重装**（清库），
+      //     **不做**自动迁移 —— 理由见 `database.dart` 的「v46 迁移退役说明」。
+      //     本用例锁的是「App 侧不再动手」，不是「库里一定干净」。
+      final db = await _openUpgraded('t2a');
 
-    final ap = await _column(db, 'active_problem', 'syndrome_id');
-    // P035 → P009（对话注水症 → 对话疲劳症）
-    expect(ap, contains('P009'), reason: 'ap1 的 P035 未被改写');
-    // P037 → P026（心理内耗症 → 心理内耗症，唯一语义真冲突槽位）
-    expect(ap, contains('P026'), reason: 'ap2 的 P037 未被改写');
+      final ap = await _column(db, 'active_problem', 'syndrome_id');
+      expect(ap, contains('P035'), reason: 'ap1 的 P035 应原样保留');
+      expect(ap, contains('P037'), reason: 'ap2 的 P037 应原样保留');
+      expect(
+        ap,
+        isNot(contains('P009')),
+        reason:
+            '★ 若 P035 变成 P009 ⇒ v46 迁移（或任何按平铺表改写的逻辑）'
+            '又跑起来了 ⇒ 撞文同质化症的历史数据被静默改成对话疲劳症。'
+            '这是本用例存在的**唯一**理由。',
+      );
+      expect(
+        ap,
+        isNot(contains('P026')),
+        reason: '★ 若 P037 变成 P026 ⇒ 同上（故事核缺失症 → 心理内耗症）',
+      );
 
-    final tr = await _column(db, 'training_results', 'syndrome_id');
-    expect(tr, contains('P004'), reason: 'tr1 的 P036 未被改写成 P004');
-    // 单跳语义：P009 是 legacy 键（P009→P007），故只跳一次到 P007
-    expect(tr, contains('P007'), reason: 'tr2 的 P009 应单跳到 P007');
-  });
+      final tr = await _column(db, 'training_results', 'syndrome_id');
+      expect(tr, contains('P036'), reason: 'tr1 的 P036 应原样保留');
+      expect(tr, contains('P009'), reason: 'tr2 的 P009 应原样保留（它本就是现行 ID）');
+      expect(
+        tr,
+        isNot(contains('P004')),
+        reason: '★ 若 P036 变成 P004 ⇒ 同上（细节失真症 → 流水账叙述症）',
+      );
+      expect(
+        tr,
+        isNot(contains('P007')),
+        reason: '★ 若 P009 变成 P007 ⇒ 单跳改写又跑起来了（P009 是真现行 ID）',
+      );
+    },
+  );
 
-  test('#2b diagnosis_results 的 JSON 内嵌 ID 也被改写', () async {
+  test('#2b ★★★ 反转：diagnosis_results 的 JSON 内嵌 ID **原样保留**', () async {
+    // 【2026-10-05 层 2 单轨收口批 · 断言方向已反转，理由同 #2a】
     final db = await _openUpgraded('t2b');
     final rows = await db
         .customSelect("SELECT id, syndromes FROM diagnosis_results")
@@ -286,94 +402,183 @@ void main() {
       for (final r in rows) r.read<String>('id'): r.read<String>('syndromes'),
     };
 
-    expect(byId['dr1'], contains('"P009"'), reason: 'dr1 的 P035 未被改写');
-    expect(byId['dr1'], isNot(contains('"P035"')), reason: 'dr1 仍残留 P035');
+    expect(byId['dr1'], contains('"P035"'), reason: 'dr1 的 P035 应原样保留');
+    expect(
+      byId['dr1'],
+      isNot(contains('"P009"')),
+      reason: '★ 若 dr1 的 P035 变成 P009 ⇒ JSON 内嵌改写又跑起来了',
+    );
+    // name 字段是**历史快照**，任何情况下都不该被改（改了即篡改诊断记录）
     expect(
       byId['dr1'],
       contains('对话注水症'),
-      reason: '⚠️ name 字段是**历史快照**、不是 ID，本迁移不改它（改了即篡改诊断记录）',
+      reason: '⚠️ name 字段是历史快照，任何迁移都不得改它（改了即篡改诊断记录）',
     );
 
-    expect(byId['dr2'], contains('"P002"'), reason: 'dr2 的 P001 应单跳到 P002');
-  });
-
-  test('#3 ★ 单跳：结果等于 merge map 的一次查表值，未被二次改写', () async {
-    final db = await _openUpgraded('t3');
-    // ★ 单跳语义下，「迁移后查不出任何 legacy 键」**必然不成立**：
-    //   P035 → P009，而 P009 自身也是 legacy 键（→ P007）。
-    // 这不是缺陷，而是「不迭代」的直接后果（migration_v46.dart 文件头已明写
-    // 「链上有环、迭代会死循环」）。若强求「零残留」就必须迭代 ⇒ 死循环。
-    // 正确判据 = 结果恰为**一次**查表值，且**未**被二次改写。
-    const m = {
-      'P035': 'P009',
-      'P037': 'P026',
-      'P009': 'P007',
-      'P036': 'P004',
-      'P001': 'P002',
-    };
-
-    final ap = await _column(db, 'active_problem', 'syndrome_id');
-    expect(ap, contains(m['P035']), reason: 'ap1 的 P035 应单跳到 P009');
-    expect(ap, contains(m['P037']), reason: 'ap2 的 P037 应单跳到 P026');
+    expect(byId['dr2'], contains('"P001"'), reason: 'dr2 的 P001 应原样保留');
     expect(
-      ap,
-      isNot(contains(m['P009'])),
-      reason: '★ 若P035 变成 P007 ⇒ 被二次改写（迭代）了，违反单跳契约',
+      byId['dr2'],
+      isNot(contains('"P002"')),
+      reason: '★ 若 P001 变成 P002 ⇒ 改写又跑起来了（P001 是真现行 ID）',
     );
-
-    final tr = await _column(db, 'training_results', 'syndrome_id');
-    expect(tr, contains(m['P036']), reason: 'tr1 的 P036 应单跳到 P004');
-    expect(tr, contains(m['P009']), reason: 'tr2 的 P009 应单跳到 P007');
-
-    // JSON 列同理：dr1 的 P035 → P009（而非 P007）
-    final rows = await db
-        .customSelect("SELECT syndromes FROM diagnosis_results WHERE id='dr1'")
-        .get();
-    final json = rows.single.read<String>('syndromes');
-    expect(json, contains('"P009"'));
-    expect(json, isNot(contains('"P007"')));
   });
 
-  test('#3b ★ ADR-0003 目标达成：三个待复用槽位已腾空', () async {
+  test('#3 ★★★ 反转：夹具各行的 syndrome_id 原样保留（按行判定，不按集合）', () async {
+    // 【2026-10-05 层 2 单轨收口批 · 断言方向已反转】
+    //
+    //   原用例「单跳契约：结果等于 merge map 的一次查表值，未被二次改写」
+    //   守的是「迁移按单跳语义改写、但不迭代」。迁移退役后，
+    //   「单跳 / 不迭代」这个课题**整体消失**（没有改写，就无所谓跳几次）。
+    //
+    //   ⚠️ **判据方向的关键教训（本用例第二版才想对）**：
+    //     第一版反转写成「表里不得出现 P009 / P004 / P026」——**这是错的**。
+    //     实测这三个号**全都是现行注册表实体**：
+    //       P004=节奏停滞 · P009=对话疲劳症 · P026=心理内耗症
+    //     它们是 `_legacyToCanonical` 里 `P035→P009` 这类映射的**目标号**，
+    //     本身完全合法；夹具 sm2 合法地塞了它们作对照行
+    //     （原用例注释早就写过这条：「P004 本身也是 legacy 键，
+    //     用它当『不会被改写』的对照是错的」——我第一版把这条忘了）。
+    //     ⇒ **判据只能按行判定，不能按集合判定。**
+    //
+    //   本用例现在守的命题：升级路径对**每一行**都是恒等变换。
+    //   比原版更强：原版只查「没多跳」，本版逐行查「一个字节都没动」。
+    final db = await _openUpgraded('t3');
+
+    // 按行判定：每行的 syndrome_id 必须仍是夹具塞进去的那个号
+    expect(
+      await _cell(db, 'active_problem', 'ap1', 'syndrome_id'),
+      'P035',
+      reason: '★ ap1 的 P035 若变成 P009 ⇒ 单跳改写复活（撞文同质化症→对话疲劳症）',
+    );
+    expect(
+      await _cell(db, 'active_problem', 'ap2', 'syndrome_id'),
+      'P037',
+      reason: '★ ap2 的 P037 若变成 P026 ⇒ 单跳改写复活（故事核缺失症→心理内耗症）',
+    );
+    expect(
+      await _cell(db, 'training_results', 'tr1', 'syndrome_id'),
+      'P036',
+      reason: '★ tr1 的 P036 若变成 P004 ⇒ 单跳改写复活（细节失真症→节奏停滞）',
+    );
+    expect(
+      await _cell(db, 'training_results', 'tr2', 'syndrome_id'),
+      'P009',
+      reason: '★ tr2 的 P009 若变成 P007 ⇒ 改写复活（P009 本身是现行实体）',
+    );
+
+    // JSON 内嵌同理：dr1 的内嵌 ID 必须是 P035
+    final json =
+        (await db
+                .customSelect(
+                  "SELECT syndromes FROM diagnosis_results WHERE id='dr1'",
+                )
+                .get())
+            .single
+            .read<String>('syndromes');
+    expect(json, contains('"P035"'), reason: 'dr1 内嵌 ID 应仍是 P035');
+    expect(
+      json,
+      isNot(contains('"P009"')),
+      reason: '★ dr1 内嵌出现 P009 ⇒ JSON 路径的改写复活',
+    );
+  });
+
+  test('#3b ★★★ 反转：三号不被「腾空」——按行判定，槽位已被合法占用', () async {
+    // 【2026-10-05 层 2 单轨收口批 · ★ 本用例方向必须反转 ★】
+    //
+    //   ⚠️ 本批**最关键**的一处测试方向修正。
+    //
+    //   原用例「ADR-0003 目标达成：三个待复用槽位已腾空」断言四张表里
+    //   **都不存在** P035/P036/P037 的行，并把它当作**期望行为**。
+    //   ★ 原断言在**保护一个有害行为**：要让 P035 在库里消失，
+    //     唯一手段就是 v46 单跳改写；而它的实际后果是把「撞文同质化症」
+    //     的历史数据改成「对话疲劳症」——改写后 ID 合法、有名字、能渲染
+    //     ⇒ **最隐蔽的数据损坏**。
+    //
+    //   反转后守的命题：单轨下 `P035` 已是**现行注册表实体**，
+    //   它的行**就该**留在库里，且不得被改成任何别的东西。
+    //   ⇒ 本用例现在是**挡住 v46 复活的第一道门**。
+    //
+    //   ⚠️ 判据形态：按**行**判定（见 #3 的教训）——不能写
+    //     「表里不得出现 P009/P004/P026」，因为它们**本身是现行实体**
+    //     （实测 P009=对话疲劳症、P004=节奏停滞、P026=心理内耗症）。
     final db = await _openUpgraded('t3b');
 
-    // ADR-0003 阶段一要复用 P035/P036/P037。判定「可复用」的唯一充分条件：
-    // 四张表里**都不存在**这三个 ID 的行（否则残留旧行会被新槽位静默误读）。
-    for (final row in await _column(db, 'active_problem', 'syndrome_id')) {
-      expect(
-        const {'P035', 'P036', 'P037'}.contains(row),
-        isFalse,
-        reason: 'active_problem 仍存 $row ⇒ 该槽位不可复用',
-      );
-    }
-    for (final row in await _column(db, 'training_results', 'syndrome_id')) {
-      expect(
-        const {'P035', 'P036', 'P037'}.contains(row),
-        isFalse,
-        reason: 'training_results 仍存 $row ⇒ 该槽位不可复用',
-      );
-    }
-    for (final row in await _column(db, 'diagnosis_results', 'syndromes')) {
-      for (final slot in const ['P035', 'P036', 'P037']) {
-        expect(
-          row,
-          isNot(contains('"$slot"')),
-          reason: 'diagnosis_results 仍内嵌 $slot ⇒ 该槽位不可复用',
-        );
-      }
-    }
-    // ⚠️ A3 批补：v46 初版只查上面三张表，**漏了 student_model**
-    //（`teaching_history` 是 JSON 内嵌的旧号行）。漏查时本用例会绿、
-    // 但第四张表仍存旧行⇒ 槽位实际不可复用。
-    for (final row in await _column(db, 'student_model', 'teaching_history')) {
-      for (final slot in const ['P035', 'P036', 'P037']) {
-        expect(
-          row,
-          isNot(contains('"$slot"')),
-          reason: 'student_model 仍内嵌 $slot ⇒ 该槽位不可复用（漏了一张表）',
-        );
-      }
-    }
+    // ① 三号作为「现行实体」的行仍在（夹具塞的就是它们）
+    expect(
+      await _cell(db, 'active_problem', 'ap1', 'syndrome_id'),
+      'P035',
+      reason: 'ap1 的 P035 行应原样存在（P035 现为现行实体，不是待腾空槽位）',
+    );
+    expect(
+      await _cell(db, 'active_problem', 'ap2', 'syndrome_id'),
+      'P037',
+      reason: 'ap2 的 P037 行应原样存在',
+    );
+    expect(
+      await _cell(db, 'training_results', 'tr1', 'syndrome_id'),
+      'P036',
+      reason: 'tr1 的 P036 行应原样存在',
+    );
+
+    // ② ★ 反转的核心：夹具的 dr1 内嵌 ID 不得被改成旧映射的目标号
+    final dr1 =
+        (await db
+                .customSelect(
+                  "SELECT syndromes FROM diagnosis_results WHERE id='dr1'",
+                )
+                .get())
+            .single
+            .read<String>('syndromes');
+    expect(dr1, contains('"P035"'), reason: 'dr1 内嵌 ID 应仍是 P035');
+    expect(
+      dr1,
+      isNot(contains('"P009"')),
+      reason: '★ dr1 内嵌出现 P009 ⇒ 撞文同质化症的历史数据被改写成对话疲劳症',
+    );
+
+    // ⚠️ teaching_history 这一格在原用例里是 A3 批的**唯一存在理由**
+    //   （「漏一张表就会假绿」）。反转后**仍要查**，但按 sm1 行判定：
+    //   sm1 的内嵌 ID 应仍是 P035 / P001，而不是变成 P009 / P002。
+    final sm1 =
+        (await db
+                .customSelect(
+                  "SELECT teaching_history FROM student_model WHERE id='sm1'",
+                )
+                .get())
+            .single
+            .read<String>('teaching_history');
+    expect(sm1, contains('"P035"'), reason: 'sm1 内嵌 P035 应原样保留');
+    expect(
+      sm1,
+      isNot(contains('"P009"')),
+      reason: '★ sm1 出现 P009 ⇒ 驼峰键路径被改写（这条路径最易漏）',
+    );
+    expect(
+      sm1,
+      isNot(contains('"P002"')),
+      reason: '★ sm1 出现 P002 ⇒ P001 被改写（P001 是真现行 ID）',
+    );
+
+    // 正对照：sm2 里合法塞了 P009 / P004 作为现行实体对照行，
+    // 它们**必须仍在** —— 这一条同时钉住「判据按行不按集合」这件事本身：
+    // 若有人把判据误写成「表里不得有 P009」，本对照会与他冲突。
+    final sm2 =
+        (await db
+                .customSelect(
+                  "SELECT teaching_history FROM student_model WHERE id='sm2'",
+                )
+                .get())
+            .single
+            .read<String>('teaching_history');
+    expect(
+      sm2,
+      contains('"P009"'),
+      reason:
+          'sm2 的 P009 是**合法现行实体**（对话疲劳症）对照行，必须原样保留。'
+          '本条是「判据按行不按集合」的正对照：若有人把判据写成'
+          '「表里不得出现 P009」，本条与下面的禁改写断言会互相打架。',
+    );
   });
 
   test('#4 ★ teaching_state 的两段式阶段 ID 不被误伤', () async {
@@ -427,150 +632,88 @@ void main() {
     }
   });
 
-  test('#5 平铺映射覆盖 kSyndromeMergeMap（子集校验·A1 批）', () {
-    expect(findLegacyMapMismatches(), isEmpty);
-  });
+  test(
+    '#2c ★★★ 反转：student_model.teaching_history 的三种 ID 形态都**原样保留**',
+    () async {
+      // 【2026-10-05 层 2 单轨收口批 · 断言方向已反转】
+      //
+      //   ⚠️ 本用例原版有一个极有价值的性质，**反转后必须保留**：
+      //     它是唯一覆盖 teaching_history **三种 ID 形态**的用例 ——
+      //       ① `syndromeId`（驼峰、字符串）—— type=='training'
+      //       ② `syndromes`（数组）—— type=='confirmation'
+      //       ③ `syndromes`（数组）—— type=='diagnosis'
+      //     若这三条形态被漏改，症状与本用例**完全相同**（都绿）——
+      //     这正是它存在的意义。反转只改断言方向，不动覆盖面。
+      final db = await _openUpgraded('t2c');
+      final rows = await db
+          .customSelect('SELECT id, teaching_history FROM student_model')
+          .get();
+      final byId = {
+        for (final r in rows)
+          r.read<String>('id'): r.read<String>('teaching_history'),
+      };
 
-  test('#5e ★★★ 守卫仍须拦「value 不一致」——子集校验没把防过期映射的能力丢掉（A1 批）', () {
-    // A1 把守卫改成子集校验时**删掉了长度断言与「平铺多出的键」断言**，
-    // 只留下「逐条比对 value」。若这层也被误删（守卫退化成「只比 key 集合」），
-    // #5 与 #5b **都会绿** ⇒ 平铺里某个键的值过期了也没人拦⇒
-    // migration 按过期映射改数据 ⇒ **静默数据损坏**（守卫本意被击穿）。
-    //
-    // 判据：`_legacyToCanonical` 与 `kSyndromeMergeMap` 都是 `const`，
-    // 测试无法临时改值 ⇒ 用**探针式**判据：取一个真源键 k，
-    // 断言「把平铺里 k 的值换成别的字符串」这一假想必然会被循环捕获。
-    // 做法是复刻守卫的判定逻辑并对故意改错的输入跑一遍——
-    // 若守卫不再比对 value，复刻逻辑会返回空、而真实守卫也应返回空 ⇒ 用例红。
-    const probe = {'P001': 'P999'}; // 故意与真源 P001→P002 不一致
-    final realBad = findLegacyMapMismatches();
-    expect(realBad, isEmpty, reason: '前置：当前真源无不一致项');
+      // 形态①：驼峰 `syndromeId`（training 型）
+      expect(byId['sm1'], contains('"P035"'), reason: '形态① sm1 的 P035 应原样保留');
+      expect(byId['sm1'], contains('"P001"'), reason: '形态① sm1 的 P001 应原样保留');
+      expect(
+        byId['sm1'],
+        isNot(contains('"P009"')),
+        reason: '★ 形态① sm1 出现 P009 ⇒ 驼峰键被改写（这条路径最容易漏）',
+      );
+      expect(
+        byId['sm1'],
+        isNot(contains('"P002"')),
+        reason: '★ 形态① sm1 出现 P002 ⇒ P001 被改写',
+      );
 
-    // 复刻守卫的「逐条比对 value」逻辑，喂入故意改错的探针
-    final probeBad = <String>[
-      for (final e in kSyndromeMergeMap.entries)
-        if (probe[e.key] != e.value) '${e.key}: 探针值与真源不同',
-    ];
-    expect(
-      probeBad,
-      isNotEmpty,
-      reason:
-          '若本用例红，说明 kSyndromeMergeMap 已无任何键能被探针区分 ⇒ '
-          '本用例失去鉴别力，须换探针（不是守卫坏了）',
-    );
-    // 且该逻辑必须能在真源里找到至少一个「value 确实被逐条比对」的样本
-    expect(
-      kSyndromeMergeMap.entries.any((e) => e.value != e.key),
-      isTrue,
-      reason: '真源必须存在 value≠key 的条目，否则「比对 value」与「比对 key」不可区分',
-    );
-  });
+      // 形态②：数组 `syndromes`（confirmation 型）
+      expect(byId['sm2'], contains('"P037"'), reason: '形态② sm2 的 P037 应原样保留');
+      expect(byId['sm2'], contains('"P009"'), reason: '形态② sm2 的 P009 应原样保留');
+      expect(byId['sm2'], contains('"P004"'), reason: '形态② sm2 的 P004 应原样保留');
+      expect(byId['sm2'], contains('"P034"'), reason: '形态② sm2 的 P034 应原样保留');
+      expect(
+        byId['sm2'],
+        isNot(contains('"P026"')),
+        reason: '★ 形态② sm2 出现 P026 ⇒ 数组元素被改写（P037→P026）',
+      );
+      expect(
+        byId['sm2'],
+        isNot(contains('"P007"')),
+        reason: '★ 形态② sm2 出现 P007 ⇒ 数组元素被改写（P009→P007）',
+      );
+      expect(byId['sm2'], contains('123'), reason: '数组里的非字符串元素必须原样保留（鲁棒性）');
 
-  test('#5b ★★★ 子集校验的鉴别力：清 merge map 三键后守卫仍须放行（A1 批）', () {
-    // 本用例是 A1 改动的**唯一保护**。若有人把守卫改回「逐条一致」，
-    // #5 仍会绿（当前状态本来就一致）⇒ 只有本用例能抓住。
-    //
-    // 反证判据（先手算验证过它会区分）：
-    //   · 子集校验（现行）：平铺 50 ⊇ 真源 47 ⇒ 循环里每个 merge 键都能在平铺
-    //     找到同值 ⇒ 返回空 ⇒ 放行。
-    //   · 逐条一致（旧写）：length 50 != 47 ⇒ 报「条目数不一致」
-    //     + 三个「平铺里多出的键」⇒ `assertLegacyMapInSync()` 抛 StateError
-    //     ⇒ **阻断所有用户升级**。
-    //
-    // ⚠️ 现状（清键后）两个写法给出**不同**结果 ⇒ 本用例有鉴别力。
-    //    构造方式：只读校验函数，不改全局状态（kSyndromeMergeMap 是 const，
-    //    测试里无法临时删键）⇒ 改从「真源键数 vs 平铺键数」这一
-    //    **可观测差异**入手，证明「平铺多出来的键」是合法状态。
-    expect(
-      kSyndromeMergeMap.length,
-      lessThan(legacyIdMigrationMap.length),
-      reason:
-          '★ 本用例的前提：merge map 47 < 平铺 50（平铺多出 P035/P036/P037）。'
-          '若将来有人把平铺也清成 47，两集合相等 ⇒ 本用例的鉴别力消失，'
-          '此时「子集 vs 逐条一致」在数据上不可区分，须改用别的反证。',
-    );
-    // 反过来断言「多出来的正是那三个待复用槽位」，钉住差异的具体构成
-    final extra = legacyIdMigrationMap.keys
-        .where((k) => !kSyndromeMergeMap.containsKey(k))
-        .toSet();
-    expect(extra, {
-      'P035',
-      'P036',
-      'P037',
-    }, reason: '平铺比真源多出的键必须恰为 ADR-0003 待复用的三个槽位');
-    // ★ 核心断言：子集校验下守卫放行（返回空）
-    expect(
-      findLegacyMapMismatches(),
-      isEmpty,
-      reason: '平铺 ⊇ 真源 ⇒ 子集校验应放行；报错会让全量用户无法升级',
-    );
-  });
+      // 形态③：数组 `syndromes`（diagnosis 型）
+      expect(byId['sm3'], contains('"P035"'), reason: '形态③ sm3 的 P035 应原样保留');
+      expect(byId['sm3'], contains('"P036"'), reason: '形态③ sm3 的 P036 应原样保留');
+      expect(byId['sm3'], contains('"P001"'), reason: '形态③ sm3 的 P001 应原样保留');
+      expect(
+        byId['sm3'],
+        isNot(contains('"P009"')),
+        reason: '★ 形态③ sm3 出现 P009 ⇒ 数组元素被改写',
+      );
+      expect(
+        byId['sm3'],
+        isNot(contains('"P004"')),
+        reason: '★ 形态③ sm3 出现 P004 ⇒ 数组元素被改写',
+      );
+      expect(
+        byId['sm3'],
+        isNot(contains('"P002"')),
+        reason: '★ 形态③ sm3 出现 P002 ⇒ P001 被改写',
+      );
 
-  test('#2c ★★★ student_model.teaching_history 的三种 ID 形态都被归一（A3 批）', () async {
-    final db = await _openUpgraded('t2c');
-    final rows = await db
-        .customSelect("SELECT id, teaching_history FROM student_model")
-        .get();
-    final byId = {
-      for (final r in rows)
-        r.read<String>('id'): r.read<String>('teaching_history'),
-    };
+      // 脏 JSON / 空数组：必须原样保留且**未阻断升级**
+      expect(byId['sm4'], 'not-json-at-all', reason: '脏 JSON 行不得被改写');
+      expect(byId['sm5'], '[]', reason: '空数组行不得被改写');
+    },
+  );
 
-    // 形态①：驼峰 `syndromeId`（training 型）
-    expect(byId['sm1'], contains('"P009"'), reason: 'sm1 的 P035 应单跳到 P009');
-    expect(byId['sm1'], isNot(contains('"P035"')), reason: 'sm1 仍残留 P035');
-    // ⚠️ P001 **本身就是 legacy 键**（P001→P002，与既有 #2b 用例读数一致）
-    //⇒ 单跳下它**应该**被改写成 P002。这不是「现行 ID 应保持不变」——
-    //   「现行 ID 恒等」是**读路径 `effectiveSyndromeId`（M1）** 的语义；
-    //   迁移走的是**平铺表单跳**，两端口径本就不同（见 #M1-8）。
-    expect(byId['sm1'], contains('"P002"'), reason: 'sm1 的 P001 应单跳到 P002');
-    expect(
-      byId['sm1'],
-      isNot(contains('"P007"')),
-      reason: '★ 若 P002 又变成 P007 ⇒ 被二次改写（迭代）了，违反单跳契约',
-    );
-
-    // 形态②：数组 `syndromes`（confirmation 型）
-    expect(byId['sm2'], contains('"P026"'), reason: 'sm2 的 P037 应单跳到 P026');
-    expect(byId['sm2'], contains('"P007"'), reason: 'sm2 的 P009 应单跳到 P007');
-    // ⚠️ P004 **本身也是 legacy 键**（P004→P002，实测 merge map）⇒ 单跳下会被改写。
-    //    这里用它当「不会被改写」的对照是错的 —— 真正不被改写的是**非legacy 键**。
-    expect(
-      byId['sm2'],
-      contains('"P002"'),
-      reason: 'sm2 数组第 2 元的 P004 应单跳到 P002',
-    );
-    expect(
-      byId['sm2'],
-      isNot(contains('"P004"')),
-      reason: 'sm2 的 P004 若仍残留 ⇒ 说明 merge map 查不到它，与实测矛盾',
-    );
-    expect(
-      byId['sm2'],
-      contains('"P034"'),
-      reason: 'P034 是唯一的真非 legacy 现行 ID ⇒ 必须原样保留（防误伤对照）',
-    );
-    expect(byId['sm2'], contains('123'), reason: '数组里的非字符串元素必须原样保留（鲁棒性）');
-
-    // 形态③：数组 `syndromes`（diagnosis 型）
-    expect(byId['sm3'], contains('"P009"'), reason: 'sm3 的 P035 应单跳到 P009');
-    expect(byId['sm3'], contains('"P004"'), reason: 'sm3 的 P036 应单跳到 P004');
-    expect(byId['sm3'], isNot(contains('"P035"')), reason: 'sm3 仍残留 P035');
-    expect(byId['sm3'], isNot(contains('"P036"')), reason: 'sm3 仍残留 P036');
-    // 夹具里 sm3 也放了一个 P001：它是 legacy 键（→P002）⇒ 应被改写
-    expect(byId['sm3'], contains('"P002"'), reason: 'sm3 的 P001 应单跳到 P002');
-    expect(
-      byId['sm3'],
-      isNot(contains('"P001"')),
-      reason: 'sm3 的 P001 若残留 ⇒ 与 merge map 实测矛盾',
-    );
-
-    // 脏 JSON 行：必须原样保留且**未阻断升级**
-    expect(byId['sm4'], 'not-json-at-all', reason: '脏 JSON 行不得被改写');
-    expect(byId['sm5'], '[]', reason: '空数组行不得被改写');
-  });
-
-  test('#3c ★ 单跳契约在 teaching_history 上同样成立（A3 批）', () async {
+  test('#3c ★ 反转：teaching_history 上同样无改写发生', () async {
+    // 【2026-10-05 层 2 单轨收口批 · 断言方向已反转】
+    // 原用例名「单跳契约在 teaching_history 上同样成立」——
+    // 「单跳契约」整体消失；现在查的是「无改写」。
     final db = await _openUpgraded('t3c');
     final rows = await db
         .customSelect(
@@ -578,29 +721,57 @@ void main() {
         )
         .get();
     final json = rows.single.read<String>('teaching_history');
-    // P035 → P009，而 P009 自身也是 legacy 键（→P007）⇒ 只跳一次
-    expect(json, contains('"P009"'));
+    expect(json, contains('"P035"'));
     expect(
       json,
-      isNot(contains('"P007"')),
-      reason: '★ teaching_history 若出现 P007 ⇒ 被二次改写（迭代）了',
+      isNot(contains('"P009"')),
+      reason: '★ teaching_history 出现 P009 ⇒ 改写复活（P035→P009）',
     );
   });
 
-  test('#3d ★★★ ADR-0003 槽位腾空判据必须覆盖 teaching_history（A3 批）', () async {
+  test('#3d ★★★ 反转：teaching_history 的三种 ID 形态均无改写（逐形态按行判定）', () async {
+    // 【2026-10-05 层 2 单轨收口批 · 断言方向已反转，判据形态改为按行】
+    //
+    // ⚠️ 本用例原版是 A3 批的**存在理由**（「漏一张表就会假绿」）：
+    //   v46 初版只查三张表 ⇒ student_model 里的旧行不被计入，
+    //   于是「三张表都腾空」会绿、但第四张表仍存旧行。
+    //   反转后**覆盖这一张表的必要性完全不变** ——
+    //   漏查 student_model 同样会让本用例绿、而数据同样被损坏。
+    //
+    // ⚠️ 判据形态：原版写「行内不得包含 "P035"」（集合式），
+    //   反转后改为**逐形态按行判定内嵌 ID 仍是原值**。
+    //   不能写「行内不得含 P009」——sm2 合法含 P009（现行实体对照行）。
     final db = await _openUpgraded('t3d');
-    // v46 初版只查三张表 ⇒ `student_model` 里的旧槽位行**不会被计入**，
-    // 于是「三张表都腾空」会绿、但第四张表仍存旧行 ⇒ 槽位实际不可复用。
-    // 本用例把 `student_model` 纳入腾空判据，这是 A3 存在的意义。
-    for (final row in await _column(db, 'student_model', 'teaching_history')) {
-      for (final slot in const ['P035', 'P036', 'P037']) {
-        expect(
-          row,
-          isNot(contains('"$slot"')),
-          reason: 'student_model 仍内嵌 $slot ⇒ 该槽位实际不可复用（漏了一张表）',
-        );
-      }
-    }
+
+    // 形态①：驼峰 `syndromeId`（training 型）
+    final sm1 = await _history(db, 'sm1');
+    expect(sm1, contains('"P035"'), reason: '形态① P035 应原样保留');
+    expect(
+      sm1,
+      isNot(contains('"P009"')),
+      reason: '★ 形态① 出现 P009 ⇒ 驼峰键被改写（最易漏的一条路径）',
+    );
+
+    // 形态②：数组 `syndromes`（confirmation 型）
+    final sm2 = await _history(db, 'sm2');
+    expect(sm2, contains('"P037"'), reason: '形态② P037 应原样保留');
+    expect(
+      sm2,
+      isNot(contains('"P026"')),
+      reason: '★ 形态② 出现 P026 ⇒ P037 被改写成心理内耗症',
+    );
+    // P009 / P004 在 sm2 里是**合法现行实体对照行**，必须仍在
+    expect(sm2, contains('"P009"'), reason: '形态② P009 是现行实体对照，应保留');
+    expect(sm2, contains('"P004"'), reason: '形态② P004 是现行实体对照，应保留');
+    expect(sm2, contains('"P034"'), reason: '形态② P034 应原样保留（防误伤对照）');
+    expect(sm2, contains('123'), reason: '数组里的非字符串元素必须原样保留');
+
+    // 形态③：数组 `syndromes`（diagnosis 型）
+    final sm3 = await _history(db, 'sm3');
+    expect(sm3, contains('"P035"'), reason: '形态③ P035 应原样保留');
+    expect(sm3, contains('"P036"'), reason: '形态③ P036 应原样保留');
+    expect(sm3, isNot(contains('"P009"')), reason: '★ 形态③ 出现 P009 ⇒ P035 被改写');
+    expect(sm3, isNot(contains('"P004"')), reason: '★ 形态③ 出现 P004 ⇒ P036 被改写');
   });
 
   test('#6 幂等：已是 v46 的库重复打开，数据不变', () async {

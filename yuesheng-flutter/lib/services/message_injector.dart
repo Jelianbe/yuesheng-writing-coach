@@ -96,8 +96,6 @@ import 'package:writingcoach/services/student_profile.dart';
 import 'package:writingcoach/services/student_profile_format.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/spaced_repetition.dart';
-import 'package:writingcoach/services/syndrome_registry.dart'
-    show effectiveSyndromeId;
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
@@ -546,17 +544,18 @@ class MessageInjector {
   }
 
   /// P2-9 helper：过滤指定症候的训练记录（按时间 ASC）。
+  ///
+  /// ★ 单轨ID（2026-10-05）：直比`syndromeId`，不再过归一函数。
   List<Map<String, dynamic>> _syndromeTrainingRecords(
     List<Map<String, dynamic>> history,
     String syndromeId,
   ) {
-    final target = effectiveSyndromeId(syndromeId);
     return history
         .where(
           (r) =>
               r['type'] == 'training' &&
               r['syndromeId'] is String &&
-              effectiveSyndromeId(r['syndromeId'] as String) == target,
+              r['syndromeId'] == syndromeId,
         )
         .toList()
       ..sort((a, b) {

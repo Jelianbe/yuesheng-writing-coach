@@ -577,38 +577,39 @@ void main() {
     });
 
     test('#B3 跨症候串号（漏读之外的第二重后果）', () async {
-      // ★ 本用例的前置假设在 **B1 · M1 落地后已改变**，须重新表述：
+      // ★ 2026-10-05（层 2 单轨收口批）：本用例的前置断言**已整体改写**。
       //
-      //   旧语义（`map[id] ?? id`）：串号窗口 = `merge[stored] == query`
-      //     恰好成立的那一对。owner=P005、victim=P003、merge[P005]=P003
-      //     ⇒ 查 P003 时，库里 P005 的记录被当成 P003 的历史。修前实测 count=1。
+      //   归一时代的形态：断言 `effectiveSyndromeId(owner) == owner`
+      //   （M1 语义「现行 ID 恒等」）。串号窗口 = `merge[stored] == query`
+      //   恰好成立的那一对（owner=P005、victim=P003、merge[P005]=P003）
+      //   ⇒ 查 P003 时，库里 P005 的记录被当成 P003 的历史。修前实测 count=1。
       //
-      //   M1 语义（现行 ID 恒等 + 真旧号单跳）：
-      //     **现行 ID 恒等 ⇒ 这一对不再构成串号窗口**
-      //     （`effectiveSyndromeId('P005') == 'P005'`，不等于 P003）
-      //     ⇒ 本用例的语义从「验证修复后串号被堵」升级为
-      //        **「验证任意两个不同现行 ID 之间都不会串号」**——
-      //        这比原来更强：原来只测了一对，现在遍历全34×34。
+      //   单轨下的形态：**没有 ID 变换函数了**（`effectiveSyndromeId`
+      //   随 `kSyndromeMergeMap` 整张删除）⇒ 「恒等」不再是需要断言的性质：
+      //   `a == a` 是恒真断言，零鉴别力。
       //
-      //   保留 owner/victim 配对是为了**保留一个具体可读的回归点**，
-      //   同时用 `#B2`（全 34 个 ID 自匹配）与本例（跨号不串）夹住两侧。
+      //   ⚠️ 旧断言不是「无用」而是**测错了对象**。它守的是
+      //      「归一函数不改动现行 ID」；单轨后真正可能出错的形态变成了
+      //      **「两个在册 ID 指向同一实体」** —— 那样直比会在注册表层面
+      //      就撞车，比归一时代的串号更早、更隐蔽。
+      //      下面前置断言查的正是这个。
       const owner = 'P005'; // 句式节奏单一
       const victim = 'P003'; // 视角漂移
-      // M1 下现行 ID 恒等 ⇒ 前置断言改为「两者归一后仍是各自」
+      // 单轨前置：两者都在册、且**不是同一个实体**
       expect(
-        effectiveSyndromeId(owner),
-        owner,
-        reason: 'M1 语义：现行 ID 恒等，$owner 不应被改写',
+        syndromeRecordOf(owner),
+        isNotNull,
+        reason: '单轨：$owner 必须在册（否则它不再是可用 ID）',
       );
       expect(
-        effectiveSyndromeId(victim),
-        victim,
-        reason: 'M1 语义：现行 ID 恒等，$victim 不应被改写',
+        syndromeRecordOf(victim),
+        isNotNull,
+        reason: '单轨：$victim 必须在册（否则它不再是可用 ID）',
       );
       expect(
-        effectiveSyndromeId(owner) == effectiveSyndromeId(victim),
-        isFalse,
-        reason: 'M1 下两个不同现行 ID 归一后仍不同 ⇒ 不存在串号窗口',
+        syndromeRecordOf(owner)!.name != syndromeRecordOf(victim)!.name,
+        isTrue,
+        reason: '两个不同 ID 必须指向不同实体（否则直比会在注册表层面撞车）',
       );
 
       final sessionId = await seedSession();
