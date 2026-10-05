@@ -134,3 +134,10 @@ historical-archive/
 /yuesheng-landing/*.log
 # assets/ 显式放行（1.47 MB / 5 个文件）：HTML 逐字引用这 5 张，缺一张就裂图。
 #   app_icon.png 875K · hero.jpg 456K · screens/*.jpg 44–72K。体积可接受，不再优化。
+
+# ── 外部第三方工具（不属本仓源码）────────────────────────────────
+#   ow-bridge/ = OW Bridge v0.2.8 便携包解压物（Electron，约 330 MB）
+#     来源：github.com/louchi1984-coder/ow-bridge/releases v0.2.8
+#     校验：SHA-256 4f465b8c…308666f 与官方 SHA256SUMS-0.2.8.txt 一致
+#   ⚠️ 必须显式忽略：否则 `git add -A` 会把 330 MB 二进制塞进公仓。
+/_external/
