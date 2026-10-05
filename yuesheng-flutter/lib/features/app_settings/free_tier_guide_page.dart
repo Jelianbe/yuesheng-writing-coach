@@ -40,6 +40,7 @@ class FreeTierEntry {
     required this.contextLabel,
     required this.notice,
     required this.consoleUrl,
+    required this.pitfall,
   });
 
   /// 服务商名（如「智谱 GLM」）。
@@ -56,6 +57,15 @@ class FreeTierEntry {
 
   /// 注册 + 创建密钥的控制台地址。
   final String consoleUrl;
+
+  /// 该服务商的**计费陷阱**提示（必填，不得留空）。
+  ///
+  /// 做成必填而非可选：免费与计费常常只差模型名里几个字符
+  /// （实测：智谱 `glm-4.7-flash` 免费，而 `glm-4.7` 按量计费），
+  /// 用户手填时极可能漏掉后缀而**静默产生费用**、且没有任何报错。
+  /// 逐条目各写各的陷阱 —— 不同服务商的坑不同，合并成一条通用文案
+  /// 反而会稀释掉真正要紧的那句。
+  final String pitfall;
 }
 
 /// 官方免费档位清单。
@@ -73,6 +83,9 @@ const List<FreeTierEntry> kFreeTierEntries = [
     //   ⇒ 卡片的步骤说明已按此路径撰写（原 URL 直达 Key 页，现为两步）。
     consoleUrl:
         'https://www.bigmodel.cn/invite?icode=fkd95bPdOlYyP1vLEXZGVunfet45IvM%2BqDogImfeLyI%3D',
+    pitfall:
+        '模型名请完整填写 glm-4.7-flash —— 少写 -flash 的 glm-4.7 是'
+        '按量计费模型，会静默产生费用且不会报错。',
   ),
 ];
 
@@ -170,9 +183,42 @@ class _FreeTierCard extends StatelessWidget {
             '${entry.contextLabel} · ${entry.notice}',
             style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
           ),
+          const SizedBox(height: AppSpacing.sm),
+          _PitfallNote(text: entry.pitfall),
           const SizedBox(height: AppSpacing.md),
           _CopyLinkButton(url: entry.consoleUrl),
         ],
+      ),
+    );
+  }
+}
+
+/// 计费陷阱提示：左侧警示竖条 + 强调色文字。
+///
+/// 刻意**不用** warningBg 整块底色 —— 页面下方的 [_DisclaimerCard]
+/// 已经在用那块底色，两块同色警示相邻会互相削弱。用竖条区分层级：
+/// 这条是「操作前必读」，免责卡是「政策声明」。
+class _PitfallNote extends StatelessWidget {
+  const _PitfallNote({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(left: AppSpacing.sm),
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(color: context.palette.warning, width: 3),
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.5,
+          color: context.palette.warning,
+        ),
       ),
     );
   }

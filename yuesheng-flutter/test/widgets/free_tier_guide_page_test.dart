@@ -116,6 +116,7 @@ void main() {
         contextLabel: '128K 上下文',
         notice: '免费档：输入输出全免',
         consoleUrl: 'https://example.invalid/apikeys',
+        pitfall: '这是第二家的计费陷阱提示。',
       );
 
       await pumpGuide(tester, entries: [...kFreeTierEntries, second]);
@@ -130,6 +131,14 @@ void main() {
       // 各自的模型名与规格说明都在（证明是两份独立渲染，不是复制粘贴一张卡）
       expect(find.text('glm-4.7-flash'), findsOneWidget);
       expect(find.text('second-provider-free-model'), findsOneWidget);
+      // 各自的计费陷阱提示也都渲染出来了 —— 数据里加了字段但忘了放进
+      // children 的话，上面两条数据断言照样绿。
+      // ★ 断言顺序：**第二家在先**。若第一家在前，一旦它缺失，测试在
+      //   第一条就 fail-fast 抛出，第二家这条**永远不会被执行** ⇒
+      //   「两家渲染同一条」这类变异就抓不到（变异实测 M4 暴露）。
+      //   放后面那条当后手，才能真正检验到「各自独立渲染」。
+      expect(find.text(second.pitfall), findsOneWidget);
+      expect(find.text(kFreeTierEntries.first.pitfall), findsOneWidget);
       // 骨架元素（步骤卡 / 付费区 / 声明）各只出现一次 —— 没有因多一家而重复
       expect(find.text('获取步骤'), findsOneWidget);
       expect(find.text('其他服务商（需充值）'), findsOneWidget);
@@ -208,6 +217,17 @@ void main() {
           entry.key,
           isNot(contains('reasoner')),
           reason: 'reasoner 档按 token 计费，不得进免费清单',
+        );
+        // ★ pitfall 必须**提到本条目自己的模型名**，不能是泛泛的通用文案。
+        //   理由：判据若只查 `isNotEmpty`，空串与「请注意计费」都能过 ⇒
+        //   护栏会在真正需要它时失效（假绿）。绑定 key 后，改模型名而不改
+        //   提示、或把 A 家的坑写成通用文案，本行都会红。
+        expect(
+          entry.pitfall,
+          contains(entry.key),
+          reason:
+              '${entry.provider} 的计费陷阱提示必须点名它自己的模型名 '
+              '（${entry.key}），否则用户无法据此核对自己在设置页填的模型名',
         );
       }
     });
