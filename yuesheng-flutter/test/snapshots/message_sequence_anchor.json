@@ -5,8 +5,8 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 29812,
-      "fnv": "46f216f9e52e3228"
+      "len": 29923,
+      "fnv": "4133ea76a3b97af3"
     },
     {
       "role": "system",
@@ -27,8 +27,8 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 64154,
-      "fnv": "4480a3561cb3ee62"
+      "len": 64265,
+      "fnv": "31e31bef421e2b51"
     },
     {
       "role": "system",
@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 53579,
-      "fnv": "312555ecc0ded372"
+      "len": 53690,
+      "fnv": "6be9ae516afadd01"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 55362,
-      "fnv": "48cbe3553e6358c5"
+      "len": 55473,
+      "fnv": "463a6150125812dc"
     },
     {
       "role": "system",
@@ -93,8 +93,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 68475,
-      "fnv": "4b8c738cad00ed9f"
+      "len": 68586,
+      "fnv": "6602596c62d8930a"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 55362,
-      "fnv": "48cbe3553e6358c5"
+      "len": 55473,
+      "fnv": "463a6150125812dc"
     },
     {
       "role": "system",
@@ -137,8 +137,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 47496,
-      "fnv": "ae077a9c452e113"
+      "len": 47607,
+      "fnv": "5a19ed12a8a7443e"
     },
     {
       "role": "system",
@@ -159,8 +159,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 47364,
-      "fnv": "25ae3039fec3462"
+      "len": 47475,
+      "fnv": "148fec943430e151"
     },
     {
       "role": "system",
@@ -181,8 +181,8 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 65628,
-      "fnv": "fcbc165391b5a55"
+      "len": 65739,
+      "fnv": "762b7baa05ac9b8c"
     },
     {
       "role": "system",

@@ -3,9 +3,9 @@
 // 复刻 yuesheng-android/src/services/diagnosis-service.ts
 //
 // 职责：
-//   1. 诊断锁定/解锁（shouldUnlock/autoCheckAndUnlock/unlockSyndromes）
+//   1. 诊断锁定/解锁（shouldUnlockSyndrome/unlockSyndromes/autoCheckAndUnlock/checkAndResolveMastered）
 //   2. 确认/质疑（confirmDiagnosis/disputeDiagnosis）
-//   3. commitDiagnosisWithHistory：在 commitDiagnosis 基础上追加 teaching_history + 自动解锁
+//   3. commitDiagnosisWithHistory：在 commitDiagnosis 基础上追加 teaching_history + 自动解锁；calculateEffectiveness：按诊断输入算教学干预有效性
 //
 // 简化项（与 chat_service 一致）：
 //   - loadSyndromeTeachingStates 未单独实现为服务函数——等价能力已由

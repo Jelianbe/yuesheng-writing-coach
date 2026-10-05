@@ -84,6 +84,14 @@ import 'package:writingcoach/services/llm_concurrency_gate.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
 import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/llm_usage_monitor.dart';
+// ★ V2 注入面等价性（2026-10-06）：下面两个 import 是**本批新增**。
+//   起因：本文件原先只注入 training 知识 + few-shot，**不注入 focus 症候的
+//   L3 手册与技法** ⇒ 测试 prompt 比生产少两整段，而「例外清单」全在手册里。
+//   生产对应点：`chat_context_builder.dart:284-293` 的 `_buildFocusSyndromeSection`
+//   （其文件头 `:138` 明文「focus 症候完整注入不可裁」），它拼的正是这两段。
+//   ⇒ 缺这两段时，本文件的任何读数都**不能代表生产行为**。
+import 'package:writingcoach/services/syndrome_knowledge_base.dart';
+import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 
@@ -514,6 +522,19 @@ List<ChatMessage> _buildMessages(_Case c) {
   if (few.isNotEmpty) {
     msgs.add(ChatMessage(role: 'system', content: few));
   }
+  // ★ V2 注入面等价性（2026-10-06，本批新增）：focus 症候的 **L3 手册 + 技法**
+  //   两段，与生产 `_buildFocusSyndromeSection`（chat_context_builder.dart:284-293）
+  //   逐段对齐——该文件 :138 明文「focus 症候完整注入不可裁」，故此处也不裁。
+  //   起因：本文件原先只注入 training 知识 + few-shot，缺这两段 ⇒「例外清单」
+  //   整段不在 prompt 内 ⇒ 此前任何读数都不代表生产行为。
+  final l3 = getSyndromeContent([_kFocusSyndromeId]);
+  if (l3.isNotEmpty) {
+    msgs.add(ChatMessage(role: 'system', content: l3));
+  }
+  final tech = getTechniquesBySyndrome([_kFocusSyndromeId]);
+  if (tech.isNotEmpty) {
+    msgs.add(ChatMessage(role: 'system', content: tech));
+  }
   msgs.add(
     ChatMessage(
       role: 'user',
@@ -568,6 +589,71 @@ void main() {
       expect(msgs.first.role, 'system');
       expect(msgs.last.role, 'user');
       expect(msgs.last.content, contains(_cases.first.probe));
+    });
+
+    // ★ V2 注入面等价性回归（2026-10-06 新增，零成本 · 无 tag · 门禁必跑）。
+    //
+    // 起因：本文件原先只注入 training 知识 + few-shot，**不注入 focus 症候的
+    //   L3 手册与技法** ⇒ 测试 prompt 比生产少两整段，而**全部例外清单都在
+    //   手册里**。生产对应点 = `chat_context_builder.dart:284-293` 的
+    //   `_buildFocusSyndromeSection`（其文件头 :138 明文「focus 症候完整注入
+    //   不可裁」）。⇒ 缺这两段时，本文件的任何读数都**不能代表生产行为**。
+    //
+    // ⚠️ 本组必须在**常驻自检组**（无 tag、门禁全量必跑、零 key 可跑）：
+    //   若挪进 @live 组，它就退化成装饰——只有真跑 live 时才验证，
+    //   而 live 恰恰是最容易被跳过、最需要这道前置的那一段。
+    test('V2 注入面等价：focus 症候的 L3 手册 + 技法两段都在 prompt 内', () {
+      final l3 = getSyndromeContent([_kFocusSyndromeId]);
+      final tech = getTechniquesBySyndrome([_kFocusSyndromeId]);
+      expect(
+        l3,
+        isNotEmpty,
+        reason: '$_kFocusSyndromeId 的 L3 手册应非空（否则下面的等价断言无意义）',
+      );
+      expect(
+        tech,
+        isNotEmpty,
+        reason: '$_kFocusSyndromeId 的技法段应非空（生产 focus 段同时注入它）',
+      );
+
+      final sys = _buildMessages(
+        _cases.first,
+      ).where((m) => m.role == 'system').map((m) => m.content).join('\n@@@\n');
+
+      // 正向 1：L3 手册**逐字**在 prompt 内（含首行标题，证明是整段而非摘要）
+      expect(
+        sys,
+        contains(l3),
+        reason:
+            'focus 症候的 L3 手册必须整段注入（生产 :138「不可裁」）。'
+            '若本断言变红 ⇒ 本文件的 live 读数不能代表生产行为',
+      );
+      expect(
+        sys,
+        contains('### $_kFocusSyndromeId'),
+        reason: '手册首行标题应在 prompt 内——防止「只注了摘要」也算过',
+      );
+
+      // 正向 2：技法段逐字在 prompt 内
+      expect(
+        sys,
+        contains(tech),
+        reason: '生产 focus 段同时注入技法段（chat_context_builder.dart:290）',
+      );
+
+      // ★ 负对照：非 focus 症候的内容**不得**出现。
+      //   取 P030 —— 与 focus P029 **同在 manual_6**，因此能证明注入不串段。
+      //   若删掉这条，「把全库 37 份手册全注入」也能让上面两条变绿
+      //   ⇒ 判据无牙齿（判据必须配负对照的又一例）。
+      final l3Other = getSyndromeContent(['P030']);
+      expect(l3Other, isNotEmpty, reason: 'P030 是负对照用的真实非 focus 症候，其手册应非空');
+      expect(
+        sys,
+        isNot(contains('### P030')),
+        reason:
+            '非 focus 症候 P030 的手册不得出现在 prompt 内。'
+            '本条是上面两条的负对照：若把全库手册都注入，它们照样会绿',
+      );
     });
 
     for (final c in _cases) {
