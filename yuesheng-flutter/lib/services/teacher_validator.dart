@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:writingcoach/config/shared_constants.dart';
+import 'syndrome_id_pattern.dart';
 
 // ─── 常量 ──────────────────────────────────────────────────────
 
@@ -36,8 +37,11 @@ bool _isValidTaskType(String s) => kTaskTypes.contains(s);
 bool _isValidDifficulty(String s) => kDifficultyLevels.contains(s);
 bool _isValidDimension(String s) => kTeacherDimensions.contains(s);
 
-// 症候 ID 泄漏检测（P0 + 2位数字，与 RN SYNDROME_ID_PATTERN 一致）
-final RegExp _syndromeIdPattern = RegExp(r'P0\d{2}');
+// 症候 ID 泄漏检测（与 RN SYNDROME_ID_PATTERN 一致）。
+//
+// ⚠️ 模式取自 [`kAnySyndromeIdRe`]（`syndrome_id_pattern.dart`），勿硬编码
+// `P0\d{2}` —— 否则新编号段对本检测完全隐形（ADR-0003 甲-1 · S1 批）。
+final RegExp _syndromeIdPattern = kAnySyndromeIdRe;
 
 // ─── 类型 ──────────────────────────────────────────────────────
 

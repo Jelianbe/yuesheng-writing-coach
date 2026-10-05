@@ -54,6 +54,7 @@ import 'package:writingcoach/services/diagnosis_parser.dart'
 import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+import 'package:writingcoach/services/syndrome_id_pattern.dart';
 
 /// 顺序 Fake LLM：每次 streamChat 返回 responses 中下一条，真实复刻
 /// 诊断→教学 的双轮 LLM 调用。所有响应发完后循环复用最后一条。
@@ -286,7 +287,7 @@ void main() {
         reason: '教学块标记泄漏到用户可见内容',
       );
       expect(
-        RegExp(r'P0\d{2}').hasMatch(assistantContent!),
+        kAnySyndromeIdRe.hasMatch(assistantContent!),
         isFalse,
         reason: '自然语言泄漏症候编号',
       );

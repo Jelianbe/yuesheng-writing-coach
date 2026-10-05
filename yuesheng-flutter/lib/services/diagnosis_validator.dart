@@ -13,13 +13,18 @@ import '../types/teaching_types.dart';
 import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'decode_guard.dart';
 import 'skill_registry.dart';
+import 'syndrome_id_pattern.dart';
 import 'syndrome_registry.dart';
 import 'technique_knowledge_base.dart';
 
 export 'package:writingcoach/contracts/diagnosis_capability.dart';
 
 /// 匹配所有 P0xx 格式的症候编号（P000-P099）
-final RegExp kSyndromeCodeRe = RegExp(r'P0\d{2}');
+///
+/// ⚠️ 模式由 [`kAnySyndromeIdRe`] 提供（`syndrome_id_pattern.dart`）——
+/// **勿在此硬编码 `P0\d{2}`**：新开编号段时这里是「编号泄漏回填」的第一道
+/// 防线，硬编码会让新段编号原样到达学员眼前（ADR-0003 甲-1 · S1 批）。
+final RegExp kSyndromeCodeRe = kAnySyndromeIdRe;
 
 /// 匹配所有 A0xx 格式的教学动作编号（A000-A099）
 final RegExp kActionCodeRe = RegExp(r'A0\d{2}');

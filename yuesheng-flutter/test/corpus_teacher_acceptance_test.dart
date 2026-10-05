@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/teacher_parser.dart';
 import 'package:writingcoach/services/teacher_validator.dart';
+import 'package:writingcoach/services/syndrome_id_pattern.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 String _fix(String name) => File('test/fixtures/$name').readAsStringSync();
@@ -568,9 +569,9 @@ void main() {
         );
       }
 
-      // 自然语言不得泄漏症候 ID
+      // 自然语言不得泄漏症候 ID（模式取自共享识别器，勿硬编码 P0\d{2}）
       expect(
-        RegExp(r'P0\d{2}').hasMatch(t.naturalLanguage),
+        kAnySyndromeIdRe.hasMatch(t.naturalLanguage),
         isFalse,
         reason: '$item: natural_language 不得泄漏症候ID',
       );

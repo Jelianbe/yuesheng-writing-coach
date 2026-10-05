@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/teacher_parser.dart';
 import 'package:writingcoach/services/teacher_validator.dart';
+import 'package:writingcoach/services/syndrome_id_pattern.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 String _fix(String name) => File('test/fixtures/$name').readAsStringSync();
@@ -58,7 +59,7 @@ void main() {
     expect(t.trainingTask, isNotNull, reason: 'train 必带 training_task');
     expect(t.trainingTask!.taskType, equals('rewrite'));
     expect(
-      RegExp(r'P0\d{2}').hasMatch(t.naturalLanguage),
+      kAnySyndromeIdRe.hasMatch(t.naturalLanguage),
       isFalse,
       reason: 'natural_language 不得泄漏症候ID',
     );

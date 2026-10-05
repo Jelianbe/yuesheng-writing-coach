@@ -67,6 +67,7 @@ import 'package:writingcoach/services/diagnosis_parser.dart'
 import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+import 'package:writingcoach/services/syndrome_id_pattern.dart';
 
 const String _kBaseUrl = 'https://api.deepseek.com';
 const String _kModel = 'deepseek-v4-flash';
@@ -203,7 +204,7 @@ Future<void> _assertComparison(
     reason: '教学块标记泄漏到用户可见内容',
   );
   expect(
-    RegExp(r'P0\d{2}').hasMatch(assistantContent),
+    kAnySyndromeIdRe.hasMatch(assistantContent),
     isFalse,
     reason: '自然语言泄漏症候编号',
   );

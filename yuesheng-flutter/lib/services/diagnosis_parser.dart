@@ -10,6 +10,7 @@ import '../types/teaching_types.dart';
 import 'fact_parser.dart';
 import 'outline_parser.dart';
 import 'diagnosis_validator.dart';
+import 'syndrome_id_pattern.dart';
 import 'chat_training_parser.dart';
 import 'decode_guard.dart';
 
@@ -96,14 +97,14 @@ const List<String> kDiagnosisParseNotes = [
 
 /// `syndrome_id` 的严格格式（N5）。
 ///
-/// 复用 `diagnosis_validator.dart:17` 的 `kSyndromeCodeRe` 的**模式串**，
-/// 但**加锚点**：
-///   - 那个正则是为「在正文里找泄漏的编号并替换」设计的
-///     （`diagnosis_validator.dart:179`），非锚定是它的正确形态；
+/// 取 [`kAnchoredSyndromeIdRe`]（`syndrome_id_pattern.dart`）的**锚定形态**，
+/// 而非 `diagnosis_validator` 的宽松形态：
+///   - 宽松那个是为「在正文里找泄漏的编号并替换」设计的
+///     （`diagnosis_validator.dart` 的 V-03 回填），非锚定是它的正确形态；
 ///   - 而校验字段值必须锚定，否则 `hasMatch('XP003')` 也会命中
 ///     → 等于没校验。
-/// 因此这里另立一个锚定版本，不复用那个实例。
-final RegExp _kSyndromeIdRe = RegExp(r'^P0\d{2}$');
+/// 两者同源（同一份段声明），差异只在锚点。
+final RegExp _kSyndromeIdRe = kAnchoredSyndromeIdRe;
 
 /// 从完整回复文本中提取诊断 JSON
 ///
