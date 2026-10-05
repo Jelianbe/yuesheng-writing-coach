@@ -57,9 +57,9 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/data/database/migration_v46.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
+import 'package:writingcoach/services/syndrome_retirement.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 
@@ -296,28 +296,28 @@ _Scan _buildScan() {
 
 // ═══ 四、判据 ═══════════════════════════════════════════════════
 
-/// 活跃 ∪ mergeMap 键 ∪ **v46 平铺表键**（= four_libraries_consistency_test.dart #9 的 allowedIds 口径）。
+/// 活跃 ∪ **全部退役编号**（含 recycled）= four_libraries_consistency_test.dart #9 的 allowedIds 口径。
 ///
-/// ⚠️ A2 批（ADR-0003 阶段一）起必须并入 [_legacyIds]：
-///   P035/P036/P037 已从 `kSyndromeMergeMap` 删除（那三个槽位即将被复用
-///   为新症候），但它们**仍是合法 legacy 编号** —— 归一职责已移交
-///   v46 迁移的平铺表（50 条，**故意不清**）。
+/// ⚠️ 退役部分用 [kRetiredSyndromeIds]（**全量 50 条**），不能只并
+///   `kSyndromeMergeMap`（47 条）。差的 P035/P036/P037 是 ADR-0003 阶段一
+///   待复用的槽位：已从读路径 merge map 清掉，但**仍是合法 legacy 编号**
+///   （归一职责已移交 v46 迁移的平铺表）。
 ///   只并 merge map 键 ⇒ 这三个 ID 在 `lib/` 注释里的历史提及
 ///   （`migration_v46.dart` / `syndrome_kb_content_manual_2.dart`
 ///   /`training_few_shot_library.dart`）会被误判成「悬空引用」——
 ///   实测 `#R2` 因此报 `Set:['P035','P036','P037']`。
-///   ⇒ 豁免集合的真源必须是「**所有仍可被归一的合法编号**」，
-///   而 kSyndromeMergeMap 只是其中之一。
-Set<String> _allowedIds() => kSyndromeIds
-    .toSet()
-    .union(kSyndromeMergeMap.keys.toSet())
-    .union(_legacyIds());
-
-/// 合法 legacy 编号 = v46 迁移平铺表的键（归一的完整权威集合）。
+///   ⇒ 豁免集合的真源必须是「**所有仍可被归一的合法编号**」。
 ///
-/// 这张表是**超集**：`kSyndromeMergeMap` 的每个键都在里面
-/// （由 A1 的子集校验守卫强制：`assertLegacyMapInSync()` 抛 `StateError` 阻断）。
-Set<String> _legacyIds() => legacyIdMigrationMap.keys.toSet();
+/// 真源 = `lib/services/syndrome_retirement.dart`（退役档案，转换机层 1）。
+/// ⚠️ 刻意**不**用 v46 的 `legacyIdMigrationMap`：那是迁移产物（database 层），
+///   测试 import 它会形成「services 测试 → database 层」的反向依赖。
+Set<String> _allowedIds() => kSyndromeIds.toSet().union(_legacyIds());
+
+/// 合法 legacy 编号 = 退役档案的**全部**旧 ID（50 条）。
+///
+/// 这张表是 merge map 键集（47 条）的**超集**，多出的 3 条是 recycled
+/// （由 A1 的子集校验守卫强制 merge map ⊆ 平铺表）。
+Set<String> _legacyIds() => kRetiredSyndromeIds;
 
 void _r1IdNameConsistency(_Scan scan) {
   final alias = <String, Set<String>>{

@@ -22,7 +22,7 @@
 // ⇒ 表面上完全正常）。⇒ 必须在复用**之前**把存量行改写成归一目标。
 //
 // ── 语义：单跳，不迭代（重要）──
-// `kSyndromeMergeMap` 的键与现行 ID **编号空间重叠**（50 个键里有 33 个是现行
+// `kSyndromeMergeMap` 的键与现行 ID **编号空间重叠**（47 个键里有 33 个是现行
 // 活跃 ID），因此链上存在环（如 P003→P001→P002→P007→P005→P003）。
 // **迭代归一会死循环**。现行契约是**单跳**（`effectiveSyndromeId` 的实现
 // `kSyndromeMergeMap[id] ?? id`，`syndrome_registry.dart:198`），
@@ -75,16 +75,24 @@ const _diagnosisResults = 'diagnosis_results';
 /// Dart 类名 `StudentModels` 是复数，**与表名不一致** ⇒ 凭类名拼 SQL 会静默零命中。
 const _studentModels = 'student_model';
 
-/// 归一映射的**键清单**（按`kSyndromeMergeMap` 全量展开）。
+/// 归一映射的**键清单**（退役档案**全量 50 条**，含 recycled 3 条）。
 ///
-/// 之所以不直接遍历 `kSyndromeMergeMap` 在运行时拼 SQL，是因为迁移必须
-/// **可审计、可 diff**——把映射表平铺成SQL 字面量后，
-/// 「改了哪条映射」在 git 里一眼可见。50 条不多，平铺成本可接受。
+/// 之所以不直接遍历 `kSyndromeMergeMap`（47 条）而在运行时拼 SQL：
+/// ① **口径不同** —— 平铺表还必须含 recycled 3 条（槽位待复用为新症候，
+///    不能留在读路径映射里），但存量库里确有这些旧号的历史行 ⇒ 必须归一；
+/// ② 迁移必须**可审计、可 diff**——平铺成 SQL 字面量后，
+///    「改了哪条映射」在 git 里一眼可见。50 条不多，平铺成本可接受。
+///
+/// ⚠️ 本段**由 `tool/gen_syndrome_retirement.py` 生成，请勿手改**。
+/// 真源 = `lib/services/syndrome_retirement.dart`（退役档案）。
 const Map<String, String> _legacyToCanonical = {
-  'P001': 'P002',
-  'P002': 'P007',
+  // ⚠️ 本段由 tool/gen_syndrome_retirement.py 生成，请勿手改。
+  // 真源 = lib/services/syndrome_retirement.dart（kSyndromeRetirement）
+  // 全量 50 条（含 recycled 3 条：存量库里仍有这些旧号的历史行）
   'H001': 'P011',
   'H002': 'P011',
+  'P001': 'P002',
+  'P002': 'P007',
   'P003': 'P001',
   'P004': 'P002',
   'P005': 'P003',
@@ -109,7 +117,6 @@ const Map<String, String> _legacyToCanonical = {
   'P030': 'P022',
   'P031': 'P023',
   'P032': 'P024',
-  'P037': 'P026',
   'P038': 'P027',
   'P040': 'P028',
   'P041': 'P029',
@@ -124,13 +131,14 @@ const Map<String, String> _legacyToCanonical = {
   'P025': 'P011',
   'P029': 'P005',
   'P033': 'P024',
-  'P035': 'P009',
-  'P036': 'P004',
   'P039': 'P007',
   'P044': 'P011',
   'P045': 'P007',
   'P047': 'P001',
   'P048': 'P018',
+  'P035': 'P009',
+  'P036': 'P004',
+  'P037': 'P026',
 };
 
 /// v46 使用的 legacy → 规范 ID 映射（供测试断言「迁移后无 legacy 残留」）。
@@ -165,6 +173,15 @@ Map<String, String> get legacyIdMigrationMap => _legacyToCanonical;
 /// 实测变异①（把 `P035→P009` 改错）时本函数**没有任何效果**——
 /// 只有测试 `#5` 因为期望值写死才抓到。
 /// 用返回值把不一致项**显式抛出去**，才能在生产升级路径上也真正生效。
+///
+/// ── 转换机落地后（2026-10-05 · R 批）本守卫的角色变了 ──
+/// [_legacyToCanonical] 与 `kSyndromeMergeMap` **现在都是生成物**
+/// （真源 = `kSyndromeRetirement`，退役档案），漂移由
+/// `tool/gen_syndrome_retirement.py --check` 在**生成期**拦。
+/// ⇒ 本函数退化为**第二道防线**：万一有人手改了产物而没重跑生成器，
+///   升级路径上仍然硬失败。
+/// ⚠️ 但**不要**把子集校验改回「逐条一致」—— 那是 A 批已裁定的正确形态，
+///   理由见上方「两个集合各自的性质」表。
 List<String> findLegacyMapMismatches() {
   final bad = <String>[];
   // 反向检查：真源的每个键，平铺里必须存在且 value 相同。

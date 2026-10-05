@@ -13,6 +13,7 @@ import 'package:writingcoach/config/token_budget_table.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
+import 'package:writingcoach/services/syndrome_retirement.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
@@ -22,7 +23,18 @@ void main() {
   final validSyndromes = kSyndromeIds.toSet();
 
   // 内容引用白名单（b11 派生化）：活跃 ∪ 退役 ∪ 合并映射旧 ID，全部来自注册表，无硬编码
-  final allowedIds = kSyndromeIds.toSet().union(kSyndromeMergeMap.keys.toSet());
+  //
+  // ⚠️ 退役部分用 `kRetiredSyndromeIds`（**全量 50 条**，含 recycled），不能只并
+  // `kSyndromeMergeMap`（47 条）。两者差的 P035/P036/P037 是 ADR-0003 阶段一
+  // 待复用的槽位：已从读路径 merge map 清掉，但**仍是合法 legacy 编号**
+  // （归一职责已移交 v46 迁移平铺表）。
+  //   只并 merge map 键 ⇒ 这三个 ID 在知识库里的历史提及会被判成「悬空引用」
+  //   —— 实测 `syndrome_kb_content_manual_2.dart:15` 与
+  //   `training_few_shot_library.dart:101` 均有提及（前者是消歧裁决失效说明，
+  //   后者是「原 P035 已并入本症候」的教学澄清）⇒ `#9` 恒红。
+  //   ⇒ 豁免集合的真源必须是「**所有仍可被归一的合法编号**」。
+  // 真源 = lib/services/syndrome_retirement.dart（退役档案）派生。
+  final allowedIds = kSyndromeIds.toSet().union(kRetiredSyndromeIds);
 
   group('批次3（3.2）症候库基础', () {
     test('#1 权威集合由注册表派生（活跃共 ${kSyndromeIds.length} 个）', () {
