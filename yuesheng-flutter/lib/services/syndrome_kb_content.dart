@@ -102,8 +102,22 @@ const String _kIndexFooter = r'''
 ## 排除的"伪问题"
 
 如果文本中有"看起来像问题但实际是合理写法"的地方，在自然说明部分提及，
-简要说明为什么不是问题。JSON 中不需要包含排除项。
+简要说明为什么不是问题。JSON 中不需要包含排除项。''';
 
+/// ★★ ADR-0003 阶段一 A3 批**独立成块**（2026-10-05，舰长批准后自检追加）。
+///
+/// 为什么从 `_kIndexFooter` 拆出来：
+///   ADR §5 判据 8 要求「**prompt 层可整体摘除前置块**，关闭即恢复原行为」。
+///   拆出前本块与**原有输出协议**（`[YS_DIAGNOSIS]` 模板 / 诊断输出规范 / 严重度三维标定）
+///   同处一个 const ⇒ 「只摘新增、留原协议」在物理上做不到，只能整段回退
+///   （= 连带回退原协议，代价远大于回退本批）。
+///   拆成独立 const 后，判据 8 才**真正可执行**：删掉本 const 的拼接即可，
+///   `_kIndexFooter` 里的原协议一行不动。
+///
+/// 内容 = ADR-0003 裁定 2（主次排序）/ 裁定 7（两套权重卡）/ 裁定 5（命门·投入产出 +
+/// 发表前自查）。⚠️ 五块共用一个 const 是**有意为之**：它们同属「诊断决策规则」域，
+/// 回退时应当同进同退（ADR 裁定 9 的灰度单位是「阶段」，不是「单块」）。
+const String _kIndexAdrBlocks = r'''
 ## 主次排序（本轮讲哪一条）
 
 按三级排序，**一轮只攻一个主症候**，其余在自然说明里顺带提：
@@ -142,13 +156,31 @@ const String _kIndexFooter = r'''
 /// [disabled] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
 /// 诊断编辑器：非空时映射表剔除对应行——AI 索引表里看不到被关的症候，
 /// 从源头减少误报（比解析后丢弃省 token，且无"正文提到却 JSON 丢弃"的不一致）。
-String buildSyndromeIndexContent([Set<String> disabled = const {}]) {
+///
+/// ★ A3 批拆分（2026-10-05，舰长批准后自检追加）：`_kIndexAdrBlocks`（ADR 五个新块）
+///   从 `_kIndexFooter` 拆出后在此**独立拼接** ⇒ 判据 8「可整体摘除前置块」物理可执行：
+///   传 `includeAdrBlocks: false` 即回退 A3 批全部注入，footer 里的原协议一行不动。
+///   （拆出前两者同处一个 const，「只摘新增、留原协议」在物理上做不到。）
+String buildSyndromeIndexContent([
+  Set<String> disabled = const {},
+  bool includeAdrBlocks = true,
+]) {
+  final rows = kSyndromeRegistry
+      .where((s) => !disabled.contains(s.id))
+      .map(_syndromeIndexRow)
+      .join('\n');
+  // ★ 修既有缺陷（2026-10-05 判据 8 自查时实测发现）：原实现是
+  //   `... .join('\n') + _kIndexFooter`，而 footer **自带起首 `\n`**。
+  //   两处换行一叠加，最后一条数据行与footer 首行之间**没有换行**，
+  //   实测输出为 `…| P037 | …——每个单场都合格，合起来不成篇 |## 严重度三维标定`
+  //   ⇒ `## 严重度三维标定` 这个标题**粘在数据行尾部**，AI 侧不可识别为独立标题。
+  //   该缺陷自footer 引入起一直存在（与本批无关），但 A3 批新增的判别式标题
+  //   让它第一次可被断言捕获。
   return _kIndexHeader +
-      kSyndromeRegistry
-          .where((s) => !disabled.contains(s.id))
-          .map(_syndromeIndexRow)
-          .join('\n') +
-      _kIndexFooter;
+      rows +
+      '\n' +
+      _kIndexFooter +
+      (includeAdrBlocks ? _kIndexAdrBlocks : '');
 }
 
 /// L2 索引全启用默认值（测试与 fallback 用；运行时按启用集构造请用
