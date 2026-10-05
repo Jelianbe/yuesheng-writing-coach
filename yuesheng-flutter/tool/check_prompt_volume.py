@@ -26,6 +26,9 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   —— 修 `buildSyndromeIndexContent` 的既有拼接缺陷后，
   diagnosis 两组各**降 1 字符**（数据行末尾与 footer 首行之间补了
   显式换行 ⇒ 少一个重复的 `\n`）。
+· 2026-10-05 第四次（判据 8 补修批）：**上调 1 字符**至 55,362 / 53,579。
+  方向：补修 **同型第二处接缝**（`footer ↔ADR 块`）——上一批只修了「数据行 ↔ footer」，遗漏下游接缝。
+  ⚠️ 本次上调**不是新增预算**，而是修一个**已存在的格式错误**；但纪律不因此放宽：**读数变了红线就贴回实测值**。
 
 ⚠️ **红线必须贴住实测值，不留余量**（2026-10-05 判据 8 自查批实证）：
   若沿用 55,362 / 53,579，红线会比实测**高 1**，
@@ -78,8 +81,8 @@ ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'skill_prompt_anchor.json')
 
 # 舰长 2026-10-05 裁定的红线（= A2/A3 批落地后的实测值）
 REDLINE = {
-    'diagnosis_yuesheng': 55361,
-    'diagnosis_p1_yuesheng': 53578,
+    'diagnosis_yuesheng': 55362,
+    'diagnosis_p1_yuesheng': 53579,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     'beginner_p3_yuesheng_forceSceneFirst': 66237,

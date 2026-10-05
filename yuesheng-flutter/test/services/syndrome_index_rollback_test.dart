@@ -150,5 +150,93 @@ void main() {
         buildSyndromeIndexContent({}, false),
       );
     });
+
+    // ───────────────────────────────────────────────────────────
+    // #7 ★★ 全局性质：**每一个 markdown 标题都必须独立成行**
+    //
+    // 为什么加成「全局扫描」而不是再逐个枚举标题：
+    //   上一批的同类缺陷是「`## 严重度三维标定` 粘在数据行尾部」，
+    //   而本批（舰长指出）发现的**同型第二处**是
+    //   「`## 主次排序` 粘在 footer 末行尾部」——
+    //   两者都发生在 `footer ↔ ADR 块` 这条**下游接缝**上。
+    //   ⚠️ **逐个枚举的断言抓不到第二处**：`#3`/`#4` 用的是
+    //   「ADR 五块是否出现/消失」的**子串判定**，
+    //   而 `## 主次排序` 在拼接输出里**仍然存在**（只是粘在别人的行尾）⇒
+    //   子串照样命中 ⇒ 绿。**这正是「枚举式断言」的盲区。**
+    //
+    //   ⇒ 正确判据是**不依赖具体标题内容**的结构性质：
+    //     凡是行首出现 `#`（即真正的 markdown 标题行），
+    //     该标题必须**从行首开始**、且**独占一行**。
+    //     任何「粘在上一行尾部」的头部都会被抓到 ——
+    //     包括现在这三块之外的、以后新加的任何标题。
+    //
+    //   扫描口径：以 `^#+ ` 开头的行= 合法标题行（允许 `#` 2~4 级）；
+    //   另反向检查「不该出现粘行」：任何行内包含 `## ` 但**不以 `#` 开头**
+    //   ⇒ 说明某个标题被粘在了前一行尾部。
+    // ───────────────────────────────────────────────────────────
+    test('#7 ★★ 所有 markdown 标题都独立成行（防「粘行」同型缺陷）', () {
+      for (final opt in [
+        {'label': 'includeAdrBlocks=true', 'text': buildSyndromeIndexContent()},
+        {
+          'label': 'includeAdrBlocks=false',
+          'text': buildSyndromeIndexContent({}, false),
+        },
+      ]) {
+        final label = opt['label']!;
+        final lines = (opt['text'] as String).split('\n');
+
+        // 正对照：必须真的扫到标题（否则本断言可能恒绿）
+        final headingLines = lines
+            .where((l) => l.trimLeft().startsWith('#'))
+            .toList();
+        expect(
+          headingLines.length,
+          greaterThanOrEqualTo(6),
+          reason:
+              '$label 扫到的标题行只有 ${headingLines.length} 个，'
+              '⇒ 扫描口径失效（不是被测对象有问题）',
+        );
+
+        // 反向判据：行内含`## ` 却不以 # 开头 ⇒ 标题被粘在上一行尾部
+        final glued = <String>[];
+        for (final l in lines) {
+          if (l.trimLeft().startsWith('#')) {
+            continue; // 合法标题行
+          }
+          if (l.contains('## ')) {
+            glued.add(l.length > 70 ? '${l.substring(0, 70)}…' : l);
+          }
+        }
+        expect(
+          glued,
+          isEmpty,
+          reason:
+              '$label 有标题被粘在上一行尾部（AI 侧不可识别为独立标题）：\n'
+              '${glued.join('\n')}',
+        );
+      }
+    });
+
+    // ── #8 标题独立成行的**正向**逐个点名（防止 #7 扫描口径被悄悄改弱）──
+    test('#8 ★ 关键标题逐个确认独占一行（与 #7 互为正对照）', () {
+      final lines = buildSyndromeIndexContent()
+          .split('\n')
+          .map((e) => e.trim())
+          .toSet();
+      // 这些是**语义锚点**：被粘住就会让 AI 读错层级
+      const anchors = [
+        '## 严重度三维标定', // footer 首标题（接缝 1）
+        '## 诊断输出规范',
+        '## 输出格式',
+        '## 排除的"伪问题"', // footer 末标题（接缝 2 的上游）
+        '## 主次排序（本轮讲哪一条）', // ADR 首标题（★ 接缝 2，舰长指出）
+        '## 诊断权重卡（按写作目标分层）',
+        '## 作者命门与投入产出',
+        '## 发表前自查（诊断后另附·不进 JSON）',
+      ];
+      for (final a in anchors) {
+        expect(lines.contains(a), isTrue, reason: '「$a」未独占一行 ⇒ 它被粘在了上一行尾部');
+      }
+    }); // ───────────────────────────────────────────────────────────
   });
 }
