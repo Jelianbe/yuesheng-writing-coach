@@ -16,6 +16,13 @@
 //   #4 付费区默认折叠、展开后列出服务商
 //   #5 诚实声明常驻（不被折叠、不被隐藏）
 //   #6 禁列第三方 stealth 档：清单里不得出现 space-bunny / stealth / :free
+//
+// 容量契约（2026-10-05 新增，探针实测固化）：
+//   #7 最窄屏（320×568）下「获取步骤」仍在首屏内、余量 ≥ 40 dp
+//      + 负对照（付费区标题确实在首屏外）
+//   #8 计费提示在 4 档竖屏下都渲染且零布局异常
+//   —— 起因：新增的计费提示块会换行占高，门禁/单测测不出「把操作入口
+//      挤出首屏」这类回归。实测常数见下方「竖屏容量契约」组注释。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -238,6 +245,89 @@ void main() {
           entry.notice,
           contains('免费'),
           reason: '${entry.provider} 必须写明计费口径',
+        );
+      }
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────
+  // 竖屏容量契约（2026-10-05 实测固化，探针已删）
+  //
+  // 背景：新增的计费提示块（[pitfall]）在竖屏下会换行、占高度。
+  // 门禁/单测都测不出「把操作入口挤出首屏」这类回归，故固化实测值。
+  //
+  // ★ 实测读数（逻辑 dp，devicePixelRatio=1，探针逐机型量得）：
+  //   屏宽 320 ⇒ 文案 4 行 ⇒ 块高 72、含间距占 84（iPhone SE，最坏情况）
+  //   屏宽 360/393/412 ⇒ 3 行 ⇒ 块高 54、占 66
+  //   步骤卡标题 bottom：320 屏 504 / 360 屏 486 / 412 屏 466
+  //   ⇒ 最窄屏（SE 320×568）余量 **64 dp**，其余机型余量 154–449 dp
+  //   ⇒ 结论：4 档竖屏**零布局溢出**，步骤卡标题**全部仍在首屏内**
+  //
+  // ★ 下限取 40 dp 而非 0：文案加 1 行（18dp）仍安全（余量 46）；
+  //   再加一行 28 ⇒ 临界；再加一行 −8 ⇒ 真的被挤出。
+  //   卡 40 是为了让「文案变长」与「布局结构变了」两类回归都能被抓住。
+  // ───────────────────────────────────────────────────────────
+  group('竖屏容量契约', () {
+    // 最坏情况 = 最窄屏（iPhone SE 竖屏 320×568），也是文案换行最多那档
+    Future<void> pumpNarrowest(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(theme: buildAppTheme(), home: const FreeTierGuidePage()),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('最窄屏下步骤卡标题仍在首屏内（余量 ≥ 40 dp）', (tester) async {
+      await pumpNarrowest(tester);
+      final view = tester.view.physicalSize / tester.view.devicePixelRatio;
+      final bottom = tester.getRect(find.text('获取步骤').first).bottom;
+      expect(
+        view.height - bottom,
+        greaterThanOrEqualTo(40.0),
+        reason:
+            '最窄屏下步骤卡标题 bottom=$bottom / 屏高=${view.height} ⇒ '
+            '余量不足 40dp，计费提示把「获取步骤」挤出了首屏',
+      );
+    });
+
+    testWidgets('负对照：付费区标题确实在首屏外（证明上条真在测首屏边界）', (tester) async {
+      await pumpNarrowest(tester);
+      // 不折叠时它落在首屏外。若哪天它进了首屏，本对照失败 ⇒ 上条可能
+      // 只是「所有内容都在屏内」而非「测的是折叠线」。
+      final f = find.text('其他服务商（需充值）');
+      if (f.evaluate().isEmpty) {
+        // ListView 视口外未构建 ⇒ 本身就是「在首屏外」的证据
+        expect(f.evaluate().isEmpty, isTrue);
+      } else {
+        final viewH =
+            tester.view.physicalSize.height / tester.view.devicePixelRatio;
+        expect(tester.getRect(f.first).bottom, greaterThan(viewH));
+      }
+    });
+
+    testWidgets('计费提示在 4 档竖屏下都渲染且零布局异常', (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final size in const [
+        Size(320, 568),
+        Size(360, 640),
+        Size(393, 851),
+        Size(412, 915),
+      ]) {
+        tester.view.physicalSize = size;
+        tester.view.devicePixelRatio = 1.0;
+        await tester.pumpWidget(
+          MaterialApp(theme: buildAppTheme(), home: const FreeTierGuidePage()),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: '$size 下有布局异常');
+        expect(
+          find.textContaining('少写 -flash'),
+          findsOneWidget,
+          reason: '$size 下计费提示未渲染',
         );
       }
     });
