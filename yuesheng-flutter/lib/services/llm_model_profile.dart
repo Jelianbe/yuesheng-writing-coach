@@ -23,11 +23,15 @@ class LlmModelProfile {
   ///（防思考退化乱码；DeepSeek/OpenAI 保持 false 不受影响）
   final bool disableThinking;
 
-  /// true = deepseek 系：流式「空流」（零 content token 且流干净结束，
-  /// ADR-C94 §3.4 判据；不要求达成 [DONE]）时允许注入
-  /// `thinking: {type: disabled}` 兜底
+  /// true = deepseek 系 + GLM thinking 系 + doubao-seed 系：流式「空流」
+  ///（零 content token 且流干净结束，ADR-C94 §3.4 判据；不要求达成 [DONE]）
+  /// 时允许注入 `thinking: {type: disabled}` 兜底
   /// 重试（§3.3 分级降级）。**仅降级时生效**——尝试 1 请求体保持原参数，
   /// 成功路径零行为变更（C80 §3.1 价值承袭）。
+  ///
+  /// ★ 2026-10-06：GLM thinking 系与 doubao-seed 系纳入（与 [disableThinking]
+  /// 的判据同源）—— 实测 glm-4.7-flash 的思考 token 会把 `content` 吃空，
+  /// 而流式解析只认 `delta.content` ⇒ 必须能兜底。
   final bool fallbackDisableThinking;
 
   const LlmModelProfile({
@@ -58,7 +62,21 @@ LlmModelProfile classifyLlmModel(String model) {
   // fallbackDisableThinking（ADR-C94 §3.1）：deepseek 系纳入空流兜底名单
   //（deepseek-chat / deepseek-reasoner / deepseek-v4-flash 等前缀全命中）。
   // 运行时判空成立才注入兜底参数，非 deepseek 模型请求体逐字节不变（AC-3）。
-  final fallbackDisableThinking = m.startsWith('deepseek');
+  //
+  // ★ 2026-10-06 补 GLM 系（实测 glm-4.7-flash @open.bigmodel.cn）：
+  //   该模型是**思考型** —— `max_tokens` 小额度时全部被 `reasoning_content`
+  //   吃掉而`delta.content` 为**空串**（实测 16 tokens ⇒ content=""，
+  //   finish_reason=length）；流式探查也确认 delta 先吐 reasoning_content、
+  //   content 在其后。而 `llm_client._handleSseData` **只认 delta.content**
+  //   （见其 §注释「reasoning_content 增量不置位」）⇒ 这类模型会命中
+  //   「零 content token 且流干净结束」的判空条件，正是本兜底要解决的场景。
+  //   ⚠️ 此前本判据只含 deepseek，而同文件上方的 `disableThinking` 却**已含
+  //   GLM**（`^glm[-_.]?(4\.[5-9]|5|…)`）⇒ 同一模型族出现「主动关思考」却
+  //   「不兜底空流」的**判据不一致**。此处对齐，使两者同源。
+  final fallbackDisableThinking =
+      m.startsWith('deepseek') ||
+      RegExp(r'^glm[-_.]?(4\.[5-9]|5|5\.\d|4\.1v)').hasMatch(m) ||
+      RegExp(r'^doubao-seed-\d').hasMatch(m);
   return LlmModelProfile(
     reasoningOnly: reasoningOnly,
     disableThinking: disableThinking,
