@@ -38,8 +38,12 @@ String _buildLongText({int targetChars = 100000}) {
 }
 
 void main() {
-  testWidgets('flag 默认关：现网单 TextField 通路保留', (tester) async {
-    expect(kBlockEditorEnabled, isFalse, reason: '阶段2 默认关，可随时回退');
+  testWidgets('编辑器懒加载已启用（0.5.1 发版状态）', (tester) async {
+    expect(
+      kBlockEditorEnabled,
+      isTrue,
+      reason: '0.5.1 已启用分块渲染；如需回退改回 false 并同步本测试',
+    );
   });
 
   testWidgets('可编辑视图初始只构建视口内块（块 build 计数）', (tester) async {
@@ -103,7 +107,7 @@ void main() {
     expect(built, lessThan(total ~/ 3), reason: '20 屏滚动后视口外块仍不应被构建');
   });
 
-  testWidgets('flag 关时 WritingEditorView 回退到 chapterContentField', (
+  testWidgets('正文始终解析到 chapterContentField（flag 开=分块首块 / 关=单 TextField）', (
     tester,
   ) async {
     final controller = TextEditingController(text: '\u3000\u3000第一段正文。');
@@ -134,7 +138,7 @@ void main() {
     expect(
       find.byKey(const Key('chapterContentField')),
       findsOneWidget,
-      reason: 'flag 默认关时正文必须是现网单 TextField',
+      reason: '无论 flag 开关，正文容器都解析到 chapterContentField',
     );
   });
 

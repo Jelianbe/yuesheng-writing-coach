@@ -13,7 +13,7 @@ import 'block_projection.dart';
 
 /// 阶段1 feature flag：true = 正文走分块只读渲染；false（默认）= 现网单
 /// TextField(maxLines:null) 通路。编译期常量，两条路径各自出包对比帧率。
-const bool kBlockEditorEnabled = false;
+const bool kBlockEditorEnabled = true;
 
 /// 分块只读渲染视图：BlockProjection 投影 → ListView.builder 懒加载。
 class BlockReadonlyView extends StatelessWidget {
