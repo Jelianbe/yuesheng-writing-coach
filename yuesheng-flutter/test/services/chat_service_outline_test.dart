@@ -13,7 +13,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
@@ -107,7 +106,6 @@ void main() {
       manuscriptRepo: ManuscriptRepository(db),
       llmClient: llm,
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      editorObservationRepo: EditorObservationRepository(db),
       outlineRepo: withOutline ? outlineRepo : null,
       // ADR-C74 K-4：实体/事实落库辅助需要 DiagnosisCommitter
       diagnosisCommitter: DiagnosisCommitter(

@@ -19,7 +19,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
@@ -114,7 +113,6 @@ void main() {
       manuscriptRepo: ManuscriptRepository(db),
       llmClient: llmClient,
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      editorObservationRepo: EditorObservationRepository(db),
       diagnosisCommitter: DiagnosisCommitter(
         sessionRepo: sessionRepo,
         stateRepo: stateRepo,
@@ -895,7 +893,6 @@ void main() {
         manuscriptRepo: msRepo,
         llmClient: fake,
         teacherSuggestionRepo: TeacherSuggestionRepository(db),
-        editorObservationRepo: EditorObservationRepository(db),
         outlineRepo: outlineRepo,
         // ADR-C74 K-4：实体/事实落库辅助需要 DiagnosisCommitter
         diagnosisCommitter: DiagnosisCommitter(
@@ -1062,7 +1059,6 @@ void main() {
         manuscriptRepo: msRepo,
         llmClient: fake,
         teacherSuggestionRepo: TeacherSuggestionRepository(db),
-        editorObservationRepo: EditorObservationRepository(db),
         // outlineRepo 不传 → 懒加载返回 null → 提取静默跳过
         // ADR-C74 K-5：诊断提交编排器收紧为 required
         diagnosisCommitter: DiagnosisCommitter(

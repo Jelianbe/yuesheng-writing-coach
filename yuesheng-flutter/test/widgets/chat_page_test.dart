@@ -23,7 +23,6 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
@@ -2118,7 +2117,6 @@ class _FakeChatService extends ChatService {
         manuscriptRepo: ManuscriptRepository(_db),
         llmClient: LlmClient(),
         teacherSuggestionRepo: TeacherSuggestionRepository(_db),
-        editorObservationRepo: EditorObservationRepository(_db),
         // ADR-C74 K-5：诊断提交编排器收紧为 required
         diagnosisCommitter: DiagnosisCommitter(
           sessionRepo: SessionRepository(_db),

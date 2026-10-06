@@ -28,7 +28,6 @@ import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/event_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
@@ -131,7 +130,6 @@ void main() {
       manuscriptRepo: ManuscriptRepository(db),
       llmClient: _ProtocolLlmClient(),
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      editorObservationRepo: EditorObservationRepository(db),
       characterFactRepo: CharacterFactRepository(db),
       eventFactRepo: EventFactRepository(db),
       subplotFactRepo: SubplotFactRepository(db),

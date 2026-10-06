@@ -16,7 +16,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
@@ -122,7 +121,6 @@ void main() {
       manuscriptRepo: ManuscriptRepository(db),
       llmClient: llmClient,
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      editorObservationRepo: EditorObservationRepository(db),
       diagnosisCommitter: DiagnosisCommitter(
         sessionRepo: sessionRepo,
         stateRepo: TeachingStateRepository(db),

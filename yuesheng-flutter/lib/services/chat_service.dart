@@ -53,7 +53,6 @@ import 'package:writingcoach/data/repositories/subplot_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
-import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
@@ -194,7 +193,6 @@ class ChatService {
     required ManuscriptRepository manuscriptRepo,
     required LlmClient llmClient,
     required TeacherSuggestionRepository teacherSuggestionRepo,
-    required EditorObservationRepository editorObservationRepo,
     // X-041c：可选装配，不传则跳过 training_results 落库（不破坏现有测试构造）
     TrainingResultRepository? trainingResultRepo,
     // D1/D2 Phase 2：可选装配，不传则无用户人格注入（行为零变化，同 trainingResultRepo）

@@ -47,6 +47,11 @@ cross-dup 语义（2026-xx 修订）:
 退出码:
     0 = 无命中（--diff-baseline 时：无新增；--show-allowlist 恒为 0）
     1 = 有命中（--diff-baseline 时：有新增；或 --expect-rule-count 不符）
+    2 = **扫描面失效**（命中前缀文件数 < _MIN_SCAN_FILES，或内容块数 == 0）
+        —— 与「合规但无命中」是**不同性质**的失败，故不复用 0/1：
+           复用 0 会让「它守的东西全部消失」与「真的干净」外观完全相同。
+        该码在 --update-baseline / --diff-baseline / 全量三模式下**都会**触发
+        （判据置于 findings 累积之前），故无法用「把基线更新掉」的方式绕过。
 """
 import json
 import os
@@ -63,6 +68,22 @@ BASELINE = os.path.join(ROOT, "scripts", "prompt_antipattern_baseline.json")
 #   technique_kb_content*—— L3 技法词条正文（getTechniqueContent 注入）
 #   training_kb_content* —— L3 训练词条正文（getTrainingContent 注入）
 # 注：training_kb_content.dart 为索引/barrel，无 ''' 块 → 扫描为空操作（不报错、不崩）。
+# ⚠️⚠️ **已知盲区（实测，2026-10-06）—— 扩面待 R-027 批准，不在本批做**
+#   `lib/services` 实测 183 个 .dart、本表命中仅 50 ⇒ **skill_dispatcher.dart
+#   的 4 个 L1 注入常量（_kPromptBoundary / _kPositionGuidance /
+#   _kDiagnosisSceneFirst / _kD3DiagnosisGuidance）完全不在门禁 7 射程内**，
+#   而 2026-10-06 甲-1 改的正是其中的 _kPromptBoundary（+111 全域）。
+#   同批实测：扩面试跑（未提交）后全量 63 → 72 条，违规型 +1 条，且是**真命中**
+#   —— `progressive_diagnosis.dart:285`「输出要求（两部分都必须输出，缺一不可）：」
+#   对模型下祈使命令，正是 force-trigger 的目标形态。
+#   ⇒ 故**不与「修该 prompt」同批**：R-027 停线批必须独立（改注入正文会触发
+#      锚点重冻，混批将无法判断漂移来自门禁口径还是 prompt）。
+#   ⇒ 也**禁止** `--update-baseline` 把该真命中塞进基线换绿（那是「让断言变绿」
+#      而非「判据正确」，见 .ai/DECISIONS.md §4-158）。
+#   待办（需舰长批准 R-027）：扩表至 skill_dispatcher / training_few_shot_library /
+#   progressive_diagnosis / agent_skills，并同批修 :285 措辞。
+#   ★ 与本批另一条新增判据同源：「扫到了什么」与「扫得对不对」同等重要，
+#     而前者此前无人看守（.ai/DECISIONS.md §4-178）。
 SCAN_PREFIXES = (
     "skills_",
     "syndrome_kb_content",
@@ -77,6 +98,23 @@ KEYWORD_RULES = [
     ("assert-conclude", r"我注意到你|你的问题是|你有一个"),
     ("report-tone", r"置信度|已确认事实|验证方法"),
 ]
+
+# ★ 扫描面 fail-closed 阈值（2026-10-06 实测补的恒绿漏洞）
+#
+# 实测证据（非推理）：把 SCAN_PREFIXES 换成不存在的前缀后——
+#   全量模式 rc=0 并打印「未检测到话术反模式 ✓」（见下方 total==0 -> return 0）；
+#   --diff-baseline 模式 rc=0 并打印「相对基线无新增 ✓（消失 11 条）」。
+# 即「批量改名或前缀写错 ⇒ 它守的东西全部消失，门禁 7 仍报绿」，
+#   与 check_circular.py 历史上的 `return 0 静默放行` 同族。
+#
+# 取值依据（2026-10-06 实测基线：命中前缀 50 文件 / 76 个 r''' 内容块，
+# 而 lib/services 共 183 个 .dart）：
+#   _MIN_SCAN_FILES = 20 —— 给「批量删/改名文件」留 60% 余量，
+#     既不会因正常增删文件而红，也能在扫描面塌到个位数时拦住。
+#   内容块用「== 0」而非阈值 —— 0 块只可能是前缀写错或提取器失配，
+#     不可能是「真的干净」：真干净时块数仍是 76，只是不命中。
+# 判据形态抄 check_prompt_volume.py:149-151 的正对照范式（正对照未过即红）。
+_MIN_SCAN_FILES = 20
 
 # 句子切分：中文句末标点或换行
 SENT_SPLIT = re.compile(r"[。！？\n]")
@@ -428,6 +466,32 @@ def main() -> int:
         for f in os.listdir(SERVICES)
         if f.endswith(".dart") and f.startswith(SCAN_PREFIXES)
     )
+
+    # ---- 扫描面 fail-closed（2026-10-06，判据见 _MIN_SCAN_FILES 处注释）----
+    # 实测的恒绿漏洞：前缀写错或文件批量改名 ⇒ files 变空 ⇒ total==0 ⇒
+    #   全量模式打「未检测到话术反模式 ✓」rc=0，
+    #   --diff-baseline 模式打「相对基线无新增 ✓（消失 11 条）」rc=0。
+    # 即「它守的东西全部消失，门禁 7 仍报绿」，与 check_circular.py 历史上的
+    #   `return 0 静默放行` 同族。判据形态抄 tool/check_prompt_volume.py:149-151
+    #   的正对照范式（正对照未过即红）。
+    # 必须置于 findings 累积之前 ⇒ 三个模式出口（--update-baseline /
+    #   --diff-baseline / 全量）一并被拦；否则只护住全量、CI 走的仍是绿灯路径。
+    n_files = len(files)
+    if n_files < _MIN_SCAN_FILES:
+        print(f"SCAN SURFACE FAIL: 命中前缀的文件仅 {n_files} 个"
+              f"（下限 {_MIN_SCAN_FILES}）⇒ 扫描面塌陷，判据已失效", file=sys.stderr)
+        print(f"           SCAN_PREFIXES = {SCAN_PREFIXES}", file=sys.stderr)
+        print("           先核实是否发生文件批量改名/删除，或前缀被写错。"
+              "禁止用 --update-baseline 让它变绿。", file=sys.stderr)
+        return 2
+    n_blocks = 0
+    for path in files:
+        with open(path, encoding="utf-8") as f:
+            n_blocks += len(content_blocks(f.read()))
+    if n_blocks == 0:
+        print("SCAN SURFACE FAIL: 命中前缀的文件存在但 r''' 内容块数为 0"
+              " ⇒ 提取器失配或文件内容被清空，判据已失效", file=sys.stderr)
+        return 2
 
     findings: dict[str, list[list]] = {}
     for path in files:

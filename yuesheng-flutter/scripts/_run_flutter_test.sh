@@ -86,6 +86,18 @@ fi
 #     （exit 75），看起来像门禁故障。
 #   实测：快道首跑结束后锁仍在，内容 pid 已不存在、且全机无 dart/flutter 进程。
 #   代价：多一个常驻 bash 等子进程（可忽略）；Ctrl+C 仍经进程组送达 flutter。
+# ★ 2026-10-06 显式清 UPDATE_SNAPSHOTS（实测常态风险，非窗口期）：
+#   本文件全文原先**没有任何 unset UPDATE_SNAPSHOTS** ⇒ 该变量原样传给
+#   `flutter test`；而 `test/services/skill_prompt_anchor_test.dart:329` /
+#   `l3_entry_anchor_test.dart:109` / `chat_service_message_sequence_anchor_test.dart:316`
+#   （实测共 5 份测试共用该开关）在 `updating == true` 时走
+#   `if (updating) { …写基线…; return; }` ⇒ **跳过全部 diff 断言并返回通过**。
+#   又因 `tool/check_prompt_volume.py` 的数据源正是这些测试写出的快照，
+#   残留该变量会让体积门禁报出一组「全新且全绿的余量 +0」= 假绿已发生。
+#   ⇒ 收尾门禁必须**永远**在无该变量下运行；重冻快照请用**独立命令**
+#     （`UPDATE_SNAPSHOTS=true flutter test test/services/<anchor>_test.dart`），
+#     绝不与收尾门禁同一条命令。
+unset UPDATE_SNAPSHOTS
 /usr/bin/env "PROGRAMFILES(X86)=${PROG_FILES_X86}" \
   HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= \
   NO_PROXY=localhost,127.0.0.1 \

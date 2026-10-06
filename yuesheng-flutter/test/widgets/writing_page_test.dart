@@ -814,7 +814,6 @@ void main() {
               manuscriptRepo: ManuscriptRepository(db),
               llmClient: FakeLlmClient('诊断完成。本章结构清晰。'),
               teacherSuggestionRepo: TeacherSuggestionRepository(db),
-              editorObservationRepo: EditorObservationRepository(db),
               // ADR-C74 K-5：诊断提交编排器收紧为 required
               diagnosisCommitter: DiagnosisCommitter(
                 sessionRepo: SessionRepository(db),

@@ -31,7 +31,6 @@ import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/event_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
@@ -216,7 +215,6 @@ void main() {
         manuscriptRepo: msRepo,
         llmClient: LlmClient(),
         teacherSuggestionRepo: TeacherSuggestionRepository(db),
-        editorObservationRepo: EditorObservationRepository(db),
         outlineRepo: outlineRepo,
         characterFactRepo: charFactRepo,
         eventFactRepo: eventFactRepo,
@@ -553,7 +551,6 @@ void main() {
           severity: resolvedRef?.severity ?? 'L2',
         ),
         teacherSuggestionRepo: TeacherSuggestionRepository(db),
-        editorObservationRepo: EditorObservationRepository(db),
         outlineRepo: outlineRepo,
         characterFactRepo: charFactRepo,
         eventFactRepo: eventFactRepo,

@@ -248,7 +248,6 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     manuscriptRepo: ManuscriptRepository(db),
     llmClient: ref.watch(llmClientProvider),
     teacherSuggestionRepo: TeacherSuggestionRepository(db),
-    editorObservationRepo: EditorObservationRepository(db),
     // X-041c：训练结果持久化仓储装配，启用 training_results 落库
     trainingResultRepo: TrainingResultRepository(db),
     // D1/D2 Phase 2：应用状态仓储装配，启用用户自定义教练人格注入
