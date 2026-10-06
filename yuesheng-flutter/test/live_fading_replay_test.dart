@@ -257,7 +257,6 @@ void main() {
   late AppDatabase db;
   late SessionRepository sessionRepo;
   late DiagnosisRepository diagRepo;
-  late TeacherSuggestionRepository teacherSuggestionRepo;
   late StudentModelRepository studentModelRepo;
   late TeachingStateRepository stateRepo;
 
@@ -269,7 +268,6 @@ void main() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     sessionRepo = SessionRepository(db);
     diagRepo = DiagnosisRepository(db);
-    teacherSuggestionRepo = TeacherSuggestionRepository(db);
     studentModelRepo = StudentModelRepository(db);
     stateRepo = TeachingStateRepository(db);
   });
@@ -280,20 +278,8 @@ void main() {
     sessionRepo: sessionRepo,
     stateRepo: stateRepo,
     diagnosisRepo: diagRepo,
-    studentModelRepo: studentModelRepo,
     referenceRepo: ReferenceRepository(db),
-    chapterRepo: ChapterRepository(db),
-    manuscriptRepo: ManuscriptRepository(db),
     llmClient: llmClient,
-    teacherSuggestionRepo: teacherSuggestionRepo,
-    diagnosisCommitter: DiagnosisCommitter(
-      sessionRepo: sessionRepo,
-      stateRepo: stateRepo,
-      diagnosisRepo: diagRepo,
-      studentModelRepo: studentModelRepo,
-      referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-    ),
     messageInjector: MessageInjector(
       sessionRepo: sessionRepo,
       diagnosisRepo: diagRepo,

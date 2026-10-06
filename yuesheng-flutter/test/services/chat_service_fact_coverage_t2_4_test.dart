@@ -90,24 +90,8 @@ void main() {
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
       diagnosisRepo: DiagnosisRepository(db),
-      studentModelRepo: StudentModelRepository(db),
       referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-      manuscriptRepo: ManuscriptRepository(db),
       llmClient: llmClient,
-      teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      diagnosisCommitter: DiagnosisCommitter(
-        sessionRepo: sessionRepo,
-        stateRepo: TeachingStateRepository(db),
-        diagnosisRepo: DiagnosisRepository(db),
-        studentModelRepo: StudentModelRepository(db),
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-        // ADR-C74 K-4：fact 仓储必须传进 DiagnosisCommitter，否则 applyFactExtraction 静默跳过
-        characterFactRepo: characterFactRepo,
-        eventFactRepo: eventFactRepo,
-        subplotFactRepo: subplotFactRepo,
-      ),
 
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,
@@ -205,9 +189,6 @@ void main() {
         diagnosis: const DiagnosisCapabilityImpl(),
         genUi: const GenUiParser(),
       ),
-      characterFactRepo: characterFactRepo,
-      eventFactRepo: eventFactRepo,
-      subplotFactRepo: subplotFactRepo,
     );
   }
 

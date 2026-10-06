@@ -107,21 +107,8 @@ void main() {
       sessionRepo: sessionRepo,
       stateRepo: stateRepo,
       diagnosisRepo: diagnosisRepo,
-      studentModelRepo: studentModelRepo,
       referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-      manuscriptRepo: ManuscriptRepository(db),
       llmClient: llmClient,
-      teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      diagnosisCommitter: DiagnosisCommitter(
-        sessionRepo: sessionRepo,
-        stateRepo: stateRepo,
-        diagnosisRepo: diagnosisRepo,
-        studentModelRepo: studentModelRepo,
-        // ADR-C74 K-4：实体/事实落库辅助需要 referenceRepo + chapterRepo
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-      ),
 
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,
@@ -887,23 +874,8 @@ void main() {
         sessionRepo: sessionRepo,
         stateRepo: stateRepo,
         diagnosisRepo: diagnosisRepo,
-        studentModelRepo: studentModelRepo,
         referenceRepo: refRepo,
-        chapterRepo: chapterRepo,
-        manuscriptRepo: msRepo,
         llmClient: fake,
-        teacherSuggestionRepo: TeacherSuggestionRepository(db),
-        outlineRepo: outlineRepo,
-        // ADR-C74 K-4：实体/事实落库辅助需要 DiagnosisCommitter
-        diagnosisCommitter: DiagnosisCommitter(
-          sessionRepo: sessionRepo,
-          stateRepo: stateRepo,
-          diagnosisRepo: diagnosisRepo,
-          studentModelRepo: studentModelRepo,
-          referenceRepo: refRepo,
-          chapterRepo: chapterRepo,
-          outlineRepo: outlineRepo,
-        ),
 
         messageInjector: MessageInjector(
           sessionRepo: sessionRepo,
@@ -1053,22 +1025,8 @@ void main() {
         sessionRepo: sessionRepo,
         stateRepo: stateRepo,
         diagnosisRepo: diagnosisRepo,
-        studentModelRepo: studentModelRepo,
         referenceRepo: refRepo,
-        chapterRepo: chapterRepo,
-        manuscriptRepo: msRepo,
         llmClient: fake,
-        teacherSuggestionRepo: TeacherSuggestionRepository(db),
-        // outlineRepo 不传 → 懒加载返回 null → 提取静默跳过
-        // ADR-C74 K-5：诊断提交编排器收紧为 required
-        diagnosisCommitter: DiagnosisCommitter(
-          sessionRepo: sessionRepo,
-          stateRepo: stateRepo,
-          diagnosisRepo: diagnosisRepo,
-          studentModelRepo: studentModelRepo,
-          referenceRepo: refRepo,
-          chapterRepo: chapterRepo,
-        ),
 
         messageInjector: MessageInjector(
           sessionRepo: sessionRepo,

@@ -46,18 +46,9 @@ import 'package:writingcoach/config/token_budget_table.dart';
 import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/services/token_budget_guard.dart';
 import 'package:writingcoach/data/database/database.dart';
-import 'package:writingcoach/data/repositories/chapter_repository.dart';
-import 'package:writingcoach/data/repositories/character_fact_repository.dart';
-import 'package:writingcoach/data/repositories/event_fact_repository.dart';
-import 'package:writingcoach/data/repositories/subplot_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/data/repositories/manuscript_repository.dart';
-import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
-import 'package:writingcoach/data/repositories/student_model_repository.dart';
-import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
-import 'package:writingcoach/data/repositories/training_result_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_message_types.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
@@ -66,10 +57,8 @@ import 'package:writingcoach/services/chat_training_parser.dart'
 import 'package:writingcoach/services/outline_parser.dart';
 import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/genui_parser.dart';
-import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
-import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_output_guard.dart';
@@ -93,19 +82,13 @@ class ChatService {
   final SessionRepository _sessionRepo;
   final TeachingStateRepository _stateRepo;
   final DiagnosisRepository _diagnosisRepo;
-  final StudentModelRepository _studentModelRepo;
   final ReferenceCapability _referenceRepo;
-  final ChapterRepository _chapterRepo;
-  final ManuscriptRepository _manuscriptRepo;
   final LlmClient _llmClient;
-  final DiagnosisService _diagnosisService;
-  final TeacherSuggestionRepository _teacherSuggestionRepo;
 
   /// X-041c：训练结果持久化仓储（可选——不装配则跳过 training_results 落库）
   /// 真源：PracticeStore.trainingResult 仅存内存态；装配后训练轮反馈命中时
   /// 同步写入 training_results 表，补全 GrowthStore.trainingStats 数据源。
   /// 设计为可选参数：避免破坏 30+ 处现有测试构造（默认 null 跳过回写）。
-  final TrainingResultRepository? _trainingResultRepo;
 
   /// D1/D2 Phase 2：应用状态仓储（可选——不装配则跳过用户自定义人格注入，
   /// 走系统预设路径，行为零变化。避免破坏 30+ 处现有测试构造，同 trainingResultRepo）。
@@ -119,31 +102,23 @@ class ChatService {
   // 阶段 1：消费层从顶层纯函数迁移到能力方法；impl 为纯委托，行为零变更。
   // 生产侧经 chatServiceProvider 读 capability provider 注入；测试替身
   // （_FakeChatService）override sendMessage 整体、不触达本字段，默认值无害。
-  final GenUiCapability _genUi;
-  final MaterialCapability _material;
   final TeachingCapability _teaching;
-  final DiagnosisCapability _diagnosis;
 
   /// 批次66（B62i）：人物知识仓储（可选——不装配则跳过时序矛盾观察）
-  final CharacterFactRepository? _characterFactRepo;
 
   /// 批次67（B62j）：事件知识仓储（可选——不装配则跳过 F07 因果链观察）
-  final EventFactRepository? _eventFactRepo;
 
   /// 批次67（B62j）：支线知识仓储（可选——不装配则跳过 F11 情节闭环观察）
-  final SubplotFactRepository? _subplotFactRepo;
 
   /// 批次72（大纲层）：大纲仓储（可选——装配后实体索引注入 + 提取落库才可用）
   /// K-9 起 outlineRepo 由 DiagnosisFlowHandler / MessageInjector 各自持有，
   /// ChatService 不再直接消费；保留构造参数以兼容既有测试 fixture（无副作用）。
-  final OutlineRepository? _outlineRepo;
 
   /// 诊断提交编排器（ADR-C74 K-1 骨架）
   ///
   /// K-1 阶段：nullable + ChatService 不消费，仅证明「独立类 + DI」路径
   /// 可行（X-025-ARCH 教训复盘）。K-2 ~ K-5 阶段随方法迁入时逐步收紧为
   /// non-null + required；K-5 收尾时本字段升级。
-  final DiagnosisCommitter _diagnosisCommitter;
 
   /// 系统消息注入编排器（ADR-C74 K-7）
   ///
@@ -187,29 +162,16 @@ class ChatService {
     required SessionRepository sessionRepo,
     required TeachingStateRepository stateRepo,
     required DiagnosisRepository diagnosisRepo,
-    required StudentModelRepository studentModelRepo,
     required ReferenceCapability referenceRepo,
-    required ChapterRepository chapterRepo,
-    required ManuscriptRepository manuscriptRepo,
     required LlmClient llmClient,
-    required TeacherSuggestionRepository teacherSuggestionRepo,
     // X-041c：可选装配，不传则跳过 training_results 落库（不破坏现有测试构造）
-    TrainingResultRepository? trainingResultRepo,
     // D1/D2 Phase 2：可选装配，不传则无用户人格注入（行为零变化，同 trainingResultRepo）
     AppStateRepository? appStateRepo,
-    GenUiCapability genUi = const GenUiParser(),
-    MaterialCapability material = const MaterialCapabilityImpl(),
     TeachingCapability teaching = const TeachingCapabilityImpl(),
     // ★ U2（2026-09-15）：L2 路由迟滞器（会话级、纯内存）。可选装配，
     // 不传则自建 —— 不破坏既有测试构造（与 trainingResultRepo 同模式）。
     L2RouteHysteresis? routeHysteresis,
-    DiagnosisCapability diagnosis = const DiagnosisCapabilityImpl(),
-    CharacterFactRepository? characterFactRepo,
-    EventFactRepository? eventFactRepo,
-    SubplotFactRepository? subplotFactRepo,
-    OutlineRepository? outlineRepo,
     // ADR-C74 K-1：诊断提交编排器，K-1 阶段 nullable（不破坏现有 30+ 测试构造）
-    required DiagnosisCommitter diagnosisCommitter,
     // ADR-C74 K-7：系统消息注入编排器，required（与 diagnosisCommitter 同模式）。
     // 「独立类 + DI」拆分路径，X-025-ARCH 教训复盘。
     required MessageInjector messageInjector,
@@ -220,28 +182,11 @@ class ChatService {
   }) : _sessionRepo = sessionRepo,
        _stateRepo = stateRepo,
        _diagnosisRepo = diagnosisRepo,
-       _studentModelRepo = studentModelRepo,
        _referenceRepo = referenceRepo,
-       _chapterRepo = chapterRepo,
-       _manuscriptRepo = manuscriptRepo,
        _llmClient = llmClient,
-       _diagnosisService = DiagnosisService(
-         diagnosisRepo: diagnosisRepo,
-         studentModelRepo: studentModelRepo,
-       ),
-       _teacherSuggestionRepo = teacherSuggestionRepo,
-       _trainingResultRepo = trainingResultRepo,
        _appStateRepo = appStateRepo,
-       _genUi = genUi,
-       _material = material,
        _teaching = teaching,
        _routeHysteresis = routeHysteresis ?? L2RouteHysteresis(),
-       _diagnosis = diagnosis,
-       _characterFactRepo = characterFactRepo,
-       _eventFactRepo = eventFactRepo,
-       _subplotFactRepo = subplotFactRepo,
-       _outlineRepo = outlineRepo,
-       _diagnosisCommitter = diagnosisCommitter,
        _messageInjector = messageInjector,
        _diagnosisFlowHandler = diagnosisFlowHandler;
 

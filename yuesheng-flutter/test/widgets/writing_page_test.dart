@@ -808,21 +808,8 @@ void main() {
               sessionRepo: SessionRepository(db),
               stateRepo: TeachingStateRepository(db),
               diagnosisRepo: DiagnosisRepository(db),
-              studentModelRepo: StudentModelRepository(db),
               referenceRepo: ReferenceRepository(db),
-              chapterRepo: ChapterRepository(db),
-              manuscriptRepo: ManuscriptRepository(db),
               llmClient: FakeLlmClient('诊断完成。本章结构清晰。'),
-              teacherSuggestionRepo: TeacherSuggestionRepository(db),
-              // ADR-C74 K-5：诊断提交编排器收紧为 required
-              diagnosisCommitter: DiagnosisCommitter(
-                sessionRepo: SessionRepository(db),
-                stateRepo: TeachingStateRepository(db),
-                diagnosisRepo: DiagnosisRepository(db),
-                studentModelRepo: StudentModelRepository(db),
-                referenceRepo: ReferenceRepository(db),
-                chapterRepo: ChapterRepository(db),
-              ),
 
               messageInjector: MessageInjector(
                 sessionRepo: SessionRepository(db),

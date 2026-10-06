@@ -278,23 +278,8 @@ void main() {
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
       diagnosisRepo: DiagnosisRepository(db),
-      studentModelRepo: StudentModelRepository(db),
       referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-      manuscriptRepo: ManuscriptRepository(db),
       llmClient: llm,
-      teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      // 关键：不装配 outlineRepo —— 原实现的两个前置条件之一不成立
-      outlineRepo: null,
-      // ADR-C74 K-5：诊断提交编排器收紧为 required
-      diagnosisCommitter: DiagnosisCommitter(
-        sessionRepo: sessionRepo,
-        stateRepo: TeachingStateRepository(db),
-        diagnosisRepo: DiagnosisRepository(db),
-        studentModelRepo: StudentModelRepository(db),
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-      ),
 
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,

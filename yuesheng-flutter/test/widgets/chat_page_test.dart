@@ -2111,21 +2111,8 @@ class _FakeChatService extends ChatService {
         sessionRepo: SessionRepository(_db),
         stateRepo: TeachingStateRepository(_db),
         diagnosisRepo: DiagnosisRepository(_db),
-        studentModelRepo: StudentModelRepository(_db),
         referenceRepo: ReferenceRepository(_db),
-        chapterRepo: ChapterRepository(_db),
-        manuscriptRepo: ManuscriptRepository(_db),
         llmClient: LlmClient(),
-        teacherSuggestionRepo: TeacherSuggestionRepository(_db),
-        // ADR-C74 K-5：诊断提交编排器收紧为 required
-        diagnosisCommitter: DiagnosisCommitter(
-          sessionRepo: SessionRepository(_db),
-          stateRepo: TeachingStateRepository(_db),
-          diagnosisRepo: DiagnosisRepository(_db),
-          studentModelRepo: StudentModelRepository(_db),
-          referenceRepo: ReferenceRepository(_db),
-          chapterRepo: ChapterRepository(_db),
-        ),
 
         messageInjector: MessageInjector(
           sessionRepo: SessionRepository(_db),

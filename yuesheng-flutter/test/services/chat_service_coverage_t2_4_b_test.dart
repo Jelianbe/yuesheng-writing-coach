@@ -95,20 +95,8 @@ void main() {
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
       diagnosisRepo: DiagnosisRepository(db),
-      studentModelRepo: StudentModelRepository(db),
       referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-      manuscriptRepo: ManuscriptRepository(db),
       llmClient: llm,
-      teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      diagnosisCommitter: DiagnosisCommitter(
-        sessionRepo: sessionRepo,
-        stateRepo: TeachingStateRepository(db),
-        diagnosisRepo: DiagnosisRepository(db),
-        studentModelRepo: StudentModelRepository(db),
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-      ),
 
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,
@@ -189,7 +177,6 @@ void main() {
         diagnosis: const DiagnosisCapabilityImpl(),
         genUi: const GenUiParser(),
       ),
-      outlineRepo: outlineRepo,
     );
   }
 

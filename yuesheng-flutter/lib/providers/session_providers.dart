@@ -238,36 +238,15 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     sessionRepo: SessionRepository(db),
     stateRepo: TeachingStateRepository(db),
     diagnosisRepo: DiagnosisRepository(db),
-    studentModelRepo: StudentModelRepository(db),
     // CR-35：此前用 ref.read，而同文件 messageInjector(:149) /
     // diagnosisFlowHandler(:181) 用的是 ref.watch。read 不建立依赖，一旦
     // referenceRepositoryProvider 被重建，本 provider 不会跟着重建，就会与
     // 那两个编排器持有的 referenceRepo 变成两个实例（同源分歧，P1-13）。
     referenceRepo: ref.watch(referenceCapabilityProvider),
-    chapterRepo: ChapterRepository(db),
-    manuscriptRepo: ManuscriptRepository(db),
     llmClient: ref.watch(llmClientProvider),
-    teacherSuggestionRepo: TeacherSuggestionRepository(db),
-    // X-041c：训练结果持久化仓储装配，启用 training_results 落库
-    trainingResultRepo: TrainingResultRepository(db),
     // D1/D2 Phase 2：应用状态仓储装配，启用用户自定义教练人格注入
     appStateRepo: AppStateRepository(db),
-    // 阶段 1（选项 B 依赖倒置）：四大纯能力经 capability provider 注入，
-    // 生产侧走 DI 接缝；impl 为纯委托，行为与原顶层纯函数等价。
-    genUi: ref.watch(genUiCapabilityProvider),
-    material: ref.watch(materialCapabilityProvider),
     teaching: ref.watch(teachingCapabilityProvider),
-    diagnosis: ref.watch(diagnosisCapabilityProvider),
-    // 批次66（B62i）：人物知识仓储装配，启用时序矛盾观察
-    characterFactRepo: CharacterFactRepository(db),
-    // 批次67（B62j）：事件/支线知识仓储装配，启用 F07 因果链 + F11 情节闭环观察
-    eventFactRepo: EventFactRepository(db),
-    subplotFactRepo: SubplotFactRepository(db),
-    // 批次72（大纲层）：大纲记忆仓储装配，启用实体索引注入 + AI 提取落库
-    outlineRepo: OutlineRepository(db),
-    // ADR-C74 K-1：诊断提交编排器装配；ChatService 暂不消费，K-2 ~ K-5
-    // 阶段随方法迁入时收紧
-    diagnosisCommitter: ref.watch(diagnosisCommitterProvider),
     // ADR-C74 K-7：系统消息注入编排器装配；ChatService 改为委派，
     // 5 个 _inject* 入口全部走 _messageInjector.*，X-025-ARCH 教训：
     // 「独立类 + DI」是拆分硬上限（≤ 50 行/函数）的唯一正确路径。

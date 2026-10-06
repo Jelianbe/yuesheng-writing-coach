@@ -124,22 +124,8 @@ void main() {
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
       diagnosisRepo: DiagnosisRepository(db),
-      studentModelRepo: StudentModelRepository(db),
       referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-      manuscriptRepo: ManuscriptRepository(db),
       llmClient: llmClient,
-      teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      // ADR-C74 K-3：声线漂移提示已迁至 DiagnosisCommitter.buildDriftHintContext
-      diagnosisCommitter: DiagnosisCommitter(
-        sessionRepo: sessionRepo,
-        stateRepo: TeachingStateRepository(db),
-        diagnosisRepo: DiagnosisRepository(db),
-        studentModelRepo: StudentModelRepository(db),
-        // ADR-C74 K-4：实体/事实落库辅助需要 referenceRepo + chapterRepo
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-      ),
 
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,

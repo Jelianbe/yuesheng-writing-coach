@@ -130,21 +130,9 @@ void main() {
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
       diagnosisRepo: DiagnosisRepository(db),
-      studentModelRepo: StudentModelRepository(db),
       referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-      manuscriptRepo: ManuscriptRepository(db),
       llmClient: llmClient,
-      teacherSuggestionRepo: TeacherSuggestionRepository(db),
       appStateRepo: appStateRepo,
-      diagnosisCommitter: DiagnosisCommitter(
-        sessionRepo: sessionRepo,
-        stateRepo: TeachingStateRepository(db),
-        diagnosisRepo: DiagnosisRepository(db),
-        studentModelRepo: StudentModelRepository(db),
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-      ),
 
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,

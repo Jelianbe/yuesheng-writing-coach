@@ -229,23 +229,8 @@ void main() {
           sessionRepo: sessionRepo,
           stateRepo: TeachingStateRepository(db),
           diagnosisRepo: DiagnosisRepository(db),
-          studentModelRepo: StudentModelRepository(db),
           referenceRepo: refRepo,
-          chapterRepo: chRepo,
-          manuscriptRepo: msRepo,
           llmClient: llm,
-          teacherSuggestionRepo: TeacherSuggestionRepository(db),
-          outlineRepo: outlineRepo,
-          // ADR-C74 K-5：诊断提交编排器收紧为 required
-          diagnosisCommitter: DiagnosisCommitter(
-            sessionRepo: sessionRepo,
-            stateRepo: TeachingStateRepository(db),
-            diagnosisRepo: DiagnosisRepository(db),
-            studentModelRepo: StudentModelRepository(db),
-            referenceRepo: refRepo,
-            chapterRepo: chRepo,
-            outlineRepo: outlineRepo,
-          ),
 
           messageInjector: MessageInjector(
             sessionRepo: sessionRepo,

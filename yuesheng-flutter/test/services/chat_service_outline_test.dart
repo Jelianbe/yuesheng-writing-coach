@@ -100,23 +100,8 @@ void main() {
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
       diagnosisRepo: DiagnosisRepository(db),
-      studentModelRepo: StudentModelRepository(db),
       referenceRepo: ReferenceRepository(db),
-      chapterRepo: ChapterRepository(db),
-      manuscriptRepo: ManuscriptRepository(db),
       llmClient: llm,
-      teacherSuggestionRepo: TeacherSuggestionRepository(db),
-      outlineRepo: withOutline ? outlineRepo : null,
-      // ADR-C74 K-4：实体/事实落库辅助需要 DiagnosisCommitter
-      diagnosisCommitter: DiagnosisCommitter(
-        sessionRepo: sessionRepo,
-        stateRepo: TeachingStateRepository(db),
-        diagnosisRepo: DiagnosisRepository(db),
-        studentModelRepo: StudentModelRepository(db),
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-        outlineRepo: withOutline ? outlineRepo : null,
-      ),
 
       messageInjector: MessageInjector(
         sessionRepo: sessionRepo,

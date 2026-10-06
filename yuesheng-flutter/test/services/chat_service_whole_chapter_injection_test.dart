@@ -80,13 +80,8 @@ ChatService _buildChatService(AppDatabase db, LlmClient llmClient) {
     sessionRepo: sessionRepo,
     stateRepo: TeachingStateRepository(db),
     diagnosisRepo: DiagnosisRepository(db),
-    studentModelRepo: StudentModelRepository(db),
     referenceRepo: ReferenceRepository(db),
-    chapterRepo: ChapterRepository(db),
-    manuscriptRepo: ManuscriptRepository(db),
     llmClient: llmClient,
-    teacherSuggestionRepo: TeacherSuggestionRepository(db),
-    diagnosisCommitter: committer(),
     messageInjector: injector(),
     diagnosisFlowHandler: DiagnosisFlowHandler(
       sessionRepo: sessionRepo,
