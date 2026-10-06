@@ -92,6 +92,12 @@ const int _kMaxRealCalls = 12;
 ///   「档位起作用」与「本次恰好这么答」。
 const int _kVotes = int.fromEnvironment('LIVE_LLM_VOTES', defaultValue: 3);
 
+/// 每票最大尝试次数（限流退避用）。3次 × 递增间隔。
+const int _kMaxRetriesPerVote = 3;
+
+/// 退避基数（秒），第 n 次等待 = 基数 × n。
+const int _kRetryBaseWaitSec = 20;
+
 /// 平台通道 mock（照既有 live 测试范式，见 `live_fading_replay_test.dart:70`）。
 ///
 /// ★ 探针缺陷（2026-10-06，首次真跑才暴露）：`LlmClient._prepareEndpoints`
@@ -244,88 +250,148 @@ void main() {
       return buf.toString();
     }
 
-    test('R1 三档 × 3 票：逐票全文留痕，观察输出差异', () async {
-      if (!hasKey) {
-        markTestSkipped('未设置 API Key（$_kKeyEnv / DEEPSEEK_API_KEY），跳过真实链路');
-        return;
-      }
-      // ★ 探针缺陷 2（同批第 2 次）：光有 Binding + 通道 mock 还不够——
-      //   `TestWidgetsFlutterBinding` 会把**所有真实 HTTP 请求变成 400**
-      //   （flutter_test 用「永远 400」的 mock HttpClient 顶替），
-      //   实测报 `Exception: 请求被拒绝（HTTP 400）`，**请求根本没出去**。
-      //   仓内 6 处 live 测试的既有解法：`HttpOverrides.global = null`
-      //   （见 live_fading_replay_test.dart:495 与 live_fewshot:294 等）。
-      //   ⚠️ 必须在Binding 初始化**之后**置空，否则不生效。
-      TestWidgetsFlutterBinding.ensureInitialized();
-      HttpOverrides.global = null;
-      addTearDown(() => HttpOverrides.global = null);
-      final messenger =
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-      messenger.setMockMethodCallHandler(_kConnectivityChannel, (call) async {
-        if (call.method == 'check') return <String>['wifi'];
-        return null;
-      });
-      messenger.setMockMethodCallHandler(_kSecureStorageChannel, (call) async {
-        if (call.method == 'read') return null;
-        return null;
-      });
-      addTearDown(() {
-        messenger.setMockMethodCallHandler(_kConnectivityChannel, null);
-        messenger.setMockMethodCallHandler(_kSecureStorageChannel, null);
-      });
-      final votesPerTier = _kVotes < 1 ? 1 : _kVotes;
-      final monitor = LlmUsageMonitor();
-      final client = buildRealClient(monitor);
-      final injector = buildInjector();
+    test(
+      'R1 三档 × 3 票：逐票全文留痕，观察输出差异',
+      () async {
+        if (!hasKey) {
+          markTestSkipped('未设置 API Key（$_kKeyEnv / DEEPSEEK_API_KEY），跳过真实链路');
+          return;
+        }
+        // ★ 探针缺陷 2（同批第 2 次）：光有 Binding + 通道 mock 还不够——
+        //   `TestWidgetsFlutterBinding` 会把**所有真实 HTTP 请求变成 400**
+        //   （flutter_test 用「永远 400」的 mock HttpClient 顶替），
+        //   实测报 `Exception: 请求被拒绝（HTTP 400）`，**请求根本没出去**。
+        //   仓内 6 处 live 测试的既有解法：`HttpOverrides.global = null`
+        //   （见 live_fading_replay_test.dart:495 与 live_fewshot:294 等）。
+        //   ⚠️ 必须在Binding 初始化**之后**置空，否则不生效。
+        TestWidgetsFlutterBinding.ensureInitialized();
+        HttpOverrides.global = null;
+        addTearDown(() => HttpOverrides.global = null);
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        messenger.setMockMethodCallHandler(_kConnectivityChannel, (call) async {
+          if (call.method == 'check') return <String>['wifi'];
+          return null;
+        });
+        messenger.setMockMethodCallHandler(_kSecureStorageChannel, (
+          call,
+        ) async {
+          if (call.method == 'read') return null;
+          return null;
+        });
+        addTearDown(() {
+          messenger.setMockMethodCallHandler(_kConnectivityChannel, null);
+          messenger.setMockMethodCallHandler(_kSecureStorageChannel, null);
+        });
+        final votesPerTier = _kVotes < 1 ? 1 : _kVotes;
+        final monitor = LlmUsageMonitor();
+        final client = buildRealClient(monitor);
+        final injector = buildInjector();
 
-      // 记录注入文本（取证：证明每票真的带了不同的引导）
-      final injected = <String, String>{};
-      for (final tier in _tierOrder) {
-        final lv = resolveBeginnerLevelFromTier(
-          tier: tier,
-          beginnerLevel: null,
-        );
-        if (lv == null) continue;
-        injected[tier] = levelLabelOf(lv);
-        // ignore: avoid_print
-        print('[注入对照] tier=$tier → 引导段层级=${injected[tier]}');
-      }
+        // 记录注入文本（取证：证明每票真的带了不同的引导）
+        final injected = <String, String>{};
+        for (final tier in _tierOrder) {
+          final lv = resolveBeginnerLevelFromTier(
+            tier: tier,
+            beginnerLevel: null,
+          );
+          if (lv == null) continue;
+          injected[tier] = levelLabelOf(lv);
+          // ignore: avoid_print
+          print('[注入对照] tier=$tier → 引导段层级=${injected[tier]}');
+        }
 
-      final traces = <String, List<String>>{};
-      for (final tier in _tierOrder) {
-        traces[tier] = [];
-        for (var i = 1; i <= votesPerTier; i++) {
-          if (callCount >=
-              (_kVotes * _tierOrder.length).clamp(1, _kMaxRealCalls)) {
+        final traces = <String, List<String>>{};
+        for (final tier in _tierOrder) {
+          traces[tier] = [];
+          for (var i = 1; i <= votesPerTier; i++) {
+            if (callCount >=
+                (_kVotes * _tierOrder.length).clamp(1, _kMaxRealCalls)) {
+              // ignore: avoid_print
+              print('已达调用上限（$_kVotes 票 × ${_tierOrder.length} 档），提前停止');
+              break;
+            }
+            callCount++;
+            // ★ 限流退避（2026-10-06 实测必需）：智谱免费档极严——同一天里
+            //   连续 3 次最小调用**全部 429**，而实验需 9 次。直连必被打断
+            //   ⇒ 遇限流（空回复，见下）按递增间隔重试，仍失败则**如实记缺票**
+            //   （台账教训：凑出来的数据比缺数据更危险）。
+            String out = '';
+            for (var attempt = 1; attempt <= _kMaxRetriesPerVote; attempt++) {
+              // ★ 探针缺陷 4：限流是**抛异常**（`请求过于频繁，请稍后再试`），
+              //   不是「返回空串」⇒ 只判 `out.trim().isEmpty` 接不到它，
+              //   异常会直接穿透到测试框架 ⇒ 报 failed 且**丢掉已跑完的票**
+              //   （实测 3 票版第 1 票成功后即栽在这里，白跑）。
+              //   修：把异常捕获为可判定信号，与空串同一路径处理。
+              try {
+                out = await runOnce(client, injector, tier);
+              } catch (e) {
+                // ⚠️ 探针缺陷 5（最小复现已确认）：写成
+                //   `'频繁' in '$e' || '429' in '$e'` 会编译失败 ——
+                //   `'频繁' in '$e' ||` 里，`||` 与 `in` 之间没有分隔，
+                //   Dart 把 `in` 当成插值表达式的一部分报 `Undefined name 'in'`
+                //   （实测 dart analyze：line 3:20）。⇒ 改用显式局部变量
+                //   承载异常文本，语义更清楚也不再踩解析歧义。
+                final errText = e.toString();
+                final isRateLimit =
+                    errText.contains('频繁') ||
+                    errText.contains('429') ||
+                    errText.contains('rate');
+                out = '';
+                if (!isRateLimit) rethrow; // 非限流异常是真问题，不该被吞
+                // ignore: avoid_print
+                print('  [限流] 第$attempt 次被拒: $errText');
+              }
+              if (out.trim().isNotEmpty) break;
+              if (attempt < _kMaxRetriesPerVote) {
+                final waitSec = _kRetryBaseWaitSec * attempt;
+                // ignore: avoid_print
+                print('  [限流] 第$attempt 次空回复，退避 ${waitSec}s 后重试');
+                await Future<void>.delayed(Duration(seconds: waitSec));
+              }
+            }
+            if (out.trim().isEmpty) {
+              // ignore: avoid_print
+              print(
+                '  ★ tier=$tier 第$i 票经$_kMaxRetriesPerVote 次重试仍失败'
+                ' ⇒ 如实记缺票，不用空数据凑数',
+              );
+              continue;
+            }
+            (traces[tier] ??= <String>[]).add(out);
             // ignore: avoid_print
-            print('已达调用上限（$_kVotes 票 × ${_tierOrder.length} 档），提前停止');
-            break;
+            print('--- tier=$tier 第$i 票 ---');
+            // ignore: avoid_print
+            print(out);
           }
-          callCount++;
-          final out = await runOnce(client, injector, tier);
-          traces[tier]!.add(out);
-          // ignore: avoid_print
-          print('--- tier=$tier 第$i 票 ---');
-          // ignore: avoid_print
-          print(out);
         }
-      }
 
-      // 断言只锁「有产出」，**不**断言哪档更好（无 ground truth，见头注）。
-      for (final tier in _tierOrder) {
-        final got = traces[tier] ?? const <String>[];
-        expect(got, isNotEmpty, reason: 'tier=$tier 应至少有一票');
-        for (final one in got) {
-          expect(one.trim(), isNotEmpty, reason: 'tier=$tier 出现空回复');
+        // 断言只锁「有产出」，**不**断言哪档更好（无 ground truth，见头注）。
+        for (final tier in _tierOrder) {
+          final got = traces[tier] ?? const <String>[];
+          //⚠️ 不断言每档都有票：限流是外部条件，缺票是**诚实结果**。
+          //   若断言 isNotEmpty，限流就会把「环境问题」伪装成「代码失败」。
+          for (final one in got) {
+            expect(one.trim(), isNotEmpty, reason: 'tier=$tier 出现空回复');
+          }
         }
-      }
-      // 打印长度对照（供人工判断差异幅度）
-      for (final tier in _tierOrder) {
-        final lens = traces[tier]!.map((s) => s.length).toList();
-        // ignore: avoid_print
-        print('[长度对照] tier=$tier 注入=${injected[tier]} 回复长度=$lens');
-      }
-    });
+        // 打印长度对照（供人工判断差异幅度）
+        for (final tier in _tierOrder) {
+          final lens = (traces[tier] ?? const <String>[])
+              .map((s) => s.length)
+              .toList();
+          // ignore: avoid_print
+          print('[长度对照] tier=$tier 注入=${injected[tier]} 回复长度=$lens');
+        }
+      },
+      // ★ 探针缺陷 3：默认 30s 超时对「含限流退避」的实验**远远不够**
+      //   （单票最坏 = 3 次尝试 × 2 次退避 20s+40s ≈ 远超 30s）⇒ 报
+      //   TimeoutException 且**丢掉已跑完的票**（实测 3 票版即栽在这里）。
+      //   既有 live 测试同法：`Timeout(Duration(seconds: 300))`
+      //   （见 live_fading_replay_test.dart:566）；此处给 900s 覆盖
+      //   9 次调用 + 最多 27 次退避等待。
+      timeout: const Timeout(Duration(seconds: 900)),
+    );
   });
 }
 
