@@ -49,6 +49,7 @@ import 'package:writingcoach/services/token_budget_guard.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
+import 'package:writingcoach/services/diagnosis_tier_bridge.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_message_types.dart';
@@ -733,6 +734,19 @@ extension ChatServiceSend on ChatService {
 
   /// 读取并解析 teaching state（批次6 M2：DB currentPhase 优先）。
   /// 返回阶段/等级上下文（R-019 拆出）。
+  ///
+  /// ★ B6-N（2026-10-06）`beginnerLevel` 的来源改为「tier 优先」：
+  ///   `teaching_state.beginner_level` 是**冷启动一次性自评**（用户改不了）；
+  ///   而成长页/设置页的「你写到哪了？」三档（`DiagnosisPrefs.tier`）此前
+  ///   **零消费**——只驱动后缀词。现按「显式选择优先」让 tier 覆盖它，
+  ///   接入**已有的**分级诊断库链路（`message_injector` 的层级注入 +
+  ///   `focus_resolver` 的 focus 排序），零 schema 改动、零 prompt 正文改动
+  ///   ⇒ **不触 R-027**。
+  ///   ⚠️ **不写库**：tier 覆盖只在本次调用内存中生效——写
+  ///   `teaching_state.beginner_level` 会污染那列「入门自评」的语义
+  ///   （它有 CHECK 约束且被冷启动流程当采集目标）。
+  ///   详见 `lib/services/diagnosis_tier_bridge.dart` 头注（含与 2026-09-26
+  ///   「方案 A」决策的关系：桥接**不生成禁用集**，仍走软引导通道）。
   Future<_TeachingContext> _prepareTeachingState(
     String sessionId,
     TeachingSubphase? fallbackSubphase,
@@ -748,11 +762,18 @@ extension ChatServiceSend on ChatService {
         currentSubphase =
             fallbackSubphase ?? TeachingSubphase.fromString(ts.currentSubphase);
         final level = ts.beginnerLevel;
-        beginnerLevel = BeginnerLevel.fromString(level);
+        // B6-N：tier 覆盖 beginner_level（理由见本函数 doc 注 + bridge 头注）
+        final prefs = await _appStateRepo?.getDiagnosisPrefs();
+        beginnerLevel = resolveBeginnerLevelFromTier(
+          tier: prefs?.tier,
+          beginnerLevel: BeginnerLevel.fromString(level),
+        );
+        // isBeginner 与 beginnerLevel 必须**同源**（同处派生），否则用户选
+        // 「想被挑刺」却仍被新手门控 ⇒ 门控与实际层级不一致。
         isBeginner =
-            level != null &&
-            level != BeginnerLevel.n4Independent.value &&
-            level != BeginnerLevel.n3Diagnose.value;
+            beginnerLevel != null &&
+            beginnerLevel != BeginnerLevel.n4Independent &&
+            beginnerLevel != BeginnerLevel.n3Diagnose;
         final dbPhase = TeachingPhase.fromString(ts.currentPhase);
         if (dbPhase != null) effectivePhase = dbPhase;
       }

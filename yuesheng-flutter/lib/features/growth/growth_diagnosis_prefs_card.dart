@@ -17,6 +17,7 @@ import '../../config/app_theme.dart';
 import '../../theme/app_typography.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/diagnosis_prefs_provider.dart';
 import '../../services/syndrome_registry.dart';
 import 'growth_detail_widgets.dart';
 
@@ -55,41 +56,29 @@ class GrowthDiagnosisPrefsCard extends ConsumerStatefulWidget {
 
 class _GrowthDiagnosisPrefsCardState
     extends ConsumerState<GrowthDiagnosisPrefsCard> {
-  DiagnosisPrefs? _prefs;
-  bool _loading = true;
+  /// ★ B6-N（2026-10-06）：改为 `ref.watch` 单一真源。
+  ///
+  /// 原来用本地 `_prefs` + `initState` 读一次 DB ⇒ 两个实例（成长页折叠态 /
+  /// 设置页编辑态）各自冻结，改这边那边不变。后缀词「教学设置 · X」正是从
+  /// 这个冻结值算出来的 ⇒ 用户看到「切换没生效」。
+  ///
+  /// 改 `ref.watch` 后：任一处写入 → `ref.invalidate` → 所有 watch 点重建。
+  /// `_loading` 保留（provider 在 loading 时也要能不渲染），`_load()` 删。
+  DiagnosisPrefs? get _prefs => ref.watch(diagnosisPrefsProvider).value;
 
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final p = await AppStateRepository(
-        ref.read(appDatabaseProvider),
-      ).getDiagnosisPrefs();
-      if (mounted) {
-        setState(() {
-          _prefs = p;
-          _loading = false;
-        });
-      }
-    } catch (_) {
-      // 读不到偏好（测试/异常）→ 不渲染卡片，不阻塞页面
-    }
-  }
+  bool get _loading => ref.watch(diagnosisPrefsProvider).isLoading;
 
   Future<void> _save(DiagnosisPrefs next) async {
     await AppStateRepository(
       ref.read(appDatabaseProvider),
     ).setDiagnosisPrefs(next);
-    if (mounted) setState(() => _prefs = next);
+    // 让所有 watch 点（含**别的实例**）失效重取——这是本次修复的核心。
+    ref.invalidate(diagnosisPrefsProvider);
   }
 
   Future<void> _restoreOne(String id) async {
     final cur = _prefs ?? DiagnosisPrefs();
-    _save(cur.copyWith(disabledIds: {...cur.disabledIds}..remove(id)));
+    await _save(cur.copyWith(disabledIds: {...cur.disabledIds}..remove(id)));
   }
 
   Future<void> _restoreAll() => _save(DiagnosisPrefs());
@@ -160,9 +149,14 @@ class _GrowthDiagnosisPrefsCardState
             _headerRow(context, cur, disabled),
             const SizedBox(height: 6),
             Text(
-              '告诉教练你现在的阶段，它会更侧重对应方向——'
-              '但不会因此跳过任何诊断。',
+              '告诉教练你现在的阶段，反馈会侧重对应层级——'
+              '不会因此跳过任何诊断。',
               style: TextStyle(fontSize: 12, color: palette.textTertiary),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '（软引导：影响反馈侧重与焦点排序，不硬性屏蔽高层级问题）',
+              style: TextStyle(fontSize: 11, color: palette.disabledText),
             ),
             const SizedBox(height: 14),
             _groupLabel(context, '你写到哪了？'),
