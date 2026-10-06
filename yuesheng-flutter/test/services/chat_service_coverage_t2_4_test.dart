@@ -253,23 +253,10 @@ void main() {
   }
 
   // ───────────────────────── A 组：公开方法直接调用 ─────────────────────────
-
-  test('A1 initSession 无会话 → 新建空白会话并返回 id', () async {
-    final chatService = buildChatService(FakeLlmClient('ok'));
-    final id = await chatService.initSession();
-    expect(id, isNotEmpty);
-    final sessions = await sessionRepo.listSessions();
-    expect(sessions.length, 1);
-  });
-
-  test('A2 initSession 已有会话 → 复用既有会话（不新建）', () async {
-    final chatService = buildChatService(FakeLlmClient('ok'));
-    final before = (await sessionRepo.listSessions()).length; // setUp 已建 1 个
-    final id = await chatService.initSession();
-    final after = (await sessionRepo.listSessions()).length;
-    expect(after, before, reason: '已有会话时不应新建空白会话');
-    expect(id, sessionId, reason: '应复用首个既有会话');
-  });
+  // ★ 2026-10-06（N5 甲档）：原 A1/A2（initSession 无会话→新建 / 已有会话→复用
+  //   首个既有会话）已随 ChatService.initSession() 一并删除 —— 该方法是生产零
+  //   调用的死方法，而 A2 断言「应复用首个既有会话」正在锁死「全局无作品过滤」
+  //   这个口径（若哪天真删方法，测试会红但红因是「锁死了死代码」而非功能被破坏）。
 
   test('A3 loadAttitudeState 无状态 → 默认 gentle / p0Engage（未锁定）', () async {
     final chatService = buildChatService(FakeLlmClient('ok'));

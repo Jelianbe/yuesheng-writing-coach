@@ -205,12 +205,15 @@ class ChatService {
 
   // ════════════ 会话/态度管理 ════════════
 
-  /// 取或建默认会话（优先复用最近会话）
-  Future<String> initSession() async {
-    final sessions = await _sessionRepo.listSessions();
-    if (sessions.isNotEmpty) return sessions.first.id;
-    return _sessionRepo.createBlankSession();
-  }
+  // ★ 2026-10-06（N5 甲档）：原 `initSession()` 已删 —— 它是**生产零调用的死方法**
+  //   （唯一调用方是测试），且其口径「listSessions() 全局取 updated_at 最新、
+  //   无作品过滤」若被复用即会跨书串上下文。生产两条会话初始化路径均不走它：
+  //   ① 写作页教练面板 → WritingCoachSessionBootstrapper.initSession()
+  //      （按章隔离：findSessionForChapter）
+  //   ② 聊天页 → session_providers._resolveSessionId()
+  //      （显式目标 > LAST_SESSION_KEY > updated_at 最新 > 新建；chat 页
+  //      设计上不感知作品维度，全局口径是有意语义，非疏漏）
+  //   保留登记以防有人重新捡起这个无过滤口径。
 
   /// 加载会话的态度状态
   Future<
