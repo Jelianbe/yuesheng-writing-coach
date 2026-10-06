@@ -47,7 +47,7 @@ import 'coach_settings_page.dart';
 import 'widgets/settings_cards.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
-const String _appVersion = '0.4.1';
+const String _appVersion = '0.5.0';
 const String _packageName = 'com.yuesheng.writingcoach';
 const String _feedbackQQGroup = '470562649';
 

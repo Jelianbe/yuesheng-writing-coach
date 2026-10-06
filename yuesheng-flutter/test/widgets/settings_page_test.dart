@@ -20,6 +20,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -259,7 +260,15 @@ void main() {
     expect(find.text('维护'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
     expect(find.text('月笙写作教练'), findsOneWidget);
-    expect(find.text('v0.4.1'), findsOneWidget);
+    // ★ 2026-10-06：从 pubspec 派生而非硬编码 —— 原写 `v0.4.1`，每次发版
+    //   都得记得改这个「第二处副本」，0.5.0 发版时果然被打破（红过一次）。
+    //   真源单一化后，发版只需改 pubspec 一处。
+    final _v = RegExp(r'^version:\s*(\S+)$', multiLine: true)
+        .firstMatch(File('pubspec.yaml').readAsStringSync())!
+        .group(1)!
+        .split('+')
+        .first;
+    expect(find.text('v$_v'), findsOneWidget);
     expect(find.text('com.yuesheng.writingcoach'), findsOneWidget);
   });
 
