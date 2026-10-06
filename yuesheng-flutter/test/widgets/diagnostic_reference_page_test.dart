@@ -14,10 +14,27 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/features/growth/diagnostic_reference_page.dart';
 import 'package:writingcoach/services/syndrome_learner_notes.dart';
+import 'package:writingcoach/services/syndrome_registry.dart';
 
 void main() {
-  test('数据完整性：34 条症候，编号与名称齐全、actionRefs 非空', () {
-    expect(kSyndromeLearnerNotes.length, 34);
+  // ★ 2026-10-06：条数口径从硬编码 34 改为**从注册表派生**
+  // （资料区补齐 P035–P037 后为 37）。教训：硬编码条数在每次新增症候时
+  // 都会变成「必须记得改的第二个地方」——ADR-C122 建资料区时写了 34，
+  // 注册表新增 3 条后就漂了 3 天没人发现。派生口径让漂移**不可能发生**。
+  //
+  // 同源：资料区应覆盖注册表全部症候（纯展示，不进注入链）。
+  final int expectedCount = kSyndromeRegistry.length;
+
+  test('数据完整性：条数与注册表一致，编号与名称齐全、actionRefs 非空', () {
+    expect(kSyndromeLearnerNotes.length, expectedCount);
+    // 反向对账：注册表每条都必须在资料区有对应条目（缺一条即红）
+    final covered = kSyndromeLearnerNotes.map((n) => n.id).toSet();
+    final missing = kSyndromeRegistry
+        .map((SyndromeRecord s) => s.id)
+        .where((String id) => !covered.contains(id))
+        .toList();
+    expect(missing, isEmpty, reason: '注册表有但资料区未覆盖：$missing（资料区应覆盖全部症候）');
+
     for (final note in kSyndromeLearnerNotes) {
       expect(note.id, startsWith('P'));
       expect(note.name, isNotEmpty);
@@ -34,7 +51,7 @@ void main() {
     }
   });
 
-  testWidgets('列表页：渲染 34 条 + 首尾条目可见', (tester) async {
+  testWidgets('列表页：渲染全条 + 首尾条目可见', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: DiagnosticReferenceListPage()),
     );
@@ -45,7 +62,7 @@ void main() {
     expect(find.text('P001'), findsOneWidget);
     expect(find.text('情绪标签化'), findsOneWidget);
     // 底部条目需滚动可见——直接断言数据源长度（UI 渲染由首条抽查代表）
-    expect(kSyndromeLearnerNotes.length, 34);
+    expect(kSyndromeLearnerNotes.length, expectedCount);
   });
 
   testWidgets('详情页：四区块字段完整展示', (tester) async {
