@@ -35,6 +35,7 @@
 // 直接消费但保留（X-041c / 批次66-72 装配契约不变，测试 fixture 兼容）。
 // ignore_for_file: unused_field
 
+import 'chat_service_diagnosis_focus.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart' show DioException;
@@ -189,6 +190,25 @@ class ChatService {
        _routeHysteresis = routeHysteresis ?? L2RouteHysteresis(),
        _messageInjector = messageInjector,
        _diagnosisFlowHandler = diagnosisFlowHandler;
+
+  // ── B5（2026-10-06）：从 extension 收敛为独立类的两个协作对象 ──
+  //
+  // 原先两块（`ChatServiceDiagnosisFocus` 36 行 / `ChatServiceObservers` 32 行）
+  // 是 extension，靠「跨对象访问私有成员」拿到 `_diagnosisRepo` 与 `_logSafeRun`。
+  // 收敛后改为显式协作对象：依赖由构造注入，调用点不变（仅方法名前缀）。
+  //
+  // ⚠️ `_diagnosisFocus` 在**构造器之后**声明，因为它的 `onSafeRun` 回调要传
+  //   本对象的 `_logSafeRun` 引用，而 Dart 初始化列表里不能引用 `this` 的方法 ——
+  //   `late final` 兜住这一点（首次调用发生在发送消息时，远晚于构造）。
+  late final ChatServiceDiagnosisFocus _diagnosisFocus =
+      ChatServiceDiagnosisFocus(
+        diagnosisRepo: _diagnosisRepo,
+        onSafeRun: _logSafeRun,
+      );
+
+  /// 回复长度观测（B5：原 `ChatServiceObservers`，零依赖故无构造参数）。
+  final ChatServiceReplyObserver _replyObserver =
+      const ChatServiceReplyObserver();
 
   // 引用内容预加载缓存（ADR-C74 K-7 迁至 MessageInjector：见 lib/services/message_injector.dart）
 
@@ -403,42 +423,8 @@ class ChatService {
 }
 
 // K-9 移除: commitDiagnosisFromContent + _readOutlineEntityCount 已迁 DiagnosisFlowHandler
-extension ChatServiceDiagnosisFocus on ChatService {
-  /// 批次1（O1）：Teacher 升级阀——某症候严重度达阈值或诊断次数达阈值时，
-  /// 绕过心流窗口（持续写作学员「编辑器活跃 120s」恒真 → 建议永远出不来 →
-  /// identified 永不前进 → M4-A 永不满足）。返回 true 时允许建议正常输出。
-  Future<bool> _shouldBypassFlowWindow(
-    String sessionId,
-    List<ActiveProblemView> activeProblems,
-  ) async {
-    if (activeProblems.isEmpty) return false;
-    // 严重度阈值：存在 L3 重度症候即绕过
-    if (activeProblems.any((p) {
-      final sev = Severity.fromString(p.severity);
-      return sev != null && sev.index >= kFlowBypassMinSeverity.index;
-    })) {
-      return true;
-    }
-    // 诊断次数阈值：某症候累计诊断次数达阈值即绕过（统计失败降级为不绕过）
-    // G15：诊断次数唯一口径 = diagnosis_results 全表（confirmed 行按症候聚合），
-    // 不再读 teaching_history（后者仅历史流水、全量 append 含 NO_OP 重复）。
-    try {
-      final diagnosisCounts = await _diagnosisRepo
-          .countConfirmedDiagnosesBySyndrome(sessionId);
-      for (final p in activeProblems) {
-        final diagnosisCount = diagnosisCounts[p.syndromeId] ?? 0;
-        if (diagnosisCount >= kFlowBypassDiagnosisCount) return true;
-      }
-    } catch (e, st) {
-      _logSafeRun('升级阀诊断次数统计失败，降级为不绕过', e, st);
-    }
-    return false;
-  }
-
-  // ADR-C74 K-7 迁出至 MessageInjector（lib/services/message_injector.dart）：
-  // _parseUserFocusFromMessage / _buildFocusHistory / _mapFocusSource
-  // （_injectDiagnosisLock 的跟随 helper）
-}
+// B5（2026-10-06）：`extension ChatServiceDiagnosisFocus` 已收敛为独立类
+// （见 lib/services/chat_service_diagnosis_focus.dart）
 
 // ADR-C74 K-7 迁出至 MessageInjector：extension ChatServiceDiagnosisSupport
 // 整块删除（仅含 _buildInterventionAdjustmentNote，迁入 MessageInjector._buildInterventionAdjustmentNote）
@@ -449,38 +435,8 @@ extension ChatServiceDiagnosisFocus on ChatService {
 
 // ADR-C74 K-7 迁出至 MessageInjector：ChatServiceSendObservations
 
-extension ChatServiceObservers on ChatService {
-  /// 批次50 临时测量：回复长度观测（standard 档是否真超长）
-  /// 「回复颗粒度真人感收敛」决策前置——先量化标准档回复长度分布再决定约束方案。
-  /// 仅 debug 级留痕（长度 + 分档 + 颗粒度 + 态度 + 子阶段 + 意图），不改变任何行为；
-  /// 批次 52 汇成节奏体检报告后按结论决定保留或删除。观测失败不阻断主流程。
-  void _observeReplyLength(
-    String reply,
-    String userInput,
-    AttitudeLevel attitude,
-    TeachingSubphase? subphase,
-  ) {
-    if (!kDebugMode) return;
-    final len = reply.length;
-    String bucket;
-    if (len <= 30) {
-      bucket = '≤30(一句)';
-    } else if (len <= 80) {
-      bucket = '31-80(短段)';
-    } else if (len <= 160) {
-      bucket = '81-160(中段)';
-    } else {
-      bucket = '>160(长段)';
-    }
-    final detail = detectReplyDetail(userInput);
-    final intent = classifyUserIntent(userInput);
-    debugPrint(
-      '[批次50 回复长度观测] 长度=$len($bucket) 颗粒度=${detail.value} '
-      '态度=${attitude.value} 子阶段=${subphase?.value ?? 'null'} '
-      '意图=${intent.value}（仅观测不干预）',
-    );
-  }
-}
+// B5（2026-10-06）：`extension ChatServiceObservers` 已收敛为独立类
+// （见 lib/services/chat_service_diagnosis_focus.dart）
 
 // ADR-C74 K-7 迁出至 MessageInjector：_preloadReferenceDetails
 // （跟随 _injectReferences 迁入 lib/services/message_injector.dart）
@@ -835,7 +791,7 @@ extension ChatServiceSend on ChatService {
     int nowAtSec,
     String content,
   ) async {
-    final flowBypassed = await _shouldBypassFlowWindow(
+    final flowBypassed = await _diagnosisFocus.shouldBypassFlowWindow(
       sessionId,
       activeProblems,
     );
@@ -1812,7 +1768,7 @@ extension ChatServiceSend on ChatService {
       genuiComponents: parsed.genuiComponents,
     );
     // 批次50 临时测量：回复长度观测（仅 debug 留痕不干预）
-    _observeReplyLength(
+    _replyObserver.observeReplyLength(
       parsed.displayContent,
       content,
       options.attitude,

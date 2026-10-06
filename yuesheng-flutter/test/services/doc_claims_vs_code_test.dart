@@ -93,8 +93,14 @@ List<ExtensionSpan> extensionSpans(String source) {
 /// 已登记豁免：键 = 块名，值 = 原因。
 /// 注意豁免按**块名**登记而非行数 —— 行数会漂，按行号登记必然漂移。
 const Map<String, String> kChatServiceExtensionExemptions = <String, String>{
-  'ChatServiceDiagnosisFocus': '待 B5 消解。当前 chunk 规模尚可（实测约 36 行），登记仅为记录现状。',
-  'ChatServiceObservers': '待 B5 消解。当前 chunk 规模尚可（实测约 32 行），登记仅为记录现状。',
+  // ★ B5 甲-1（2026-10-06）已销账两条：ChatServiceDiagnosisFocus（36 行）与
+  //   ChatServiceObservers（32 行）已收敛为独立类
+  //   `lib/services/chat_service_diagnosis_focus.dart`
+  //   （`ChatServiceDiagnosisFocus` / `ChatServiceReplyObserver`）。
+  //   消解方式 = 原 extension 靠跨对象访问私有成员拿 `_diagnosisRepo` /
+  //   `_logSafeRun`，收敛后改为**构造注入 + 回调注入**，依赖显式可测。
+  //   ⚠️ 本表按**块名**登记 —— 块被消解即从表中删除（判据 ② 的
+  //   「已登记块不再存在（豁免失效却没销账）」正是守这条）。
   'ChatServiceSendRun': '待 B5 消解。当前 chunk 规模尚可（实测约 134 行）。',
   'ChatServiceSend':
       '待 B5 消解，且这是本仓自设红线冲突点 —— session_providers.dart:192 '
