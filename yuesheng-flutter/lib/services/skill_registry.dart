@@ -12,7 +12,8 @@
 ///     索引内容来自 L3 知识库文件，完整知识由 L3 检索注入）
 library;
 
-import 'package:writingcoach/types/teaching_types.dart';
+import 'skill_types.dart'; // B6：本文件自身要用 Skill/SkillMeta/PromptStyle
+export 'skill_types.dart'; // B6：并转发给外部消费者（历史 import 路径不变）
 
 import 'skill_phase_slicing.dart';
 import 'syndrome_knowledge_base.dart';
@@ -56,92 +57,29 @@ part 'skills_advanced_outline_p5.dart';
 part 'skills_advanced_outline_p6.dart';
 part 'skills_reply_voice.dart';
 
-// ─── Skill 元数据与实体 ───────────────────────────────────────
-
-/// Skill 正文的表述风格标签（E.8）
-///
-/// 决定 skill 正文里的示例 / 话术应当被当作「格式照做」还是「参考自组织」。
-/// 服务于 E.3 元规则第 6 条——让「示例不是格式」可被机器识别，
-/// 供 E.6 Prompt Lint 与「内容增减规范」消费。
-///
-/// 判据（改动档位前先对照）：
-/// - strict：正文含输出契约（格式模板 / JSON 字段说明 / 协议）
-///   或铁律级硬约束清单，须逐条执行。示例若存在，仅用于说明格式。
-/// - guided：正文含示例话术或示例文本，且示例为参考——
-///   说法由教练自行组织。文本内通常已自述「不是句式模板 / 不是台词 /
-///   说法自定 / 不照念 / 由你自己组织」。
-/// - free：只有原则、底线或索引，无输出契约、无可照搬的示例。
-///
-/// 两条使用约定（E.8(a) 落地时实测得出，改动档位前先看）：
-///
-/// 1. **档位是整体定性，不是逐条判决。** 一个 skill 完全可以「约束是硬的、
-///    示例是软的」——典型如 validation-rules：明写「10 条是硬性约束，违反
-///    任何一条都必须重写回复」，同时又写「❌/✅ 都是示例，不是必须套用的
-///    句式」。此时按主体约束强度定为 strict，示例的软性由正文自述保证。
-/// 2. **正文的局部自述优先级高于档位。** 若正文某处已明说「以下是示例，不是
-///    模板」（advanced-phases / feedback-cognition / gap-detector 等都有），
-///    以正文为准——档位供机器粗筛，局部自述供模型精判。
-enum PromptStyle {
-  /// 硬约束：输出契约或铁律，须逐条执行。
-  strict,
-
-  /// 参考示例：示例不是格式，说法自行组织。
-  guided,
-
-  /// 纯原则：无契约、无示例。
-  free,
-}
-
-/// Skill 元数据
-///
-/// Step 1（2026-09-14）：删除手写 `estimatedTokens` 字段。原字段在 `lib/`、
-/// `test/`、`tool/`、`scripts/` 中**零读取**（只写不读的死数据），且 37 处
-/// 手写值长期失真（多处自承「台账失真」）。体积口径改为由
-/// `Skill.estimatedTokens` 从 `content` 派生，与 dispatcher 同源。
-class SkillMeta {
-  final String id;
-  final String
-  group; // core | attitude | coaching | diagnosis | training | etc.
-
-  /// 正文表述风格（E.8）。必填——新增 skill 时强制显式声明档位，
-  /// 不给默认值：默认值会让漏标静默滑过，与 N19 的教训同源。
-  final PromptStyle promptStyle;
-
-  const SkillMeta({
-    required this.id,
-    required this.group,
-    required this.promptStyle,
-  });
-}
-
-/// Skill 实体
-class Skill {
-  final SkillMeta meta;
-  final String content;
-
-  /// 本 skill 正文的估算 token 数（Step 1：由 [content] 派生，不再手写）。
-  ///
-  /// 口径 = `content.length`（UTF-16 码元数）× `TokenEstimate.charToTokenRatio`
-  /// （= 1.0，B26 中文口径），与 `skill_dispatcher` 的 `_estimateTokens` 同源。
-  /// 派生值可用锚点快照 `test/snapshots/skill_prompt_anchor.json` 的
-  /// `skillContent[id].len` 逐 id 对账。
-  int get estimatedTokens => content.length;
-
-  /// 按教学阶段裁剪内容的钩子（Phase 3 A 组：状态驱动裁剪）。
-  ///
-  /// 为 null 时退化为完整 [content]（与历史行为一致）。
-  /// 切片必须返回 [content] 的原文子串，确保零编辑漂移。
-  /// 按教学阶段裁剪内容。签名 `(phase, content)`——[content] 即本 Skill 的
-  /// 完整原文，由 dispatcher 传入；这样裁剪逻辑可与其他 library 解耦
-  /// （P3-R3：part 私有的正文常量跨库不可见，只能由调用方把原文送来）。
-  final String Function(TeachingPhase phase, String content)? contentForPhase;
-
-  const Skill({
-    required this.meta,
-    required this.content,
-    this.contentForPhase,
-  });
-}
+// ─── Skill 元数据与实体 ───────────────────────────────
+// ★ B6（2026-10-06）：`PromptStyle` / `SkillMeta` / `Skill` 三个类型
+//   已抽到 `skill_types.dart`（**本批只做这一步**）。
+//   抽出理由 = 消除「类型定义埋在数据分片宿主里」这个结构性耦合：
+//   宿主 `skill_registry.dart` 同时承担**类型定义**与**34 个 part 分片的
+//   宿主**两项职责，而 part 成员靠共享它的作用域直接用这三个类型
+//   ⇒ 类型无处可去、无独立测试面、也无法被非 part 的 library 复用。
+//   抽出后宿主与（未来的）独立 library 都可单向 import 它。
+// ⚠️ **`part` 消解本身未做，且当前不可做** —— 门禁 11
+//   （`scripts/check_a_class_exemption.py`）的 A4 判据要求
+//   「任何 A 类文件必须真的是 part 家族成员」，G1 判据要求
+//   「分片数不得少于基线 minPartCount=49」。而 B6 的目标正是让
+//   `skills_diagnosis*` **不再是** part 成员 ⇒ 两条判据与本批目标
+//   **方向相反**（实测：拆 3 个文件 + 删 1 个壳后 A4 报 3 条违规、
+//   G1 报「分片数 46 < 49」）。⇒ 属**门禁判据与施工目标的设计冲突**，
+//   不是代码缺陷；改判据需独立批准（96-26/96-27 既定设计的成文约束）。
+//   **本批保留的收益**：类型解耦已完成，且它是将来任何 part 消解的
+//   **必要前置**（不抽类型就拆不动）。
+// ⚠️ 宿主自身**也必须 import** skill_types.dart（不只是 export）：
+//   export 只把符号**转发给本库的消费者**，不会让本文件自身看到它们。
+//   而宿主仍要 `Map<String, Skill> skillRegistry = {...}` ⇒ 必须 import。
+//   另：export 指令在 Dart 里**必须位于 part 指令之前**，故它放在文件头
+//   import 区（下方），说明注释留在本节。
 
 // ─── Skill 注册表 ─────────────────────────────────────────────
 
