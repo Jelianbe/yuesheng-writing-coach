@@ -68,7 +68,10 @@ BASELINE = os.path.join(ROOT, "scripts", "prompt_antipattern_baseline.json")
 #   technique_kb_content*—— L3 技法词条正文（getTechniqueContent 注入）
 #   training_kb_content* —— L3 训练词条正文（getTrainingContent 注入）
 # 注：training_kb_content.dart 为索引/barrel，无 ''' 块 → 扫描为空操作（不报错、不崩）。
-# ⚠️⚠️ **已知盲区（实测，2026-10-06）—— 扩面待 R-027 批准，不在本批做**
+# ✅ **此前盲区已闭合（2026-10-06 R-027 停线批）** —— 本表已扩至含
+#   skill_dispatcher / training_few_shot_library / progressive_diagnosis /
+#   agent_skills（实测块数见下方 SCAN_PREFIXES 注释）。
+#   留档（闭合前的实测，用于日后判断是否再次漂移）：
 #   `lib/services` 实测 183 个 .dart、本表命中仅 50 ⇒ **skill_dispatcher.dart
 #   的 4 个 L1 注入常量（_kPromptBoundary / _kPositionGuidance /
 #   _kDiagnosisSceneFirst / _kD3DiagnosisGuidance）完全不在门禁 7 射程内**，
@@ -76,19 +79,36 @@ BASELINE = os.path.join(ROOT, "scripts", "prompt_antipattern_baseline.json")
 #   同批实测：扩面试跑（未提交）后全量 63 → 72 条，违规型 +1 条，且是**真命中**
 #   —— `progressive_diagnosis.dart:285`「输出要求（两部分都必须输出，缺一不可）：」
 #   对模型下祈使命令，正是 force-trigger 的目标形态。
-#   ⇒ 故**不与「修该 prompt」同批**：R-027 停线批必须独立（改注入正文会触发
-#      锚点重冻，混批将无法判断漂移来自门禁口径还是 prompt）。
+#   ⇒ 故扩面必须**独立成批**（改注入正文会触发锚点重冻，混批将无法判断
+#      漂移来自门禁口径还是 prompt）—— 这正是本批的做法。
 #   ⇒ 也**禁止** `--update-baseline` 把该真命中塞进基线换绿（那是「让断言变绿」
-#      而非「判据正确」，见 .ai/DECISIONS.md §4-158）。
-#   待办（需舰长批准 R-027）：扩表至 skill_dispatcher / training_few_shot_library /
-#   progressive_diagnosis / agent_skills，并同批修 :285 措辞。
-#   ★ 与本批另一条新增判据同源：「扫到了什么」与「扫得对不对」同等重要，
-#     而前者此前无人看守（.ai/DECISIONS.md §4-178）。
+#      而非「判据正确」，见 .ai/DECISIONS.md §4-158 / §4-179 第 4 条）。
+#   ★ **闭合读数（2026-10-06 实测）**：扩面后 `--diff-baseline` 报违规型新增
+#     **恰好 1 条**（就是上面那条 `:285`）⇒ **真命中，已在本批同批改措辞**，
+#     未塞基线；跨文件一致性新增 60 条（信息型，不参与 FAIL 判定）。
+#   ★ 与本批另一条判据同源：「扫到了什么」与「扫得对不对」同等重要，
+#     而前者此前无人看守（.ai/DECISIONS.md §4-178）⇒ 现由 `_MIN_SCAN_FILES`
+#     与下方 SCAN_PREFIXES 的实测块数注释共同看守。
 SCAN_PREFIXES = (
     "skills_",
     "syndrome_kb_content",
     "technique_kb_content",
     "training_kb_content",
+    # ↓↓ 2026-10-06 R-027 停线批新增（此前是已知盲区，见上方注释）
+    # 四条为「也在注入 LLM、但前缀表漏掉」的文件，2026-10-06 实测内容块数：
+    #   skill_dispatcher           4 块（_kPromptBoundary / _kPositionGuidance /
+    #                                  _kDiagnosisSceneFirst / _kD3DiagnosisGuidance）
+    #   training_few_shot_library 37 块
+    #   progressive_diagnosis      7 块
+    #   agent_skills               3 块
+    # 扩后命中前缀 50 → 54 文件、76 → 127 内容块。
+    # ⚠️ 扩面使门禁 7 报出的条数必然增长（此前不可见 ≠ 不存在），
+    #    但**新增命中若为真反模式，只能改 prompt，严禁 --update-baseline 塞进基线换绿**
+    #    （.ai/DECISIONS.md §4-179 第 4 条）。
+    "skill_dispatcher",
+    "training_few_shot_library",
+    "progressive_diagnosis",
+    "agent_skills",
 )
 
 # 每条规则: (规则名, 正则)

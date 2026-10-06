@@ -282,7 +282,7 @@ const String _kChunkOutputFormat = '''请输出JSON格式的笔记，不要包�
 /// FIX-1（2026-09-23）：分块合并输出约束——自然语言正文 + 顶层字段格式。
 /// 根因：旧 prompt 结尾只要求协议标记，模型可省略自然语言正文且 suggested_actions
 /// 无格式约束 → 整块被拒（suggested_actions_invalid）→ 空输出兜底「诊断完成」。
-const String _kMergeOutputRequirement = '''输出要求（两部分都必须输出，缺一不可）：
+const String _kMergeOutputRequirement = '''输出结构说明（下面两部分缺任一，合并解析会失败）：
 1. 先输出面向学员的自然语言诊断正文——直接可读的诊断总结与教学建议（核心结论、最值得先改的一点、鼓励性收尾），不得省略；
 2. 再输出 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 包裹的标准诊断 JSON 块。
 
