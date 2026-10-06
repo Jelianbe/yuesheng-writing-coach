@@ -33,6 +33,7 @@
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
@@ -81,6 +82,29 @@ const _kKeyEnv = String.fromEnvironment(
 
 /// 真实调用预算上限（3 档 × 3 票 + 余量）。
 const int _kMaxRealCalls = 12;
+
+/// 每档票数（`--dart-define=LIVE_LLM_VOTES=n` 覆盖）。
+///
+/// ★ 为什么要可调（2026-10-06 实测）：智谱免费档限流很严（实测 4 次探测
+///   只有 1 次成功，退避到等 35s 才过）⇒ 9 次调用（默认 3 票）在限流窗口内
+///   大概率跑不完。调成 1 票可先看趋势，快且省配额。
+/// ⚠️ **1 票只作趋势观察、不能下结论** —— 模型有随机性，单样本无法区分
+///   「档位起作用」与「本次恰好这么答」。
+const int _kVotes = int.fromEnvironment('LIVE_LLM_VOTES', defaultValue: 3);
+
+/// 平台通道 mock（照既有 live 测试范式，见 `live_fading_replay_test.dart:70`）。
+///
+/// ★ 探针缺陷（2026-10-06，首次真跑才暴露）：`LlmClient._prepareEndpoints`
+///   会调`checkNetwork()` → `connectivity_plus` 的 `MethodChannel` ⇒
+///   在纯 `test()`（非 testWidgets）里 Binding 未初始化 ⇒ 抛
+///   `Binding has not yet been initialized` 而**根本没发出请求**。
+///   ⇒ 必须先 `TestWidgetsFlutterBinding.ensureInitialized()` 再 mock 通道。
+const MethodChannel _kConnectivityChannel = MethodChannel(
+  'dev.fluttercommunity.plus/connectivity',
+);
+const MethodChannel _kSecureStorageChannel = MethodChannel(
+  'plugins.it_nomads.com/flutter_secure_storage',
+);
 
 /// 三档 tier（与 UI `_tiers` 的键一一对应）。
 const _tierOrder = ['beginner', 'story', 'full'];
@@ -225,6 +249,31 @@ void main() {
         markTestSkipped('未设置 API Key（$_kKeyEnv / DEEPSEEK_API_KEY），跳过真实链路');
         return;
       }
+      // ★ 探针缺陷 2（同批第 2 次）：光有 Binding + 通道 mock 还不够——
+      //   `TestWidgetsFlutterBinding` 会把**所有真实 HTTP 请求变成 400**
+      //   （flutter_test 用「永远 400」的 mock HttpClient 顶替），
+      //   实测报 `Exception: 请求被拒绝（HTTP 400）`，**请求根本没出去**。
+      //   仓内 6 处 live 测试的既有解法：`HttpOverrides.global = null`
+      //   （见 live_fading_replay_test.dart:495 与 live_fewshot:294 等）。
+      //   ⚠️ 必须在Binding 初始化**之后**置空，否则不生效。
+      TestWidgetsFlutterBinding.ensureInitialized();
+      HttpOverrides.global = null;
+      addTearDown(() => HttpOverrides.global = null);
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(_kConnectivityChannel, (call) async {
+        if (call.method == 'check') return <String>['wifi'];
+        return null;
+      });
+      messenger.setMockMethodCallHandler(_kSecureStorageChannel, (call) async {
+        if (call.method == 'read') return null;
+        return null;
+      });
+      addTearDown(() {
+        messenger.setMockMethodCallHandler(_kConnectivityChannel, null);
+        messenger.setMockMethodCallHandler(_kSecureStorageChannel, null);
+      });
+      final votesPerTier = _kVotes < 1 ? 1 : _kVotes;
       final monitor = LlmUsageMonitor();
       final client = buildRealClient(monitor);
       final injector = buildInjector();
@@ -245,10 +294,11 @@ void main() {
       final traces = <String, List<String>>{};
       for (final tier in _tierOrder) {
         traces[tier] = [];
-        for (var i = 1; i <= 3; i++) {
-          if (callCount >= _kMaxRealCalls) {
+        for (var i = 1; i <= votesPerTier; i++) {
+          if (callCount >=
+              (_kVotes * _tierOrder.length).clamp(1, _kMaxRealCalls)) {
             // ignore: avoid_print
-            print('已达调用上限 $_kMaxRealCalls，提前停止');
+            print('已达调用上限（$_kVotes 票 × ${_tierOrder.length} 档），提前停止');
             break;
           }
           callCount++;
