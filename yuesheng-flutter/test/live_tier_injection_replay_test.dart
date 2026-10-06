@@ -22,8 +22,12 @@
 //
 // ── 费用护栏（ADR-C136 §4 范式）──
 //   上限 12 次调用（3 档 × 3 票 + 余量），超限即停并如实记录。
-//   无 DEEPSEEK_API_KEY 时 markTestSkipped（不破门禁）。
+//   无 API Key 时 markTestSkipped（不破门禁）。Key 来自 LIVE_LLM_API_KEY
+//   （通用）或 DEEPSEEK_API_KEY（兼容），baseUrl/model 可用
+//   --dart-define=LIVE_LLM_BASE_URL=…/LIVE_LLM_MODEL=… 覆盖。
 //   Key 仅从环境变量读，**不入库**（本文件不含任何字面量 Key）。
+//   ★ 2026-10-06：支持任意服务商（默认 DeepSeek，实测智谱 GLM 免费档
+//   glm-4.7-flash @open.bigmodel.cn/api/paas/v4）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -51,8 +55,29 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
-const _kBaseUrl = 'https://api.deepseek.com';
-const _kModel = 'deepseek-v4-flash';
+/// 默认走 DeepSeek；**可用环境变量覆盖**以支持其他服务商（实测智谱 GLM 的
+/// 免费档是`glm-4.7-flash` + `open.bigmodel.cn/api/paas/v4`）。
+///
+/// ★ 为什么要可覆盖（2026-10-06）：本仓App 支持 6 家服务商
+///   （见 `api_config_page.dart` 的 `_llmPresets`），而本文件原先硬编码
+///   DeepSeek 的 baseUrl/model ⇒ 换服务商就得改代码。
+///   ⚠️ 智谱特别注意：免费档是 `glm-4.7-flash`，而 `glm-4.7`（少写 -flash）
+///   是**按量计费** —— 填错会真实扣费。
+const _kBaseUrl = String.fromEnvironment(
+  'LIVE_LLM_BASE_URL',
+  defaultValue: 'https://api.deepseek.com',
+);
+const _kModel = String.fromEnvironment(
+  'LIVE_LLM_MODEL',
+  defaultValue: 'deepseek-v4-flash',
+);
+
+/// API Key 的环境变量名。新增 `LIVE_LLM_API_KEY` 作通用入口，
+/// 保留 `DEEPSEEK_API_KEY` 作兼容（仓内既有 live 测试都用这个名）。
+const _kKeyEnv = String.fromEnvironment(
+  'LIVE_LLM_KEY_ENV',
+  defaultValue: 'LIVE_LLM_API_KEY',
+);
 
 /// 真实调用预算上限（3 档 × 3 票 + 余量）。
 const int _kMaxRealCalls = 12;
@@ -70,7 +95,11 @@ const _kSample = '''
 ''';
 
 void main() {
-  final bool hasKey = Platform.environment.containsKey('DEEPSEEK_API_KEY');
+  // 通用名优先，回退既有 live 测试用的 DEEPSEEK_API_KEY（不破坏仓内既有约定）
+  final String? apiKey =
+      Platform.environment[_kKeyEnv] ??
+      Platform.environment['DEEPSEEK_API_KEY'];
+  final bool hasKey = apiKey != null && apiKey.isNotEmpty;
   int callCount = 0;
 
   late AppDatabase db;
@@ -100,10 +129,10 @@ void main() {
     });
   });
 
-  group('tier 注入·真实 LLM（@live，需 DEEPSEEK_API_KEY）', () {
+  group('tier 注入·真实 LLM（@live，需 API Key）', () {
     LlmClient buildRealClient(LlmUsageMonitor monitor) {
       final cfg = LlmConfigValues(
-        apiKey: Platform.environment['DEEPSEEK_API_KEY']!,
+        apiKey: apiKey!,
         baseUrl: _kBaseUrl,
         model: _kModel,
       );
@@ -193,7 +222,7 @@ void main() {
 
     test('R1 三档 × 3 票：逐票全文留痕，观察输出差异', () async {
       if (!hasKey) {
-        markTestSkipped('未设置 DEEPSEEK_API_KEY，跳过真实链路');
+        markTestSkipped('未设置 API Key（$_kKeyEnv / DEEPSEEK_API_KEY），跳过真实链路');
         return;
       }
       final monitor = LlmUsageMonitor();
