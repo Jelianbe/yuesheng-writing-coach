@@ -1,5 +1,5 @@
 {
-  "_note": "extension 块行数豁免基线（ADR-0004 §2 R-2）。★ 按「块名 + 宿主路径」登记，**不按行号**（行数会漂：同一块实测曾出现 1173/1172/1193 三个值）。每条豁免必须写 reason；登记的块若已不存在 ⇒ 下次报红（G2）。重生成时**勿**把新发现项顺手写进来 —— 那正是本脚本要拦的行为本身。",
+  "_note": "extension块行数豁免基线（ADR-0004 §2 R-2）。★ 按「块名 + 宿主路径」登记，**不按行号**（行数会漂：同一块实测曾出现 1173/1172/1193 三个值）。每条豁免必须写 reason；登记的块若已不存在 ⇒ 下次报红（G2）。重生成时**勿**把新发现项顺手写进来—— 那正是本脚本要拦的行为本身。★ **每条 reason 必须是该块自己的理由** —— 2026-10-07 实测发现本文件曾是复制粘贴污染：9 条豁免的 reason 全是同一段「ChatServiceSend 是全仓唯一超限块…」，连 16 行的 AppPaletteContext 也自称「唯一超限块」。已按各自真实情况逐条重写。",
   "dir": "lib",
   "exemptionSource": "check_extension_shape.py",
   "ruleCount": 1,
@@ -9,47 +9,47 @@
     "services/chat_service.dart::ChatServiceSend": {
       "lines": 1193,
       "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
-    },
-    "services/evaluation_service.dart::EvaluationRoundExtension": {
-      "lines": 220,
-      "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
-    },
-    "services/growth_service.dart::GrowthStatsExtension": {
-      "lines": 204,
-      "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
-    },
-    "services/evaluation_service.dart::EvaluationDetailExtension": {
-      "lines": 202,
-      "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
+      "reason": "★ 全仓**唯一超限**块（实测 1193 行 @ chat_service.dart:653-1845，括号配平法）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
     },
     "services/chat_service.dart::ChatServiceSendRun": {
       "lines": 134,
       "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
+      "reason": "同宿主的第二个块（134 行 @ chat_service.dart:454-587），**未超限**、在阈值内，登记仅因本基线按块全量登记形状。无需处理。"
     },
-    "services/growth_service.dart::GrowthAbilityExtension": {
-      "lines": 118,
+    "services/evaluation_service.dart::EvaluationRoundExtension": {
+      "lines": 220,
       "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
+      "reason": "未超限（220 行，阈值 300 的 73%），登记仅因形状全量登记。无需处理。"
+    },
+    "services/evaluation_service.dart::EvaluationDetailExtension": {
+      "lines": 202,
+      "limit": 300,
+      "reason": "未超限（202 行），登记仅因形状全量登记。无需处理。"
     },
     "services/evaluation_service.dart::EvaluationPassRateExtension": {
       "lines": 87,
       "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
+      "reason": "未超限（87 行），登记仅因形状全量登记。无需处理。"
+    },
+    "services/growth_service.dart::GrowthStatsExtension": {
+      "lines": 204,
+      "limit": 300,
+      "reason": "未超限（204 行），登记仅因形状全量登记。无需处理。"
+    },
+    "services/growth_service.dart::GrowthAbilityExtension": {
+      "lines": 118,
+      "limit": 300,
+      "reason": "未超限（118 行），登记仅因形状全量登记。无需处理。"
     },
     "config/app_palette.dart::AppPaletteContext": {
       "lines": 16,
       "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
+      "reason": "未超限（16 行，主题扩展的极小块）。登记仅因形状全量登记。无需处理。"
     },
     "theme/app_typography.dart::AppTypographyContext": {
       "lines": 12,
       "limit": 300,
-      "reason": "ChatServiceSend 是全仓唯一超限 extension 块（实测 1193 行 @ chat_service.dart:653）。成因：96-25-1 批 P2-2 编排减负时为压函数级上限把 sendMessage 主体搬入 extension，属 ADR-0004 §2 R-2 判定的伪拆分（真分解应为独立类 + DI）。生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭；该批须同批删除本条豁免、把 E1 从止血升为全量卡口，并负向验证 5 变体。"
+      "reason": "未超限（12 行，主题扩展的极小块）。登记仅因形状全量登记。无需处理。"
     }
   }
 }
