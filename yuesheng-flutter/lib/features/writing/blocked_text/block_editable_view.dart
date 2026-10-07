@@ -240,32 +240,70 @@ class BlockEditableViewState extends State<BlockEditableView> {
     final ctrl = _controllers[index];
     final nl = ctrl.text.indexOf('\n');
     final left = ctrl.text.substring(0, nl);
-    var right = ctrl.text.substring(nl + 1);
-    if (widget.indentParagraph &&
-        !right.startsWith('\u3000') &&
-        !right.startsWith(' ')) {
-      right = paragraphIndent + right;
-    }
+    final right = ctrl.text.substring(nl + 1);
+    // ★ 2026-10-07 防御（此前只拆**首个**换行，其余换行留在 right 里）：
+    //   right 若仍含换行（一次写入多行整串、或 IME/粘贴一次性送入多段），
+    //   就会**在单个块里藏着换行** —— 该块 controller 天然不含块间换行
+    //   （换行只存在于 `_emitValue` 的拼接串），于是「块内换行」与
+    //   「块间换行」两种语义混在一起：整串拼接后多出换行，删不干净。
+    //   实测症状：`#88-4` 得到 `'一段。\n二段。\n'`（期望 `'一段。\n二段。'`）。
+    //   修法：以 [BlockProjection] 为权威切分（split ↔ join 互逆，是本仓既有的
+    //   不变量），把该块文本一次切成 N 块，而不是手工再拆。
+    //
+    // ★ 顺序纪律：**先补首行缩进、再切分**（2026-10-07 实测踩过）。
+    //   缩进只作用于回车后的**新块首**；若切分后才判断，`tailBlocks.first`
+    //   可能已是空串 / 已带缩进的串，判断永远落空 ⇒ `#88-4` 两例红。
+    final indented = _indentTail(right);
+    final tailBlocks = BlockProjection.fromText(indented).blocks;
     ctrl.value = TextEditingValue(
       text: left,
       selection: TextSelection.collapsed(offset: left.length),
     );
-    final insertAt = index + 1;
-    final rightCtrl = _newBlockController(right, insertAt);
+    final rightCtrl = _newBlockController(tailBlocks.first, index + 1);
     final rightNode = FocusNode(onKeyEvent: _onKeyEvent);
-    setState(() {
-      _controllers.insert(insertAt, rightCtrl);
-      _focusNodes.insert(insertAt, rightNode);
-      if (widget.blankLineBetween) {
-        _controllers.insert(insertAt, _newBlockController('', insertAt + 1));
-        _focusNodes.insert(insertAt, FocusNode(onKeyEvent: _onKeyEvent));
-      }
-    });
+    setState(() => _insertSplitBlocks(index, tailBlocks, rightCtrl, rightNode));
     rightNode.requestFocus();
     rightCtrl.selection = TextSelection.collapsed(
-      offset: widget.indentParagraph ? paragraphIndent.length : 0,
+      offset: widget.indentParagraph && indented.startsWith(paragraphIndent)
+          ? paragraphIndent.length
+          : 0,
     );
     _emitValue();
+  }
+
+  /// 回车后的新块首补首行缩进；已带缩进 / 半角空格则原样返回。
+  String _indentTail(String tail) {
+    final needsIndent =
+        widget.indentParagraph &&
+        !tail.startsWith('\u3000') &&
+        !tail.startsWith(' ');
+    return needsIndent ? paragraphIndent + tail : tail;
+  }
+
+  /// 把 tail 各段插成块。段间空行开时，空行块紧跟 left 块、在新块首**之前**。
+  ///
+  /// ⚠️ 位置纪律（2026-10-07 实测踩过）：空行块若插到末尾会得到
+  ///   `'第一段。\n　　\n'`（期望 `'第一段。\n\n　　'`）—— 空行跑到缩进块后面了。
+  void _insertSplitBlocks(
+    int index,
+    List<String> tailBlocks,
+    TextEditingController rightCtrl,
+    FocusNode rightNode,
+  ) {
+    var at = index + 1;
+    if (widget.blankLineBetween) {
+      _controllers.insert(at, _newBlockController('', at));
+      _focusNodes.insert(at, FocusNode(onKeyEvent: _onKeyEvent));
+      at++;
+    }
+    _controllers.insert(at, rightCtrl);
+    _focusNodes.insert(at, rightNode);
+    var tailAt = at + 1;
+    for (var i = 1; i < tailBlocks.length; i++) {
+      _controllers.insert(tailAt, _newBlockController(tailBlocks[i], tailAt));
+      _focusNodes.insert(tailAt, FocusNode(onKeyEvent: _onKeyEvent));
+      tailAt++;
+    }
   }
 
   /// 整串 + 当前块绝对选区 → 镜像给宿主。
