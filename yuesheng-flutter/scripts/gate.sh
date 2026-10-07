@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 月笙写作教练 Flutter 端 — 十三道门禁 (R-027 + 宪法 §二)
+# 月笙写作教练 Flutter 端 — 十四道门禁 (R-027 + 宪法 §二)
 #
 # 【2026-10-05 新增·三档分组标注】——★ **只标注、不改调度逻辑**
 #   分档依据 = 2026-10-05 成本审计实测的逐道耗时
@@ -13,9 +13,9 @@
 #   │ 次要 │ 0       │   ≈4s  │ 格式校验
 #   │ 轻量 │ 3       │   1.7s │ 循环依赖
 #   │ 轻量 │ 5/ 7 / 9 │ 各 ≤1.2s │ R-019 / Prompt / 交互回归
-#   │ 轻量 │ 4/ 6/ 8 / 10 / 11 / 12 │ 各 ≤0.3s │ 六道合计 ≈1.0s
+#   │ 轻量 │ 4/ 6/ 8 / 10 / 11 / 12 / 13 │ 各 ≤0.3s │ 七道合计 ≈1.0s
 #   └──────┴────────────┴──────────────────────────────────────
-#   ⇒ **13 道里 12 道合计 ≈12.6s（4.1%）**，故：
+#   ⇒ **14 道里 13 道合计 ≈12.6s（4.1%）**，故：
 #     · 「合并去重」若按「减少道数」做，**收益上限 4%** —— 不做
 #     · 「加并行提速」不是可选项（实测可用内存仅 5.8 GiB/ 32 核，内存优先）
 #     · 快道分层（gate-fast.sh）已存在且有效，本批实测命中 3 文件 / 11 通过
@@ -23,10 +23,10 @@
 #   ⚠️ **分档 ≠ 可以少跑**。三档只用于「定位失败在哪一档」与「估算收尾时间」，
 #      **绝不可据此跳过任何一道**（既有纪律：绝不用「减少检查项」换速度）。
 #
-#   ⚠️ **与 CI 的口径分叉（事实登记，非待办）**：本文件 13 道全跑；
+#   ⚠️ **与 CI 的口径分叉（事实登记，非待办）**：本文件 14 道全跑；
 #      `.github/workflows/flutter_ci.yaml` **只跑 6 道**
-#      （0/1/2/3/4 + 6），**门禁 5/7/8/9/10/11/12 从不在 CI 出现**
-#      ⇒ **「本地全绿」才是收尾；「CI 全绿」≠ 十三道全绿**。
+#      （0/1/2/3/4 + 6），**门禁 5/7/8/9/10/11/12/13 从不在 CI 出现**
+#      ⇒ **「本地全绿」才是收尾；「CI 全绿」≠ 十四道全绿**。
 #      分叉理由与成本实测见该文件同处注释。
 #
 # 门禁 0: 代码格式 (dart format --set-exit-if-changed lib test integration_test tool)
@@ -76,11 +76,14 @@
 #          把 A 类豁免的**前提**变成可执行判据（内容级），堵住门禁 10 的 fail-open
 #          基线 tool/a_class_exemption_baseline.json，止血模式：只卡新增
 # 门禁 12: Skill 公共库链接 (scripts/check_skills_links.py) — ADR-C115
+# 门禁 13: extension 单块行数 (scripts/check_extension_shape.py --baseline) — ADR-0004 §2 R-2
+#          给「减行数不得用 extension」补机器执行点（此前零执行点）；
+#          阈值 300 与 R-019 文件级同值；基线按块名+路径登记（行数会漂）
 #          「单一真源 .agents/skills + 工作台 Junction」结构守卫：① Junction 目标
 #          必须存在（防悬空死链）② 公共库 SKILL.md frontmatter 合法（name/description）
 #          ③ 旧代 skill 必须带作废标注（防误迁入公共库被助手误加载）
 #
-# 用法:  bash scripts/gate.sh          ← **收尾门禁**：十三道全量（约 4~5 分钟）
+# 用法:  bash scripts/gate.sh          ← **收尾门禁**：十四道全量（约 4~5 分钟）
 #        bash scripts/gate-fast.sh     ← **迭代快道**：门禁 2 只跑受影响测试、
 #                                         门禁 6 按设计不跑（约 40 秒）
 # 退出码: 任一门禁 FAIL **或** 任一门禁未真正执行 (SKIP/DEGRADED) 则非 0
@@ -93,7 +96,7 @@
 #    本脚本中 python 缺失使门禁 3 / 5 跳过、或 lcov 缺失使门禁 6 跳过时，
 #    记 `SKIP`（独立于 PASS/FAIL），并在报告的**顶部**打出醒目的
 #    `⚠️ DEGRADED` 警告，退出码非 0。
-#    这样「全绿」才真正等价于「十三道都跑过且都通过」。
+#    这样「全绿」才真正等价于「十四道都跑过且都通过」。
 # ============================================================
 set -u
 
@@ -123,6 +126,7 @@ INTERACTION_LOG="$OUT_DIR/interaction.txt"
 SPLIT_LOG="$OUT_DIR/split_shape.txt"
 A_CLASS_LOG="$OUT_DIR/a_class_exemption.txt"
 SKILLS_LINKS_LOG="$OUT_DIR/skills_links.txt"
+EXT_SHAPE_LOG="$OUT_DIR/extension_shape.txt"
 
 pass=0
 fail=0
@@ -148,7 +152,7 @@ log_result() {
 }
 
 echo "=================================================="
-echo "月笙 Flutter 十三道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
+echo "月笙 Flutter 十四道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================="
 
 # ---------- 公共：定位 python（门禁 3 / 5 / 6 共用）----------
@@ -163,7 +167,7 @@ else
 fi
 
 # ---------- 门禁 0: 格式（宪法 §二.2）----------
-echo "--> 门禁 0/13: 格式校验 (dart format lib test integration_test tool)"
+echo "--> 门禁 0/14: 格式校验 (dart format lib test integration_test tool)"
 if dart format --set-exit-if-changed -o none lib test integration_test tool > "$FORMAT_LOG" 2>&1; then
   RC_FORMAT=0
 else
@@ -174,7 +178,7 @@ log_result "格式校验 (dart format)" "$RC_FORMAT"
 
 # ---------- 门禁 1: 静态分析 ----------
 # 2026-09-17 扩范围 lib → lib + integration_test + tool（实测 rc=0，零新增阻断）。
-echo "--> 门禁 1/13: 静态分析 (dart analyze lib integration_test tool test)"
+echo "--> 门禁 1/14: 静态分析 (dart analyze lib integration_test tool test)"
 if dart analyze lib integration_test tool test > "$TYPECHECK_LOG" 2>&1; then
   RC_ANALYZE=0
 else
@@ -184,7 +188,7 @@ fi
 log_result "静态分析 (analyze lib+integration_test+tool+test)" "$RC_ANALYZE"
 
 # ---------- 门禁 2: 测试 ----------
-echo "--> 门禁 2/13: 单元测试 (flutter test)"
+echo "--> 门禁 2/14: 单元测试 (flutter test)"
 # V4.18：会话注入的 HTTP_PROXY 会劫持 Dart VM ↔ flutter_tester 的
 # localhost WebSocket，导致全量测试加载失败（错误行同样带 [E]，
 # 看起来每个测试都失败）。门禁脚本必须主动清空代理环境变量，
@@ -222,7 +226,7 @@ log_result "单元测试 (flutter test)" "$RC_TEST"
 #    否则门禁会一直停留在「只卡新增」的弱化状态。
 #    tool/circular_baseline.json 已重生成空数组并保留在库中，
 #    供将来确需临时豁免时按同一格式使用（届时必须同时登记清偿计划）。
-echo "--> 门禁 3/13: 循环依赖扫描 (lib import 图，全量卡口)"
+echo "--> 门禁 3/14: 循环依赖扫描 (lib import 图，全量卡口)"
 if [ -n "$PY_BIN" ]; then
   if "$PY_BIN" scripts/check_circular.py . > "$CIRCULAR_LOG" 2>&1; then
     RC_CIRCULAR=0
@@ -239,7 +243,7 @@ fi
 log_result "循环依赖扫描" "$RC_CIRCULAR"
 
 # ---------- 门禁 4: 安全 / 密钥（调用独立脚本 scripts/check_secrets.sh）----------
-echo "--> 门禁 4/13: 安全/密钥扫描"
+echo "--> 门禁 4/14: 安全/密钥扫描"
 if bash scripts/check_secrets.sh "$ROOT" > "$SECURITY_LOG" 2>&1; then
   RC_SECRETS=0
 else
@@ -254,7 +258,7 @@ log_result "安全/密钥扫描" "$RC_SECRETS"
 # 债务已累积到 264 个（手写 237 个）却无人察觉。本门禁不追溯存量——
 # 以 tool/r019_baseline.json 为基线，只阻止**新增**超限，避免一次性阻塞所有提交。
 # 待债务按期清偿后，可去掉 --baseline 改为全量卡口。
-echo "--> 门禁 5/13: R-019 函数行数（基线豁免，只卡新增）"
+echo "--> 门禁 5/14: R-019 函数行数（基线豁免，只卡新增）"
 if [ -n "$PY_BIN" ] && [ -f "$ROOT/tool/r019_baseline.json" ]; then
   if "$PY_BIN" tool/check_r019.py --baseline tool/r019_baseline.json > "$R019_LOG" 2>&1; then
     RC_R019=0
@@ -304,7 +308,7 @@ log_result "R-019 函数行数" "$RC_R019"
 # 退出码语义（check_coverage.py）：0 = T1 PASS/WARN 且 T2 全过；
 #    1 = T1 FAIL 或任一 T2 FAIL/缺失 或 T2 数量不符护栏；
 #    2 = 环境错误（lcov 缺失 / 解析 0 记录 / --t2 语法错）。
-echo "--> 门禁 6/13: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
+echo "--> 门禁 6/14: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过覆盖率检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$COVERAGE_LOG"
@@ -363,7 +367,7 @@ log_result "覆盖率检查" "$RC_COVERAGE"
 #
 # 退出码语义（check_prompt_antipattern.py）：0 = 无新增（diff 模式）；
 #    1 = 有新增命中 / 规则数不符护栏。
-echo "--> 门禁 7/13: Prompt 反模式（diff-baseline，只卡新增）"
+echo "--> 门禁 7/14: Prompt 反模式（diff-baseline，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 prompt 反模式扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$PROMPT_LINT_LOG"
@@ -392,7 +396,7 @@ log_result "Prompt 反模式" "$RC_PROMPT"
 #
 # ⚠️ 必须用 --strict：非 strict 模式下有 finding 也是 rc=0（advisory），
 #    接为门禁会恒绿、零价值。--strict 才有「有 finding → 1」的阻断语义。
-echo "--> 门禁 8/13: 内容元数据（--strict，只卡新增缺失）"
+echo "--> 门禁 8/14: 内容元数据（--strict，只卡新增缺失）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过内容元数据检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$META_LOG"
@@ -415,7 +419,7 @@ log_result "内容元数据" "$RC_META"
 # ⚠️ 空 lib 扫描会假绿（2026-09-12 规格验证）：若 lib 下无 .dart 文件，
 #    脚本会 rc=0「什么都没扫到」——这不是「通过」，是「没检查」。故 wrapper
 #    先判 lib 下有 .dart，否则记 SKIP（fail-closed，绝不记 PASS）。
-echo "--> 门禁 9/13: 交互回归（仅 P0 阻断，P1 报告）"
+echo "--> 门禁 9/14: 交互回归（仅 P0 阻断，P1 报告）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过交互回归扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$INTERACTION_LOG"
@@ -458,7 +462,7 @@ log_result "交互回归" "$RC_INTERACTION"
 #
 # 退出码语义（check_split_shape.py）：0 = 通过/无新增；1 = 有违规/新增；
 #    2 = 环境错误（lib 缺失 / 0 个 dart / --json 与 --baseline 同传）。
-echo "--> 门禁 10/13: 伪拆分形态（基线豁免，只卡新增）"
+echo "--> 门禁 10/14: 伪拆分形态（基线豁免，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过伪拆分扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$SPLIT_LOG"
@@ -507,7 +511,7 @@ log_result "伪拆分形态" "$RC_SPLIT"
 # 退出码语义（check_a_class_exemption.py）：0 = 通过/无新增；1 = 有违规/新增/守卫失败；
 #    2 = 环境错误（lib 缺失 / 0 个 dart / 0 个豁免文件 / 真源缺失或载入失败 /
 #    基线结构非法 / --json 与 --baseline 同传）。
-echo "--> 门禁 11/13: A 类豁免准入守卫（基线豁免，只卡新增）"
+echo "--> 门禁 11/14: A 类豁免准入守卫（基线豁免，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 A 类豁免准入扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$A_CLASS_LOG"
@@ -535,7 +539,7 @@ fi
 log_result "A 类豁免准入" "$RC_ACLASS"
 
 # ---------- 门禁 12: Skill 公共库链接（ADR-C115）----------
-echo "--> 门禁 12/13: Skill 公共库链接校验 (scripts/check_skills_links.py)"
+echo "--> 门禁 12/14: Skill 公共库链接校验 (scripts/check_skills_links.py)"
 if [ -n "$PY_BIN" ]; then
   if "$PY_BIN" scripts/check_skills_links.py . > "$SKILLS_LINKS_LOG" 2>&1; then
     RC_SKILLS_LINKS=0
@@ -549,6 +553,42 @@ else
   RC_SKILLS_LINKS=SKIP
 fi
 log_result "Skill 公共库链接" "$RC_SKILLS_LINKS"
+
+# ---------- 门禁 13: extension 单块行数（ADR-0004 §2 R-2）----------
+# 背景（2026-10-07 对抗性审查 P1-3 + ADR-0004）：本仓红线「减行数不得用
+# part / extension」此前**零机器执行点** —— 门禁 10 只对已声明 part 的家族
+# 求值、门禁 11 只对文件名匹配 A 类 pattern 的文件求值，而
+# lib/services/chat_service.dart 两者都不属于 => 两条门禁都看不见它，
+# 而它恰是全仓最大问题块（extension ChatServiceSend 实测 1193 行）。
+# 判据：E1 = 任一顶格 extension 块行数 > 300 => 违规（阈值与 R-019 文件级
+#   上限同值：extension 是同文件的第二层分块，可读单元心智成本相同）。
+# 基线止血（同门禁 5/10/11）：存量 1 条超限走 tool/extension_shape_baseline.json
+#   透明登记，只卡**新增**。★ 按**块名 + 宿主路径**登记，**不按行号** ——
+#   行数会漂：同一块实测曾出现 1173 / 1172 / 1193 三个值。
+#   ★ 生命周期终点：由「拆 ChatServiceSend 为独立类 + DI」的那一批关闭，
+#   该批须同批删豁免、把 E1 升为全量卡口并做负向验证。
+# 退出码：0 通过 / 1 有新增或失效豁免 / 2 环境或基线非法。
+#   ⚠️ rc=2 一律判 FAIL 不当 SKIP —— 空扫等于没检查（守卫内建 G1）。
+echo "--> 门禁 13/14: extension 单块行数（基线豁免，只卡新增；ADR-0004 R-2）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过 extension 分块扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$EXT_SHAPE_LOG"
+  RC_EXTENSION_SHAPE=SKIP
+elif [ ! -f "$ROOT/tool/extension_shape_baseline.json" ]; then
+  echo "  [WARN] extension 豁免基线缺失（tool/extension_shape_baseline.json），跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$EXT_SHAPE_LOG"
+  RC_EXTENSION_SHAPE=SKIP
+else
+  if "$PY_BIN" scripts/check_extension_shape.py \
+    --baseline tool/extension_shape_baseline.json \
+    --expect-rule-count 1 > "$EXT_SHAPE_LOG" 2>&1; then
+    RC_EXTENSION_SHAPE=0
+  else
+    RC_EXTENSION_SHAPE=1
+    cat "$EXT_SHAPE_LOG"
+  fi
+fi
+log_result "extension 单块行数" "$RC_EXTENSION_SHAPE"
 
 # ---------- 汇总报告 ----------
 #
@@ -576,7 +616,7 @@ if [ "$degraded" -gt 0 ]; then
 fi
 
 cat > "$REPORT" <<EOF
-# 十三道门禁报告
+# 十四道门禁报告
 
 ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
@@ -596,6 +636,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | 伪拆分形态（只卡新增） | $(verdict "${RC_SPLIT:-SKIP}") |
 | A 类豁免准入（只卡新增） | $(verdict "${RC_ACLASS:-SKIP}") |
 | Skill 公共库链接 | $(verdict "${RC_SKILLS_LINKS:-SKIP}") |
+| extension 单块行数（只卡新增） | $(verdict "${RC_EXTENSION_SHAPE:-SKIP}") |
 
 汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP）
 
@@ -613,6 +654,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 伪拆分形态: outputs/gate/split_shape.txt
 - A 类豁免准入: outputs/gate/a_class_exemption.txt
 - Skill 公共库链接: outputs/gate/skills_links.txt
+- extension 单块行数: outputs/gate/extension_shape.txt
 EOF
 
 echo "=================================================="
@@ -624,5 +666,5 @@ echo "报告: $REPORT"
 echo "=================================================="
 
 # fail-closed：任一 FAIL 或任一 SKIP（未真正执行）都使退出码非 0。
-# 「全绿」= fail==0 且 degraded==0，此时才确信十三道都真的跑过。
+# 「全绿」= fail==0 且 degraded==0，此时才确信十四道都真的跑过。
 [ "$fail" -eq 0 ] && [ "$degraded" -eq 0 ]

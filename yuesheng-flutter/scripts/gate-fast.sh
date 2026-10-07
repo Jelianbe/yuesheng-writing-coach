@@ -2,7 +2,7 @@
 # ============================================================
 # 月笙写作教练 Flutter 端 — 快道门禁 (gate-fast)
 #
-# 【定位：这不是收尾门禁】收尾一律 `bash scripts/gate.sh`（十二道全量）。
+# 【定位：这不是收尾门禁】收尾一律 `bash scripts/gate.sh`（十四道全量）。
 # 本脚本只服务**编码迭代**：把「改一行代码等 4~6 分钟」压到约 40 秒。
 #
 # 与 gate.sh 的唯一差别（其余口径逐条复制，不得独立演化）：
@@ -88,6 +88,7 @@ META_LOG="$OUT_DIR/content_metadata.txt"
 INTERACTION_LOG="$OUT_DIR/interaction.txt"
 SPLIT_LOG="$OUT_DIR/split_shape.txt"
 A_CLASS_LOG="$OUT_DIR/a_class_exemption.txt"
+EXT_SHAPE_LOG="$OUT_DIR/extension_shape.txt"
 COVERAGE_LOG="$OUT_DIR/coverage.txt"
 
 pass=0
@@ -115,7 +116,7 @@ log_result() {
 
 echo "=================================================="
 echo "月笙 Flutter 快道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
-echo "（非收尾！收尾请跑 bash scripts/gate.sh 的十二道全量）"
+echo "（非收尾！收尾请跑 bash scripts/gate.sh 的十四道全量）"
 echo "=================================================="
 
 # ---------- 公共：定位 python（门禁 3 / 5 共用）----------
@@ -244,6 +245,7 @@ if [ "$DRY_RUN" = "1" ]; then
   echo "门禁 9: python scripts/check_interaction_regression.py"
   echo "门禁 10: python scripts/check_split_shape.py --baseline tool/split_shape_baseline.json --expect-rule-count 3"
   echo "门禁 11: python scripts/check_a_class_exemption.py --baseline tool/a_class_exemption_baseline.json --expect-rule-count 4"
+  echo "门禁 13: python scripts/check_extension_shape.py --baseline tool/extension_shape_baseline.json --expect-rule-count 1"
   exit 0
 fi
 
@@ -446,6 +448,31 @@ else
 fi
 log_result "A 类豁免准入" "$RC_ACLASS"
 
+# ---------- 门禁 13: extension 单块行数（ADR-0004 §2 R-2）----------
+# 与 gate.sh 门禁 13 同一执行物、同一基线、同一退出码语义（0/1/2）。
+# ⚠️ rc=2（环境错误 / 基线结构非法）一律判 FAIL，不当 SKIP 放过 ——
+#    空扫等于没检查（守卫内建 G1 fail-closed）。
+echo "--> 快道 门禁 13: extension 单块行数（基线豁免，只卡新增；ADR-0004 R-2）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过 extension 分块扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$EXT_SHAPE_LOG"
+  RC_EXTENSION_SHAPE=SKIP
+elif [ ! -f "$ROOT/tool/extension_shape_baseline.json" ]; then
+  echo "  [WARN] extension 豁免基线缺失，跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$EXT_SHAPE_LOG"
+  RC_EXTENSION_SHAPE=SKIP
+else
+  if "$PY_BIN" scripts/check_extension_shape.py \
+    --baseline tool/extension_shape_baseline.json \
+    --expect-rule-count 1 > "$EXT_SHAPE_LOG" 2>&1; then
+    RC_EXTENSION_SHAPE=0
+  else
+    RC_EXTENSION_SHAPE=1
+    cat "$EXT_SHAPE_LOG"
+  fi
+fi
+log_result "extension 单块行数" "$RC_EXTENSION_SHAPE"
+
 # ---------- 汇总报告 ----------
 verdict() {
   case "$1" in
@@ -489,7 +516,7 @@ fi
 cat > "$REPORT" <<EOF
 # 快道门禁报告（**非收尾**）
 
-> 🚦 这是**迭代快道**，不是十二道收尾门禁。它**不执行门禁 6（覆盖率）**。
+> 🚦 这是**迭代快道**，不是十四道收尾门禁。它**不执行门禁 6（覆盖率）**。
 > 声称「完成」前必须跑 \`bash scripts/gate.sh\` 并全绿。
 
 ${DEGRADED_BANNER}${LIB_NOMATCH_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
@@ -511,6 +538,7 @@ ${DEGRADED_BANNER}${LIB_NOMATCH_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | 9 交互回归 | $(verdict "${RC_INTERACTION:-SKIP}") |
 | 10 伪拆分形态 | $(verdict "${RC_SPLIT:-SKIP}") |
 | 11 A 类豁免准入 | $(verdict "${RC_ACLASS:-SKIP}") |
+| 13 extension 单块行数 | $(verdict "${RC_EXTENSION_SHAPE:-SKIP}") |
 
 汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} SKIP（未真正执行） / ${notrun} 未执行（门禁 2） / 门禁 6 按设计未跑
 
@@ -527,6 +555,7 @@ ${DEGRADED_BANNER}${LIB_NOMATCH_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 交互回归: outputs/gate-fast/interaction.txt
 - 伪拆分形态: outputs/gate-fast/split_shape.txt
 - A 类豁免准入: outputs/gate-fast/a_class_exemption.txt
+- extension 单块行数: outputs/gate-fast/extension_shape.txt
 EOF
 
 echo "=================================================="
