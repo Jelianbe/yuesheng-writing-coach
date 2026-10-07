@@ -43,7 +43,6 @@ import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/l2_route_hysteresis.dart';
 import 'package:flutter/foundation.dart';
 import 'package:writingcoach/config/shared_constants.dart';
-import 'package:writingcoach/config/token_budget_table.dart';
 import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/services/token_budget_guard.dart';
 import 'package:writingcoach/data/database/database.dart';
@@ -65,16 +64,13 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_output_guard.dart';
 import 'package:writingcoach/services/llm_usage.dart';
-import 'package:writingcoach/services/prompt_sanitizer.dart'; // L2：指令 token 清洗
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/stage_drop_notice.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/diagnosis_injection_service.dart';
-import 'package:writingcoach/services/intent_classifier.dart';
+import 'package:writingcoach/services/prompt_assembly_service.dart';
 import 'package:writingcoach/features/onboarding/novice_mode_guide.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/types/coach_persona.dart';
-import 'package:writingcoach/types/coach_persona_seed.dart';
 
 /// 批次64（B62f）诊断请求标记（ADR-C74 K-7 迁至 MessageInjector：
 /// lib/services/message_injector.dart._kDiagnosisRequestMarker）
@@ -264,10 +260,27 @@ class ChatService {
         stateRepo: _stateRepo,
         flowHandler: _diagnosisFlowHandler,
         replyObserver: _replyObserver,
-        resolveDirectExplainThreshold: () => _resolveDirectExplainThreshold(),
+        resolveDirectExplainThreshold:
+            _promptService.resolveDirectExplainThreshold,
         diagnosisProtocolSuffix: kDiagnosisProtocolSuffix,
         logSafeRun: _logSafeRun,
       );
+
+  /// ADR-0004 步 5 批 2：prompt 组装簇（C）已抽出为独立类 + DI。
+  ///
+  /// **懒加载**理由同 [_diagnosisService]：构造参数含 C/A 簇私有成员的闭包。
+  /// `disabledSyndromeIds` 用**getter 注入**而非值注入——它是**可变字段**
+  /// （`:101`，并在 `:155`/`:473` 同步给 `_diagnosisFlowHandler`），
+  /// 值注入会留下陈旧快照 ⇒ 注入 `() => disabledSyndromeIds` 现取。
+  late final PromptAssemblyService _promptService = PromptAssemblyService(
+    teaching: _teaching,
+    routeHysteresis: _routeHysteresis,
+    messageInjector: _messageInjector,
+    appStateRepo: _appStateRepo,
+    readDisabledSyndromeIds: () => disabledSyndromeIds,
+    logBudgetOutcome: _logBudgetOutcome,
+    wholeChapterBlock: kWholeChapterMinimalSupportBlock,
+  );
 
   // 引用内容预加载缓存（ADR-C74 K-7 迁至 MessageInjector：见 lib/services/message_injector.dart）
 
@@ -327,7 +340,7 @@ class ChatService {
 
   /// 全局激活人格名：用户自定义人格 → 其 name；系统预设 / 无 / 读失败 → null。
   Future<String?> _resolveActivePersonaName() async {
-    final persona = await _resolveActivePersona();
+    final persona = await _promptService.resolveActivePersona();
     return persona?.name;
   }
 
@@ -661,11 +674,6 @@ typedef _TeachingContext = ({
 typedef _FlowWindow = ({bool flowBypassed, bool rapidFire});
 
 /// 上下文注入装配结果（R-019 拆出，供 _sendMessageCore 使用）。
-typedef _InjectedContext = ({
-  ReferenceItem? primaryRef,
-  String? chapterContent,
-  String? trainingSyndromeId,
-});
 
 /// 会话/教学上下文加载结果（R-019 第二层编排拆出）。
 typedef _LoadedContext = ({
@@ -1064,7 +1072,8 @@ extension ChatServiceSend on ChatService {
       ChatMessage(role: 'system', content: kLiveOutputConstraints),
     );
     // 7. 追加历史消息 + 每轮必变提示 + 纪律重申 + token 预算闸门
-    _appendHistoryAndConstraints(
+    // （ADR-0004 步 5 批 2：改调 prompt 组装服务）
+    _promptService.appendHistoryAndConstraints(
       loaded.history,
       assembled.messages,
       assembled.markStage,
@@ -1157,8 +1166,9 @@ extension ChatServiceSend on ChatService {
     required _LoadedContext loaded,
   }) async {
     // D1/D2 Phase 2：解析当前激活教练人格（用户预设 → 注入其语气；系统预设/null → 原路径）。
-    final activePersona = await _resolveActivePersona();
-    final messages = _buildSystemPrompt(
+    // （ADR-0004 步 5 批 2：以下三处改调prompt 组装服务）
+    final activePersona = await _promptService.resolveActivePersona();
+    final messages = _promptService.buildSystemPrompt(
       loaded.effectivePhase,
       options.attitude,
       loaded.currentSubphase,
@@ -1177,7 +1187,7 @@ extension ChatServiceSend on ChatService {
 
     final priorUserTexts = _collectPriorUserTexts(loaded);
 
-    final injected = await _injectContext(
+    final injected = await _promptService.injectContext(
       sessionId: sessionId,
       content: content,
       messages: messages,
@@ -1255,283 +1265,6 @@ extension ChatServiceSend on ChatService {
       // R-028 边界：引用查询失败不阻断发送，按非大纲语境降级
       return false;
     }
-  }
-
-  /// 拼接 system prompt（L1 + L2，R-019 拆出）。
-  ///
-  /// ★ U2（2026-09-15）：改为「先取纯函数决议 raw → 问迟滞器是否覆盖 →
-  /// **仅在被覆盖时**才传 override」。非覆盖轮不传 override，走契约默认
-  /// 路径 ⇒ 与改造前逐字节等价（两处锚点零漂移的依据）。
-  /// 一次发送只经此一处（`_assembleMessagesAndInject` 单调用链、无重试）
-  /// ⇒ 迟滞计数每轮恰好前进一格。
-  List<ChatMessage> _buildSystemPrompt(
-    TeachingPhase phase,
-    AttitudeLevel attitude,
-    TeachingSubphase? subphase,
-    bool isBeginner, {
-    required String sessionId,
-    bool isOutlineContext = false,
-    required SendMessageOptions options,
-    CoachPersona? activePersona,
-    String? content,
-  }) {
-    // P1-4：当前消息措辞触发诊断协议但 l2Mode 非 diagnosis 阶段时，
-    // 强制注入「先建现场」护栏（避免 P3 阶段裸奔诊断）。
-    final forceSceneFirst =
-        content != null &&
-        isDiagnosisRequest(content, hasDiagnosisContext: false);
-    final skillCtx = SkillLoadContext(
-      phase: phase,
-      attitude: attitude,
-      teachingMode: options.teachingMode,
-      subphase: subphase,
-      isBeginner: isBeginner,
-      isOutlineContext: isOutlineContext,
-      disabledSyndromeIds: disabledSyndromeIds,
-      activePersona: activePersona,
-      forceDiagnosisSceneFirst: forceSceneFirst,
-    );
-    final rawMode = _teaching.resolveL2Mode(skillCtx);
-    final override = _routeHysteresis.overrideFor(sessionId, rawMode);
-    if (override != null) {
-      // R-022 过程可见：迟滞是**静默**的行为变更（L2 组被覆盖），
-      // 只在真正抑制时打一行（正常会话极少触发，不会刷屏）。
-      debugPrint(
-        '[ChatService] U2 迟滞：L2 组由 ${rawMode.name} 抑制为 ${override.name}'
-        '（session=$sessionId）',
-      );
-    }
-    final promptResult = _teaching.buildSystemPrompt(
-      skillCtx,
-      modeOverride: override,
-    );
-    return <ChatMessage>[
-      ChatMessage(role: 'system', content: promptResult.systemPrompt),
-    ];
-  }
-
-  /// D1/D2 Phase 2：解析当前激活教练人格。
-  ///
-  /// - 未装配 AppStateRepository 或读取失败 → null（走系统预设路径，行为零变化）。
-  /// - 激活项为系统预设 / 未知（回退 gentle）→ null（原 attitude-* 路径，快照锁守护）。
-  /// - 激活项为用户自定义人格（isSystem == false）→ 返回该人格，供注入其 systemPromptFragment。
-  Future<CoachPersona?> _resolveActivePersona() async {
-    final repo = _appStateRepo;
-    if (repo == null) return null;
-    try {
-      final activeId = await repo.getActiveCoachPersonaId();
-      if (activeId == null) return null;
-      final customs = await repo.getCustomCoachPersonas();
-      final resolved = resolveActiveCoachPersona(activeId, customs);
-      return resolved.isSystem ? null : resolved;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// 5.0-5.2 上下文注入装配（R-019 拆出，委托 MessageInjector）。
-  /// Resolve the active coach persona's direct-explain threshold (Part A).
-  /// System preset / unknown / read failure -> default 5 (system presets are
-  /// not user-editable via the coach card UI).
-  Future<int> _resolveDirectExplainThreshold() async {
-    final repo = _appStateRepo;
-    if (repo == null) return kDefaultDirectExplainThreshold;
-    try {
-      final activeId = await repo.getActiveCoachPersonaId();
-      if (activeId == null) return kDefaultDirectExplainThreshold;
-      final builtIn = builtInCoachPersonaById(activeId);
-      if (builtIn != null) {
-        final override = await repo.getCoachPersonaDirectThreshold(activeId);
-        return override ?? builtIn.directExplainThreshold;
-      }
-      final customs = await repo.getCustomCoachPersonas();
-      for (final p in customs) {
-        if (p.id == activeId) return p.directExplainThreshold;
-      }
-      return kDefaultDirectExplainThreshold;
-    } catch (_) {
-      return kDefaultDirectExplainThreshold;
-    }
-  }
-
-  Future<_InjectedContext> _injectContext({
-    required String sessionId,
-    required String content,
-    required List<ChatMessage> messages,
-    required void Function(String) markStage,
-    required List<ActiveProblemView> activeProblems,
-    required TeachingSubphase? currentSubphase,
-    required BeginnerLevel? beginnerLevel,
-    required TeachingPhase phase,
-    List<String> priorUserTexts = const [],
-  }) async {
-    final base = await _injectBaseContext(
-      sessionId: sessionId,
-      content: content,
-      messages: messages,
-      markStage: markStage,
-      priorUserTexts: priorUserTexts,
-    );
-    // P2-9：FSRS 复习调度（P3 档，activeProblems 数据与注入同源）
-    await _messageInjector.injectReviewSchedule(
-      sessionId: sessionId,
-      phase: phase,
-      messages: messages,
-      markStage: markStage,
-    );
-    final trainingSyndromeId = await _messageInjector.injectDiagnosisLock(
-      sessionId: sessionId,
-      content: content,
-      activeProblems: activeProblems,
-      currentSubphase: currentSubphase,
-      beginnerLevel: beginnerLevel,
-      messages: messages,
-      markStage: markStage,
-    );
-    return (
-      primaryRef: base.primaryRef,
-      chapterContent: base.chapterContent,
-      trainingSyndromeId: trainingSyndromeId,
-    );
-  }
-
-  /// P2 收尾：基础注入链（画像 → 引用 → 章节观察 → 大纲事实/文件）。
-  Future<({ReferenceItem? primaryRef, String? chapterContent})>
-  _injectBaseContext({
-    required String sessionId,
-    required String content,
-    required List<ChatMessage> messages,
-    required void Function(String) markStage,
-    List<String> priorUserTexts = const [],
-  }) async {
-    await _messageInjector.injectProfileAndIntents(
-      sessionId: sessionId,
-      content: content,
-      messages: messages,
-      markStage: markStage,
-    );
-    final refCtx = await _messageInjector.injectReferences(
-      sessionId: sessionId,
-      messages: messages,
-      markStage: markStage,
-    );
-    final primaryRef = refCtx.primaryRef;
-    final chapterContent = refCtx.chapterContent;
-    await _messageInjector.injectChapterObservations(
-      sessionId: sessionId,
-      content: content,
-      primaryRef: primaryRef,
-      messages: messages,
-      markStage: markStage,
-      priorUserTexts: priorUserTexts,
-    );
-    await _messageInjector.injectOutlineFactsAndFiles(
-      content: content,
-      primaryRef: primaryRef,
-      messages: messages,
-      markStage: markStage,
-    );
-    return (primaryRef: primaryRef, chapterContent: chapterContent);
-  }
-
-  /// 7. 追加历史消息 + 每轮必变提示 + 纪律重申 + token 预算闸门（R-019 编排 helper）。
-  ///
-  /// ★ A-1（2026-09-15）：[sessionId]/[content] 为「每轮必变提示」注入所需。
-  /// 顺序契约（上下文缓存前缀稳定性）：
-  ///   system prompt → 稳定注入段 → Live 约束 → 历史 → **本方法注入的
-  ///   意图/颗粒度提示** → 纪律重申 → 预算闸门
-  /// 意图/颗粒度依赖当前 user 消息与会话滚动意图窗口，逐轮必变；若留在
-  /// 注入段中段，会让其后的一切（含追加式历史）每轮全价 miss。
-  void _appendHistoryAndConstraints(
-    List<Message> history,
-    List<ChatMessage> messages,
-    void Function(String) markStage,
-    Map<String, List<int>> stageIndexes, {
-    required String sessionId,
-    required String content,
-    bool wholeChapterModeActive = false,
-  }) {
-    _appendHistory(history, messages, markStage);
-    _messageInjector.injectTrailingHints(
-      sessionId: sessionId,
-      content: content,
-      messages: messages,
-    );
-    // L2 注入纵深防御（R-027 人工确认）：发送前清洗 user 消息中的
-    // 已知指令 token（<system>/[INST] 等转义），防反向注入。
-    // 只作用于 LLM 输入副本，不影响落库的用户原文。
-    _sanitizeUserMessages(messages);
-    _appendDisciplineReminder(messages);
-    // ADR-C137 批2：完整章模式激活 → 末尾追加「按需介入」system 块
-    // （存在感 + 求助即答 + R-009 边界重申）。非激活路径不追加 ⇒
-    // 消息序列与锚点逐字节一致（锚点用例均不传该 flag）。
-    if (wholeChapterModeActive) {
-      messages.add(
-        const ChatMessage(
-          role: 'system',
-          content: ChatService.kWholeChapterMinimalSupportBlock,
-        ),
-      );
-    }
-    _logBudgetOutcome(
-      TokenBudgetGuard.apply(messages, stageIndexes: stageIndexes),
-      messages,
-    );
-  }
-
-  /// L2 输入清洗：对所有 role=user 的 LLM 输入消息做指令 token 转义。
-  /// 只改发送给模型的副本（messages 列表），落库原文不受影响。
-  void _sanitizeUserMessages(List<ChatMessage> messages) {
-    for (var i = 0; i < messages.length; i++) {
-      final m = messages[i];
-      if (m.role != 'user') continue;
-      final cleaned = sanitizeUserContent(m.content);
-      if (cleaned != m.content) {
-        messages[i] = ChatMessage(role: m.role, content: cleaned);
-      }
-    }
-  }
-
-  /// 追加历史消息（R-019 拆出）。
-  ///
-  /// 批次 B-2（输入侧上下文细化）：历史条数封顶——防止长会话无界增长
-  /// 挤占教学注入预算；当前 user 消息总是最后一条，必然保留。
-  /// TokenBudgetGuard 阶段级裁剪仍作兜底。
-  ///
-  /// A-1b（前缀稳定化）：头部改由 [LlmInputLimits.historyStartIndex]
-  /// **按批对齐**裁剪。原逐条滑窗（`sublist(total - 20)`）令历史首条每轮
-  /// 前移，它是历史块的首字节 ⇒ 缓存从该处整段失效，追加式历史每轮全价
-  /// miss。对齐后头部约每 `historyTrimBatch / 2` 轮才前移一次，其余轮次
-  /// 历史块与前轮严格前缀相同 ⇒ 命中缓存。
-  void _appendHistory(
-    List<Message> history,
-    List<ChatMessage> messages,
-    void Function(String) markStage,
-  ) {
-    final from = LlmInputLimits.historyStartIndex(history.length);
-    final capped = from == 0 ? history : history.sublist(from);
-    for (final m in capped) {
-      markStage(BudgetStageNames.history);
-      messages.add(ChatMessage(role: m.role, content: m.content));
-    }
-  }
-
-  /// 历史后追加 L1 核心纪律重申（批次4 4.3 + X-040 PHI P2，R-019 拆出）。
-  void _appendDisciplineReminder(List<ChatMessage> messages) {
-    messages.add(
-      ChatMessage(
-        role: 'system',
-        content:
-            '# 回复纪律（最后提醒）\n\n'
-            '长历史易稀释前置约束，此处重申 L1 核心纪律，回复时严格遵守：\n\n'
-            '1. 不替用户写句子、不替用户做决定；\n'
-            '2. 一次只抛一个点，删掉铺垫；\n'
-            '3. 示范按当前态度档位执行：温柔语气/yuesheng 最小示范，sensei 零示范只给方向；\n'
-            '4. 诊断结论必须基于用户实际文本，不假定被预算闸门裁掉的素材内容；\n'
-            '5. 回复去 AI 味，不用"让我来帮你"等套话；\n'
-            '6. 诊断块按 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 标记输出（用户请求诊断时），卡片块用对应标签，不裸露 JSON。',
-      ),
-    );
   }
 
   /// 预算闸门结果日志 + X-040 PHI 素材缺失提示（R-019 拆出）。

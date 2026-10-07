@@ -29,10 +29,19 @@ void main() {
     });
 
     test('纪律第 6 条必须指向 [YS_DIAGNOSIS] 协议标记', () {
-      final src = File('lib/services/chat_service.dart').readAsStringSync();
+      // ★ ADR-0004 步 5 批 2（2026-10-07）：纪律第 6 条文本随
+      //   _appendDisciplineReminder 迁至 prompt_assembly_service.dart ⇒
+      //   **两个文件都扫**（扫两文件内容再定位，不是放宽判据）。
+      final src =
+          File('lib/services/chat_service.dart').readAsStringSync() +
+          File('lib/services/prompt_assembly_service.dart').readAsStringSync();
       final i = src.indexOf('诊断块按');
       expect(i, greaterThan(0), reason: '纪律第 6 条应改为协议对齐表述');
-      final line = src.substring(i, i + 120);
+      // ⚠️ 用 clamp 而非 `substring(i, i + 120)`：纪律第 6 条文本随批2
+      //   迁到 prompt_assembly_service.dart 的**文件末尾**，原写法会
+      //   RangeError(end) —— 实测「命中位置 + 120 超出总长」即崩。
+      final end = (i + 120) < src.length ? (i + 120) : src.length;
+      final line = src.substring(i, end);
       expect(line, contains('[YS_DIAGNOSIS]'));
     });
 
