@@ -17,6 +17,22 @@ class ChapterRepository {
   final AppDatabase _db;
   ChapterRepository(this._db);
 
+  /// 该作品下一章的 `sort_order` = `MAX(sort_order) + 1`（空作品从 0 起）。
+  ///
+  /// ★ D-W1（STATE §2「队列剩余项」④「章标映射内存态≠ 库态」推荐修法）：
+  ///   此前 `createChapter` 与 `createChaptersBatch` **各自独立推算**同一公式，
+  ///   两处漂移就会产生重复 sort_order（章标顺序与库态分叉）。
+  ///   ⇒ 收敛为**单一真源**，两处调用它。**纯去重、零行为变更**
+  ///   （两处的 SQL 与空值处理本就逐字相同：空集 `?? -1) + 1` ⇒ 0）。
+  Future<int> _nextSortOrder(String manuscriptId) async {
+    final maxOrder =
+        await (_db.selectOnly(_db.chapters)
+              ..addColumns([_db.chapters.sortOrder.max()])
+              ..where(_db.chapters.manuscriptId.equals(manuscriptId)))
+            .getSingleOrNull();
+    return (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
+  }
+
   /// 创建章节，返回 id
   /// 复刻 createChapter(manuscriptId, title?, content?, index?)
   /// 批次89-2：volumeId 可空——新建章节直接落入指定卷（null = 未分卷）
@@ -35,15 +51,7 @@ class ChapterRepository {
     return _db.transaction(() async {
       final now = nowSec();
       // 如果没指定 sortOrder，取 MAX(sort_order)+1
-      int order = sortOrder ?? 0;
-      if (sortOrder == null) {
-        final maxOrder =
-            await (_db.selectOnly(_db.chapters)
-                  ..addColumns([_db.chapters.sortOrder.max()])
-                  ..where(_db.chapters.manuscriptId.equals(manuscriptId)))
-                .getSingleOrNull();
-        order = (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
-      }
+      final order = sortOrder ?? await _nextSortOrder(manuscriptId);
 
       await _db
           .into(_db.chapters)
@@ -79,12 +87,7 @@ class ChapterRepository {
 
     return _db.transaction(() async {
       // 取当前最大 sort_order
-      final maxOrder =
-          await (_db.selectOnly(_db.chapters)
-                ..addColumns([_db.chapters.sortOrder.max()])
-                ..where(_db.chapters.manuscriptId.equals(manuscriptId)))
-              .getSingleOrNull();
-      int order = (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
+      var order = await _nextSortOrder(manuscriptId);
       final now = nowSec();
 
       for (final ch in chapters) {
