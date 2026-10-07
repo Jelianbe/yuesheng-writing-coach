@@ -68,8 +68,8 @@ import 'package:writingcoach/services/llm_usage.dart';
 import 'package:writingcoach/services/prompt_sanitizer.dart'; // L2：指令 token 清洗
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/stage_drop_notice.dart';
-import 'package:writingcoach/services/feedback_tier.dart';
 import 'package:writingcoach/services/chat_gates.dart';
+import 'package:writingcoach/services/diagnosis_injection_service.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
 import 'package:writingcoach/features/onboarding/novice_mode_guide.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -210,6 +210,64 @@ class ChatService {
   /// 回复长度观测（B5：原 `ChatServiceObservers`，零依赖故无构造参数）。
   final ChatServiceReplyObserver _replyObserver =
       const ChatServiceReplyObserver();
+
+  /// ★ ADR-0004 步 5 批 1：以下两个协议文本常量原在 extension
+  ///   `ChatServiceSend` 内，抽诊断簇时被连带删除。提到 class 顶层是
+  ///   因class 体要把它注入 `DiagnosisInjectionService`（extension 成员
+  ///   在 class 体内不可见），而 Dart 允许 extension 读宿主 static
+  ///   （已实测）⇒ 测试侧 `ChatServiceSend.kX` 调用形态不变。
+  /// 实验验证：user 侧注入后 deepseek-v4-flash 稳定输出 [YS_DIAGNOSIS] 块。
+  static const String kDiagnosisProtocolSuffix =
+      '\n\n[输出要求·最高优先级]\n'
+      '用户明确请求诊断。除正文回复外，必须在回复**最末尾**附加结构化诊断块，'
+      '严格使用协议标记：\n'
+      '[YS_DIAGNOSIS]\n'
+      '{"syndromes": [{"syndrome_id": "P001", "name": "症候名称", "severity": "L2", '
+      '"evidence": ["原文片段"], "explanation": "判定理由"}], '
+      '"suggested_actions": ["A009"], "confidence": 0.8, '
+      '"root_cause_analysis": "根因（可选）", "next_focus": "下步焦点（可选）", '
+      '"feedback_summary": "反馈总结（可选）", "suggested_phase": "阶段（可选）"}\n'
+      '[/YS_DIAGNOSIS]\n'
+      '块内容必须与正文结论一致，不得伪造症候。'
+      '不要使用 markdown 代码块（```）包裹诊断 JSON；'
+      '必须用 [YS_DIAGNOSIS] 与 [/YS_DIAGNOSIS] 标记，不要省略。';
+
+  /// ADR-C137 批2：完整章模式「按需介入」块（追加到消息序列末尾的 system 指令）。
+  ///
+  /// 注入条件：SendMessageOptions.wholeChapterModeActive == true（学员在写作页
+  /// 激活「这一章我自己写」后，经 chat runner 透传）。非完整章路径不追加。
+  ///
+  /// R-009 形态（逐字锁定）：只给存在感 + 求助即答 + 边界重申；
+  /// 不含任何代写句子/段落、打分、处方、达标线——块本身就是「最小介入」指令。
+  static const String kWholeChapterMinimalSupportBlock =
+      '# 按需介入（完整章模式）\n\n'
+      '学员已主动声明「这一章我自己写」。在本章达到其自设字数目标前，保持最小介入：\n\n'
+      '1. 存在感：让学员知道你在（一句「我在，随时叫我」即可），不主动点评、'
+      '不主动给改法、不催更、不追问进度；\n'
+      '2. 求助即答：仅当学员主动提问或求助时，才恢复正常介入、深入解答；'
+      '学员这次开口即视为求助；\n'
+      '3. R-009 边界重申：不替学员写句子或段落，不打分，不开处方；'
+      '只给结构性提问与方向。';
+
+  ///
+  /// **懒加载**（late final +惰性初始化）：构造期不建，因为其构造参数含两个
+  /// **本类私有成员**的函数闭包（`_resolveDirectExplainThreshold` 属 C 簇、
+  /// `_logSafeRun` 属 A 簇），构造期无法安全引用（会与 `final` 字段初始化顺序
+  /// 纠缠）。首次使用时才建，此时所有字段已就绪。
+  ///
+  /// ⚠️ 循环依赖已避免：`kDiagnosisProtocolSuffix` 是本类的 static 常量，
+  ///   新文件**不 import 本文件**（否则循环），改由下方构造时传入 ⇒ 协议文本
+  ///   仍保持**单一真源**（不在新文件复制）。
+  late final DiagnosisInjectionService _diagnosisService =
+      DiagnosisInjectionService(
+        diagnosisRepo: _diagnosisRepo,
+        stateRepo: _stateRepo,
+        flowHandler: _diagnosisFlowHandler,
+        replyObserver: _replyObserver,
+        resolveDirectExplainThreshold: () => _resolveDirectExplainThreshold(),
+        diagnosisProtocolSuffix: kDiagnosisProtocolSuffix,
+        logSafeRun: _logSafeRun,
+      );
 
   // 引用内容预加载缓存（ADR-C74 K-7 迁至 MessageInjector：见 lib/services/message_injector.dart）
 
@@ -651,6 +709,10 @@ typedef _SendContext = ({
 });
 
 extension ChatServiceSend on ChatService {
+  // ★ ADR-0004 步 5 批 1：以下两个 static 常量原位于 D 簇成员区间内，
+  //   抽 DiagnosisInjectionService 时被连带删除，此处**逐字恢复原位**。
+  //   它们的归属是「协议文本真源」，不属于诊断链的逻辑，故随 extension 保留。
+
   Future<void> _sendMessageCore(
     String sessionId,
     String content,
@@ -671,6 +733,7 @@ extension ChatServiceSend on ChatService {
       // ADR-C84：用户消息落库即通知 UI 上屏（不等 AI 回复）
       await _notifyUserMessagePersisted(ctx, callbacks);
       // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
+      // （ADR-0004 步 5 批 1：诊断簇已抽出独立类，此处改调服务）
       await _applyDiagnosisInjection(ctx, content, options, sessionId);
       _attachUserAttachments(ctx.messages, options); // C147 图片挂最后 user 消息
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
@@ -682,24 +745,72 @@ extension ChatServiceSend on ChatService {
       final fullContent = streamResult.fullContent;
       final inDiagnosisBlock = streamResult.inDiagnosisBlock;
       // 9-11. 解析 + 提交 + 训练 + onComplete（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
+      // （ADR-0004 步 5 批 1：诊断簇已抽出独立类 + R-019 减负，此处改调本文件
+      //   的转接 helper `_runDiagnosisFlow`，避免主链被 13 行参数撑过 50 行）
       await _runDiagnosisFlow(
         sessionId: sessionId,
+        ctx: ctx,
         content: content,
         fullContent: fullContent,
         inDiagnosisBlock: inDiagnosisBlock,
-        primaryRef: ctx.primaryRef,
-        chapterContent: ctx.chapterContent,
-        trainingSyndromeId: ctx.trainingSyndromeId,
-        activeProblems: ctx.activeProblems,
-        currentSubphase: ctx.currentSubphase,
-        rapidFire: ctx.rapidFire,
-        flowBypassed: ctx.flowBypassed,
         callbacks: callbacks,
         options: options,
       );
     } catch (e) {
       _handleSendError(e, callbacks, options);
     }
+  }
+
+  /// 9-11 诊断流程转接（ADR-0004 步 5 批 1：R-019 减负，从 `_sendMessageCore`
+  /// 抽出）。与 [_applyDiagnosisInjection] 同性质——**纯参数转接**，逻辑在
+  /// `DiagnosisInjectionService.runDiagnosisFlow` 内；这里只把 `_SendContext`
+  /// 的 6 个字段摊平（该typedef 是本文件私有，独立类看不到）。
+  Future<void> _runDiagnosisFlow({
+    required String sessionId,
+    required _SendContext ctx,
+    required String content,
+    required String fullContent,
+    required bool inDiagnosisBlock,
+    required SendMessageCallbacks callbacks,
+    required SendMessageOptions options,
+  }) async {
+    await _diagnosisService.runDiagnosisFlow(
+      sessionId: sessionId,
+      content: content,
+      fullContent: fullContent,
+      inDiagnosisBlock: inDiagnosisBlock,
+      primaryRef: ctx.primaryRef,
+      chapterContent: ctx.chapterContent,
+      trainingSyndromeId: ctx.trainingSyndromeId,
+      activeProblems: ctx.activeProblems,
+      currentSubphase: ctx.currentSubphase,
+      rapidFire: ctx.rapidFire,
+      flowBypassed: ctx.flowBypassed,
+      callbacks: callbacks,
+      options: options,
+    );
+  }
+
+  /// ADR-C82 诊断注入编排（ADR-0004 步 5 批 1：R-019 减负，从 `_sendMessageCore`
+  /// 抽出）。诊断簇本身已搬进 [DiagnosisInjectionService]，此处只做**参数转接**：
+  /// 把 `_SendContext` 的两个字段（`messages` / `activeProblems`）摊平传入 ——
+  /// `_SendContext` 是本文件私有 typedef，独立类看不到它（详见方案 §9）。
+  Future<void> _applyDiagnosisInjection(
+    _SendContext ctx,
+    String content,
+    SendMessageOptions options,
+    String sessionId,
+  ) async {
+    await _diagnosisService.applyDiagnosisInjection(
+      messages: ctx.messages,
+      content: content,
+      options: options,
+      sessionId: sessionId,
+      hasDiagnosisContext: _diagnosisService.hasDiagnosisContext(
+        options: options,
+        activeProblems: ctx.activeProblems,
+      ),
+    );
   }
 
   /// ADR-C84：落库的用户消息回调 UI 上屏（流式中断/失败也保证消息可见）。
@@ -826,15 +937,6 @@ extension ChatServiceSend on ChatService {
       helpSignal: content,
     );
     return (flowBypassed: flowBypassed, rapidFire: rapidFire);
-  }
-
-  /// FT-22：检测「只诊断不要建议」边界声明（R-019 拆出）。
-  bool _resolveDiagnosisOnly(String content) {
-    final diagnosisOnly = isDiagnosisOnlyRequest(content);
-    if (diagnosisOnly) {
-      debugPrint('[ChatService] FT-22: 检测到「只诊断」边界声明，跳过 teacher 建议');
-    }
-    return diagnosisOnly;
   }
 
   /// 区分「用户主动取消」与「真实失败」（取消走 onCancelled，其余走 onError）。
@@ -1367,7 +1469,7 @@ extension ChatServiceSend on ChatService {
       messages.add(
         const ChatMessage(
           role: 'system',
-          content: kWholeChapterMinimalSupportBlock,
+          content: ChatService.kWholeChapterMinimalSupportBlock,
         ),
       );
     }
@@ -1432,220 +1534,6 @@ extension ChatServiceSend on ChatService {
     );
   }
 
-  /// 诊断协议后缀（ADR-C82）：追加到 user 消息侧，绕过长 prompt 指令淹没。
-  /// 实验验证：user 侧注入后 deepseek-v4-flash 稳定输出 [YS_DIAGNOSIS] 块。
-  static const String kDiagnosisProtocolSuffix =
-      '\n\n[输出要求·最高优先级]\n'
-      '用户明确请求诊断。除正文回复外，必须在回复**最末尾**附加结构化诊断块，'
-      '严格使用协议标记：\n'
-      '[YS_DIAGNOSIS]\n'
-      '{"syndromes": [{"syndrome_id": "P001", "name": "症候名称", "severity": "L2", '
-      '"evidence": ["原文片段"], "explanation": "判定理由"}], '
-      '"suggested_actions": ["A009"], "confidence": 0.8, '
-      '"root_cause_analysis": "根因（可选）", "next_focus": "下步焦点（可选）", '
-      '"feedback_summary": "反馈总结（可选）", "suggested_phase": "阶段（可选）"}\n'
-      '[/YS_DIAGNOSIS]\n'
-      '块内容必须与正文结论一致，不得伪造症候。'
-      '不要使用 markdown 代码块（```）包裹诊断 JSON；'
-      '必须用 [YS_DIAGNOSIS] 与 [/YS_DIAGNOSIS] 标记，不要省略。';
-
-  /// ADR-C137 批2：完整章模式「按需介入」块（追加到消息序列末尾的 system 指令）。
-  ///
-  /// 注入条件：SendMessageOptions.wholeChapterModeActive == true（学员在写作页
-  /// 激活「这一章我自己写」后，经 chat runner 透传）。非完整章路径不追加。
-  ///
-  /// R-009 形态（逐字锁定）：只给存在感 + 求助即答 + 边界重申；
-  /// 不含任何代写句子/段落、打分、处方、达标线——块本身就是「最小介入」指令。
-  static const String kWholeChapterMinimalSupportBlock =
-      '# 按需介入（完整章模式）\n\n'
-      '学员已主动声明「这一章我自己写」。在本章达到其自设字数目标前，保持最小介入：\n\n'
-      '1. 存在感：让学员知道你在（一句「我在，随时叫我」即可），不主动点评、'
-      '不主动给改法、不催更、不追问进度；\n'
-      '2. 求助即答：仅当学员主动提问或求助时，才恢复正常介入、深入解答；'
-      '学员这次开口即视为求助；\n'
-      '3. R-009 边界重申：不替学员写句子或段落，不打分，不开处方；'
-      '只给结构性提问与方向。';
-
-  /// ADR-C82：诊断意图注入 + 请求结构观测（R-019 拆出：_sendMessageCore
-  /// 行数收敛）。注入需在流式前、历史追加后执行；观测仅 debug 级留痕。
-  ///
-  /// CR-56 PHI 脱敏：debugPrint 仅打 `role[length]`，**不打印内容截取**。
-  /// 批次98：诊断注入编排（R-019：_sendMessageCore 减负）。
-  /// 将诊断协议 + 待诊断全文注入 user 消息，并做请求结构观测。
-  Future<void> _injectDiagnosisFor(
-    List<ChatMessage> messages,
-    String content,
-    String? chapterFullText, {
-    required bool hasDiagnosisContext,
-    required String sessionId,
-  }) async {
-    await _injectDiagnosisProtocolAndLog(
-      messages,
-      content,
-      chapterFullText: chapterFullText,
-      hasDiagnosisContext: hasDiagnosisContext,
-      sessionId: sessionId,
-    );
-  }
-
-  /// 原版（删除前）会对 >40 字符消息打前 20+后 20 字符——含用户原文片段，
-  /// 触 X-040 PHI P2 风险（debug 日志被外发/截图即泄漏用户输入）。
-  Future<void> _injectDiagnosisProtocolAndLog(
-    List<ChatMessage> messages,
-    String content, {
-    String? chapterFullText,
-    required bool hasDiagnosisContext,
-    required String sessionId,
-  }) async {
-    await _maybeInjectDiagnosisProtocol(
-      messages,
-      content,
-      chapterFullText: chapterFullText,
-      hasDiagnosisContext: hasDiagnosisContext,
-      sessionId: sessionId,
-    );
-    debugPrint(
-      '[ChatService] ADR-C82 请求结构: ${messages.map((m) => "${m.role}[${m.content.length}]").join(" | ")}',
-    );
-  }
-
-  /// 诊断意图 → user 消息侧注入诊断协议（ADR-C82；R-019 ≤50 行）。
-  ///
-  /// TH 五批：判据不只有措辞 —— 弱信号措辞需 [hasDiagnosisContext] 佐证，
-  /// 否则教学场景的「这段怎么改」会误触发注入（后果见 intent_classifier）。
-  ///
-  /// ★ 2026-10-04 症状格式污染修复（真机 0.4.1 反馈：说问题时出现
-  /// 「【（症状名）】：（症状说明）」）。根因不在模型，在**同一条 user 消息里
-  /// 混了三套标记**：协议块用 `[YS_DIAGNOSIS]`、全貌块用 `【】` 标题、
-  /// 清单项又用「序号. [P005] 名——落在哪句」。模型在「直接说问题」模式下
-  /// 一旦命中全貌分支（症候数 ≥ threshold，默认 5）就会把三种格式混编。
-  /// 学员看到的是「AI 在念内部协议」，教学感直接崩掉。
-  /// 修法是**纯格式层，不动协议、不动选 P 能力**（详见 _buildDirectExplainBlock）。
-  Future<void> _maybeInjectDiagnosisProtocol(
-    List<ChatMessage> messages,
-    String content, {
-    String? chapterFullText,
-    required bool hasDiagnosisContext,
-    required String sessionId,
-  }) async {
-    if (!isDiagnosisRequest(
-      content,
-      hasDiagnosisContext: hasDiagnosisContext,
-    )) {
-      return;
-    }
-    final lastUser = messages.lastIndexWhere((m) => m.role == 'user');
-    if (lastUser < 0) return;
-    final m = messages[lastUser];
-    // 批次98：诊断全文运行时注入（不落库）——对话历史只展示简洁消息，
-    // AI 侧仍收到全文；历史重放不含全文（避免长对话被整章内容稀释）。
-    final fullTextBlock = chapterFullText == null || chapterFullText.isEmpty
-        ? ''
-        : '\n\n## 待诊断全文\n\n$chapterFullText';
-    final directExplain = await _buildDirectExplainBlock();
-    // ADR-C134：fading 支架渐退 override 块（运行时条件注入；无复发/失败 → ''）。
-    final fadingBlock = await _buildFadingBlock(sessionId);
-    messages[lastUser] = ChatMessage(
-      role: m.role,
-      content:
-          '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix$directExplain$fadingBlock',
-    );
-  }
-
-  /// 全貌清单块（症状数 ≥ 阈值时逐条列全部症候，让学员选）。
-  ///
-  /// R-019：2026-10-04 从 [_maybeInjectDiagnosisProtocol] 拆出——那个函数因
-  /// 本修复的论证注释涨到 57 行（上限 50）。拆的是**独立职责 + 独立失败模式**
-  /// （它要 await 阈值、且是唯一带格式约束的地方），不是为凑行数的机械切分。
-  ///
-  /// 格式约束（2026-10-04，三条缺一不可）：
-  ///  ① 标题用方括号族（与 `[YS_DIAGNOSIS]` 同族），消掉 `【】`；
-  ///  ② 清单项**显式声明为纯文本、禁用任何括号包裹**；
-  ///  ③ 正面追加「不要把症候名用括号括起来」，堵住混编。
-  /// 保留 `[P005]` 仍是必须 —— 学员回「先练 P005」要能被
-  /// message_injector._parseUserFocusFromMessage 的 P00x 正则命中，
-  /// 否则系统会静默丢弃学员的选择、回退到 AI 自挑的顶优先级。
-  Future<String> _buildDirectExplainBlock() async {
-    final threshold = await _resolveDirectExplainThreshold();
-    return '\n\n[全貌呈现]\n'
-        '（全貌模式临时覆盖密度约束——选完一条后回到常规密度「一次只抛一个点」。）\n'
-        '若本次识别出的症候数量 ≥ $threshold：\n'
-        '1. 用编号列出全部症候——每条写成一行，行首是「序号. [P005] 症候名称」，'
-        '破折号后接「落在哪一句」，如「1. [P005] 对话生硬——落在哪句」，**不要给改法**；\n'
-        '2. 列表里每条就是一行普通文字，**不要把症候名用括号括起来**，'
-        '也不要写成「症状名：说明」这种键值对；\n'
-        '3. 末尾问一句"这些都在，你想先动哪个"，把选择权交给学员；\n'
-        '4. 学员选定一条后，才对那一条展开"怎么改"（走正常教学流程）。\n'
-        '若少于 $threshold，按正常教学方式聚焦讲解 1-2 条。';
-  }
-
-  /// ADR-C134/C139：fading 介入层级块（运行时条件注入）。
-  ///
-  /// ADR-C139（D1 修复）：不再因「无复发」提前返回 ''——改为始终输出三档介入
-  /// 契约块，使 c=0「指认根因 + 受限示范单句」在纯首次诊断时可达（此前 c=0 返回
-  /// null → LLM 转引导式追问、无示范句）。复发明细仅 prior≥1 时追加；仓储查询
-  /// 失败仍降级 ''。R-028：诊断仓储为边界层，try/catch 降级留痕，不阻断主链路。
-  Future<String> _buildFadingBlock(String sessionId) async {
-    try {
-      final recurrence = await _diagnosisRepo.countConfirmedDiagnosesBySyndrome(
-        sessionId,
-      );
-      final eligibility = await _resolveFadingEligibility(sessionId);
-      return buildFadingBlock(recurrence, eligibility) ?? '';
-    } catch (e, st) {
-      _logSafeRun('fading 块装配失败（降级不注入）', e, st);
-      return '';
-    }
-  }
-
-  /// ADR-C134：学员反馈资格裁决——仅 N3/N4 独立级视为 highStable（可用引导提问）；
-  /// 教学状态取不到 / 偏低级一律降级 all（低水平/消沉不得用提问类，安全方向）。
-  Future<FeedbackEligibility> _resolveFadingEligibility(
-    String sessionId,
-  ) async {
-    try {
-      final ts = await _stateRepo.getTeachingState(sessionId);
-      final level = BeginnerLevel.fromString(ts?.beginnerLevel);
-      if (level == BeginnerLevel.n3Diagnose ||
-          level == BeginnerLevel.n4Independent) {
-        return FeedbackEligibility.highStableOnly;
-      }
-    } catch (e, st) {
-      _logSafeRun('fading 资格裁决失败（降级 all）', e, st);
-    }
-    return FeedbackEligibility.all;
-  }
-
-  /// 本轮是否处于**诊断上下文** —— 确定性信号，不由措辞反推（TH 五批）。
-  ///
-  /// ① 本轮携带待诊断全文 ⇒ 「诊断本章 / 选中文本」入口；
-  /// ② 会话已产生活跃症候 ⇒ 此前诊断成功过（含诊断后续轮、反馈、重试）。
-  ///
-  /// 二者皆否即为教学 / 自由对话轮次 ⇒ 弱信号措辞不参与诊断判定。
-  bool _hasDiagnosisContext(SendMessageOptions options, _SendContext ctx) {
-    if (options.chapterFullText?.isNotEmpty ?? false) return true;
-    return ctx.activeProblems.isNotEmpty;
-  }
-
-  /// 诊断协议注入编排（ADR-C82 + TH 五批判据；R-019：_sendMessageCore 减负）。
-  ///
-  /// TH 五批：判据并入「会话级诊断上下文」——教学场景的通用措辞
-  /// （「这段怎么改」）不再注入协议，避免落库诊断 + 二次 Teacher 调用。
-  Future<void> _applyDiagnosisInjection(
-    _SendContext ctx,
-    String content,
-    SendMessageOptions options,
-    String sessionId,
-  ) async {
-    await _injectDiagnosisFor(
-      ctx.messages,
-      content,
-      options.chapterFullText,
-      hasDiagnosisContext: _hasDiagnosisContext(options, ctx),
-      sessionId: sessionId,
-    );
-  }
-
   /// 预算闸门结果日志 + X-040 PHI 素材缺失提示（R-019 拆出）。
   void _logBudgetOutcome(
     BudgetGuardReport guardReport,
@@ -1680,149 +1568,6 @@ extension ChatServiceSend on ChatService {
         messages.add(ChatMessage(role: 'system', content: notice));
       }
     }
-  }
-
-  /// FT-22 边界检测 + 诊断解析落库（R-019 拆出）。
-  Future<ParseAndPersistResult> _parseAndPersistDiagnosis({
-    required String sessionId,
-    required String content,
-    required String fullContent,
-    required bool inDiagnosisBlock,
-    required ReferenceItem? primaryRef,
-    required String? chapterContent,
-    required SendMessageCallbacks callbacks,
-    required SendMessageOptions options,
-  }) async {
-    // FT-22：检测「只诊断不要建议」边界声明，命中则跳过 teacher stream
-    final diagnosisOnly = _resolveDiagnosisOnly(content);
-    // P0-1：解析 directExplain 阈值透传给 Teacher 门控——症候数 ≥ 阈值时本轮
-    // 只列名+问先动哪个，跳过 Teacher 抢先给改法（等学员选定后再展开）。
-    final directExplainThreshold = await _resolveDirectExplainThreshold();
-    return _diagnosisFlowHandler.parseAndPersist(
-      sessionId: sessionId,
-      fullContent: fullContent,
-      inDiagnosisBlock: inDiagnosisBlock,
-      primaryRef: primaryRef,
-      chapterContent: chapterContent,
-      callbacks: callbacks,
-      options: options,
-      diagnosisOnly: diagnosisOnly,
-      directExplainThreshold: directExplainThreshold,
-    );
-  }
-
-  /// 9-11 诊断解析 + 提交 + 训练 + onComplete（ADR-C74 K-9，R-019 收尾 helper）。
-  Future<void> _runDiagnosisFlow({
-    required String sessionId,
-    required String content,
-    required String fullContent,
-    required bool inDiagnosisBlock,
-    required ReferenceItem? primaryRef,
-    required String? chapterContent,
-    required String? trainingSyndromeId,
-    required List<ActiveProblemView> activeProblems,
-    required TeachingSubphase? currentSubphase,
-    required bool rapidFire,
-    required bool flowBypassed,
-    required SendMessageCallbacks callbacks,
-    required SendMessageOptions options,
-  }) async {
-    final parsed = await _parseAndPersistDiagnosis(
-      sessionId: sessionId,
-      content: content,
-      fullContent: fullContent,
-      inDiagnosisBlock: inDiagnosisBlock,
-      primaryRef: primaryRef,
-      chapterContent: chapterContent,
-      callbacks: callbacks,
-      options: options,
-    );
-    // 步骤 10 空响应提前结束（onError 已触发，等价原 return）
-    if (parsed.aborted) return;
-    await _commitDiagnosisAndSuggestions(
-      sessionId: sessionId,
-      content: content,
-      parsed: parsed,
-      primaryRef: primaryRef,
-      rapidFire: rapidFire,
-      flowBypassed: flowBypassed,
-      callbacks: callbacks,
-      options: options,
-      currentSubphase: currentSubphase,
-    );
-    await _finishTrainingAndComplete(
-      sessionId: sessionId,
-      content: content,
-      parsed: parsed,
-      trainingSyndromeId: trainingSyndromeId,
-      activeProblems: activeProblems,
-      currentSubphase: currentSubphase,
-      callbacks: callbacks,
-      options: options,
-    );
-  }
-
-  /// 诊断提交 + Teacher suggestion + GenUI 卡片 + 回复长度观测（R-019 拆出）。
-  Future<void> _commitDiagnosisAndSuggestions({
-    required String sessionId,
-    required String content,
-    // 由 dynamic 收窄为具体类型：严格模式下 4 处字段访问（parsed.diagnosis /
-    // messageId / teacherResult / genuiComponents）报 argument_type_not_assignable。
-    // 实参本就是 ParseAndPersistResult（_parseAndPersistDiagnosis 返回类型），
-    // 属纯类型层修正、零行为变更。
-    required ParseAndPersistResult parsed,
-    required ReferenceItem? primaryRef,
-    required bool rapidFire,
-    required bool flowBypassed,
-    required SendMessageCallbacks callbacks,
-    required SendMessageOptions options,
-    required TeachingSubphase? currentSubphase,
-  }) async {
-    await _diagnosisFlowHandler.commitDiagnosisAndSuggestions(
-      sessionId: sessionId,
-      diagnosis: parsed.diagnosis,
-      messageId: parsed.messageId,
-      primaryRef: primaryRef,
-      teacherResult: parsed.teacherResult,
-      rapidFire: rapidFire,
-      flowBypassed: flowBypassed,
-      genuiComponents: parsed.genuiComponents,
-    );
-    // 批次50 临时测量：回复长度观测（仅 debug 留痕不干预）
-    _replyObserver.observeReplyLength(
-      parsed.displayContent,
-      content,
-      options.attitude,
-      currentSubphase,
-    );
-  }
-
-  /// 训练结果解析 + teaching_history 写入 + onComplete（R-019 拆出）。
-  Future<void> _finishTrainingAndComplete({
-    required String sessionId,
-    required String content,
-    // 同 _commitDiagnosisAndSuggestions：dynamic → 具体类型（严格模式
-    // argument_type_not_assignable ×4）。
-    required ParseAndPersistResult parsed,
-    required String? trainingSyndromeId,
-    required List<ActiveProblemView> activeProblems,
-    required TeachingSubphase? currentSubphase,
-    required SendMessageCallbacks callbacks,
-    required SendMessageOptions options,
-  }) async {
-    await _diagnosisFlowHandler.handleTrainingResult(
-      sessionId: sessionId,
-      currentSubphase: currentSubphase,
-      displayContent: parsed.displayContent,
-      userContent: content,
-      trainingSyndromeId: trainingSyndromeId,
-      activeProblems: activeProblems,
-      callbacks: callbacks,
-      // ADR-C105 A1：协议块的模型自主判定（在 parseAndPersist 内从 fullContent 解析）
-      trainingResult: parsed.trainingResult,
-    );
-    await callbacks.onComplete(parsed.finalContent, parsed.messageId);
-    debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
   }
 
   /// SafeRun 降级统一留痕（CR-53）。

@@ -47,6 +47,10 @@ void main() {
         //   ⚠️ 纳入而非豁免：本用例的意图是「降级点全部经统一留痕通道」，
         //   只扫老文件等于让新文件的降级点**不受契约覆盖**（漏检）。
         'lib/services/chat_service_diagnosis_focus.dart',
+        // ★ ADR-0004 步 5 批 1（2026-10-07）：诊断簇（独立类 + DI）——
+        //   其降级点经构造注入的 `_logSafeRun` 函数参数。**纳入而非豁免**
+        //   （同 B5 甲-1 口径：只扫老文件等于让新文件的降级点漏检）。
+        'lib/services/diagnosis_injection_service.dart',
       ]) {
         final src = File(f).readAsStringSync();
         // helper 定义内 1 处 debugPrint('[SafeRun] $stage: $e') 合法
@@ -102,12 +106,21 @@ void main() {
       final miCalls = '_logSafeRun('.allMatches(mi).length - 1;
       final csCalls = '_logSafeRun('.allMatches(cs).length - 1;
       final dfCalls = RegExp(r"(?<!this\.)onSafeRun\(").allMatches(df).length;
+      // ★ ADR-0004 步 5 批 1（2026-10-07）：诊断簇新归属文件。原属
+      //   chat_service 的 2 处降级点（ADR-C134 批 2 的 fading 装配失败 +
+      //   资格裁决失败）随 DiagnosisInjectionService 迁出，通道仍是
+      //   `_logSafeRun`（经构造注入的函数参数）⇒ **总数 39 不变，换了归属**，
+      //   覆盖面**扩大**（多扫一个文件），不是放宽。
+      final dis = File(
+        'lib/services/diagnosis_injection_service.dart',
+      ).readAsStringSync();
+      final disCalls = '_logSafeRun('.allMatches(dis).length;
       expect(
-        miCalls + csCalls + dfCalls,
+        miCalls + csCalls + dfCalls + disCalls,
         39,
         reason:
             'CR-53 应覆盖全部降级点'
-            '（实际 mi=$miCalls cs=$csCalls df=$dfCalls）',
+            '（实际 mi=$miCalls cs=$csCalls df=$dfCalls dis=$disCalls）',
       );
     });
 
@@ -116,6 +129,11 @@ void main() {
       final mi = File('lib/services/message_injector.dart').readAsStringSync();
       final df = File(
         'lib/services/chat_service_diagnosis_focus.dart',
+      ).readAsStringSync();
+      // ★ ADR-0004 步 5 批 1（2026-10-07）：诊断簇新归属文件（原 chat_service
+      //   的 2 处 fading 降级 catch 随 DiagnosisInjectionService 迁出）。
+      final dis = File(
+        'lib/services/diagnosis_injection_service.dart',
       ).readAsStringSync();
       // 降级点应形如 catch (e, st) { <留痕调用>('...', e, st); }
       // ★ B5：留痕调用有两种合法形态（直调 / 注入回调），用交替匹配。
@@ -127,13 +145,20 @@ void main() {
       // （_buildFadingBlock / _resolveFadingEligibility），带栈形态合规 2→4。
       // ★ B5 甲-1：chat_service 的升级阀降级 catch 迁至 diagnosis_focus
       //   （4 → 3），新增文件补 1 处（3 → 1），**两文件合计仍 4 处**。
+      // ★ ADR-0004 步 5 批 1：同一口径 —— chat_service 的 2 处 fading 降级
+      //   catch 迁至 diagnosis_injection_service，**合计仍 4 处**（换了归属，
+      //   不是放宽）。
       expect(
-        pattern.allMatches(cs).length + pattern.allMatches(df).length,
+        pattern.allMatches(cs).length +
+            pattern.allMatches(df).length +
+            pattern.allMatches(dis).length,
         4,
         reason:
-            'chat_service + diagnosis_focus 合计 4 处降级点必须带栈（CR-53）'
+            'chat_service + diagnosis_focus + diagnosis_injection_service '
+            '合计 4 处降级点必须带栈（CR-53）'
             '（实际 cs=${pattern.allMatches(cs).length} '
-            'df=${pattern.allMatches(df).length}）',
+            'df=${pattern.allMatches(df).length} '
+            'dis=${pattern.allMatches(dis).length}）',
       );
       expect(
         pattern.allMatches(mi).length,

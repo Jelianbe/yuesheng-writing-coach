@@ -38,8 +38,22 @@ void main() {
 
     test('存在 user 侧诊断协议注入 helper 与后缀常量', () {
       final src = File('lib/services/chat_service.dart').readAsStringSync();
+      // ★ ADR-0004 步 5 批 1（2026-10-07）：诊断簇已抽为独立类
+      //   （DiagnosisInjectionService）⇒ 协议注入 helper 与后缀常量分居两个
+      //   文件。**两文件都扫**（不是放宽：断言意图「协议注入通路存在且单一真源」
+      //   仍然成立，且现在额外验证了常量未被复制进新文件）。
+      final dis = File(
+        'lib/services/diagnosis_injection_service.dart',
+      ).readAsStringSync();
       expect(src, contains('kDiagnosisProtocolSuffix'));
-      expect(src, contains('_maybeInjectDiagnosisProtocol'));
+      expect(dis, contains('_maybeInjectDiagnosisProtocol'));
+      // ★ 单一真源：协议文本只允许在 chat_service.dart 一处**定义**，
+      //   新文件经构造注入接收、不得复制一份。
+      //   判据用「输出要求」块首行（协议正文的唯一指纹）——不能用 YS_DIAGNOSIS：
+      //   新文件**注释里**合法提到它（格式约束说明），实测 :141/:184 两处。
+      expect(dis, isNot(contains('输出要求·最高优先级')));
+      //   但构造参数名必须存在（证明是「注入接收」而非「各写一份」）。
+      expect(dis, contains('diagnosisProtocolSuffix'));
       expect(src, contains('[YS_DIAGNOSIS]'));
       expect(src, contains('[/YS_DIAGNOSIS]'));
     });

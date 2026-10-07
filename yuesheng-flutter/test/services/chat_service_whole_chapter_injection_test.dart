@@ -133,27 +133,17 @@ void main() {
       final msgs = await _capture(wholeChapterActive: true);
       final blockMsgs = msgs
           .where(
-            (m) =>
-                m.content == ChatServiceSend.kWholeChapterMinimalSupportBlock,
+            (m) => m.content == ChatService.kWholeChapterMinimalSupportBlock,
           )
           .toList();
       expect(blockMsgs, hasLength(1), reason: '完整章激活时恰好注入一块');
       // 块是末尾追加（recency：纪律重申之后、发给 LLM 的最后一条）。
-      expect(
-        msgs.last.content,
-        ChatServiceSend.kWholeChapterMinimalSupportBlock,
-      );
+      expect(msgs.last.content, ChatService.kWholeChapterMinimalSupportBlock);
       expect(msgs.last.role, 'system');
       // 块内容三要素在场。
-      expect(
-        ChatServiceSend.kWholeChapterMinimalSupportBlock,
-        contains('我在，随时叫我'),
-      );
-      expect(ChatServiceSend.kWholeChapterMinimalSupportBlock, contains('求助'));
-      expect(
-        ChatServiceSend.kWholeChapterMinimalSupportBlock,
-        contains('R-009'),
-      );
+      expect(ChatService.kWholeChapterMinimalSupportBlock, contains('我在，随时叫我'));
+      expect(ChatService.kWholeChapterMinimalSupportBlock, contains('求助'));
+      expect(ChatService.kWholeChapterMinimalSupportBlock, contains('R-009'));
     });
 
     test('② 非完整章路径 → 块缺席，序列比激活态少一条（零漂移）', () async {
@@ -163,7 +153,7 @@ void main() {
       // 非激活路径不含块。
       expect(
         inactive.where(
-          (m) => m.content == ChatServiceSend.kWholeChapterMinimalSupportBlock,
+          (m) => m.content == ChatService.kWholeChapterMinimalSupportBlock,
         ),
         isEmpty,
         reason: '非完整章路径不注入按需块',
@@ -181,7 +171,7 @@ void main() {
     });
 
     test('③ R-009 形态审计：块文案零代写/零打分/零处方措辞', () {
-      final block = ChatServiceSend.kWholeChapterMinimalSupportBlock;
+      final block = ChatService.kWholeChapterMinimalSupportBlock;
       // 正向：边界重申在场。
       expect(block, contains('不替学员写'));
       expect(block, contains('不打分'));
