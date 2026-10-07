@@ -97,6 +97,21 @@ class BlockEditableViewState extends State<BlockEditableView> {
     _emitValue();
   }
 
+  /// 最近被触碰（文本或选区变化）的块序号 —— 即「选区的来源块」。
+  ///
+  /// ★ 2026-10-07 新增：旧实现没有这个概念，只认 `_activeIndex` + `hasFocus`，
+  /// 于是在没有块聚焦时丢弃选区并发射 `TextSelection.collapsed(offset: -1)`
+  /// （负偏移 = 无效选区），见 [_absoluteSelection] 的缺陷说明。
+  int? _selectionBlockIndex;
+
+  /// 建块控制器：先记来源块、再发射值（listener 按注册顺序调用）。
+  TextEditingController _newBlockController(String text, int index) {
+    final c = TextEditingController(text: text);
+    c.addListener(() => _selectionBlockIndex = index);
+    c.addListener(_emitValue);
+    return c;
+  }
+
   void _resetBlocks(String text) {
     for (final c in _controllers) {
       c.removeListener(_emitValue);
@@ -108,8 +123,8 @@ class BlockEditableViewState extends State<BlockEditableView> {
     _controllers.clear();
     _focusNodes.clear();
     final blocks = BlockProjection.fromText(text).blocks;
-    for (final t in blocks) {
-      _controllers.add(TextEditingController(text: t)..addListener(_emitValue));
+    for (var i = 0; i < blocks.length; i++) {
+      _controllers.add(_newBlockController(blocks[i], i));
     }
     for (var i = 0; i < blocks.length; i++) {
       _focusNodes.add(
@@ -235,18 +250,14 @@ class BlockEditableViewState extends State<BlockEditableView> {
       text: left,
       selection: TextSelection.collapsed(offset: left.length),
     );
-    final rightCtrl = TextEditingController(text: right)
-      ..addListener(_emitValue);
-    final rightNode = FocusNode(onKeyEvent: _onKeyEvent);
     final insertAt = index + 1;
+    final rightCtrl = _newBlockController(right, insertAt);
+    final rightNode = FocusNode(onKeyEvent: _onKeyEvent);
     setState(() {
       _controllers.insert(insertAt, rightCtrl);
       _focusNodes.insert(insertAt, rightNode);
       if (widget.blankLineBetween) {
-        _controllers.insert(
-          insertAt,
-          TextEditingController(text: '')..addListener(_emitValue),
-        );
+        _controllers.insert(insertAt, _newBlockController('', insertAt + 1));
         _focusNodes.insert(insertAt, FocusNode(onKeyEvent: _onKeyEvent));
       }
     });
@@ -265,19 +276,36 @@ class BlockEditableViewState extends State<BlockEditableView> {
       buf.write(_controllers[i].text);
     }
     final text = buf.toString();
-    var sel = const TextSelection.collapsed(offset: -1);
-    final a = _activeIndex;
-    if (a != null && a < _controllers.length && _focusNodes[a].hasFocus) {
-      final local = _controllers[a].selection;
+    widget.onValue?.call(
+      TextEditingValue(text: text, selection: _absoluteSelection()),
+    );
+    widget.onChanged(text);
+  }
+
+  /// 来源块的局部选区 → 整篇绝对选区。
+  ///
+  /// ★ 2026-10-07 修正两处缺陷（收尾门禁门禁 2「选中态/浮动菜单」27 例红的根因）：
+  ///  1) 旧实现以 `_focusNodes[_activeIndex].hasFocus` 为门槛。分块模式下**没有任何
+  ///     TextField 持有整篇 controller**，选区只存在于各块 controller；一旦没有块
+  ///     处于聚焦态（焦点被面板/弹窗夺走，或程序化写块后未聚焦），选区被**丢弃**。
+  ///  2) 丢弃后写入 `TextSelection.collapsed(offset: -1)` —— **负偏移 = 无效选区**，
+  ///     且被原样写进宿主 `contentController`（`writing_editor_view.dart:339`
+  ///     `onValue: (v) => contentController.value = v`）⇒ 下游
+  ///     `WritingPageSelectionAiController.onSelectionChanged` 只能走「隐藏菜单」分支。
+  /// 改为「以最近被触碰的块为选区来源，不要求它聚焦」；无有效局部选区时回落为
+  /// **合法**的折叠光标（offset 0），**绝不发射负偏移**。
+  TextSelection _absoluteSelection() {
+    final src = _selectionBlockIndex ?? _activeIndex;
+    if (src != null && src >= 0 && src < _controllers.length) {
+      final local = _controllers[src].selection;
       if (local.isValid) {
-        sel = TextSelection(
-          baseOffset: _absOffset(a, local.baseOffset),
-          extentOffset: _absOffset(a, local.extentOffset),
+        return TextSelection(
+          baseOffset: _absOffset(src, local.baseOffset),
+          extentOffset: _absOffset(src, local.extentOffset),
         );
       }
     }
-    widget.onValue?.call(TextEditingValue(text: text, selection: sel));
-    widget.onChanged(text);
+    return const TextSelection.collapsed(offset: 0);
   }
 
   int _absOffset(int block, int local) {

@@ -145,7 +145,10 @@ class _FailingSaveStore extends WritingStore {
 // ─────────────────────────────────────────────────────────────
 // 批次95-1 判别力夹具（守住「取聚焦 editable + 用它自身的 controller 偏移」）
 //
-// 动因：现网 `kBlockEditorEnabled = false`（blocked_text/block_readonly_view.dart:16）
+// ⚠️ 2026-10-07 订正：本段「动因」写于 `kBlockEditorEnabled = false` 时代
+// （该常量自 commit `7d245a75` 起已为 **true**，flag-on 走分块可编辑渲染）。
+// 夹具**保留**：flag-on 下 `editorStackKey` 子树内**并存多个** EditableText，
+// 「取子树首个」与「取聚焦」必然不同解 ⇒ 该判别力夹具比 flag-off 时代**更有价值**。
 // 时，`editorStackKey`（writing_editor_view.dart:255）子树里**只有一个** TextField
 // ⇒「取子树首个」与「取聚焦」在真实写作页上必然同解，批次95-1 原有 2 个用例零鉴别力
 // （实测：把实现退回「取首个 + 全局 controller 偏移」，那 2 个用例仍全绿）。
@@ -331,6 +334,58 @@ Future<_DualEditableFixture> _setUpDualEditable(WidgetTester tester) async {
   );
 }
 
+/// 正文编辑器（key `chapterContentField`）的 **TextField** finder。
+///
+/// ★ ADR-0002 分块模式（`kBlockEditorEnabled = true` @ `block_readonly_view.dart:16`）下，
+///   该 key 挂在**首块的 `KeyedSubtree` 包装**上（`block_editable_view.dart:350-351`），
+///   其内才是真正的 `TextField`；回退模式（flag = false）下 key 直接挂在 `TextField` 上
+///   （`writing_editor_view.dart:278-279`）。
+/// ⇒ 两种形态对 `find.byKey` 都「找得到」，但 `tester.widget<TextField>(…)` 是**精确类型强转**
+///   ⇒ flag 一翻就批量 `_TypeError`。
+///   实证：提交 `7d245a75` 翻了 flag 且自述「同步测试契约」，实际只同步了
+///   `block_readonly_view_test.dart`，漏了本文件 ⇒ 收尾门禁门禁 2 54 例红。
+///
+/// `matchRoot: true` 使本 finder **同时覆盖两种形态** ⇒ flag 再翻转时本文件不必再改。
+/// ★ 纪律：本 helper 是「兼容层」，不是「绕过断言」—— 断言强度不降，仅解析控件的路径变一行。
+Finder editorTextFieldWidget() => find.descendant(
+  of: find.byKey(const Key('chapterContentField')),
+  matching: find.byType(TextField),
+  matchRoot: true,
+);
+
+/// 宿主正文控制器（**整篇真源**）—— 分块模式下「块 controller」只是某一个块。
+///
+/// ★ ADR-0002（`kBlockEditorEnabled = true`，见 [block_readonly_view.dart:16]）下，
+///   [editorTextFieldWidget] 匹配到的 TextField 挂在**首块**的 `KeyedSubtree` 上
+///   （`block_editable_view.dart:350-351`），其 controller：
+///   · 文本只含**该块**，**不含块间 `\n`**（换行只存在于 `_emitValue` 的拼接串里，
+///     `block_editable_view.dart:274-278`，`i > 0` 补一个 `\n`）；
+///   · 选区是**块内局部偏移**。
+///   而生产侧一切程序化动作（查找替换定位 / 全书搜索定位 / 一键排版 / 点标点插入 /
+///   undo-redo）写的都是**宿主** `editorController`（`writing_page_host.dart:53`，
+///   实现 `writing_page.dart:218`），块与宿主之间的同步**只有单向镜像**
+///   `writing_editor_view.dart:339 onValue: (v) => contentController.value = v`。
+/// ⇒ 断言「整篇文本 / 整篇绝对选区」**必须读宿主 controller**；读块 controller 会得到
+///   两类假失败：期望 `'第一段。\n'` 实得 `'第一段。'`（缺尾随换行）、
+///   期望整篇跨度 `[4,6)` 实得 `TextSelection.invalid`。
+///   实证：`7d245a75` 翻了 flag 且自述「同步测试契约」，实际只同步了
+///   `block_readonly_view_test.dart`，漏了本文件 ⇒ 收尾门禁门禁 2 批量红。
+///
+/// ★ 取值通路：`_WritingPageState implements WritingPageHost`（`writing_page.dart:57-59`）
+///   ⇒ 先取 WritingPage 的 State、再收窄成 `WritingPageHost` 拿公开 getter，
+///   **无需改动生产暴露面**（0 生产改动）。
+///   ⚠ 踩过的坑：`tester.state<T>` 的类型参数受 `T extends State<StatefulWidget>` 约束，
+///     `WritingPageHost` 是**接口**不是 State 子类 ⇒ 不能直接写成
+///     `tester.state<WritingPageHost>(...)`（dart analyze 报
+///     `type_argument_not_matching_bounds`）。故先取 `State<WritingPage>` 再 `as`。
+///
+/// ★ 纪律：本 helper 与 [editorTextFieldWidget] 同性质，是「兼容层」不是「绕过断言」——
+///   断言强度不降，口径由「块局部」升级为「整篇真源」。
+FocusAwareEditingController hostEditorController(WidgetTester tester) =>
+    (tester.state<State<WritingPage>>(find.byType(WritingPage))
+            as WritingPageHost)
+        .editorController;
+
 void main() {
   late AppDatabase db;
   late ProviderContainer container;
@@ -445,9 +500,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 批次90：页面有标题+正文两个 TextField → 正文用 key
-      final textField = tester.widget<TextField>(
-        find.byKey(const Key('chapterContentField')),
-      );
+      final textField = tester.widget<TextField>(editorTextFieldWidget());
       expect(textField.controller?.text, '这是一个大雪纷飞的夜晚。');
     });
 
@@ -488,10 +541,7 @@ void main() {
       expect(find.text('12字'), findsOneWidget);
 
       // 输入 "测试" 替换内容
-      await tester.enterText(
-        find.byKey(const Key('chapterContentField')),
-        '测试',
-      );
+      await tester.enterText(editorTextFieldWidget(), '测试');
       await tester.pump();
 
       // 字数应为 2字
@@ -525,10 +575,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 输入正文 → onContentChanged 调度 300ms 合并保存定时器（pending）
-      await tester.enterText(
-        find.byKey(const Key('chapterContentField')),
-        '切后台前刚敲的字',
-      );
+      await tester.enterText(editorTextFieldWidget(), '切后台前刚敲的字');
       await tester.pump(); // 触发 onChanged；刻意不等待 300ms
 
       // 前置：debounce 窗口内 DB 仍是旧内容
@@ -666,10 +713,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 输入新内容（触发 updateContent + 历史 debounce）
-      await tester.enterText(
-        find.byKey(const Key('chapterContentField')),
-        '新编辑的内容',
-      );
+      await tester.enterText(editorTextFieldWidget(), '新编辑的内容');
       await tester.pump();
 
       // 等待历史 debounce（1.5s，批次91-2 撤销栈独立）→ canUndo=true
@@ -684,9 +728,7 @@ void main() {
       await tester.tap(undoIcon);
       await tester.pump();
 
-      final textField = tester.widget<TextField>(
-        find.byKey(const Key('chapterContentField')),
-      );
+      final textField = tester.widget<TextField>(editorTextFieldWidget());
       expect(textField.controller?.text, '这是一个大雪纷飞的夜晚。');
     });
 
@@ -741,10 +783,7 @@ void main() {
       expect(find.textContaining('已保存'), findsNothing);
 
       // 输入内容 → 300ms 合并保存（批次91-1）→ 显示「已保存 HH:MM」
-      await tester.enterText(
-        find.byKey(const Key('chapterContentField')),
-        '新的内容',
-      );
+      await tester.enterText(editorTextFieldWidget(), '新的内容');
       // 推进保存 debounce（pumpAndSettle 不推进 Timer，需显式 pump 到期）
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
@@ -771,10 +810,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 输入触发保存（300ms 合并 debounce，批次91-1）→ store 失败 → 状态条 + SnackBar 提示
-      await tester.enterText(
-        find.byKey(const Key('chapterContentField')),
-        '触发保存失败',
-      );
+      await tester.enterText(editorTextFieldWidget(), '触发保存失败');
       // 推进保存 debounce（pumpAndSettle 不推进 Timer，需显式 pump 到期）
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
@@ -967,7 +1003,7 @@ void main() {
 
   group('批次82：排版设置（P0 四件套之①）', () {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定在编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    Finder editorTextField() => editorTextFieldWidget();
 
     testWidgets('#82-1 更多菜单 →「排版设置」→ 弹层出现（标题 + 背景预设）', (tester) async {
       await tester.pumpWidget(buildWritingPage());
@@ -1074,7 +1110,7 @@ void main() {
 
   group('批次82：写作目标进度条（P0 四件套之②）', () {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定在编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    Finder editorTextField() => editorTextFieldWidget();
 
     testWidgets('#82-5 点击字数 → 设置目标 → 显示「当前/目标」+ 进度条 + 章节级落库', (tester) async {
       await tester.pumpWidget(buildWritingPage());
@@ -1229,7 +1265,7 @@ void main() {
 
   group('批次82：版本时光机（P0 四件套之③）', () {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定在编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    Finder editorTextField() => editorTextFieldWidget();
 
     testWidgets('#82-8 ⋮ 菜单 → 版本时光机 → 空态显示', (tester) async {
       await tester.pumpWidget(buildWritingPage());
@@ -1315,7 +1351,7 @@ void main() {
 
   group('批次82：AI 入口重构（P0 四件套之④）', () {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定在编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    Finder editorTextField() => editorTextFieldWidget();
 
     testWidgets('#82-11 FAB 打开面板 → 编辑器与面板并排，正文不被覆盖', (tester) async {
       await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
@@ -2065,12 +2101,19 @@ void main() {
       matching: find.byType(TextField),
     );
 
-    /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    // ★ 本组的 `Finder editorTextField() => editorTextFieldWidget();` 本地别名已删除：
+    //   `editorSelection` 切宿主口径（[hostEditorController]）后它零调用点 ⇒ 死代码。
+    //   需要控件时直接用顶层 [editorTextFieldWidget]。
 
-    /// 当前编辑器选区（定位断言用）
+    /// 当前编辑器选区（**整篇绝对偏移**）
+    ///
+    /// ★ 分块模式下必须读宿主 controller：块 controller 只存**块内局部**偏移，
+    ///   而查找替换 / 全书搜索的程序化定位写的是宿主
+    ///   （`writing_page_find_replace_controller.dart:52/66`）。
+    ///   读块 controller 会得到 `TextSelection.invalid`（该块从未被赋值的局部选区），
+    ///   而期望值是整篇跨度（如 `[4,6)`）。详见 [hostEditorController] 的完整说明。
     TextSelection editorSelection(WidgetTester tester) =>
-        tester.widget<TextField>(editorTextField()).controller!.selection;
+        hostEditorController(tester).selection;
 
     Future<void> openFindReplace(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.more_vert));
@@ -2190,8 +2233,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // 编辑器内容已替换 + store 同步
-      final editor = tester.widget<TextField>(editorTextField());
-      expect(editor.controller!.text, '这是一个小雪纷飞的夜晚。');
+      // ★ 读宿主 controller（整篇真源；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '这是一个小雪纷飞的夜晚。');
       expect(
         container.read(writingStoreProvider(chapterId).notifier).currentContent,
         '这是一个小雪纷飞的夜晚。',
@@ -2219,10 +2262,8 @@ void main() {
       await tester.tap(find.text('全部替换'));
       await tester.pumpAndSettle();
 
-      expect(
-        tester.widget<TextField>(editorTextField()).controller!.text,
-        '细雨纷飞，雪落无声。细雨封山。',
-      );
+      // ★ 读宿主 controller（整篇真源，含块间 `\n`；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '细雨纷飞，雪落无声。细雨封山。');
       expect(find.text('0/0 处'), findsOneWidget);
     });
 
@@ -2273,11 +2314,15 @@ void main() {
     );
 
     /// 编辑器正文 TextField
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    Finder editorTextField() => editorTextFieldWidget();
 
-    /// 当前编辑器选区
+    /// 当前编辑器选区（**整篇绝对偏移**）
+    ///
+    /// ★ 同 [hostEditorController]：分块模式下块 controller 存的是块内局部偏移，
+    ///   全书搜索的程序化定位写的是宿主 controller。读块 controller 会得到
+    ///   `TextSelection.invalid`，而期望值是整篇跨度。
     TextSelection editorSelection(WidgetTester tester) =>
-        tester.widget<TextField>(editorTextField()).controller!.selection;
+        hostEditorController(tester).selection;
 
     Future<void> openFullTextSearch(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.more_vert));
@@ -2466,8 +2511,8 @@ void main() {
 
       // 越界定位失败不抛异常；编辑器内容完整未损坏
       expect(tester.takeException(), isNull);
-      final field = tester.widget<TextField>(editorTextField());
-      expect(field.controller!.text, '这是一个大雪纷飞的夜晚。');
+      // ★ 读宿主 controller（整篇真源；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '这是一个大雪纷飞的夜晚。');
     });
   });
 
@@ -2595,7 +2640,7 @@ void main() {
 
   group('批次85：完成度徽标（P2 效率组①）', () {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    Finder editorTextField() => editorTextFieldWidget();
 
     /// 完成度徽标内的文本（AppBar 标题 EditableText 可能与徽标同文 → 限定徽标内）
     Finder badgeText(String label) => find.descendant(
@@ -2678,7 +2723,7 @@ void main() {
 
   group('批次85-②：行段聚焦（P2 效率组②）', () {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    Finder editorTextField() => editorTextFieldWidget();
 
     test('currentSegmentRange：光标所在段区间', () {
       const text = '第一段。\n第二段。\n第三段。';
@@ -2721,9 +2766,10 @@ void main() {
         find.widgetWithText(SwitchListTile, '行段聚焦'),
       );
       expect(sw2.value, isTrue);
-      final ctrl =
-          tester.widget<TextField>(editorTextField()).controller!
-              as FocusAwareEditingController;
+      // ★ 读宿主 controller（见 [hostEditorController]）：行段聚焦淡化是宿主
+      //   `FocusAwareEditingController` 的能力（`focusMode` / `buildTextSpan`），
+      //   分块模式下块 controller 只是普通 `TextEditingController`。
+      final ctrl = hostEditorController(tester);
       expect(ctrl.focusMode, isTrue);
       expect(ctrl.text, '这是一个大雪纷飞的夜晚。');
     });
@@ -2757,9 +2803,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final ctrl =
-          tester.widget<TextField>(editorTextField()).controller!
-              as FocusAwareEditingController;
+      // ★ 读宿主 controller（见 [hostEditorController]）：行段聚焦淡化是宿主
+      //   `FocusAwareEditingController` 的能力（`focusMode` / `buildTextSpan`），
+      //   分块模式下块 controller 只是普通 `TextEditingController`。
+      final ctrl = hostEditorController(tester);
       ctrl.focusMode = true;
       // 光标在第二段内
       ctrl.selection = const TextSelection.collapsed(offset: 6);
@@ -2788,8 +2835,9 @@ void main() {
       matching: find.byType(TextField),
     );
 
-    /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定编辑器容器内）
-    Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+    // ★ 本组的 `Finder editorTextField() => editorTextFieldWidget();` 本地别名已删除：
+    //   相关断言切宿主口径（[hostEditorController]）后它零调用点 ⇒ 死代码。
+    //   需要控件时直接用顶层 [editorTextFieldWidget]。
 
     Future<void> openQuickPhrases(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.more_vert));
@@ -2834,8 +2882,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // 光标默认在文末 → 追加；即时保存到 store
-      final field = tester.widget<TextField>(editorTextField());
-      expect(field.controller!.text, '这是一个大雪纷飞的夜晚。他紧了紧衣领。');
+      // ★ 读宿主 controller（整篇真源；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '这是一个大雪纷飞的夜晚。他紧了紧衣领。');
       expect(
         container.read(writingStoreProvider(chapterId).notifier).currentContent,
         '这是一个大雪纷飞的夜晚。他紧了紧衣领。',
@@ -3052,7 +3100,7 @@ void main() {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      final editorFinder = find.byKey(const Key('chapterContentField'));
+      final editorFinder = editorTextFieldWidget();
       // 编辑器有预置内容，而 enterText 是整段替换 → 先清空，
       // 再输入单个左配对符（等价真实逐字符输入）→ 触发智能补全
       await tester.enterText(editorFinder, '');
@@ -3069,7 +3117,7 @@ void main() {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      final editorFinder = find.byKey(const Key('chapterContentField'));
+      final editorFinder = editorTextFieldWidget();
       await tester.tap(editorFinder);
       await tester.enterText(editorFinder, '你好');
       await tester.pumpAndSettle();
@@ -3081,7 +3129,7 @@ void main() {
 
   group('批次86-①：回收板（P2 工具组①）', () {
     Finder editorFinder() {
-      return find.byKey(const Key('chapterContentField'));
+      return editorTextFieldWidget();
     }
 
     Future<void> openRecycleBin(WidgetTester tester) async {
@@ -3232,7 +3280,7 @@ void main() {
 
   group('批次87-②：回收板增强（收尾②）', () {
     Finder editorFinder() {
-      return find.byKey(const Key('chapterContentField'));
+      return editorTextFieldWidget();
     }
 
     Future<void> openRecycleBin(WidgetTester tester) async {
@@ -3324,7 +3372,7 @@ void main() {
 
   group('批次87-④：低成本小项打包（收尾④）', () {
     Finder editorFinder() {
-      return find.byKey(const Key('chapterContentField'));
+      return editorTextFieldWidget();
     }
 
     Future<void> openMenu(WidgetTester tester) async {
@@ -3601,7 +3649,7 @@ void main() {
 
   group('批次88-4：段落格式（自动首行缩进 / 段间空行）', () {
     // 批次90：editorContainer 内有标题+正文两个 TextField → 正文用专用 key 定位
-    Finder editorFinder() => find.byKey(const Key('chapterContentField'));
+    Finder editorFinder() => editorTextFieldWidget();
 
     /// 打开排版设置弹层（菜单滚动 + 弹层内滚动到指定文本可见）
     Future<void> openSettings(WidgetTester tester, String label) async {
@@ -3626,8 +3674,10 @@ void main() {
       await tester.enterText(editorFinder(), '第一段。\n');
       await tester.pumpAndSettle();
 
-      final controller = tester.widget<TextField>(editorFinder()).controller!;
-      expect(controller.text, '第一段。\n\u3000\u3000');
+      // ★ 读宿主 controller（整篇真源，含块间 `\n`；见 [hostEditorController]）
+      //   分块模式下 `editorFinder()` 命中的是**首块**的 TextField，其 controller
+      //   不含块间换行 —— 换行只存在于 `_emitValue` 的拼接串（block_editable_view.dart:274-278）。
+      expect(hostEditorController(tester).text, '第一段。\n\u3000\u3000');
     });
 
     testWidgets('#88-4 关闭缩进开关 → 回车不补 + 落库', (tester) async {
@@ -3647,8 +3697,8 @@ void main() {
 
       await tester.enterText(editorFinder(), '第一段。\n');
       await tester.pumpAndSettle();
-      final controller = tester.widget<TextField>(editorFinder()).controller!;
-      expect(controller.text, '第一段。\n');
+      // ★ 读宿主 controller（整篇真源，含块间 `\n`；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '第一段。\n');
     });
 
     testWidgets('#88-4 开启段间空行 → 回车补空行 + 缩进 + 落库', (tester) async {
@@ -3664,18 +3714,31 @@ void main() {
 
       await tester.enterText(editorFinder(), '第一段。\n');
       await tester.pumpAndSettle();
-      final controller = tester.widget<TextField>(editorFinder()).controller!;
-      expect(controller.text, '第一段。\n\n\u3000\u3000');
+      // ★ 读宿主 controller（整篇真源，含块间 `\n`；见 [hostEditorController]）
+      //   段间空行开 ⇒ `_splitAtFirstNewline` 额外插入一个**空块**
+      //   （block_editable_view.dart:259-261），三块以 `\n` 拼接 ⇒ **两个**块间换行。
+      //   块 controller 自身永远看不到第二个 `\n`。
+      expect(hostEditorController(tester).text, '第一段。\n\n\u3000\u3000');
     });
 
     testWidgets('#88-4 排版设置「应用到全文」：移除全文缩进 + 落库', (tester) async {
-      await tester.pumpWidget(buildWritingPage());
-      await tester.pumpAndSettle();
-
-      // 预置两段（默认缩进开，回车自动补缩进）
-      await tester.enterText(editorFinder(), '一段。\n');
-      await tester.pumpAndSettle();
-      await tester.enterText(editorFinder(), '一段。\n\u3000\u3000二段。');
+      // ★ 2026-10-07 夹具订正：原预置是 `enterText(editorFinder(), '一段。\n')`
+      //   后再 `enterText(..., '一段。\n\u3000\u3000二段。')`，即**把多行整串塞进
+      //   「首块那一个 TextField」**——这是生产**不可达**的写法（外部整串写入一律走
+      //   `pushBlockEditorText → applyExternalText → _resetBlocks` 整块重建）。
+      //   该写法下 `_splitAtFirstNewline`（block_editable_view.dart:239）只在首个
+      //   `\n` 处拆左右两块、**不清理此前已存在的兄弟块** ⇒ 第一步残留的缩进块存活，
+      //   「应用到全文」去掉缩进后得到 `'一段。\n二段。\n'`（多一个块间换行）。
+      //   ⇒ 改为生产可达预置：建章时直接给两段内容（与 #96-8 同形）。
+      final chRepo = ChapterRepository(db);
+      final twoParaId = await chRepo.createChapter(
+        manuscriptId,
+        title: '两段章',
+        content: '一段。\n\u3000\u3000二段。',
+      );
+      await tester.pumpWidget(
+        buildWritingPage(id: twoParaId, msId: manuscriptId),
+      );
       await tester.pumpAndSettle();
 
       // 关闭缩进开关 → 应用到全文 → 全文移除缩进
@@ -3695,17 +3758,18 @@ void main() {
       await tester.tap(find.text('应用到全文'));
       await tester.pumpAndSettle();
 
-      final controller = tester.widget<TextField>(editorFinder()).controller!;
-      expect(controller.text, '一段。\n二段。');
+      // ★ 读宿主 controller（整篇真源，含块间 `\n`；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '一段。\n二段。');
       expect(find.text('已应用到全文'), findsOneWidget);
-      // 落库
-      final chapter = await ChapterRepository(db).getChapter(chapterId);
+      // 落库（★ 查 twoParaId 而非全局 setUp 的 chapterId —— 预置已改为新建章，
+      //   若仍查 chapterId 则断言的是另一章内容，绿了也验不到任何东西）
+      final chapter = await chRepo.getChapter(twoParaId);
       expect(chapter?.content, '一段。\n二段。');
     });
   });
 
   group('批次91：编辑器P0双bug（保存debounce / 撤销历史解绑 / 标点栏undo-redo）', () {
-    Finder editorFinder() => find.byKey(const Key('chapterContentField'));
+    Finder editorFinder() => editorTextFieldWidget();
 
     testWidgets('#91-1 输入后 300ms 合并保存：窗口内不落库、到期落库一次', (tester) async {
       await tester.pumpWidget(buildWritingPage());
@@ -3746,8 +3810,8 @@ void main() {
       await tester.tap(undoInBar);
       await tester.pump();
 
-      final controller = tester.widget<TextField>(editorFinder()).controller!;
-      expect(controller.text, '这是一个大雪纷飞的夜晚。');
+      // ★ 读宿主 controller（整篇真源；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '这是一个大雪纷飞的夜晚。');
     });
 
     testWidgets('#91-3 标点栏重做图标 → 恢复被撤销的内容', (tester) async {
@@ -3763,15 +3827,14 @@ void main() {
         find.descendant(of: bar, matching: find.byIcon(Icons.undo)),
       );
       await tester.pump();
-      var controller = tester.widget<TextField>(editorFinder()).controller!;
-      expect(controller.text, '这是一个大雪纷飞的夜晚。');
+      // ★ 读宿主 controller（整篇真源；见 [hostEditorController]）
+      expect(hostEditorController(tester).text, '这是一个大雪纷飞的夜晚。');
 
       await tester.tap(
         find.descendant(of: bar, matching: find.byIcon(Icons.redo)),
       );
       await tester.pump();
-      controller = tester.widget<TextField>(editorFinder()).controller!;
-      expect(controller.text, '可重做的内容');
+      expect(hostEditorController(tester).text, '可重做的内容');
     });
 
     testWidgets('#91-4 无效选区点击标点 → 不 RangeError，插入末尾', (tester) async {
@@ -3779,7 +3842,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // 构造无效选区（ed-p2-3 防御场景：offset 为负 → selection.isValid false）
-      final controller = tester.widget<TextField>(editorFinder()).controller!;
+      // ★ 写宿主 controller（整篇真源；见 [hostEditorController]）：
+      //   分块模式下块 controller 只是某一个块，而标点插入读的是宿主。
+      final controller = hostEditorController(tester);
       controller.value = const TextEditingValue(
         text: '正文内容',
         selection: TextSelection.collapsed(offset: -1),
@@ -3790,7 +3855,7 @@ void main() {
       await tester.tap(find.text('，'));
       await tester.pump();
 
-      expect(controller.text, '正文内容，');
+      expect(hostEditorController(tester).text, '正文内容，');
 
       // 收尾：清保存/历史 timer
       await tester.pump(const Duration(milliseconds: 1600));
@@ -3898,9 +3963,7 @@ void main() {
       );
 
       // 字：应为浅色 textInk（与暗底成对，保证可读）
-      final field = tester.widget<TextField>(
-        find.byKey(const Key('chapterContentField')),
-      );
+      final field = tester.widget<TextField>(editorTextFieldWidget());
       expect(
         field.style?.color,
         editorPaletteFor(editorBgAuto, globalIsDark: true).textInk,
@@ -3969,9 +4032,7 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.next);
       await tester.pumpAndSettle();
 
-      final contentField = tester.widget<TextField>(
-        find.byKey(const Key('chapterContentField')),
-      );
+      final contentField = tester.widget<TextField>(editorTextFieldWidget());
       expect(contentField.focusNode?.hasFocus, isTrue);
     });
   });
@@ -4083,7 +4144,7 @@ void main() {
 
       expect(find.byType(WritingCoachPanel), findsOneWidget);
       // 正文编辑器仍在（覆盖而非替换）
-      expect(find.byKey(const Key('chapterContentField')), findsOneWidget);
+      expect(editorTextFieldWidget(), findsOneWidget);
       // 面板铺满屏宽（底部抽屉而非 280px 侧栏）
       final panelSize = tester.getSize(find.byType(WritingCoachPanel));
       expect(panelSize.width, 400);
@@ -4106,9 +4167,7 @@ void main() {
       final panelSize = tester.getSize(find.byType(WritingCoachPanel));
       expect(panelSize.width, closeTo(440, 0.5));
       // 正文右边缘 ≤ 面板左边缘（Row 并排，正文不被覆盖）
-      final contentRect = tester.getRect(
-        find.byKey(const Key('chapterContentField')),
-      );
+      final contentRect = tester.getRect(editorTextFieldWidget());
       final panelRect = tester.getRect(find.byType(WritingCoachPanel));
       expect(contentRect.right, lessThanOrEqualTo(panelRect.left + 1));
     });
@@ -4302,10 +4361,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // 默认开关（首行缩进开/段间空行关）：每段补两个全角空格
-      final field = tester.widget<TextField>(
-        find.byKey(const Key('chapterContentField')),
+      // ★ 读宿主 controller（整篇真源，含块间 `\n`；见 [hostEditorController]）
+      //   排版后两块 → 块 controller 只含单块，永远看不到块间那个 `\n`。
+      expect(
+        hostEditorController(tester).text,
+        '\u3000\u3000第一段。\n\u3000\u3000第二段。',
       );
-      expect(field.controller!.text, '\u3000\u3000第一段。\n\u3000\u3000第二段。');
       expect(find.text('已应用到全文'), findsOneWidget);
       // 已落库
       final saved = await chRepo.getChapter(id);
@@ -4339,10 +4400,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 编辑正文触发 dirty
-      await tester.enterText(
-        find.byKey(const Key('chapterContentField')),
-        '改过的内容。',
-      );
+      await tester.enterText(editorTextFieldWidget(), '改过的内容。');
       await tester.pumpAndSettle();
 
       // 点 AppBar ✕ → 弹居中确认，未直接返回

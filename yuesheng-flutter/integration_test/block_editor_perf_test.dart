@@ -7,8 +7,12 @@
 //
 // 运行（flag 关=现网通路）：
 //   flutter test integration_test/block_editor_perf_test.dart -d emulator-5554
-// 运行（flag 开=分块只读渲染）：
-//   把 lib/.../block_readonly_view.dart 的 kBlockEditorEnabled 改为 true 后重跑
+// 运行（flag 开=分块可编辑渲染，**当前默认**）：
+//   ⚠️ 2026-10-07 订正：`kBlockEditorEnabled` 自 commit `7d245a75` 起即为 **true**
+//   （原文写「改为 true 后重跑」已失效）。当前直接跑即为 flag-on 通路。
+//   要跑 flag-off 对照：手动把 lib/features/writing/blocked_text/block_readonly_view.dart
+//   的常量改回 false，**跑完务必改回 true** —— 上一次翻值事故见
+//   reports/2026-10-07-分块编辑器缺陷专项审查.md
 //
 // 口径说明：
 //   - 直接 pump WritingEditorView（非整页 WritingPage）——两条路径的性能差

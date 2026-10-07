@@ -150,6 +150,22 @@ class WritingPageStoreSyncController {
       // state 变化不会触发已销毁 element 的 rebuild。
       debugPrint('[WritingPage] dispose 触发强制保存: chapterId=${_host.chapterId}');
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // ★ 2026-10-07 补生命周期守卫：本回调可能落在 store 已 dispose 之后
+        //   （页面 dispose → 下一帧才跑，而 ProviderContainer 卸载会先 dispose
+        //   WritingStore）。此时 `saveNow` 首行即 `state = ...`，
+        //   WritingStore 未对 saveNow 加 mounted 守卫（writing_providers.dart:457-464）
+        //   ⇒ 直接抛 `Bad state: Tried to use WritingStore after dispose was called`。
+        //   实证：批次91-1 用例在测试拆树期的 warm-up 帧上抛该 StateError。
+        //   守卫放在**调用点**而非 saveNow 内：saveNow 的其余调用
+        //   （applyParagraphFormat 等）都在页面 mounted 期执行，
+        //   给它加闸等于用全局改动掩盖单点时序问题。
+        if (!store.mounted) {
+          debugPrint(
+            '[WritingPage] dispose 强制保存跳过（store 已 dispose）: '
+            'chapterId=${_host.chapterId}',
+          );
+          return;
+        }
         // saveNow 内部 catch 所有异常并 debugPrint（含 chapterId + error）；
         // widget 已销毁无人监听 state.error，此处仅留 dispose 上下文标记，
         // 与 [WritingStore] saveNow 失败 日志通过 chapterId 关联排查。
