@@ -70,6 +70,50 @@ TAG_LINE = re.compile(
     r'^\s*echo\s+"[^"]*门禁\s+(\d+)/(\d+)', re.MULTILINE
 )
 
+# ★ 跨文件道数口径（2026-10-07 实测漏项）：`gate.sh` 加了一道后，
+#   `gate-fast.sh` / `git-hooks/pre-commit` / `install-git-hooks.ps1` 里
+#   **还有 6 处「十七道」文案没跟** —— 而当时的守卫只看 gate.sh ⇒ 抓不到。
+#   ⇒ 凡出现「N 道」的文件一律纳入核对，且必须与 gate.sh 实测一致。
+COUNT_FILES = ["scripts/gate.sh", "scripts/gate-fast.sh",
+               "scripts/git-hooks/pre-commit", "scripts/install-git-hooks.ps1"]
+CN_WORD = {v: k for k, v in CN_NUM.items() if v >= 10}  # 数 -> 中文词
+
+
+# 历史叙述豁免：这些词出现在同行时，该行记的是**过去**，不是当前口径
+HISTORY_MARKERS = ("快照", "增至", "演进", "历史版本", "当时的", "曾", "已由")
+
+
+def cross_file_counts(src: str, real_total: int, fails: list) -> None:
+    """核对各文件的「N 道」声明与 gate.sh 实测一致（中文数字形态）。"""
+    word = CN_WORD.get(real_total)
+    if not word:
+        fails.append(f"F1：无法把实测道数 {real_total} 映射为中文词（CN_NUM表未含）")
+        return
+    for rel in COUNT_FILES:
+        fp = os.path.join(FLUTTER_ROOT, rel)
+        content = _read(fp)
+        if content is None:
+            continue
+        line_no = 0
+        for line in content.splitlines():
+            line_no += 1
+            if line.lstrip().startswith("#") and "道" not in line:
+                continue
+            for m in re.finditer(r"([零一二三四五六七八九十]{2,3})\s*道", line):
+                tok = m.group(1)
+                n = cn2int(tok)
+                if n is None or n < 10:
+                    continue
+                # 历史快照行（含 4 位日期 / 「快照」/「由…增至」演进说明）不校验
+                if (re.search(r"20\d\d-\d\d-\d\d", line)
+                        or any(k in line for k in HISTORY_MARKERS)):
+                    continue
+                if n != real_total:
+                    fails.append(
+                        f"F1：{rel}:{line_no} 声明「{n} 道」，"
+                        f"但 gate.sh 实测 **{real_total} 道**"
+                    )
+
 
 def gate_denominators(src: str) -> set[int]:
     """从 gate.sh 的**运行时标签行**抽分母集合（不含注释）。"""
@@ -144,6 +188,13 @@ def main() -> int:
             f"混用多个道数口径（真实应为 {real_total}）。"
             f"★ 这正是「道数漂移」复发点：改一处忘其余。"
         )
+    # 跨文件道数口径核对（gate-fast / hook / 安装脚本）
+    cross_file_counts(gate, real_total, fails)
+    for rel in COUNT_FILES[1:]:
+        c = _read(os.path.join(FLUTTER_ROOT, rel))
+        if c:
+            cross_file_counts(c, real_total, fails)
+
     # 编号必须连续 0..N-1
     missing = sorted(set(range(real_total)) - nums)
     if missing:
