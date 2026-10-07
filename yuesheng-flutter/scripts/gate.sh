@@ -76,28 +76,16 @@
 #          把 A 类豁免的**前提**变成可执行判据（内容级），堵住门禁 10 的 fail-open
 #          基线 tool/a_class_exemption_baseline.json，止血模式：只卡新增
 # 门禁 12: Skill 公共库链接 (scripts/check_skills_links.py) — ADR-C115
-# 门禁 13: extension 单块行数 (scripts/check_extension_shape.py --baseline) — ADR-0004 §2 R-2
-#          给「减行数不得用 extension」补机器执行点（此前零执行点）；
-#          阈值 300 与 R-019 文件级同值；基线按块名+路径登记（行数会漂）
 #          「单一真源 .agents/skills + 工作台 Junction」结构守卫：① Junction 目标
 #          必须存在（防悬空死链）② 公共库 SKILL.md frontmatter 合法（name/description）
 #          ③ 旧代 skill 必须带作废标注（防误迁入公共库被助手误加载）
-#
-# 用法:  bash scripts/gate.sh          ← **收尾门禁**：十七道全量（约 4~5 分钟）
-#        bash scripts/gate-fast.sh     ← **迭代快道**：门禁 2 只跑受影响测试、
-#                                         门禁 6 按设计不跑（约 40 秒）
-# 退出码: 任一门禁 FAIL **或** 任一门禁未真正执行 (SKIP/DEGRADED) 则非 0
-#
-# ⚠️ 失败关闭约定 (2026-09-12 实证，三脚本统一)：
-#    「无法检查 ≠ 通过」。当门禁因环境缺失（python 不可用、lib 不存在等）
-#    而**从未真正执行**时，绝不允许记为 PASS。三种此前互相矛盾的策略
-#    （check_circular.py return 2 / check_secrets.sh exit 0 / gate.sh 记 PASS）
-#    现统一为 fail-closed：一律非 0 退出 + 明确原因。
-#    本脚本中 python 缺失使门禁 3 / 5 跳过、或 lcov 缺失使门禁 6 跳过时，
-#    记 `SKIP`（独立于 PASS/FAIL），并在报告的**顶部**打出醒目的
-#    `⚠️ DEGRADED` 警告，退出码非 0。
-#    这样「全绿」才真正等价于「十七道都跑过且都通过」。
-# ============================================================
+# 门禁 13: extension 单块行数 (scripts/check_extension_shape.py) — ADR-0004 §2 R-2
+#          给「减行数不得用 extension」补机器执行点（此前零执行点）；
+#          阈值 300 与 R-019 文件级同值。
+# ★ 批 4（2026-10-07）：由「基线豁免、只卡新增」**升为全量卡口**——
+#   ChatServiceSend 已拆至 292 行（1193 → 292，三批递减 901 行），
+#   tool/extension_shape_baseline.json 的最后一条豁免随之删除。
+#   ⇒ 现在**任何** extension 块超 300 行都会阻断提交（收紧）。
 set -u
 
 # ★ Python 子进程输出编码：Windows 中文 locale 下 python 的 stdout 是 GBK，打「✓」即崩 ⇒ 该道假红。
@@ -578,13 +566,13 @@ if [ -z "$PY_BIN" ]; then
   echo "SKIP: (NOT EXECUTED) python not available" > "$EXT_SHAPE_LOG"
   RC_EXTENSION_SHAPE=SKIP
 elif [ ! -f "$ROOT/tool/extension_shape_baseline.json" ]; then
-  echo "  [WARN] extension 豁免基线缺失（tool/extension_shape_baseline.json），跳过"
   echo "SKIP: (NOT EXECUTED) baseline missing" > "$EXT_SHAPE_LOG"
   RC_EXTENSION_SHAPE=SKIP
 else
-  if "$PY_BIN" scripts/check_extension_shape.py \
-    --baseline tool/extension_shape_baseline.json \
-    --expect-rule-count 1 > "$EXT_SHAPE_LOG" 2>&1; then
+  # ★ ADR-0004 §4 步 5 批 4：E1 由「基线豁免、只卡新增」**升为全量卡口**
+  #   —— 不再传 --baseline（脚本无该参数时 exemptions={}，over 全算违规）。
+  #   前置：ChatServiceSend 已拆至 292 行 < 300 阈值，豁免登记随之作废。
+  if "$PY_BIN" scripts/check_extension_shape.py > "$EXT_SHAPE_LOG" 2>&1; then
     RC_EXTENSION_SHAPE=0
   else
     RC_EXTENSION_SHAPE=1

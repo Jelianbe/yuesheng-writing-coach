@@ -245,7 +245,7 @@ if [ "$DRY_RUN" = "1" ]; then
   echo "门禁 9: python scripts/check_interaction_regression.py"
   echo "门禁 10: python scripts/check_split_shape.py --baseline tool/split_shape_baseline.json --expect-rule-count 3"
   echo "门禁 11: python scripts/check_a_class_exemption.py --baseline tool/a_class_exemption_baseline.json --expect-rule-count 4"
-  echo "门禁 13: python scripts/check_extension_shape.py --baseline tool/extension_shape_baseline.json --expect-rule-count 1"
+  echo "门禁 13: python scripts/check_extension_shape.py (全量卡口，无 --baseline)"
   exit 0
 fi
 
@@ -452,19 +452,15 @@ log_result "A 类豁免准入" "$RC_ACLASS"
 # 与 gate.sh 门禁 13 同一执行物、同一基线、同一退出码语义（0/1/2）。
 # ⚠️ rc=2（环境错误 / 基线结构非法）一律判 FAIL，不当 SKIP 放过 ——
 #    空扫等于没检查（守卫内建 G1 fail-closed）。
-echo "--> 快道 门禁 13: extension 单块行数（基线豁免，只卡新增；ADR-0004 R-2）"
+echo "--> 快道 门禁 13: extension 单块行数（全量卡口；ADR-0004 R-2 批 4 升）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 extension 分块扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$EXT_SHAPE_LOG"
   RC_EXTENSION_SHAPE=SKIP
-elif [ ! -f "$ROOT/tool/extension_shape_baseline.json" ]; then
-  echo "  [WARN] extension 豁免基线缺失，跳过"
-  echo "SKIP: (NOT EXECUTED) baseline missing" > "$EXT_SHAPE_LOG"
-  RC_EXTENSION_SHAPE=SKIP
 else
-  if "$PY_BIN" scripts/check_extension_shape.py \
-    --baseline tool/extension_shape_baseline.json \
-    --expect-rule-count 1 > "$EXT_SHAPE_LOG" 2>&1; then
+  # ★ ADR-0004 §4 步 5 批 4：与 gate.sh 同步升为**全量卡口**（不传 --baseline）。
+  #   两脚本必须同口径，否则快道放行、收尾报红（或反之）= 口径漂移。
+  if "$PY_BIN" scripts/check_extension_shape.py > "$EXT_SHAPE_LOG" 2>&1; then
     RC_EXTENSION_SHAPE=0
   else
     RC_EXTENSION_SHAPE=1
