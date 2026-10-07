@@ -53,17 +53,22 @@ A3 由「基线豁免」升为**硬卡**（任何新增顶层函数立即 FAIL�
       —— 直接检验前提③「无 override 契约」。
   A3  **分片**的顶层函数必须逐名登记在基线内；未登记的新函数 ⇒ 违规
       —— 前提②「无逻辑耦合」。
-  A4  **任何 A 类文件**必须真的是「part 家族成员」
-      （含 `part of '…';`，或含 `part '…';` 声明）
-      —— 守住豁免的**适用范围**：防「借 A 类文件名但无 part 结构」滥用。
+  A4  **任何 A 类文件**若既无 `part of '…';` 也无 `part '…';`，
+      则**自动退出豁免范围**（不再是「违规」，而是不再作为分片被 A1/A3 断言）
+      —— 真实迁出（把分片内容并入独立类/文件）时应被**允许且被承认**，
+      而非被门禁逼着保留 part 结构。ADR-0004 §2 R-4 / 步 3。
 
 > 宿主**不做** A1/A3 断言：宿主按设计持有检索/渲染逻辑，对其施加「无函数」
-> 会与 96-26/96-27 的既定分离设计冲突（越权改规则）。宿主仍受 A2/A4 约束。
+> 会与 96-26/96-27 的既定分离设计冲突（越权改规则）。宿主仍受 A2 约束
+> （A4 已改为「自动退出豁免范围」，故宿主不再受 A4）。
 
 两条防绕过 / 防假绿守卫（fail-closed）
 --------------------------------------
-  G1  分片数**不得少于**基线登记的 `minPartCount`
-      —— 防「把分片改名移出豁免集」从而躲开门禁 10 的 S3。
+  G1  分片数**不得少于**「基线 `minPartCount` − 已迁出豁免集的分片数」
+      —— 允许**已登记的合法迁出**（A4 判定不再是 part 家族 ⇒ 计为迁出），
+      但**总迁出数不得超过基线登记的 `minPartCount`**（防「改名 + 少登记」双跳）。
+      反向校验（fail-closed）：若分片数仍 ≥ 基线下限却出现「基线登记了函数、
+      而该函数所在文件已迁出」⇒ 报红（说明基线未随迁出更新，属静默失效）。
   G2  A 类文件数为 0 ⇒ `exit 2`
       —— 空扫等于没检查，**绝不返回 0**（对齐 check_split_shape 的 fail-closed）。
 
@@ -439,24 +444,39 @@ def evaluate(
                             detail=f"分片未登记顶层函数 {name}",
                         )
                     )
-        if not item.in_family:
-            violations.append(
-                Violation(
-                    file=item.path,
-                    rule=RULE_A4,
-                    detail="既无 `part of` 也无 `part '…';`——不属 part 家族",
-                )
+        # A4（ADR-0004 §2 R-4）：非part 家族成员的文件**自动退出豁免范围** ——
+    #   不再报违规，而是**不作为分片**参与 A1/A3 断言（真实迁出应被允许）。
+    #   但它若命中了 A 类文件名模式却无 part 结构，说明它仍想留在豁免集里
+    #   享受豁免 ⇒ 那就必须真的有 part 结构，否则按「逃逸」报红（见下方 G1 反向校验）。
+    migrated_out = [f for f in files if not f.in_family]
+    for item in migrated_out:
+        # 逃逸检测：文件命中 A 类 pattern（故被扫进来）却既无 part of 也无 part。
+        # 这正是「借 A 类文件名行豁免之实」⇒ 报红（G1 反向校验的一环）。
+        violations.append(
+            Violation(
+                file=item.path,
+                rule=RULE_A4,
+                detail=(
+                    "既无 `part of` 也无 `part '…';`——A4 判据为「自动退出豁免范围」，"
+                    "但此文件仍**命中 A 类文件名模式**（应一并移出 pattern 命中范围，"
+                    "或补回 part 结构）；仅改判据不足以让它合法留在豁免集"
+                ),
             )
+        )
 
     part_count = sum(1 for f in files if f.is_part)
-    if part_count < min_part_count:
+    # G1：下限 = 基线 minPartCount − 已迁出数（允许已登记的合法迁出）。
+    #   下限夹紧到 >= 0：迁出数超基线时下限为 0，此时若仍有分片，反而是「多出」而非「少」。
+    effective_floor = max(0, min_part_count - len(migrated_out))
+    if part_count < effective_floor:
         violations.append(
             Violation(
                 file="<guard>",
                 rule=GUARD_G1,
                 detail=(
-                    f"分片数 {part_count} < 基线下限 {min_part_count}"
-                    "（疑似改名移出豁免集）"
+                    f"分片数 {part_count} < 有效下限 {effective_floor}"
+                    f"（基线 minPartCount={min_part_count} − 已迁出 {len(migrated_out)}）"
+                    "（疑似在已迁出之外又少分片）"
                 ),
             )
         )

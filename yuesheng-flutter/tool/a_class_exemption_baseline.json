@@ -3,11 +3,14 @@
   "exemptionSource": "check_split_shape.py",
   "exemptionPatternCount": 4,
   "ruleCount": 4,
-  "fileCount": 53,
-  "partCount": 49,
-  "minPartCount": 49,
+  "fileCount": 54,
+  "partCount": 50,
+  "minPartCount": 50,
   "allowedFunctions": {
-    "services/syndrome_kb_content.dart": ["buildSyndromeIndexContent"]
+    "services/syndrome_kb_content.dart": [
+      "buildSyndromeIndexContent"
+    ]
   },
-  "violations": []
+  "violations": [],
+  "_note": "minPartCount 下限用于 G1（防「改名移出豁免集」）。2026-10-07 实测刷新：原基线记49/53，真实值 50/54（偏低 1，陈旧）。注：allowedFunctions 里 buildSyndromeIndexContent 由 0453bead 随真实新增分片函数同步登记，合法。"
 }
