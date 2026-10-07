@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 月笙写作教练 Flutter 端 — 十四道门禁 (R-027 + 宪法 §二)
+# 月笙写作教练 Flutter 端 — 十七道门禁 (R-027 + 宪法 §二)
 #
 # 【2026-10-05 新增·三档分组标注】——★ **只标注、不改调度逻辑**
 #   分档依据 = 2026-10-05 成本审计实测的逐道耗时
@@ -26,7 +26,7 @@
 #   ⚠️ **与 CI 的口径分叉（事实登记，非待办）**：本文件 14 道全跑；
 #      `.github/workflows/flutter_ci.yaml` **只跑 6 道**
 #      （0/1/2/3/4 + 6），**门禁 5/7/8/9/10/11/12/13 从不在 CI 出现**
-#      ⇒ **「本地全绿」才是收尾；「CI 全绿」≠ 十四道全绿**。
+#      ⇒ **「本地全绿」才是收尾；「CI 全绿」≠ 十七道全绿**。
 #      分叉理由与成本实测见该文件同处注释。
 #
 # 门禁 0: 代码格式 (dart format --set-exit-if-changed lib test integration_test tool)
@@ -83,7 +83,7 @@
 #          必须存在（防悬空死链）② 公共库 SKILL.md frontmatter 合法（name/description）
 #          ③ 旧代 skill 必须带作废标注（防误迁入公共库被助手误加载）
 #
-# 用法:  bash scripts/gate.sh          ← **收尾门禁**：十四道全量（约 4~5 分钟）
+# 用法:  bash scripts/gate.sh          ← **收尾门禁**：十七道全量（约 4~5 分钟）
 #        bash scripts/gate-fast.sh     ← **迭代快道**：门禁 2 只跑受影响测试、
 #                                         门禁 6 按设计不跑（约 40 秒）
 # 退出码: 任一门禁 FAIL **或** 任一门禁未真正执行 (SKIP/DEGRADED) 则非 0
@@ -96,7 +96,7 @@
 #    本脚本中 python 缺失使门禁 3 / 5 跳过、或 lcov 缺失使门禁 6 跳过时，
 #    记 `SKIP`（独立于 PASS/FAIL），并在报告的**顶部**打出醒目的
 #    `⚠️ DEGRADED` 警告，退出码非 0。
-#    这样「全绿」才真正等价于「十四道都跑过且都通过」。
+#    这样「全绿」才真正等价于「十七道都跑过且都通过」。
 # ============================================================
 set -u
 
@@ -127,6 +127,9 @@ SPLIT_LOG="$OUT_DIR/split_shape.txt"
 A_CLASS_LOG="$OUT_DIR/a_class_exemption.txt"
 SKILLS_LINKS_LOG="$OUT_DIR/skills_links.txt"
 EXT_SHAPE_LOG="$OUT_DIR/extension_shape.txt"
+FLAG_CONTRACT_LOG="$OUT_DIR/flag_contract.txt"
+ADR_DANGLING_LOG="$OUT_DIR/adr_dangling.txt"
+HOOK_SYNC_LOG="$OUT_DIR/hook_sync.txt"
 
 pass=0
 fail=0
@@ -152,7 +155,7 @@ log_result() {
 }
 
 echo "=================================================="
-echo "月笙 Flutter 十四道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
+echo "月笙 Flutter 十七道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================="
 
 # ---------- 公共：定位 python（门禁 3 / 5 / 6 共用）----------
@@ -569,7 +572,7 @@ log_result "Skill 公共库链接" "$RC_SKILLS_LINKS"
 #   该批须同批删豁免、把 E1 升为全量卡口并做负向验证。
 # 退出码：0 通过 / 1 有新增或失效豁免 / 2 环境或基线非法。
 #   ⚠️ rc=2 一律判 FAIL 不当 SKIP —— 空扫等于没检查（守卫内建 G1）。
-echo "--> 门禁 13/14: extension 单块行数（基线豁免，只卡新增；ADR-0004 R-2）"
+echo "--> 门禁 13/17: extension 单块行数（基线豁免，只卡新增；ADR-0004 R-2）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 extension 分块扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$EXT_SHAPE_LOG"
@@ -589,6 +592,82 @@ else
   fi
 fi
 log_result "extension 单块行数" "$RC_EXTENSION_SHAPE"
+
+# ---------- 门禁 14: flag 契约同步（scripts/check_flag_contract.py）----------
+# 背景（2026-10-07 P0 事故 7d245a75）：该提交把 kBlockEditorEnabled 由 false 翻为
+# true，提交信息自述「+ 同步测试契约」，实际只同步了 block_readonly_view_test.dart、
+# **漏了 writing_page_test.dart** ⇒ 收尾门禁 54 例红，且事故当时零台账登记。
+# 根因不是「忘了」，而是「自述已同步 ≠ 已同步」**没有机器执行点**。
+# 判据（守卫内建）：G1 空扫 fail-closed / G2 登记完整性 / G3 值变更时受影响测试
+#   必须**同批**改动。基线 tool/flag_contract_baseline.json。
+# 退出码：0 通过 / 1 有未同步或登记缺失 / 2 环境不可判定（rc=2 判 FAIL 不当 SKIP）。
+echo "--> 门禁 14/17: flag 变更须同步测试契约（ADR-0002 事故 7d245a75 遗留）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3/ python，跳过 flag 契约扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$FLAG_CONTRACT_LOG"
+  RC_FLAG_CONTRACT=SKIP
+elif [ ! -f "$ROOT/tool/flag_contract_baseline.json" ]; then
+  echo "  [WARN] flag 基线缺失（tool/flag_contract_baseline.json），跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$FLAG_CONTRACT_LOG"
+  RC_FLAG_CONTRACT=SKIP
+else
+  if "$PY_BIN" scripts/check_flag_contract.py > "$FLAG_CONTRACT_LOG" 2>&1; then
+    RC_FLAG_CONTRACT=0
+  else
+    RC_FLAG_CONTRACT=1
+    cat "$FLAG_CONTRACT_LOG"
+  fi
+fi
+log_result "flag 契约同步" "$RC_FLAG_CONTRACT"
+
+# ---------- 门禁 15: ADR 悬空引用 ----------
+# 背景：.ai/adr/ 的编号↔实体对应关系此前**只靠人记**，无机器执行点。实测
+# ADR-0001 被 .ai 文档引 9 处（代码侧零引用）而 .ai/adr/ 下无 0001 实体文件。
+# 判据：G1 空扫 fail-closed / G2 悬空引用须补实体或**显式登记豁免**（EXEMPT 表
+#   只认裸 4 位数字键）/ G3 索引陈旧提醒（排除已豁免）。
+# ⚠️ 跨仓判据：它读仓库根的 .ai/ 与 yuesheng-flutter/（本仓是 monorepo 子目录，
+#   git 仓库根是 D:/ai-teacher 而非 yuesheng-flutter/）—— 路径错配会静默零扫描，
+#   故守卫内建 G1 空扫 fail-closed。
+echo "--> 门禁 15/17: ADR 悬空引用（编号↔实体必须有实文件）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过 ADR 悬空扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$ADR_DANGLING_LOG"
+  RC_ADR_DANGLING=SKIP
+elif [ ! -d "$ROOT/../.ai/adr" ]; then
+  echo "  [WARN] 未找到 ADR 目录（$ROOT/../.ai/adr），跳过"
+  echo "SKIP: (NOT EXECUTED) adr dir missing" > "$ADR_DANGLING_LOG"
+  RC_ADR_DANGLING=SKIP
+else
+  if "$PY_BIN" scripts/check_adr_dangling.py > "$ADR_DANGLING_LOG" 2>&1; then
+    RC_ADR_DANGLING=0
+  else
+    RC_ADR_DANGLING=1
+    cat "$ADR_DANGLING_LOG"
+  fi
+fi
+log_result "ADR 悬空引用" "$RC_ADR_DANGLING"
+
+# ---------- 门禁 16: git hook 副本同步 ----------
+# 背景（2026-10-07 实踩）：scripts/git-hooks/pre-commit 是**源文件**（受版本控制），
+# 而 git 实际执行的是 <git-dir>/hooks/pre-commit（**安装副本**，不受版本控制）。
+# 二者只靠手工跑 install-git-hooks.ps1 同步 —— 改了源文件提交后**不生效**，而
+# 一切检查都绿（源文件本身没问题）⇒ 静默失效。
+# 判据：git rev-parse --absolute-git-dir 取生效目录 → 比 md5；不一致报红并给出
+#   修复命令。副本未安装判 SKIP/0（首次 clone 常见，非漂移）。
+echo "--> 门禁 16/17: hook 副本↔源文件同步（防改了不生效）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过 hook 同步扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$HOOK_SYNC_LOG"
+  RC_HOOK_SYNC=SKIP
+else
+  if "$PY_BIN" scripts/check_hook_sync.py > "$HOOK_SYNC_LOG" 2>&1; then
+    RC_HOOK_SYNC=0
+  else
+    RC_HOOK_SYNC=1
+    cat "$HOOK_SYNC_LOG"
+  fi
+fi
+log_result "hook 副本同步" "$RC_HOOK_SYNC"
 
 # ---------- 汇总报告 ----------
 #
@@ -616,7 +695,7 @@ if [ "$degraded" -gt 0 ]; then
 fi
 
 cat > "$REPORT" <<EOF
-# 十四道门禁报告
+# 十七道门禁报告
 
 ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
@@ -637,6 +716,9 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | A 类豁免准入（只卡新增） | $(verdict "${RC_ACLASS:-SKIP}") |
 | Skill 公共库链接 | $(verdict "${RC_SKILLS_LINKS:-SKIP}") |
 | extension 单块行数（只卡新增） | $(verdict "${RC_EXTENSION_SHAPE:-SKIP}") |
+| flag 契约同步 | $(verdict "${RC_FLAG_CONTRACT:-SKIP}") |
+| ADR 悬空引用 | $(verdict "${RC_ADR_DANGLING:-SKIP}") |
+| hook 副本同步 | $(verdict "${RC_HOOK_SYNC:-SKIP}") |
 
 汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP）
 
@@ -655,6 +737,9 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - A 类豁免准入: outputs/gate/a_class_exemption.txt
 - Skill 公共库链接: outputs/gate/skills_links.txt
 - extension 单块行数: outputs/gate/extension_shape.txt
+- flag 契约同步: outputs/gate/flag_contract.txt
+- ADR 悬空引用: outputs/gate/adr_dangling.txt
+- hook 副本同步: outputs/gate/hook_sync.txt
 EOF
 
 echo "=================================================="
@@ -666,5 +751,5 @@ echo "报告: $REPORT"
 echo "=================================================="
 
 # fail-closed：任一 FAIL 或任一 SKIP（未真正执行）都使退出码非 0。
-# 「全绿」= fail==0 且 degraded==0，此时才确信十四道都真的跑过。
+# 「全绿」= fail==0 且 degraded==0，此时才确信十七道都真的跑过。
 [ "$fail" -eq 0 ] && [ "$degraded" -eq 0 ]

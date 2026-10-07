@@ -79,7 +79,7 @@ try {
     Write-Host ""
     Write-Host "行为：仅当改动触及 yuesheng-flutter/ 或 flutter_ci.yaml 时运行**快道**"
     Write-Host "      （scripts/gate-fast.sh，约 40 秒）。快道不含门禁 6（覆盖率）。"
-    Write-Host "      收尾请手工跑：cd yuesheng-flutter; bash scripts/gate.sh（十四道全量）"
+    Write-Host "      收尾请手工跑：cd yuesheng-flutter; bash scripts/gate.sh（十七道全量）"
     Write-Host ""
     Write-Host "👉 跳过快道（紧急提交）："
     Write-Host "   PowerShell：`$env:SKIP_GIT_GATE=1 ; git commit -m '...'"

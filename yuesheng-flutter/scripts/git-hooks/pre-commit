@@ -4,7 +4,7 @@
 #
 # 行为：
 #   - 仅当本次 staged 变更触及 yuesheng-flutter/ 或 flutter_ci.yaml 时运行
-#   - 跑的是**快道** scripts/gate-fast.sh（约 40 秒），**不是**收尾十四道
+#   - 跑的是**快道** scripts/gate-fast.sh（约 40 秒），**不是**收尾十七道
 #     ⇒ 门禁 6（覆盖率）不在快道内；声称「完成」前仍须手工跑 gate.sh
 #   - 若本地缺 dart/flutter 工具链，警告但不阻断（CI 仍会事后拦截）
 #   - 紧急跳过：    SKIP_GIT_GATE=1 git commit ...
@@ -91,7 +91,7 @@ if bash scripts/gate-fast.sh; then
   echo ""
   echo "[pre-commit] ✅ 快道门禁通过，允许提交"
   echo "[pre-commit] ⚠️  提醒：这不是收尾全绿。声称「完成」前须跑"
-  echo "[pre-commit]     cd yuesheng-flutter && bash scripts/gate.sh（十四道）"
+  echo "[pre-commit]     cd yuesheng-flutter && bash scripts/gate.sh（十七道）"
   exit 0
 else
   echo ""
