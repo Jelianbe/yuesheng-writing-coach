@@ -1,0 +1,6 @@
+{
+  "_comment": "flag 值基线 —— check_flag_contract.py 的 G3 判据用。翻 flag 时必须同批同步 affected_tests；确认无误后跑 --write-baseline 刷新。",
+  "flags": {
+    "kBlockEditorEnabled": "true"
+  }
+}
