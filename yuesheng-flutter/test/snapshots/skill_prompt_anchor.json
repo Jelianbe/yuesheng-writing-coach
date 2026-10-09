@@ -48,15 +48,15 @@
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "diagnosis_p1_yuesheng": {
-      "len": 53682,
-      "fnv": "3c327510927c0d2c",
-      "tokens": 53682,
+      "len": 53534,
+      "fnv": "7e141b1a4b7b1447",
+      "tokens": 53534,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "diagnosis_yuesheng": {
-      "len": 55465,
-      "fnv": "5f58a77448a2176f",
-      "tokens": 55465,
+      "len": 55317,
+      "fnv": "69c73895b2ffb6b4",
+      "tokens": 55317,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "training_yuesheng": {
@@ -84,9 +84,9 @@
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,plot-design,narrative-design,outline-diagnosis,coaching-actions-v2,reader-awareness"
     },
     "beginner_p3_yuesheng_forceSceneFirst": {
-      "len": 66340,
-      "fnv": "4a6a945648a5aeea",
-      "tokens": 66340,
+      "len": 66192,
+      "fnv": "245b7420b82cae95",
+      "tokens": 66192,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     }
   },
@@ -272,8 +272,8 @@
       "fnv": "53f6260c0fa016bc"
     },
     "diagnosisSceneFirst": {
-      "len": 602,
-      "fnv": "12261ba2b2385781"
+      "len": 454,
+      "fnv": "67c78c0ed5d21dec"
     }
   }
 }

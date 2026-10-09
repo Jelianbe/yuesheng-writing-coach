@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 53682,
-      "fnv": "3c327510927c0d2c"
+      "len": 53534,
+      "fnv": "7e141b1a4b7b1447"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 55465,
-      "fnv": "5f58a77448a2176f"
+      "len": 55317,
+      "fnv": "69c73895b2ffb6b4"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 55465,
-      "fnv": "5f58a77448a2176f"
+      "len": 55317,
+      "fnv": "69c73895b2ffb6b4"
     },
     {
       "role": "system",
