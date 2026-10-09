@@ -109,7 +109,7 @@ void _appendOnboardingSection(
     sections.add('- 教学方式约束（新手）：');
     sections.add('  · 避免专业术语，遇到新概念必须展开解释');
     sections.add('  · 技术建议优先配具体例子，帮助理解');
-    sections.add('  · 语气以鼓励为主，先肯定做得好的部分再指出问题');
+    sections.add('  · 语气以鼓励为主；有可指认的亮点就点出来，没有就直接谈问题');
     sections.add('  · 诊断时先解释"这是什么问题"，再说"怎么改"');
   } else if (onboarding.proficiency == ProficiencyLevel.intermediate) {
     sections.add('- 教学方式约束（进阶）：');

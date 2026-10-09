@@ -5,8 +5,8 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 29923,
-      "fnv": "4133ea76a3b97af3"
+      "len": 29915,
+      "fnv": "2b4cf7e1ce7e3624"
     },
     {
       "role": "system",
@@ -27,8 +27,8 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 64265,
-      "fnv": "31e31bef421e2b51"
+      "len": 64257,
+      "fnv": "6a83bd97e19f0d12"
     },
     {
       "role": "system",
@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 53690,
-      "fnv": "6be9ae516afadd01"
+      "len": 53682,
+      "fnv": "3c327510927c0d2c"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 55473,
-      "fnv": "463a6150125812dc"
+      "len": 55465,
+      "fnv": "5f58a77448a2176f"
     },
     {
       "role": "system",
@@ -93,8 +93,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 68586,
-      "fnv": "6602596c62d8930a"
+      "len": 68578,
+      "fnv": "4b207b065650a0c3"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 55473,
-      "fnv": "463a6150125812dc"
+      "len": 55465,
+      "fnv": "5f58a77448a2176f"
     },
     {
       "role": "system",
@@ -137,8 +137,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 47607,
-      "fnv": "5a19ed12a8a7443e"
+      "len": 47599,
+      "fnv": "420dca357ce7692d"
     },
     {
       "role": "system",
@@ -159,8 +159,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 47475,
-      "fnv": "148fec943430e151"
+      "len": 47467,
+      "fnv": "2b8a078da7fe32b2"
     },
     {
       "role": "system",
@@ -181,8 +181,8 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 65739,
-      "fnv": "762b7baa05ac9b8c"
+      "len": 65731,
+      "fnv": "71f8016b1e4689fb"
     },
     {
       "role": "system",
