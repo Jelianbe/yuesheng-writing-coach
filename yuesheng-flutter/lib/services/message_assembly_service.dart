@@ -87,6 +87,36 @@ typedef SendContextResult = ({
   bool flowBypassed,
 });
 
+/// 喂 LLM 的 history 副本需剔除的消息类型白名单（单一真源）。
+///
+/// - `novice_chat`（C123）：UI 层固定引导 / 学员三字段采集回答，
+///   不是学员真实写作文本，混入诊断上下文会污染后续真实诊断。
+/// - `diagnosis_result`（P1 · 外部反馈 2026-10-08）：payload JSON 内
+///   `syndromes[].evidence` 是**学员原文的逐字引用**，且落成 role='system'；
+///   `_appendHistory` 不看 messageType、原样全量追加（窗口 20–29 条）
+///   ⇒ 旧证据句能存活 10 轮以上。学员改完文本回来二次诊断时，模型逐字复制
+///   旧证据句比在「## 待诊断全文」里重新定位便宜得多 ⇒「明明改了还照样
+///   指出来、引的还是原来那句」。
+///
+/// ★ 两条都**只作用于喂 LLM 的副本**：不改 DB、不影响 UI 全量展示。
+/// ★ 剔掉 `diagnosis_result` 不损失教学连续性：结构化症候记忆走
+///   `injectDiagnosisLock(activeProblems:)` 的 DB 查询路（`listActiveProblems`），
+///   不依赖 history ⇒ 切断「逐字句复制」、保留「此前诊断过哪些症候」。
+/// ★ messageType 为 TEXT 自由取值（无 CHECK 约束），新增过滤值零 schema 迁移。
+/// ⚠️ 不变量：剔除后**必须仍含本轮 user 消息** —— 现有 user 消息的
+///   messageType 是 `'chat'`（`tables.dart` 默认值），故 `'chat'` 绝不可入白名单。
+const Set<String> kHistoryExcludedMessageTypes = {
+  kNoviceMessageType,
+  'diagnosis_result',
+};
+
+/// 按 [kHistoryExcludedMessageTypes] 剔除消息类型（纯函数、无状态）。
+List<Message> excludeFromLlmHistory(List<Message> history) {
+  return history
+      .where((m) => !kHistoryExcludedMessageTypes.contains(m.messageType))
+      .toList();
+}
+
 /// 消息装配服务（构造依赖全部注入，无隐式全局）。
 class MessageAssemblyService {
   MessageAssemblyService({
@@ -277,15 +307,13 @@ class MessageAssemblyService {
     // 1. 写入用户消息（批次71：@ 引用快照随 user 消息落库；D2 落库前校验会话）
     final userMessageId = await writeUserMessage(sessionId, content, options);
 
-    // 2. 获取历史消息（已含 user）
+    // 2. 获取历史消息（已含 user）+ 整形为「喂 LLM 的副本」（剔污染类型）。
+    //
+    // C123（novice_chat）与 P1（diagnosis_result）两类剔除都在 [_shapeHistoryForLlm]
+    // 内完成（其文档注释含本步的抽出归因）；咽喉点不变：loaded.history 同时供
+    // appendHistory 与 collectPriorUserTexts 消费，此处一处整形即切断两条泄漏。
     final rawHistory = await _sessionRepo.listMessages(sessionId);
-    // C123：剔除纯新手模式问答（不喂 LLM 诊断上下文；DB 与 UI 仍全量保留）。
-    // 咽喉点：loaded.history 同时供 appendHistory 与 collectPriorUserTexts
-    // 消费，此处一处过滤即切断两条泄漏。
-    final history = excludeNoviceMessages(rawHistory);
-    debugPrint(
-      '[ChatService] 步骤2: 历史消息 ${history.length} 条（已剔除 novice ${rawHistory.length - history.length} 条）',
-    );
+    final history = _shapeHistoryForLlm(rawHistory);
 
     // 3. 读取 teaching state（批次6 M2：DB currentPhase 优先于 options.phase）
     final teaching = await _prepareTeachingState(
@@ -317,13 +345,69 @@ class MessageAssemblyService {
     );
   }
 
-  /// C123：剔除纯新手模式问答消息（messageType == kNoviceMessageType）。
+  /// 薄别名 → [excludeFromLlmHistory]。**白名单真源 = [kHistoryExcludedMessageTypes]**。
   ///
-  /// 这些是 UI 层固定引导 / 学员三字段采集回答，不是学员真实写作文本；
-  /// 混入诊断上下文会污染后续真实诊断。只作用于「喂 LLM 的 history 副本」，
-  /// 不改 DB、不影响 UI 全量展示。
-  List<Message> excludeNoviceMessages(List<Message> history) {
-    return history.where((m) => m.messageType != kNoviceMessageType).toList();
+  /// ⚠️ 方法名只写「novice」，实际剔除面**比名字宽**：现含 C123 的
+  /// `novice_chat`（UI 层固定引导 / 学员三字段采集回答，不是学员真实写作
+  /// 文本，混入诊断上下文会污染后续真实诊断）与 P1 的 `diagnosis_result`
+  /// （payload JSON 内 `syndromes[].evidence` 是原文逐字引用）。
+  ///
+  /// 保留本方法名只为不扩大改动面（`loadSessionContext` 的既有注释与
+  /// debugPrint 都指向它）；要增删剔除类型**只改白名单常量一处**。
+  List<Message> excludeNoviceMessages(List<Message> history) =>
+      excludeFromLlmHistory(history);
+
+  /// P1（二次诊断证据句污染 · 外部反馈 2026-10-08）：剔除「上一轮诊断卡」
+  /// 这类**逐字含旧证据句**的消息，只在「喂 LLM 的 history 副本」里剔。
+  ///
+  /// 根因（逐字实测）：`insertDiagnosisResultCard` 把 payload JSON 落成
+  /// role='system' / messageType='diagnosis_result' 消息，而 JSON 内
+  /// `syndromes[].evidence` 是**学员原文的逐字引用**（`DiagnosisSyndromeCard`
+  /// 注释：「证据原文（诊断解析出的问题片段引用）」）；`_appendHistory` 不看
+  /// messageType、原样全量追加（`LlmInputLimits.maxHistoryMessages=20` /
+  /// `historyTrimBatch=10` ⇒ 实际窗口 20–29 条）⇒ 旧证据句能存活 10 轮以上，
+  /// 且是 system 角色。学员改完文本回来做二次诊断时，模型逐字复制旧证据句
+  /// 比在「## 待诊断全文」里重新定位便宜得多 ⇒「明明改了还照样指出来、引的
+  /// 还是原来那句」。
+  ///
+  /// ★ 为什么剔掉不损失教学连续性：结构化症候记忆走**另一条路** ——
+  ///   `injectDiagnosisLock(activeProblems: …)` 的数据源是 DB 查询
+  ///   （`listActiveProblems`，见 `loadSessionContext`），**不依赖 history**
+  ///   里的卡片消息。P1 只切断「逐字句复制」，保留「此前诊断过哪些症候」。
+  ///
+  /// 不动 DB、不动 UI 全量展示、不改任何 prompt 正文 ⇒ **不触 R-027**。
+  /// messageType 为 TEXT 自由取值（无 CHECK 约束），新增过滤值零 schema 迁移。
+  ///
+  /// ★ 实现已薄化为转发：**白名单真源 = [kHistoryExcludedMessageTypes]**，
+  ///   与 [excludeNoviceMessages] 共用同一个纯函数 [excludeFromLlmHistory]。
+  ///   ⚠️ 方法名只写「诊断卡」，实际剔除面**比名字宽**（还含 C123 的
+  ///   `novice_chat`）；保留本方法名只为不扩大改动面（`loadSessionContext`
+  ///   调用点已指向它）。要增删剔除类型**只改白名单常量一处**。
+  List<Message> excludeDiagnosisCardMessages(List<Message> history) =>
+      excludeFromLlmHistory(history);
+
+  /// 喂 LLM 的 history 副本整形：按 [kHistoryExcludedMessageTypes] 剔除
+  /// 污染类型 + 按类型分组计数打日志。
+  ///
+  /// 抽出理由 = **职责独立**（喂 LLM 的副本整形），不是为凑 R-019 行数；
+  /// 内联时实测把 `loadSessionContext` 顶到 **52 行**、门禁 5 FAIL（基线无
+  /// 此条 ⇒ 按新增拦截）。内部复用 [excludeFromLlmHistory]，白名单仍是单一真源。
+  ///
+  /// ★ 为什么按类型分组计数（不用「两次减法凑数」）：白名单将来若加第三种
+  ///   类型（`teacher_suggestion` 待裁定），减法会算错；分组后计数自动跟着对。
+  List<Message> _shapeHistoryForLlm(List<Message> rawHistory) {
+    final kept = excludeFromLlmHistory(rawHistory);
+    final dropped = <String, int>{};
+    for (final m in rawHistory) {
+      if (!kHistoryExcludedMessageTypes.contains(m.messageType)) continue;
+      dropped[m.messageType] = (dropped[m.messageType] ?? 0) + 1;
+    }
+    final detail = dropped.entries.isEmpty
+        ? '（无剔除）'
+        : '（已剔除 '
+              '${dropped.entries.map((e) => '${e.key} ${e.value} 条').join(' + ')}）';
+    debugPrint('[ChatService] 步骤2: 历史消息 ${kept.length} 条$detail');
+    return kept;
   }
 
   /// 5-5.2. system prompt + 上下文注入装配（R-019 第二层编排 helper）。
