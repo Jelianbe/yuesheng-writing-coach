@@ -700,18 +700,27 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           color: cfg.bgColor,
           borderRadius: BorderRadius.circular(AppRadius.pill),
         ),
-        child: _buildChipLabel(cfg, dotColor, s),
+        child: _buildChipLabel(cfg, dotColor, s, teachingState),
       ),
     );
   }
 
-  /// chip 内容：色点 + 症候名 + 严重度 + 第 N 次出现角标（R-019 清偿拆出）。
+  /// chip 内容：色点 + 症候名 + 严重度 + 教学状态标注 + 第 N 次出现角标。
+  /// E-9：教学状态非 identified 时标注「训练中/趋稳中/已掌握」，
+  /// 显式提示该症候已有对应训练介入（与训练建议卡互引）。
   Widget _buildChipLabel(
     _SeverityConfig cfg,
     Color dotColor,
     DiagnosisSyndromeCard s,
+    TeachingState? teachingState,
   ) {
     final occurrence = _trends[s.syndromeId]?.occurrenceCount ?? 0;
+    final stateLabel = switch (teachingState) {
+      TeachingState.inProgress => '训练中',
+      TeachingState.consolidating => '趋稳中',
+      TeachingState.mastered => '已掌握',
+      _ => null,
+    };
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -731,26 +740,52 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         ),
         const SizedBox(width: 4),
         Text(
-          // E-4：显示中文严重度（轻微/中等/严重）而非原始 L1/L2/L3 码
           _severityLabel(s.severity),
           style: TextStyle(
             fontSize: 11,
             color: cfg.textColor.withValues(alpha: 0.85),
           ),
         ),
-        // 第 N 次出现角标：仅 N ≥ 2 时显示（首现是常态，不制造噪音）
+        if (stateLabel != null) ...[
+          const SizedBox(width: 4),
+          _buildTeachingStateBadge(stateLabel, dotColor),
+        ],
         if (occurrence >= 2) ...[
           const SizedBox(width: 4),
-          Text(
-            '×$occurrence',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: cfg.textColor.withValues(alpha: 0.9),
-            ),
-          ),
+          _buildOccurrenceBadge(occurrence, cfg.textColor),
         ],
       ],
+    );
+  }
+
+  /// E-9：教学状态小徽标（训练中/趋稳中/已掌握）
+  Widget _buildTeachingStateBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  /// 第 N 次出现角标（仅 N ≥ 2 时调用）
+  Widget _buildOccurrenceBadge(int occurrence, Color color) {
+    return Text(
+      '×$occurrence',
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: color.withValues(alpha: 0.9),
+      ),
     );
   }
 

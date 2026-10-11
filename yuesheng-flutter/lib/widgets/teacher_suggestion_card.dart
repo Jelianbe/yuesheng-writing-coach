@@ -283,7 +283,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
           _buildDifficultyBadge(difficulty),
         ],
         const Spacer(),
-        Text('训练建议', style: context.text.caption),
+        Text(
+          p.source == 'diagnosis' ? '来自诊断' : '训练建议',
+          style: context.text.caption,
+        ),
       ],
     );
   }
