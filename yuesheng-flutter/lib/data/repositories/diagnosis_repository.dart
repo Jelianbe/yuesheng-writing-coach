@@ -12,6 +12,7 @@ import '../../services/decode_guard.dart';
 import '../../services/evidence_confidence.dart';
 import '../../services/manuscript_scope.dart';
 import '../../services/syndrome_recurrence.dart';
+import '../../services/syndrome_registry.dart';
 import '../../services/teaching_state_cache.dart';
 import 'repository_write_guard.dart';
 
@@ -469,7 +470,8 @@ class DiagnosisRepository {
         .map(
           (r) => ActiveProblemView(
             syndromeId: r.syndromeId,
-            syndromeName: r.syndromeName,
+            // D-W1：注册表按 id 反查 name（v46 存量 id/name 可能错配）
+            syndromeName: syndromeNameOf(r.syndromeId) ?? r.syndromeName,
             severity: r.severity,
             confirmationStatus: r.confirmationStatus,
             teachingState: r.teachingState,
@@ -640,7 +642,8 @@ class DiagnosisRepository {
         .map(
           (r) => ActiveProblemView(
             syndromeId: r.syndromeId,
-            syndromeName: r.syndromeName,
+            // D-W1：注册表按 id 反查 name（v46 存量 id/name 可能错配）
+            syndromeName: syndromeNameOf(r.syndromeId) ?? r.syndromeName,
             severity: r.severity,
             confirmationStatus: r.confirmationStatus,
             teachingState: r.teachingState,
@@ -813,7 +816,9 @@ class DiagnosisRepository {
     return active.take(3).map((p) {
       return {
         'syndrome_id': p.syndromeId,
-        'name': p.syndromeName,
+        // D-W1：不信用库内 syndrome_name（v46 只归一 id 未动 name，
+        // 存量行 id/name 可能错配），统一由注册表按 id 反查。
+        'name': syndromeNameOf(p.syndromeId) ?? p.syndromeName,
         'severity': p.severity,
       };
     }).toList();
@@ -837,9 +842,11 @@ class DiagnosisRepository {
   }
 
   /// active_problem 行 → 视图（批次 A：抽出以消除重复映射）。
+  /// D-W1：syndromeName 统一由注册表按 id 反查，不信用库内字段
+  /// （v46 只归一 id 未动 name，存量行 id/name 可能错配）。
   ActiveProblemView _toActiveProblemView(ActiveProblem r) => ActiveProblemView(
     syndromeId: r.syndromeId,
-    syndromeName: r.syndromeName,
+    syndromeName: syndromeNameOf(r.syndromeId) ?? r.syndromeName,
     severity: r.severity,
     confirmationStatus: r.confirmationStatus,
     teachingState: r.teachingState,

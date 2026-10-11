@@ -365,4 +365,78 @@ void main() {
       expect(summary['resolved_problems'], 1);
     });
   });
+
+  group('D-W1：syndromeName 由注册表按 id 反查（不信用库内 name）', () {
+    // v46 只归一 syndrome_id 未动 syndrome_name，存量行 id/name 可能错配。
+    // 修法：读时统一用 syndromeNameOf(id) 反查，查不到才 fallback 库内 name。
+
+    test('#1 注册表 ID 配错误 name → 读出注册表正确 name', () async {
+      final sid = await sessionRepo.createBlankSession();
+      // P003 在注册表中 name='视角漂移'，这里故意传入错误 name
+      await repo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sid,
+          messageId: 'msg-1',
+          syndromes: [
+            {'syndrome_id': 'P003', 'name': '错误的名字', 'severity': 'L2'},
+          ],
+          suggestedActions: [],
+          confidence: 0.8,
+        ),
+      );
+
+      final result = await repo.listAllActiveProblems();
+      expect(result.length, 1);
+      expect(result.first.syndromeId, 'P003');
+      // 关键断言：读出的是注册表的正确 name，不是库内存的错误 name
+      expect(result.first.syndromeName, '视角漂移');
+    });
+
+    test('#2 非注册表 ID → fallback 库内 name', () async {
+      final sid = await sessionRepo.createBlankSession();
+      // S001 不在注册表中，应 fallback 到传入的 name
+      await repo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sid,
+          messageId: 'msg-1',
+          syndromes: [
+            {'syndrome_id': 'S001', 'name': '自定义症候', 'severity': 'L2'},
+          ],
+          suggestedActions: [],
+          confidence: 0.8,
+        ),
+      );
+
+      final result = await repo.listAllActiveProblems();
+      expect(result.length, 1);
+      expect(result.first.syndromeId, 'S001');
+      expect(result.first.syndromeName, '自定义症候');
+    });
+
+    test('#3 diagnosis_summary.top_syndromes 同样走注册表反查', () async {
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sid,
+          messageId: 'msg-1',
+          syndromes: [
+            {'syndrome_id': 'P003', 'name': '错误的名字', 'severity': 'L3'},
+          ],
+          suggestedActions: [],
+          confidence: 0.8,
+        ),
+      );
+
+      final session = await (db.select(
+        db.sessions,
+      )..where((t) => t.id.equals(sid))).getSingle();
+      final summary =
+          jsonDecode(session.diagnosisSummary) as Map<String, dynamic>;
+      final top = (summary['top_syndromes'] as List)
+          .cast<Map<String, dynamic>>();
+
+      expect(top.first['syndrome_id'], 'P003');
+      expect(top.first['name'], '视角漂移', reason: 'summary 也须走注册表反查');
+    });
+  });
 }
