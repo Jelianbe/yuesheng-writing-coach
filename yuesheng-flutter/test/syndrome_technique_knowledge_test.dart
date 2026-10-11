@@ -88,6 +88,16 @@ void main() {
       expect(content, contains('首选 A013 情节复盘'));
     });
 
+    test('手册含 ADR-C150 新症候 P039 完整定义（自 P018 子情形 B 拆出）', () {
+      expect(kSyndromeManualContent, contains('### P039 信息密度缺失症'));
+      final content = getSyndromeContent(['P039']);
+      expect(content, contains('### P039 信息密度缺失症'));
+      expect(content, contains('核心问题'));
+      expect(content, contains('判断原则'));
+      expect(content, contains('推荐教学动作'));
+      expect(content, contains('首选 A011 场景裁剪'));
+    });
+
     test('getSyndromeContent 按 ID 提取单个症候', () {
       final content = getSyndromeContent(['P001']);
       expect(content, contains('### P001 情绪标签化'));

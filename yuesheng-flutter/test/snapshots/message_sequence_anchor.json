@@ -5,8 +5,8 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 29968,
-      "fnv": "62140bbd57ebf364"
+      "len": 29993,
+      "fnv": "7a4c76824dbc949b"
     },
     {
       "role": "system",
@@ -27,8 +27,8 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 64310,
-      "fnv": "384246e3abcfa38e"
+      "len": 64335,
+      "fnv": "1d380d059e7644cd"
     },
     {
       "role": "system",
@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 54237,
-      "fnv": "4bf88d74684f57b7"
+      "len": 54262,
+      "fnv": "3fd22c36384bdb82"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 56020,
-      "fnv": "50846a47f26de9e4"
+      "len": 56045,
+      "fnv": "48bd897fe5878c0b"
     },
     {
       "role": "system",
@@ -93,8 +93,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 68949,
-      "fnv": "4d54c1c041ba36c5"
+      "len": 68974,
+      "fnv": "78ff8e73f0e4d6c"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 56020,
-      "fnv": "50846a47f26de9e4"
+      "len": 56045,
+      "fnv": "48bd897fe5878c0b"
     },
     {
       "role": "system",
@@ -137,8 +137,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 47769,
-      "fnv": "70cc365401cad170"
+      "len": 47794,
+      "fnv": "4eec247f5d538d25"
     },
     {
       "role": "system",
@@ -159,8 +159,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 47637,
-      "fnv": "1049be271419b959"
+      "len": 47662,
+      "fnv": "516507b0b27548f4"
     },
     {
       "role": "system",
@@ -181,8 +181,8 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 65784,
-      "fnv": "59abffea6584667"
+      "len": 65809,
+      "fnv": "17390656b63b6f58"
     },
     {
       "role": "system",
