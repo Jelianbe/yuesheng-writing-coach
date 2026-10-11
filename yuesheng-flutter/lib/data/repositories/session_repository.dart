@@ -418,9 +418,60 @@ class SessionRepository {
         await (_db.update(_db.sessions)..where((t) => t.id.equals(sessionId)))
             .write(SessionsCompanion(updatedAt: Value(now)));
       }
+
+      // E-8：从 assistant 消息中提取思考题（间隔重复回收）
+      if (role == 'assistant' && messageType == 'chat') {
+        await _extractReflectionQuestions(sessionId, id, content);
+      }
       return id;
     });
   });
+
+  /// E-8：从 AI 回复中提取反思性问题并落库
+  /// 策略：以问号结尾、长度合理（8-80字）的句子，避免提取纯技术性问句
+  Future<void> _extractReflectionQuestions(
+    String sessionId,
+    String messageId,
+    String content,
+  ) async {
+    final questions = <String>[];
+    // 按句号/问号/感叹号切句，保留问号句
+    final sentences = content.split(RegExp(r'[。！？!?\n]'));
+    for (final s in sentences) {
+      final trimmed = s.trim();
+      if (trimmed.isEmpty) continue;
+      // 必须含问号（原句以问号结尾）
+      final hasQuestion = s.contains(RegExp(r'[？?]'));
+      if (!hasQuestion) continue;
+      // 长度过滤：太短（<8）可能是标点残留，太长（>80）可能是复合句
+      if (trimmed.length < 8 || trimmed.length > 80) continue;
+      // 排除纯技术性问句（含代码/符号过多）
+      final symbolCount = RegExp(r'[`{}\[\]<>\\=]').allMatches(trimmed).length;
+      if (symbolCount > 2) continue;
+      questions.add(trimmed);
+    }
+    if (questions.isEmpty) return;
+
+    for (final q in questions) {
+      final exists =
+          await (_db.select(_db.reflectionQuestions)..where(
+                (t) => t.messageId.equals(messageId) & t.question.equals(q),
+              ))
+              .getSingleOrNull();
+      if (exists == null) {
+        await _db
+            .into(_db.reflectionQuestions)
+            .insert(
+              ReflectionQuestionsCompanion.insert(
+                id: generateUuid(),
+                sessionId: sessionId,
+                messageId: Value(messageId),
+                question: q,
+              ),
+            );
+      }
+    }
+  }
 
   /// 更新消息内容（quiz 答题状态内联持久化，按 messageId 关联）
   /// 仅重写 content 列；不更新 preview/sessions（卡片类消息不污染列表预览）。

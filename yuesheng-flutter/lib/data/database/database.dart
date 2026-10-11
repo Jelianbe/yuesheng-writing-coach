@@ -63,6 +63,8 @@ part 'database.g.dart';
     // ADR-C143（书籍资料库 v44）：记录条目 / 资料条目事件表（DDL-only）
     RecordEntries,
     MaterialEntries,
+    // E-8（v47）：对话思考题回收
+    ReflectionQuestions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -72,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 46;
+  int get schemaVersion => 47;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -1310,6 +1312,24 @@ class AppDatabase extends _$AppDatabase {
       // `lib/data/database/migration_v46.dart` **文件保留在盘上**（不删）：
       // 记录这段决策的理由链，并由 `migration_v46_test.dart` 15 例守护。
       // 退役后不再由本文件 import（否则 `unused_import`）—— 测试直接 import它。
+
+      // v47（E-8）：新建 reflection_question 表，存储对话思考题供间隔重复回顾
+      if (from < 47) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS reflection_question (
+            id TEXT NOT NULL PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            message_id TEXT,
+            question TEXT NOT NULL,
+            syndrome_id TEXT,
+            status TEXT NOT NULL DEFAULT 'pending'
+              CHECK (status IN ('pending','reviewed','dismissed')),
+            next_review_at INTEGER,
+            review_count INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL DEFAULT (unixepoch())
+          )
+        ''');
+      }
     },
 
     beforeOpen: (details) async {

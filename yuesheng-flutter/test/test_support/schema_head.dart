@@ -22,7 +22,8 @@
 //   43 → 44（ADR-C143 书籍资料库：记录条目 record_entry / 资料条目 material_entry）
 //   44 → 45（C147 记录条目加 target_section 列：作者自选归入位置人设/大纲/世界观）
 //   45 → 46（ADR-0003 前置v46：三张表的 legacy 症候 ID 按 merge map 单跳归一）
+//   46 → 47（E-8：对话思考题回收表 reflection_question）
 // ─────────────────────────────────────────────────────────────
 
 /// 当前 drift `schemaVersion`（= `AppDatabase.schemaVersion`）的测试侧镜像。
-const int kSchemaHead = 46;
+const int kSchemaHead = 47;

@@ -22,6 +22,9 @@ import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/reflection_question_repository.dart';
+import '../../data/database/database.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/growth_providers.dart';
 import '../../services/focus_card_builder.dart';
@@ -280,6 +283,9 @@ class _GrowthContent extends StatelessWidget {
         const SizedBox(height: 12),
         // B8：Editor 观察记录审计卡（对齐 RN growth.tsx#L122，折叠展开）
         ObservationAuditCard(sessionId: sessionId),
+        const SizedBox(height: 12),
+        // E-8：对话思考题回顾（间隔重复）
+        const ReflectionQuestionsCard(),
       ],
     );
   }
@@ -589,6 +595,139 @@ class _ErrorView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// E-8：对话思考题回顾卡片（间隔重复）
+///
+/// 从 reflection_question 表读取待回顾思考题，用户可标记「已想过」推延下次回顾。
+class ReflectionQuestionsCard extends ConsumerStatefulWidget {
+  const ReflectionQuestionsCard({super.key});
+
+  @override
+  ConsumerState<ReflectionQuestionsCard> createState() =>
+      _ReflectionQuestionsCardState();
+}
+
+class _ReflectionQuestionsCardState
+    extends ConsumerState<ReflectionQuestionsCard> {
+  late Future<List<ReflectionQuestion>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<ReflectionQuestion>> _load() {
+    final db = ref.read(appDatabaseProvider);
+    return ReflectionQuestionRepository(db).listPending();
+  }
+
+  Future<void> _markReviewed(String id) async {
+    final db = ref.read(appDatabaseProvider);
+    await ReflectionQuestionRepository(db).markReviewed(id);
+    if (mounted) setState(() => _future = _load());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<ReflectionQuestion>>(
+      future: _future,
+      builder: _buildContent,
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    AsyncSnapshot<List<ReflectionQuestion>> snap,
+  ) {
+    final items = snap.data ?? const [];
+    if (items.isEmpty) return _buildEmpty(context);
+    return _buildList(context, items);
+  }
+
+  Widget _buildEmpty(BuildContext context) {
+    return _Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '思考题回顾',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.palette.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('暂无待回顾的思考题', style: context.text.subBody),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildList(BuildContext context, List<ReflectionQuestion> items) {
+    return _Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '思考题回顾（${items.length}）',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.palette.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...items.take(5).map((q) => _buildQuestionItem(q)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuestionItem(ReflectionQuestion q) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              q.question,
+              style: TextStyle(
+                fontSize: 13,
+                color: context.palette.textPrimary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () => _markReviewed(q.id),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              '已想过',
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

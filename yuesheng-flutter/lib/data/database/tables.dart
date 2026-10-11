@@ -1145,3 +1145,31 @@ class MaterialEntries extends Table {
     {manuscriptId, url},
   ];
 }
+
+/// ============================================================
+/// 22. reflection_question — 对话思考题回收（E-8 · v47）
+///
+/// 从 AI 教练对话回复中提取的反思性问题，在成长页以间隔重复方式回顾。
+/// 提取策略：assistant 消息中以问号结尾、且含引导反思语气的句子。
+/// ============================================================
+@DataClassName('ReflectionQuestion')
+class ReflectionQuestions extends Table {
+  @override
+  String get tableName => 'reflection_question';
+
+  TextColumn get id => text()();
+  TextColumn get sessionId => text()();
+  TextColumn get messageId => text().nullable()();
+  TextColumn get question => text()();
+  TextColumn get syndromeId => text().nullable()();
+  TextColumn get status => text()
+      .withDefault(const Constant('pending'))
+      .check(status.isIn(const ['pending', 'reviewed', 'dismissed']))();
+  IntColumn get nextReviewAt => integer().nullable()();
+  IntColumn get reviewCount => integer().withDefault(const Constant(0))();
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

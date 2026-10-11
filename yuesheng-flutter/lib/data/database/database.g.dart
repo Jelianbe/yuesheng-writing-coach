@@ -18945,6 +18945,575 @@ class MaterialEntriesCompanion extends UpdateCompanion<MaterialEntry> {
   }
 }
 
+class $ReflectionQuestionsTable extends ReflectionQuestions
+    with TableInfo<$ReflectionQuestionsTable, ReflectionQuestion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReflectionQuestionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageIdMeta = const VerificationMeta(
+    'messageId',
+  );
+  @override
+  late final GeneratedColumn<String> messageId = GeneratedColumn<String>(
+    'message_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _questionMeta = const VerificationMeta(
+    'question',
+  );
+  @override
+  late final GeneratedColumn<String> question = GeneratedColumn<String>(
+    'question',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syndromeIdMeta = const VerificationMeta(
+    'syndromeId',
+  );
+  @override
+  late final GeneratedColumn<String> syndromeId = GeneratedColumn<String>(
+    'syndrome_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    check: () => status.isIn(const ['pending', 'reviewed', 'dismissed']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _nextReviewAtMeta = const VerificationMeta(
+    'nextReviewAt',
+  );
+  @override
+  late final GeneratedColumn<int> nextReviewAt = GeneratedColumn<int>(
+    'next_review_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reviewCountMeta = const VerificationMeta(
+    'reviewCount',
+  );
+  @override
+  late final GeneratedColumn<int> reviewCount = GeneratedColumn<int>(
+    'review_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    messageId,
+    question,
+    syndromeId,
+    status,
+    nextReviewAt,
+    reviewCount,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reflection_question';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReflectionQuestion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('message_id')) {
+      context.handle(
+        _messageIdMeta,
+        messageId.isAcceptableOrUnknown(data['message_id']!, _messageIdMeta),
+      );
+    }
+    if (data.containsKey('question')) {
+      context.handle(
+        _questionMeta,
+        question.isAcceptableOrUnknown(data['question']!, _questionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_questionMeta);
+    }
+    if (data.containsKey('syndrome_id')) {
+      context.handle(
+        _syndromeIdMeta,
+        syndromeId.isAcceptableOrUnknown(data['syndrome_id']!, _syndromeIdMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('next_review_at')) {
+      context.handle(
+        _nextReviewAtMeta,
+        nextReviewAt.isAcceptableOrUnknown(
+          data['next_review_at']!,
+          _nextReviewAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('review_count')) {
+      context.handle(
+        _reviewCountMeta,
+        reviewCount.isAcceptableOrUnknown(
+          data['review_count']!,
+          _reviewCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReflectionQuestion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReflectionQuestion(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      messageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message_id'],
+      ),
+      question: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}question'],
+      )!,
+      syndromeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}syndrome_id'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      nextReviewAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}next_review_at'],
+      ),
+      reviewCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}review_count'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReflectionQuestionsTable createAlias(String alias) {
+    return $ReflectionQuestionsTable(attachedDatabase, alias);
+  }
+}
+
+class ReflectionQuestion extends DataClass
+    implements Insertable<ReflectionQuestion> {
+  final String id;
+  final String sessionId;
+  final String? messageId;
+  final String question;
+  final String? syndromeId;
+  final String status;
+  final int? nextReviewAt;
+  final int reviewCount;
+  final int createdAt;
+  const ReflectionQuestion({
+    required this.id,
+    required this.sessionId,
+    this.messageId,
+    required this.question,
+    this.syndromeId,
+    required this.status,
+    this.nextReviewAt,
+    required this.reviewCount,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    if (!nullToAbsent || messageId != null) {
+      map['message_id'] = Variable<String>(messageId);
+    }
+    map['question'] = Variable<String>(question);
+    if (!nullToAbsent || syndromeId != null) {
+      map['syndrome_id'] = Variable<String>(syndromeId);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || nextReviewAt != null) {
+      map['next_review_at'] = Variable<int>(nextReviewAt);
+    }
+    map['review_count'] = Variable<int>(reviewCount);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ReflectionQuestionsCompanion toCompanion(bool nullToAbsent) {
+    return ReflectionQuestionsCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      messageId: messageId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(messageId),
+      question: Value(question),
+      syndromeId: syndromeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syndromeId),
+      status: Value(status),
+      nextReviewAt: nextReviewAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextReviewAt),
+      reviewCount: Value(reviewCount),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ReflectionQuestion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReflectionQuestion(
+      id: serializer.fromJson<String>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      messageId: serializer.fromJson<String?>(json['messageId']),
+      question: serializer.fromJson<String>(json['question']),
+      syndromeId: serializer.fromJson<String?>(json['syndromeId']),
+      status: serializer.fromJson<String>(json['status']),
+      nextReviewAt: serializer.fromJson<int?>(json['nextReviewAt']),
+      reviewCount: serializer.fromJson<int>(json['reviewCount']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'messageId': serializer.toJson<String?>(messageId),
+      'question': serializer.toJson<String>(question),
+      'syndromeId': serializer.toJson<String?>(syndromeId),
+      'status': serializer.toJson<String>(status),
+      'nextReviewAt': serializer.toJson<int?>(nextReviewAt),
+      'reviewCount': serializer.toJson<int>(reviewCount),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  ReflectionQuestion copyWith({
+    String? id,
+    String? sessionId,
+    Value<String?> messageId = const Value.absent(),
+    String? question,
+    Value<String?> syndromeId = const Value.absent(),
+    String? status,
+    Value<int?> nextReviewAt = const Value.absent(),
+    int? reviewCount,
+    int? createdAt,
+  }) => ReflectionQuestion(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    messageId: messageId.present ? messageId.value : this.messageId,
+    question: question ?? this.question,
+    syndromeId: syndromeId.present ? syndromeId.value : this.syndromeId,
+    status: status ?? this.status,
+    nextReviewAt: nextReviewAt.present ? nextReviewAt.value : this.nextReviewAt,
+    reviewCount: reviewCount ?? this.reviewCount,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ReflectionQuestion copyWithCompanion(ReflectionQuestionsCompanion data) {
+    return ReflectionQuestion(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      messageId: data.messageId.present ? data.messageId.value : this.messageId,
+      question: data.question.present ? data.question.value : this.question,
+      syndromeId: data.syndromeId.present
+          ? data.syndromeId.value
+          : this.syndromeId,
+      status: data.status.present ? data.status.value : this.status,
+      nextReviewAt: data.nextReviewAt.present
+          ? data.nextReviewAt.value
+          : this.nextReviewAt,
+      reviewCount: data.reviewCount.present
+          ? data.reviewCount.value
+          : this.reviewCount,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReflectionQuestion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('messageId: $messageId, ')
+          ..write('question: $question, ')
+          ..write('syndromeId: $syndromeId, ')
+          ..write('status: $status, ')
+          ..write('nextReviewAt: $nextReviewAt, ')
+          ..write('reviewCount: $reviewCount, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    messageId,
+    question,
+    syndromeId,
+    status,
+    nextReviewAt,
+    reviewCount,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReflectionQuestion &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.messageId == this.messageId &&
+          other.question == this.question &&
+          other.syndromeId == this.syndromeId &&
+          other.status == this.status &&
+          other.nextReviewAt == this.nextReviewAt &&
+          other.reviewCount == this.reviewCount &&
+          other.createdAt == this.createdAt);
+}
+
+class ReflectionQuestionsCompanion extends UpdateCompanion<ReflectionQuestion> {
+  final Value<String> id;
+  final Value<String> sessionId;
+  final Value<String?> messageId;
+  final Value<String> question;
+  final Value<String?> syndromeId;
+  final Value<String> status;
+  final Value<int?> nextReviewAt;
+  final Value<int> reviewCount;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const ReflectionQuestionsCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.messageId = const Value.absent(),
+    this.question = const Value.absent(),
+    this.syndromeId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.nextReviewAt = const Value.absent(),
+    this.reviewCount = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ReflectionQuestionsCompanion.insert({
+    required String id,
+    required String sessionId,
+    this.messageId = const Value.absent(),
+    required String question,
+    this.syndromeId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.nextReviewAt = const Value.absent(),
+    this.reviewCount = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       question = Value(question);
+  static Insertable<ReflectionQuestion> custom({
+    Expression<String>? id,
+    Expression<String>? sessionId,
+    Expression<String>? messageId,
+    Expression<String>? question,
+    Expression<String>? syndromeId,
+    Expression<String>? status,
+    Expression<int>? nextReviewAt,
+    Expression<int>? reviewCount,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (messageId != null) 'message_id': messageId,
+      if (question != null) 'question': question,
+      if (syndromeId != null) 'syndrome_id': syndromeId,
+      if (status != null) 'status': status,
+      if (nextReviewAt != null) 'next_review_at': nextReviewAt,
+      if (reviewCount != null) 'review_count': reviewCount,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ReflectionQuestionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? sessionId,
+    Value<String?>? messageId,
+    Value<String>? question,
+    Value<String?>? syndromeId,
+    Value<String>? status,
+    Value<int?>? nextReviewAt,
+    Value<int>? reviewCount,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ReflectionQuestionsCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      messageId: messageId ?? this.messageId,
+      question: question ?? this.question,
+      syndromeId: syndromeId ?? this.syndromeId,
+      status: status ?? this.status,
+      nextReviewAt: nextReviewAt ?? this.nextReviewAt,
+      reviewCount: reviewCount ?? this.reviewCount,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (messageId.present) {
+      map['message_id'] = Variable<String>(messageId.value);
+    }
+    if (question.present) {
+      map['question'] = Variable<String>(question.value);
+    }
+    if (syndromeId.present) {
+      map['syndrome_id'] = Variable<String>(syndromeId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (nextReviewAt.present) {
+      map['next_review_at'] = Variable<int>(nextReviewAt.value);
+    }
+    if (reviewCount.present) {
+      map['review_count'] = Variable<int>(reviewCount.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReflectionQuestionsCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('messageId: $messageId, ')
+          ..write('question: $question, ')
+          ..write('syndromeId: $syndromeId, ')
+          ..write('status: $status, ')
+          ..write('nextReviewAt: $nextReviewAt, ')
+          ..write('reviewCount: $reviewCount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -18992,6 +19561,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MaterialEntriesTable materialEntries = $MaterialEntriesTable(
     this,
   );
+  late final $ReflectionQuestionsTable reflectionQuestions =
+      $ReflectionQuestionsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -19028,6 +19599,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     editDiffEvents,
     recordEntries,
     materialEntries,
+    reflectionQuestions,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -34263,6 +34835,304 @@ typedef $$MaterialEntriesTableProcessedTableManager =
       MaterialEntry,
       PrefetchHooks Function()
     >;
+typedef $$ReflectionQuestionsTableCreateCompanionBuilder =
+    ReflectionQuestionsCompanion Function({
+      required String id,
+      required String sessionId,
+      Value<String?> messageId,
+      required String question,
+      Value<String?> syndromeId,
+      Value<String> status,
+      Value<int?> nextReviewAt,
+      Value<int> reviewCount,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$ReflectionQuestionsTableUpdateCompanionBuilder =
+    ReflectionQuestionsCompanion Function({
+      Value<String> id,
+      Value<String> sessionId,
+      Value<String?> messageId,
+      Value<String> question,
+      Value<String?> syndromeId,
+      Value<String> status,
+      Value<int?> nextReviewAt,
+      Value<int> reviewCount,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ReflectionQuestionsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReflectionQuestionsTable> {
+  $$ReflectionQuestionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get question => $composableBuilder(
+    column: $table.question,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syndromeId => $composableBuilder(
+    column: $table.syndromeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nextReviewAt => $composableBuilder(
+    column: $table.nextReviewAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reviewCount => $composableBuilder(
+    column: $table.reviewCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReflectionQuestionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReflectionQuestionsTable> {
+  $$ReflectionQuestionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get messageId => $composableBuilder(
+    column: $table.messageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get question => $composableBuilder(
+    column: $table.question,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syndromeId => $composableBuilder(
+    column: $table.syndromeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nextReviewAt => $composableBuilder(
+    column: $table.nextReviewAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reviewCount => $composableBuilder(
+    column: $table.reviewCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReflectionQuestionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReflectionQuestionsTable> {
+  $$ReflectionQuestionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get messageId =>
+      $composableBuilder(column: $table.messageId, builder: (column) => column);
+
+  GeneratedColumn<String> get question =>
+      $composableBuilder(column: $table.question, builder: (column) => column);
+
+  GeneratedColumn<String> get syndromeId => $composableBuilder(
+    column: $table.syndromeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get nextReviewAt => $composableBuilder(
+    column: $table.nextReviewAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reviewCount => $composableBuilder(
+    column: $table.reviewCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ReflectionQuestionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReflectionQuestionsTable,
+          ReflectionQuestion,
+          $$ReflectionQuestionsTableFilterComposer,
+          $$ReflectionQuestionsTableOrderingComposer,
+          $$ReflectionQuestionsTableAnnotationComposer,
+          $$ReflectionQuestionsTableCreateCompanionBuilder,
+          $$ReflectionQuestionsTableUpdateCompanionBuilder,
+          (
+            ReflectionQuestion,
+            BaseReferences<
+              _$AppDatabase,
+              $ReflectionQuestionsTable,
+              ReflectionQuestion
+            >,
+          ),
+          ReflectionQuestion,
+          PrefetchHooks Function()
+        > {
+  $$ReflectionQuestionsTableTableManager(
+    _$AppDatabase db,
+    $ReflectionQuestionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReflectionQuestionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReflectionQuestionsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ReflectionQuestionsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String?> messageId = const Value.absent(),
+                Value<String> question = const Value.absent(),
+                Value<String?> syndromeId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int?> nextReviewAt = const Value.absent(),
+                Value<int> reviewCount = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReflectionQuestionsCompanion(
+                id: id,
+                sessionId: sessionId,
+                messageId: messageId,
+                question: question,
+                syndromeId: syndromeId,
+                status: status,
+                nextReviewAt: nextReviewAt,
+                reviewCount: reviewCount,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String sessionId,
+                Value<String?> messageId = const Value.absent(),
+                required String question,
+                Value<String?> syndromeId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int?> nextReviewAt = const Value.absent(),
+                Value<int> reviewCount = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReflectionQuestionsCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                messageId: messageId,
+                question: question,
+                syndromeId: syndromeId,
+                status: status,
+                nextReviewAt: nextReviewAt,
+                reviewCount: reviewCount,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReflectionQuestionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReflectionQuestionsTable,
+      ReflectionQuestion,
+      $$ReflectionQuestionsTableFilterComposer,
+      $$ReflectionQuestionsTableOrderingComposer,
+      $$ReflectionQuestionsTableAnnotationComposer,
+      $$ReflectionQuestionsTableCreateCompanionBuilder,
+      $$ReflectionQuestionsTableUpdateCompanionBuilder,
+      (
+        ReflectionQuestion,
+        BaseReferences<
+          _$AppDatabase,
+          $ReflectionQuestionsTable,
+          ReflectionQuestion
+        >,
+      ),
+      ReflectionQuestion,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -34329,4 +35199,6 @@ class $AppDatabaseManager {
       $$RecordEntriesTableTableManager(_db, _db.recordEntries);
   $$MaterialEntriesTableTableManager get materialEntries =>
       $$MaterialEntriesTableTableManager(_db, _db.materialEntries);
+  $$ReflectionQuestionsTableTableManager get reflectionQuestions =>
+      $$ReflectionQuestionsTableTableManager(_db, _db.reflectionQuestions);
 }

@@ -63,8 +63,10 @@ void main() {
         // ADR-C143（书籍资料库 v44）→ record_entry / material_entry 事件表
         'record_entry',
         'material_entry',
+        // E-8（对话思考题回收 v47）→ reflection_question
+        'reflection_question',
       };
-      expect(tableNames.length, 31, reason: '应有 31 张业务表');
+      expect(tableNames.length, 32, reason: '应有 32 张业务表');
       for (final t in expectedTables) {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
