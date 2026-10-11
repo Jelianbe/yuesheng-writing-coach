@@ -44,6 +44,30 @@ enum MaxAttemptsGroup {
   const MaxAttemptsGroup(this.label);
 }
 
+/// 诊断呈现分组（ADR-C146 · 2026-10-11 新增）。
+///
+/// 与 [SyndromeType]（诊断性质）/ [MaxAttemptsGroup]（训练轮次）**正交**：
+/// 本枚举只管「诊断卡按哪一组展示」，是**纯呈现层**分组，不影响诊断判据、
+/// JSON 契约、训练动作。模型**不输出**此字段 —— 由 `syndrome_id` 静态反查得出。
+///
+/// 四组语义（归组见 ADR-C146 §2.2，归组草案
+/// `2026-10-11-37条症候归组草案.md`）：
+/// - [description] 描写：文字表达层（措辞/句式/语病/画面/声线）
+/// - [plot] 剧情：结构/节奏/商业层
+/// - [character] 角色：人物层
+/// - [logic] 逻辑：★「逻辑性弱」因果链的横切标记（P007 动机→P016 过渡→
+///   P017 概括→P036 常识逻辑）。成员症候**主身份各归各自组**，本值只标记
+///   「这几条同属一条因果链」，供「同源提示」判定 —— 见 ADR-C146 §2.2。
+enum PresentationGroup {
+  description('描写'),
+  plot('剧情'),
+  character('角色'),
+  logic('逻辑');
+
+  final String label;
+  const PresentationGroup(this.label);
+}
+
 /// 症候元数据（增删症候的唯一入口）
 class SyndromeRecord {
   /// 症候 ID（`P0XX`，连续编号，**永不复用**）。
@@ -77,6 +101,9 @@ class SyndromeRecord {
   /// maxAttempts 分组（训练轮次上限）
   final MaxAttemptsGroup group;
 
+  /// 诊断呈现分组（ADR-C146，纯呈现层，见 [PresentationGroup]）
+  final PresentationGroup presentationGroup;
+
   /// position_sensitivity（chapter / serial / global / beginning / middle / end / local）
   final String position;
 
@@ -103,6 +130,7 @@ class SyndromeRecord {
     required this.type,
     required this.level,
     required this.group,
+    required this.presentationGroup,
     required this.position,
     required this.techniques,
     required this.actions,
@@ -134,6 +162,27 @@ final List<SyndromeRecord> kSyndromeRegistry = List.unmodifiable([
 /// training_knowledge_base.kTrainingSyndromeIds 的手写列表）
 List<String> get kSyndromeIds =>
     List.unmodifiable(kSyndromeRegistry.map((s) => s.id));
+
+/// 「逻辑性弱」因果链成员（ADR-C146 §2.2）。
+///
+/// 成员：P007 角色空心化（动机缺失）→ P016 过渡生硬 → P017 跳跃叙事/过度概括
+/// → P036 细节失真（常识逻辑断裂）。这四条是「作者内容逻辑性弱 → 事件发展
+/// 描写显得莫名其妙 → 读起来稀碎」这条因果链的四个环节。
+///
+/// ⚠️ 这些症候的 [SyndromeRecord.presentationGroup] 仍填**主身份组**
+/// （P007→character / P016/P017→plot / P036→description），本常量只表达
+/// 「同属一条逻辑链」的交叉语义，供「同源提示」判定（当同一段文本命中
+/// ≥2 条本链成员时，在自然说明点出「这几条其实同源」）。见 ADR-C146 §4.2。
+const List<String> kLogicChainSyndromeIds = ['P007', 'P016', 'P017', 'P036'];
+
+/// 按症候 ID 反查呈现分组（ADR-C146）。查不到返回 null（调用方自行兜底，
+/// 例如历史号 / 未收录号）。这是**静态映射**，模型不输出此字段。
+PresentationGroup? presentationGroupOf(String syndromeId) {
+  for (final s in kSyndromeRegistry) {
+    if (s.id == syndromeId) return s.presentationGroup;
+  }
+  return null;
+}
 
 // ★ 2026-10-05（层 2 单轨收口批）：`kSyndromeMergeMap` 与 `effectiveSyndromeId`
 // **已整张删除**。本项目现在走单轨 ID —— 号码一旦分配便永不复用，
@@ -200,6 +249,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'global',
     techniques: ['T001', 'T002', 'T020', 'T031', 'T003'],
     actions: ['A004', 'A006', 'A016', 'A014'],
@@ -215,6 +265,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'beginning',
     techniques: ['T010', 'T011'],
     actions: ['A002', 'A008'],
@@ -232,6 +283,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T012'],
     actions: ['A002'],
@@ -247,6 +299,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'middle',
     techniques: ['T008', 'T017', 'T018', 'T022'],
     actions: ['A003', 'A005', 'A009', 'A011'],
@@ -262,6 +315,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'global',
     techniques: ['T019', 'T023', 'T025', 'T021'],
     actions: ['A009', 'A003', 'A011'],
@@ -278,6 +332,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'global',
     techniques: ['T003', 'T002', 'T021', 'T031'],
     actions: ['A006', 'A011', 'A016'],
@@ -293,6 +348,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.motivationDeficit,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
+    presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T009', 'T004', 'T005'],
     actions: ['A003', 'A007'],
@@ -309,6 +365,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
+    presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T006', 'T007'],
     actions: ['A003', 'A010'],
@@ -325,6 +382,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T013', 'T014', 'T015', 'T016', 'T008'],
     actions: ['A008', 'A006', 'A009'],
@@ -341,6 +399,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T017'],
     actions: ['A007', 'A003'],
@@ -357,6 +416,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'beginning',
     techniques: ['T024', 'T008', 'T017'],
     actions: ['A007', 'A001'],
@@ -377,6 +437,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'end',
     techniques: ['T025', 'T026', 'T017'],
     actions: ['A007', 'A003', 'A012'],
@@ -393,6 +454,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'middle',
     techniques: ['T027', 'T018'],
     actions: ['A007', 'A009', 'A005', 'A013'],
@@ -409,6 +471,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T008', 'T009', 'T028'],
     actions: ['A013', 'A003'],
@@ -426,6 +489,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
+    presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T030', 'T009'],
     actions: ['A015', 'A010'],
@@ -443,6 +507,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T029', 'T022'],
     actions: ['A009', 'A006'],
@@ -459,6 +524,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T022', 'T008'],
     actions: ['A009', 'A005'],
@@ -475,6 +541,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'local',
     techniques: ['T019', 'T003'],
     actions: ['A016', 'A011'],
@@ -491,6 +558,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.commercialAppeal,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'chapter',
     techniques: ['T017', 'T027', 'T026'],
     actions: ['A012', 'A009', 'A003'],
@@ -506,6 +574,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.commercialAppeal,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'serial',
     techniques: ['T026', 'T017'],
     actions: ['A013', 'A012'],
@@ -521,6 +590,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'chapter',
     techniques: ['T001', 'T002'],
     actions: ['A006', 'A004'],
@@ -540,6 +610,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'serial',
     techniques: ['T027', 'T025'],
     actions: ['A009', 'A013'],
@@ -555,6 +626,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T017', 'T026'],
     actions: ['A013', 'A012'],
@@ -570,6 +642,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.commercialAppeal,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'serial',
     techniques: ['T017', 'T024', 'T026', 'T027', 'T008'],
     actions: ['A013', 'A009'],
@@ -585,6 +658,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
+    presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T006', 'T007', 'T004', 'T005'],
     actions: ['A010', 'A003'],
@@ -600,6 +674,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'chapter',
     techniques: ['T001', 'T009', 'T020'],
     actions: ['A011', 'A004'],
@@ -615,6 +690,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'serial',
     techniques: ['T008', 'T017', 'T022'],
     actions: ['A013', 'A002'],
@@ -630,6 +706,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.motivationDeficit,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
+    presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T009', 'T005', 'T008', 'T032'],
     actions: ['A002', 'A007', 'A003'],
@@ -645,6 +722,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.motivationDeficit,
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
+    presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T007', 'T005', 'T009'],
     actions: ['A003', 'A007'],
@@ -660,6 +738,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l5,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'global',
     techniques: ['T014', 'T023', 'T013'],
     actions: ['A009', 'A016'],
@@ -675,6 +754,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.commercialAppeal,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T008', 'T017', 'T009'],
     actions: ['A007', 'A003'],
@@ -690,6 +770,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'chapter',
     techniques: ['T002', 'T003', 'T019'],
     actions: ['A006', 'A011'],
@@ -706,6 +787,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'serial',
     techniques: ['T017', 'T008', 'T018'],
     actions: ['A007', 'A003', 'A009'],
@@ -721,6 +803,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.description,
     position: 'global',
     techniques: ['T012'],
     actions: ['A002'],
@@ -754,6 +837,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.commercialAppeal,
     level: SkillLevel.l5,
     group: MaxAttemptsGroup.deep,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T016', 'T020', 'T024'],
     actions: ['A004', 'A011'],
@@ -769,6 +853,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
     position: 'local',
     techniques: ['T003', 'T012', 'T027'],
     actions: ['A002', 'A005'],
@@ -784,6 +869,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     type: SyndromeType.structuralDisorder,
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
+    presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T001', 'T017', 'T030'],
     actions: ['A001', 'A006', 'A013'],

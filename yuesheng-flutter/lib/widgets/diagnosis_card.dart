@@ -35,6 +35,7 @@ import '../providers/chat_store.dart';
 import '../providers/session_providers.dart';
 import '../services/message_card_service.dart';
 import '../services/student_profile_compute.dart';
+import '../services/syndrome_registry.dart';
 import '../services/syndrome_tracker.dart';
 import '../services/teaching_state_cache.dart';
 import '../types/teaching_types.dart';
@@ -746,19 +747,35 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       );
     }
 
-    // 附加项：结构层（L2/L3）与笔误/用词层（L1）分组——结构问题在前，
-    // 表面问题在后，中间加视觉分隔。无 category 字段时按 severity 粗分。
-    final structure = widget.syndromes
-        .where((s) => s.severity == 'L2' || s.severity == 'L3')
-        .toList();
-    final surface = widget.syndromes.where((s) => s.severity == 'L1').toList();
-    final children = <Widget>[];
-
-    _appendBlocks(children, structure);
-    if (structure.isNotEmpty && surface.isNotEmpty) {
-      children.add(_buildSectionDivider('笔误 / 用词类'));
+    // ADR-C146：按呈现分组（描写/剧情/角色/逻辑）分组展示，替换原先
+    // 「按 severity 粗分」（L2/L3=结构层、L1=笔误/用词层）的伪分类。
+    // 分组由 syndrome_id 静态反查 presentationGroup，模型不输出此字段。
+    // 未收录号（反查 null）兜底归入「描写」组，保证不丢条目。
+    final groups = <PresentationGroup, List<DiagnosisSyndromeCard>>{
+      for (final g in PresentationGroup.values) g: [],
+    };
+    for (final s in widget.syndromes) {
+      final g =
+          presentationGroupOf(s.syndromeId) ?? PresentationGroup.description;
+      groups[g]!.add(s);
     }
-    _appendBlocks(children, surface);
+
+    final children = <Widget>[];
+    // 展示顺序：逻辑 → 剧情 → 角色 → 描写（逻辑链最该先修，描写最轻）
+    const order = [
+      PresentationGroup.logic,
+      PresentationGroup.plot,
+      PresentationGroup.character,
+      PresentationGroup.description,
+    ];
+    for (var i = 0; i < order.length; i++) {
+      final items = groups[order[i]]!;
+      if (items.isEmpty) continue;
+      if (children.isNotEmpty) {
+        children.add(_buildSectionDivider(order[i].label));
+      }
+      _appendBlocks(children, items);
+    }
 
     return Column(children: children);
   }

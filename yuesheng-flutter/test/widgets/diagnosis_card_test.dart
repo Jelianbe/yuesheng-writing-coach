@@ -285,15 +285,15 @@ void main() {
       );
     });
 
-    testWidgets('G-1 只有 L2/L3 症候时不显示笔误 / 用词类分隔块', (tester) async {
+    testWidgets('G-1 单组症候时不显示组分隔块（ADR-C146 分组）', (tester) async {
       await tester.pumpWidget(
         _wrap(
           const DiagnosisCard(
             syndromeCount: 1,
             syndromes: [
               DiagnosisSyndromeCard(
-                syndromeId: 'G001',
-                name: '仅结构层症候',
+                syndromeId: 'P018',
+                name: '仅描写组症候',
                 severity: 'L2',
                 evidenceCount: 1,
               ),
@@ -306,19 +306,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('仅结构层症候'), findsWidgets, reason: '阳性对照：症候详情已渲染');
-      expect(find.text('笔误 / 用词类'), findsNothing);
+      expect(find.text('仅描写组症候'), findsWidgets, reason: '阳性对照：症候详情已渲染');
+      // 单组时无分隔块（无第二组需要隔开）
+      expect(find.text('描写'), findsNothing, reason: '单组不显示组标题分隔');
+      expect(find.text('剧情'), findsNothing);
+      expect(find.text('角色'), findsNothing);
+      expect(find.text('逻辑'), findsNothing);
     });
 
-    testWidgets('G-2 只有 L1 症候时不显示笔误 / 用词类分隔块', (tester) async {
+    testWidgets('G-2 单一角色组症候时不显示组分隔块', (tester) async {
       await tester.pumpWidget(
         _wrap(
           const DiagnosisCard(
             syndromeCount: 1,
             syndromes: [
               DiagnosisSyndromeCard(
-                syndromeId: 'G002',
-                name: '仅表面层症候',
+                syndromeId: 'P007',
+                name: '仅角色组症候',
                 severity: 'L1',
                 evidenceCount: 1,
               ),
@@ -331,28 +335,31 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('仅表面层症候'), findsWidgets, reason: '阳性对照：症候详情已渲染');
-      expect(find.text('笔误 / 用词类'), findsNothing);
+      expect(find.text('仅角色组症候'), findsWidgets, reason: '阳性对照：症候详情已渲染');
+      expect(find.text('角色'), findsNothing, reason: '单组不显示组标题分隔');
     });
 
-    testWidgets('G-3 两类都有时显示分隔块且位于结构块之后', (tester) async {
+    testWidgets('G-3 多组症候时按逻辑→剧情→角色→描写分组且组分隔块就位', (tester) async {
+      // P016=剧情、P007=角色（真实 ID，反查 presentationGroup）。
+      // 用 explanation 文本作顺序锚点（name 会出现在多处，explanation 只在详情块）。
       await tester.pumpWidget(
         _wrap(
           const DiagnosisCard(
             syndromeCount: 2,
             syndromes: [
               DiagnosisSyndromeCard(
-                syndromeId: 'G003',
-                name: '结构层症候',
+                syndromeId: 'P016',
+                name: '剧情组症候',
                 severity: 'L3',
                 evidenceCount: 1,
-                explanation: '结构层说明',
+                explanation: '剧情组说明',
               ),
               DiagnosisSyndromeCard(
-                syndromeId: 'G004',
-                name: '表面层症候',
-                severity: 'L1',
+                syndromeId: 'P007',
+                name: '角色组症候',
+                severity: 'L2',
                 evidenceCount: 1,
+                explanation: '角色组说明',
               ),
             ],
             suggestedActions: [],
@@ -363,14 +370,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final divider = find.text('笔误 / 用词类');
-      final structureBody = find.text('结构层说明');
-      expect(divider, findsOneWidget);
-      expect(structureBody, findsOneWidget, reason: '阳性对照：结构块已渲染');
+      final plotBody = find.text('剧情组说明');
+      final characterBody = find.text('角色组说明');
+      expect(plotBody, findsOneWidget, reason: '阳性对照：剧情块已渲染');
+      expect(characterBody, findsOneWidget);
+
+      // 展示顺序：剧情 → 角色（逻辑/描写组无成员时不出现）
       expect(
-        tester.getTopLeft(divider).dy,
-        greaterThan(tester.getBottomLeft(structureBody).dy),
-        reason: '分隔块应位于结构块之后',
+        tester.getTopLeft(plotBody).dy,
+        lessThan(tester.getTopLeft(characterBody).dy),
+        reason: '剧情组应在角色组之前',
       );
     });
   });
