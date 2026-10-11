@@ -265,7 +265,15 @@ void main() {
         expect(kTrainingFewShotLibrary.length, 38, reason: 'C140 不应新增 key');
         // ② 六症候各含划界块标记「不得报」
         //   P038（2026-10-11 需求3）随症候本体一并补了划界块，须纳入契约。
-        const boundaryKeys = ['P009', 'P013', 'P014', 'P017', 'P023', 'P038'];
+        const boundaryKeys = [
+          'P009',
+          'P013',
+          'P014',
+          'P017',
+          'P018',
+          'P023',
+          'P038',
+        ];
         for (final k in boundaryKeys) {
           final content = kTrainingFewShotLibrary[k]!;
           expect(content, contains('不得报 $k'), reason: '$k 缺「不得报」划界块');
