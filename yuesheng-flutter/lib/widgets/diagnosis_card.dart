@@ -371,6 +371,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                 const SizedBox(height: 12),
                 _buildReasoningSection(),
                 const SizedBox(height: 12),
+                _buildLogicChainHint(),
                 _buildSyndromesDetail(),
                 if (widget.suggestedActions.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -545,6 +546,48 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           color: context.palette.textTertiary,
           fontSize: 11,
         ),
+      ),
+    );
+  }
+
+  // ── 逻辑链同源提示（ADR-C146 步 3/B3）：卡级、数据驱动、零模型参与 ──
+  /// 当本轮诊断命中 ≥2 条「逻辑链」症候（P007/P016/P017/P036）时，提示这些
+  /// 问题可能同源（事件逻辑没立住）。这是**归因提示，不是合并**——各条仍单独
+  /// 成条展示，本提示只点出「它们可能指向同一个根因」。
+  ///
+  /// 为什么不判「同一段」：evidence 无段号/偏移信息（`DiagnosisSyndromeCard.
+  /// evidence` 是纯字符串列表），「同一段」无法可靠判定；故降级为「卡级」
+  /// 提示（本轮含多条逻辑链症候即提示），用可靠性换掉段级精度。见 ADR-C146 §4。
+  Widget _buildLogicChainHint() {
+    final logicHits = widget.syndromes
+        .where((s) => kLogicChainSyndromeIds.contains(s.syndromeId))
+        .toList();
+    if (logicHits.length < 2) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '这几条问题可能同源',
+            style: context.text.caption.copyWith(
+              color: context.palette.textTertiary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '以下 ${logicHits.length} 条（${logicHits.map((s) => s.name).join('、')}）'
+            '往往指向同一个根因：这一段的事件逻辑没立住。先补逻辑，再逐条修。',
+            style: context.text.caption.copyWith(
+              color: context.palette.textTertiary,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ],
       ),
     );
   }

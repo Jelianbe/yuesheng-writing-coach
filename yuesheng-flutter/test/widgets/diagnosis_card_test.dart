@@ -382,6 +382,66 @@ void main() {
         reason: '剧情组应在角色组之前',
       );
     });
+
+    testWidgets('G-4 含 ≥2 条逻辑链症候时显示同源提示', (tester) async {
+      // P007（角色空心化）+ P016（过渡生硬）同属逻辑链（kLogicChainSyndromeIds）
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 2,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P007',
+                name: '角色空心化',
+                severity: 'L2',
+                evidenceCount: 1,
+              ),
+              DiagnosisSyndromeCard(
+                syndromeId: 'P016',
+                name: '过渡生硬症',
+                severity: 'L2',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('这几条问题可能同源'),
+        findsOneWidget,
+        reason: '≥2 条逻辑链症候时应显示同源提示',
+      );
+      expect(find.textContaining('事件逻辑没立住'), findsOneWidget);
+    });
+
+    testWidgets('G-5 仅 1 条逻辑链症候时不显示同源提示', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P007',
+                name: '角色空心化',
+                severity: 'L2',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('这几条问题可能同源'), findsNothing, reason: '仅 1 条逻辑链症候不显示同源提示');
+    });
   });
 
   // ── D5-B: 症候确认栏（对齐 RN DiagnosisConfirmationBar）──
