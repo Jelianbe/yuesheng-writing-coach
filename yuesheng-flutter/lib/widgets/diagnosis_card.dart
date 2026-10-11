@@ -1030,24 +1030,51 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
   }
 
   /// 症候名小 chip（R-019 清偿：批次 N10 由 build 拆出，为「为什么」行腾额）。
+  /// 若该症候有「量」维度标签（诊断维度改进方案 §2.1），在名后追加小徽章。
   Widget _buildNameChip(_SeverityConfig cfg) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: cfg.bgColor,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Text(
-        widget.syndrome.name,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: cfg.textColor,
+    final qty = quantityTagOf(widget.syndrome.syndromeId);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xxs,
+          ),
+          decoration: BoxDecoration(
+            color: cfg.bgColor,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Text(
+            widget.syndrome.name,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: cfg.textColor,
+            ),
+          ),
         ),
-      ),
+        if (qty != null) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xs,
+              vertical: 1,
+            ),
+            decoration: BoxDecoration(
+              border: Border.all(color: cfg.textColor.withValues(alpha: 0.4)),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+            ),
+            child: Text(
+              qty.label,
+              style: TextStyle(
+                fontSize: 10,
+                color: cfg.textColor.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

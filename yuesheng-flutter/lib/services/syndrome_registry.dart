@@ -70,6 +70,27 @@ enum PresentationGroup {
   const PresentationGroup(this.label);
 }
 
+/// 「量」维度标签（诊断维度改进方案 §2.1，正交于 [SyndromeType] 与 [SkillLevel]）。
+///
+/// 不是「性质」（那是 [SyndromeType]），也不是「层级」（那是 [SkillLevel]），
+/// 而是**第三条切法**：这段文字的问题出在「写多了 / 写少了 / 词没用对」。
+/// 供诊断卡作分组/筛选键，由注册表静态映射，模型不输出此字段。
+///
+/// - [underwritten] 少写：关键处没写够 / 该展开的没展开（情绪标签化、OC 平面化…）
+/// - [overwritten] 多写：冗余 / 堆砌 / 重复（信息倾泻、语言堆砌、心理内耗…）
+/// - [wordChoice] 用词：词本身没用对（基础语病、翻译腔…）
+///
+/// ⚠️ 非每条症候都有量维度（如 P003 视角漂移、P038 描写顺序失序是「顺序/视角」问题，
+///   不是量的问题）⇒ 字段可空，[quantityTagOf] 查不到返回 null。
+enum QuantityTag {
+  underwritten('少写'),
+  overwritten('多写'),
+  wordChoice('用词');
+
+  final String label;
+  const QuantityTag(this.label);
+}
+
 /// 症候元数据（增删症候的唯一入口）
 class SyndromeRecord {
   /// 症候 ID（`P0XX`，连续编号，**永不复用**）。
@@ -106,6 +127,10 @@ class SyndromeRecord {
   /// 诊断呈现分组（ADR-C146，纯呈现层，见 [PresentationGroup]）
   final PresentationGroup presentationGroup;
 
+  /// 「量」维度标签（诊断维度改进方案 §2.1，见 [QuantityTag]）。
+  /// 可空：非每条症候都有量维度（顺序/视角/逻辑类不填）。
+  final QuantityTag? quantityTag;
+
   /// position_sensitivity（chapter / serial / global / beginning / middle / end / local）
   final String position;
 
@@ -133,6 +158,7 @@ class SyndromeRecord {
     required this.level,
     required this.group,
     required this.presentationGroup,
+    this.quantityTag,
     required this.position,
     required this.techniques,
     required this.actions,
@@ -182,6 +208,16 @@ const List<String> kLogicChainSyndromeIds = ['P007', 'P016', 'P017', 'P036'];
 PresentationGroup? presentationGroupOf(String syndromeId) {
   for (final s in kSyndromeRegistry) {
     if (s.id == syndromeId) return s.presentationGroup;
+  }
+  return null;
+}
+
+/// 按症候 ID 反查「量」维度标签（诊断维度改进方案 §2.1）。
+/// 查不到或该症候无量维度 ⇒ 返回 null（调用方自行兜底）。
+/// 静态映射，模型不输出此字段。
+QuantityTag? quantityTagOf(String syndromeId) {
+  for (final s in kSyndromeRegistry) {
+    if (s.id == syndromeId) return s.quantityTag;
   }
   return null;
 }
@@ -252,6 +288,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T001', 'T002', 'T020', 'T031', 'T003'],
     actions: ['A004', 'A006', 'A016', 'A014'],
@@ -268,6 +305,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.overwritten,
     position: 'beginning',
     techniques: ['T010', 'T011'],
     actions: ['A002', 'A008'],
@@ -335,6 +373,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.overwritten,
     position: 'global',
     techniques: ['T003', 'T002', 'T021', 'T031'],
     actions: ['A006', 'A011', 'A016'],
@@ -351,6 +390,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
     presentationGroup: PresentationGroup.character,
+    quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T009', 'T004', 'T005'],
     actions: ['A003', 'A007'],
@@ -368,6 +408,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
     presentationGroup: PresentationGroup.character,
+    quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T006', 'T007'],
     actions: ['A003', 'A010'],
@@ -385,6 +426,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.character,
+    quantityTag: QuantityTag.overwritten,
     position: 'global',
     techniques: ['T013', 'T014', 'T015', 'T016', 'T008'],
     actions: ['A008', 'A006', 'A009'],
@@ -402,6 +444,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T017'],
     actions: ['A007', 'A003'],
@@ -419,6 +462,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'beginning',
     techniques: ['T024', 'T008', 'T017'],
     actions: ['A007', 'A001'],
@@ -440,6 +484,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'end',
     techniques: ['T025', 'T026', 'T017'],
     actions: ['A007', 'A003', 'A012'],
@@ -457,6 +502,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'middle',
     techniques: ['T027', 'T018'],
     actions: ['A007', 'A009', 'A005', 'A013'],
@@ -474,6 +520,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.overwritten,
     position: 'global',
     techniques: ['T008', 'T009', 'T028'],
     actions: ['A013', 'A003'],
@@ -527,6 +574,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T022', 'T008'],
     actions: ['A009', 'A005'],
@@ -544,6 +592,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.wordChoice,
     position: 'local',
     techniques: ['T019', 'T003'],
     actions: ['A016', 'A011'],
@@ -561,6 +610,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'chapter',
     techniques: ['T017', 'T027', 'T026'],
     actions: ['A012', 'A009', 'A003'],
@@ -577,6 +627,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'serial',
     techniques: ['T026', 'T017'],
     actions: ['A013', 'A012'],
@@ -593,6 +644,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.underwritten,
     position: 'chapter',
     techniques: ['T001', 'T002'],
     actions: ['A006', 'A004'],
@@ -661,6 +713,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.deep,
     presentationGroup: PresentationGroup.character,
+    quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T006', 'T007', 'T004', 'T005'],
     actions: ['A010', 'A003'],
@@ -677,6 +730,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.overwritten,
     position: 'chapter',
     techniques: ['T001', 'T009', 'T020'],
     actions: ['A011', 'A004'],
@@ -693,6 +747,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l3,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.overwritten,
     position: 'serial',
     techniques: ['T008', 'T017', 'T022'],
     actions: ['A013', 'A002'],
@@ -773,6 +828,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.wordChoice,
     position: 'chapter',
     techniques: ['T002', 'T003', 'T019'],
     actions: ['A006', 'A011'],
@@ -790,6 +846,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.overwritten,
     position: 'serial',
     techniques: ['T017', 'T008', 'T018'],
     actions: ['A007', 'A003', 'A009'],
@@ -806,6 +863,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l2,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.overwritten,
     position: 'global',
     techniques: ['T012'],
     actions: ['A002'],
@@ -858,6 +916,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     presentationGroup: PresentationGroup.description,
+    quantityTag: QuantityTag.underwritten,
     position: 'local',
     techniques: ['T003', 'T012', 'T027'],
     actions: ['A002', 'A005'],
@@ -874,6 +933,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T001', 'T017', 'T030'],
     actions: ['A001', 'A006', 'A013'],
