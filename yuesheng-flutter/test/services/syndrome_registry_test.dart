@@ -207,17 +207,20 @@ void main() {
   // `P001..P036` 并**照样通过**。同理 `four_libraries_consistency_test`
   // 全用 `kSyndromeIds.length` 派生 ⇒「删一条注册 + 同步删一份载体」
   // 这类改动会**全链路静默通过**。本组用三条断言堵住这个洞。
-  group('ADR-0003 阶段一（34 → 38 条 · 新号身份锁）', () {
-    test('#A1-A 注册表条数硬锚 = 38（非派生）', () {
+  group('ADR-0003 阶段一（34 → 39 条 · 新号身份锁）', () {
+    test('#A1-A 注册表条数硬锚 = 39（非派生）', () {
       expect(
         kSyndromeRegistry.length,
-        38,
+        39,
         reason:
-            '注册表应为 38 条（34 + P035/P036/P037 + P038）。'
+            '注册表应为 39 条（34 + P035/P036/P037 + P038 + P039）。'
+            'P039 = ADR-C150（E-7 拆分，2026-10-11）自 P018 子情形 B 拆出的'
+            '「信息密度缺失症」，复用 ADR-C147 腾空的 P039 号（旧义「目标模糊症」'
+            '已并入 P007，v46 merge map 已退役，无归一冲突）。'
             '若你确实要增减条目，必须同步更新本断言并说明理由——'
             '否则 #R1 的派生连续性会让「少一条」静默通过。',
       );
-      expect(kSyndromeIds.length, 38, reason: 'kSyndromeIds 应与注册表同长');
+      expect(kSyndromeIds.length, 39, reason: 'kSyndromeIds 应与注册表同长');
     });
 
     test('#A1-B P035/P036/P037 三号在册且名字与本批锁定值一致', () {

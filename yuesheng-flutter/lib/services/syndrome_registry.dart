@@ -585,11 +585,9 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     name: '重复用词/基础语病',
     shortName: '重复用词/基础语病',
     keyword: '重复用词/基础语病',
-    oneLine:
-        '相邻字重复/连续标点/高频词反复；主谓搭配不当、成分残缺等基础文法问题；内容稀碎——句句语法正确但信息密度过低，读完未传递实质内容',
-    typeLine: '表达不够精炼，基础语法失稳或信息密度过低',
-    trainingLine:
-        '相邻字重复/连续标点/高频词反复；主谓搭配不当、时态跳脱、成分残缺等基础文法问题分散注意力；内容稀碎——句句语法正确但信息量为零，读者读完一段什么都没得到',
+    oneLine: '相邻字重复/连续标点/高频词反复；主谓搭配不当、成分残缺等基础文法问题',
+    typeLine: '表达不够精炼，基础语法失稳',
+    trainingLine: '相邻字重复/连续标点/高频词反复；主谓搭配不当、时态跳脱、成分残缺等基础文法问题分散注意力',
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
@@ -956,5 +954,27 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'local',
     techniques: ['T027', 'T022'],
     actions: ['A009', 'A006'],
+  ),
+  // ── ADR-C150（E-7 拆分）：信息密度缺失症 ──
+  // 自 P018 子情形 B「内容稀碎」拆出（P018 保留语言层重复/文法瑕疵）。
+  // ID 取 P039：ADR-C147 裁定 P038–P049 已腾空可复用，且 ID 连续递增约束
+  // （four_libraries_consistency_test #1）要求新条目取 P038 之后的下一个号。
+  SyndromeRecord(
+    id: 'P039',
+    name: '信息密度缺失症',
+    shortName: '信息密度缺失',
+    keyword: '句句正确但无信息增量',
+    oneLine:
+        '句子单独看语法都正确，但一段读完没传递任何实质信息——没有新事实、没有情绪推进、没有画面变化，每句都"没错"，合起来"什么都没说"',
+    typeLine: '不是"该展开的地方一笔带过"（P017），而是"根本没有信息"——删到只剩骨架后剩余信息量≈0',
+    trainingLine: '把每句主语+谓语提取出来检查是否构成"信息增量链"；凡删掉后叙事不受影响的句子即为稀碎，重写或合并',
+    type: SyndromeType.expressiveDeficit,
+    level: SkillLevel.l2,
+    group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.plot,
+    quantityTag: QuantityTag.overwritten,
+    position: 'local',
+    techniques: ['T003', 'T022'],
+    actions: ['A011', 'A005'],
   ),
 ];
