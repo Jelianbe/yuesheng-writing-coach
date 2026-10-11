@@ -116,7 +116,7 @@ List<_Seg> _manualSegments() {
 
 void main() {
   group('注入源方向冲突 · 作用域与清单', () {
-    test('#1 解析器自检：few-shot 源码解析出 37 个 ID（解析器没失效）', () {
+    test('#1 解析器自检：few-shot 源码解析出 39 个 ID（解析器没失效）', () {
       // 本护栏最大风险是「解析器静默失配 ⇒ 清单恒空 ⇒ 假绿」。
       // 故先钉住解析结果规模，再谈清单。
       final parsed = _parseFewShotSource();
@@ -130,8 +130,8 @@ void main() {
       );
       expect(
         parsed.length,
-        38,
-        reason: 'few-shot 库基线 38 条（ADR-0003 阶段一 + P038）',
+        39,
+        reason: 'few-shot 库基线 39 条（ADR-0003 阶段一 + P035–P039）',
       );
     });
 
@@ -340,9 +340,10 @@ void main() {
           'P036',
           'P037',
           'P038',
+          'P039',
         ],
         reason:
-            'L3 手册内含「未命中」负例段的 ID 全集（实测 35 个）。'
+            'L3 手册内含「未命中」负例段的 ID 全集（实测 36 个）。'
             '逐项列出而非只比长度：这样哪一条被增删会直接显示在 diff 里',
       );
     });
