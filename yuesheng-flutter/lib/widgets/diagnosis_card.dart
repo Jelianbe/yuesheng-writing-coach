@@ -731,7 +731,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         ),
         const SizedBox(width: 4),
         Text(
-          s.severity,
+          // E-4：显示中文严重度（轻微/中等/严重）而非原始 L1/L2/L3 码
+          _severityLabel(s.severity),
           style: TextStyle(
             fontSize: 11,
             color: cfg.textColor.withValues(alpha: 0.85),
@@ -1201,8 +1202,25 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
                   ? null
                   : () => widget.onAcknowledgeEvidence!(e),
             ),
+          _buildFalseBoundaryHint(),
         ],
       ],
+    );
+  }
+
+  /// E-5：误判边界提示——manual 已有例外情况条款，本条把人工边界延伸到 UI，
+  /// 告诉学员刻意的写作手法可能不适用此条诊断。
+  Widget _buildFalseBoundaryHint() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        '若此处是你刻意的写作手法（如重复表现人物语气），此条可忽略。',
+        style: context.text.caption.copyWith(
+          color: context.palette.textTertiary,
+          fontSize: 11,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
     );
   }
 

@@ -54,6 +54,14 @@ class GrowthOverviewGrid extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ..._buildGridRows(),
+            // E-4：教学阶段释义——用户可能不知道「阶段」指什么、如何推进
+            const SizedBox(height: 12),
+            Text(
+              '教学阶段会随你的写作练习和问题解决进度自动推进。',
+              style: context.text.microCaption.copyWith(
+                color: context.palette.textTertiary,
+              ),
+            ),
           ],
         ),
       ),

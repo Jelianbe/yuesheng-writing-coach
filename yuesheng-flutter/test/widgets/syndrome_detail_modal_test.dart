@@ -73,7 +73,7 @@ void main() {
 
     // 症候 chip
     expect(find.text('情绪标签化'), findsOneWidget);
-    expect(find.text('L3'), findsOneWidget);
+    expect(find.text('严重'), findsWidgets, reason: 'L3 → 严重（chip + 记录）'); // E-4
 
     // 统计行
     expect(find.text('出现次数'), findsOneWidget);
@@ -90,7 +90,7 @@ void main() {
     // 诊断记录 section：严重度标签
     expect(find.text('诊断记录'), findsOneWidget);
     expect(find.text('轻微'), findsOneWidget); // L1
-    expect(find.text('严重'), findsOneWidget); // L3
+    expect(find.text('严重'), findsWidgets); // L3（chip + 记录各一处）
   });
 
   testWidgets('#2 空记录 → 暂无趋势数据 / 暂无诊断记录', (tester) async {

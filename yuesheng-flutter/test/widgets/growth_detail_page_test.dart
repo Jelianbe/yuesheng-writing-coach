@@ -238,9 +238,9 @@ void main() {
 
       // 教学状态徽章：occurrenceCount=1 + trend=unknown → identified（刚识别）
       expect(find.text('刚识别'), findsNWidgets(2));
-      // 严重度 chip 仍显示
-      expect(find.text('L2'), findsOneWidget);
-      expect(find.text('L1'), findsOneWidget);
+      // 严重度 chip 仍显示（E-4：L1/L2/L3 → 轻微/中等/严重）
+      expect(find.text('中等'), findsWidgets, reason: '情绪标签化 L2 → 中等');
+      expect(find.text('轻微'), findsWidgets, reason: '句式节奏单一 L1 → 轻微');
     });
 
     testWidgets('#D2 症候分布按教学状态分组（批次 48，对齐 RN syndromeGroups）', (tester) async {
@@ -693,8 +693,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // seed：2 条 active 症候 = 情绪标签化(L1) + 句式节奏单一(L2)
-      expect(find.text('L1'), findsWidgets, reason: '情绪标签化 L1 徽章');
-      expect(find.text('L2'), findsWidgets, reason: '句式节奏单一 L2 徽章');
+      expect(find.text('轻微'), findsWidgets, reason: '情绪标签化 L1 徽章 → 轻微'); // E-4
+      expect(find.text('中等'), findsWidgets, reason: '句式节奏单一 L2 徽章 → 中等'); // E-4
 
       // 分组标题：句式节奏 ×1 + suspected → 一定有「待诊断」identified
       expect(find.text('待诊断'), findsOneWidget);

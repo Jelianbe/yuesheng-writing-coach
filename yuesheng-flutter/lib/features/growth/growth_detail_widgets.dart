@@ -144,9 +144,17 @@ class SeverityChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
-        severity,
+        // E-4：显示中文严重度而非原始 L1/L2/L3 码
+        severityLabel(severity),
         style: TextStyle(fontSize: 11, color: context.palette.textPrimary),
       ),
     );
   }
 }
+
+/// E-4：严重度中文标签（与 diagnosis_card._severityLabel 一致）
+String severityLabel(String severity) => switch (severity) {
+  'L2' => '中等',
+  'L3' => '严重',
+  _ => '轻微',
+};

@@ -174,7 +174,9 @@ class SyndromeDetailModal extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            syndrome.currentSeverity,
+            // E-4：显示中文严重度而非原始 L1/L2/L3 码
+            _severityLabel[syndrome.currentSeverity] ??
+                syndrome.currentSeverity,
             style: TextStyle(
               fontSize: 12,
               color: sev.fg.withValues(alpha: 0.85),

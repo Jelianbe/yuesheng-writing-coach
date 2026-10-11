@@ -49,6 +49,13 @@ String quickOptionLabel(String value) {
   }
 }
 
+/// E-4：严重度中文标签（与 diagnosis_card._severityLabel 一致）
+String _severityLabel(String severity) => switch (severity) {
+  'L2' => '中等',
+  'L3' => '严重',
+  _ => '轻微',
+};
+
 class PartialAgreementCard extends StatefulWidget {
   final String syndromeId;
   final String syndromeName;
@@ -219,7 +226,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Text(
-            widget.severity,
+            _severityLabel(widget.severity),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
