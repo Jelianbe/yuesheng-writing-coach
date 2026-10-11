@@ -176,31 +176,12 @@ void main() {
         );
       }
 
-      // ★ 真旧号（14 个：P038–P049 + H001/H002）同样必须查不到。
-      //   这 14 个是「曾经用过、已永不复用」的号；单轨纪律的第一条就是
-      //   **号码一旦分配便永不复用** ⇒ 它们在读路径上必须是「纯未知」。
-      //
-      //   ⚠️ 本条是单轨纪律的**执行点**：任何「把 P038 分给新症候」的改动
-      //      都会在这里变红。这比在退役档案里查（#R-1 系列）更靠前 ——
-      //      档案是「历史上用过什么」，注册表是「现在是什么」，
-      //      两者相交即事故。
-      const retiiredOldIds = [
-        'P038',
-        'P039',
-        'P040',
-        'P041',
-        'P042',
-        'P043',
-        'P044',
-        'P045',
-        'P046',
-        'P047',
-        'P048',
-        'P049',
-        'H001',
-        'H002',
-      ];
-      expect(retiiredOldIds.length, 14, reason: '真旧号清单长度是硬锚（防有人悄悄删项）');
+      // ★ 真正「永不复用」的号（ghost 号 2 个：H001/H002）必须查不到。
+      //   ADR-C147（2026-10-11）裁定：P038–P049 是 renumber/merge 腾空的号，
+      //   内容已全部并入现行 P001–P037，且归一机制已删、新库无旧号 ⇒ 空号可复用。
+      //   ⇒ 只有 H001/H002（ghost 号，非 P 前缀、从未正式分配）保持「永不复用」。
+      const retiiredOldIds = ['H001', 'H002'];
+      expect(retiiredOldIds.length, 2, reason: '真旧号清单长度是硬锚（防有人悄悄删项）');
       for (final old in retiiredOldIds) {
         expect(
           active.contains(old),
@@ -226,17 +207,17 @@ void main() {
   // `P001..P036` 并**照样通过**。同理 `four_libraries_consistency_test`
   // 全用 `kSyndromeIds.length` 派生 ⇒「删一条注册 + 同步删一份载体」
   // 这类改动会**全链路静默通过**。本组用三条断言堵住这个洞。
-  group('ADR-0003 阶段一（34 → 37 条 · 新号身份锁）', () {
-    test('#A1-A 注册表条数硬锚 = 37（非派生）', () {
+  group('ADR-0003 阶段一（34 → 38 条 · 新号身份锁）', () {
+    test('#A1-A 注册表条数硬锚 = 38（非派生）', () {
       expect(
         kSyndromeRegistry.length,
-        37,
+        38,
         reason:
-            '注册表应为 37 条（34 + P035/P036/P037）。'
+            '注册表应为 38 条（34 + P035/P036/P037 + P038）。'
             '若你确实要增减条目，必须同步更新本断言并说明理由——'
             '否则 #R1 的派生连续性会让「少一条」静默通过。',
       );
-      expect(kSyndromeIds.length, 37, reason: 'kSyndromeIds 应与注册表同长');
+      expect(kSyndromeIds.length, 38, reason: 'kSyndromeIds 应与注册表同长');
     });
 
     test('#A1-B P035/P036/P037 三号在册且名字与本批锁定值一致', () {

@@ -128,7 +128,11 @@ void main() {
             '不等说明 `_parseFewShotSource` 的正则与源码格式脱节，'
             '此时下面所有清单断言都会假绿',
       );
-      expect(parsed.length, 37, reason: 'few-shot 库基线 37 条（ADR-0003 阶段一后）');
+      expect(
+        parsed.length,
+        38,
+        reason: 'few-shot 库基线 38 条（ADR-0003 阶段一 + P038）',
+      );
     });
 
     test('#2 L1 边界句存在「倾向多报」措辞（冲突源在位）', () {
@@ -335,9 +339,10 @@ void main() {
           'P035',
           'P036',
           'P037',
+          'P038',
         ],
         reason:
-            'L3 手册内含「未命中」负例段的 ID 全集（实测 34 个）。'
+            'L3 手册内含「未命中」负例段的 ID 全集（实测 35 个）。'
             '逐项列出而非只比长度：这样哪一条被增删会直接显示在 diff 里',
       );
     });

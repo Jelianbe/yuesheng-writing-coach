@@ -391,9 +391,10 @@ void main() {
             'P048 是已退役旧号（语法层语病症 → P018）。'
             '单轨下它必须读不出名字，绝不能被猜成 P018 的名字。',
       );
-      // 全部 14 个真旧号一并核（永不复用 ⇒ 读路径上必须是纯未知）
+      // ADR-C147（2026-10-11）：P038–P049 为 renumber/merge 腾空的号，可复用；
+      // P038 已分配为「描写顺序失序症」，其余 P039–P049 当前未分配 → 均返回 null。
+      // ghost 号 H001/H002 永不复用 → 返回 null。
       for (final old in const [
-        'P038',
         'P039',
         'P040',
         'P041',
@@ -408,7 +409,11 @@ void main() {
         'H001',
         'H002',
       ]) {
-        expect(syndromeNameOf(old), isNull, reason: '$old 是真旧号，单轨下不得被回退猜出名字');
+        expect(
+          syndromeNameOf(old),
+          isNull,
+          reason: '$old 未分配/永不复用，单轨下不得被回退猜出名字',
+        );
       }
 
       expect(syndromeNameOf('P099'), isNull);

@@ -11,7 +11,9 @@
 // 33 个存活症候按旧 ID 升序连续重编号为 P001–P033。
 //
 // ★ 2026-10-05（层 2 单轨收口批）：**读路径归一已整张删除**。
-// 本项目现在走**单轨 ID**——「P001–P037 之外永不再分配编号，历史号永不复用」。
+// 本项目现在走**单轨 ID**——现行编号 P001–P038。
+// ★ ADR-C147（2026-10-11）修正「永不复用」纪律：renumber/merge 腾空的号
+//   （P038–P049 内容已并入现行 P001–P037）可复用；只有 ghost 号（H001/H002）永不复用。
 // 历史沿革见 `syndrome_retirement.dart`（纯文档，运行时零消费）与 git 历史。
 // ─────────────────────────────────────────────────────────────
 
@@ -823,9 +825,11 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   //      静默改成「对话疲劳症」，是最隐蔽的一种数据损坏。
   //   ③ 用户手动重装即全新库，无 legacy 行 ⇒ 无需任何清库代码。
   //
-  // ⚠️ §4-136（同一字符串跨年代承载多种含义）的教训仍留在这里作为警示：
-  //   **本项目从此不再分配任何已用过的字符串**（新号从 P038 起，永不复用）。
-  //   若将来有人想复用某个空号，先确认它在 `kSyndromeRetirement` 里不存在。
+  // ⚠️ §4-136（同一字符串跨年代承载多种含义）的教训仍留在这里作为警示。
+  //   ★ ADR-C147（2026-10-11）裁定修正：renumber/merge 腾空的号可复用，
+  //   新号从 **P038** 起（P038–P049 内容已并入现行 P001–P037，号已腾空）。
+  //   真正永不复用的只有 ghost 号（H001/H002，见 `syndrome_retirement.dart`）。
+  //   若将来想复用某个号，先确认它是不是 ghost 号（`kSyndromeRetirement` 查）。
   SyndromeRecord(
     id: 'P035',
     name: '撞文同质化症',
@@ -873,5 +877,22 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T001', 'T017', 'T030'],
     actions: ['A001', 'A006', 'A013'],
+  ),
+  // ── 需求 3 新增（2026-10-11）：描写顺序失序症 ──
+  SyndromeRecord(
+    id: 'P038',
+    name: '描写顺序失序症',
+    shortName: '描写顺序失序',
+    keyword: '空间/时间描写顺序错乱',
+    oneLine: '空间感官或时间感官的描写顺序与因果/感知顺序不符——先写结果后写过程、空间跳接无过渡、时间倒错无提示，读者需自行脑补顺序',
+    typeLine: '描写顺序应遵循感知或因果的自然流向；顺序错乱让读者反复回看才拼出「先发生了什么」',
+    trainingLine: '把描写按「感知到达顺序」或「因果发生顺序」重排：先过程后结果、先近后远或先整体后局部、倒叙须有明确提示',
+    type: SyndromeType.expressiveDeficit,
+    level: SkillLevel.l1,
+    group: MaxAttemptsGroup.expression,
+    presentationGroup: PresentationGroup.description,
+    position: 'local',
+    techniques: ['T027', 'T022'],
+    actions: ['A009', 'A006'],
   ),
 ];

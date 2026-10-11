@@ -36,7 +36,7 @@
 /// 漏另一处会派生出**语法错误或静默失配**的 RegExp（`{N}` 留着不替换
 /// ⇒ 模式匹配不到任何东西 ⇒ 防线静默失效，§4-153 同型）。
 const List<({int digits, String pattern})> _kSegments = [
-  // P 段：P001–P099（现行 37 条实体 P001–P037）
+  // P 段：P001–P099（现行 38 条实体 P001–P038）
   (digits: 2, pattern: r'P0{N}'),
 ];
 
