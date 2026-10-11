@@ -72,10 +72,10 @@ void main() {
       expect(find.text('进阶'), findsOneWidget);
       // 任务描述
       expect(find.textContaining('找出章节中 3 处'), findsOneWidget);
-      // 三按钮
+      // 主按钮 + 更多菜单（E-6：次级操作收进菜单）
       expect(find.text('开始练习'), findsOneWidget);
       expect(find.text('跳过此建议'), findsOneWidget);
-      expect(find.text('查看详情'), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz), findsOneWidget);
       // 详情初始收起
       expect(find.text('任务类型：'), findsNothing);
     });
@@ -130,6 +130,9 @@ void main() {
         ),
       );
 
+      // E-6：查看详情收进「更多」菜单
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('查看详情'));
       await tester.pumpAndSettle();
 
@@ -138,8 +141,6 @@ void main() {
       expect(find.text('改写'), findsOneWidget);
       expect(find.text('评估标准：'), findsOneWidget);
       expect(find.textContaining('避免直接使用情绪词'), findsOneWidget);
-      // 按钮变「收起详情」
-      expect(find.text('收起详情'), findsOneWidget);
     });
 
     testWidgets('#5 点击「跳过此建议」→ 卡片隐藏 + 落库 dismissed（批次62）', (tester) async {
@@ -321,7 +322,7 @@ void main() {
   });
 
   group('TeacherSuggestionCard 教我原理（批次61）', () {
-    testWidgets('#7 渲染「教我原理」按钮（两行布局，四按钮齐全）', (tester) async {
+    testWidgets('#7 渲染主按钮 + 更多菜单（E-6 分级）', (tester) async {
       await tester.pumpWidget(
         wrap(
           TeacherSuggestionCard(
@@ -333,8 +334,7 @@ void main() {
 
       expect(find.text('开始练习'), findsOneWidget);
       expect(find.text('跳过此建议'), findsOneWidget);
-      expect(find.text('查看详情'), findsOneWidget);
-      expect(find.text('教我原理'), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz), findsOneWidget);
     });
 
     testWidgets('#8 点击「教我原理」→ 触发 onTeachPrinciple 回调（传症候名）', (tester) async {
@@ -348,6 +348,9 @@ void main() {
         ),
       );
 
+      // E-6：教我原理收进「更多」菜单
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('教我原理'));
       await tester.pump();
 
@@ -359,6 +362,9 @@ void main() {
         wrap(TeacherSuggestionCard(payload: buildPayload())),
       );
 
+      // E-6：教我原理收进「更多」菜单
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('教我原理'));
       await tester.pump();
 
@@ -368,7 +374,7 @@ void main() {
   });
 
   group('TeacherSuggestionCard 标注位置（批次63 B62d）', () {
-    testWidgets('#11 有 locationMarks → 渲染「标注位置」按钮', (tester) async {
+    testWidgets('#11 有 locationMarks → 菜单含「标注位置」项', (tester) async {
       await tester.pumpWidget(
         wrap(
           SingleChildScrollView(
@@ -381,6 +387,9 @@ void main() {
         ),
       );
 
+      // E-6：标注位置收进「更多」菜单
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
       expect(find.text('标注位置'), findsOneWidget);
     });
 
@@ -397,6 +406,9 @@ void main() {
         ),
       );
 
+      // E-6：标注位置收进「更多」菜单
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('标注位置'));
       await tester.pump();
 
@@ -404,21 +416,20 @@ void main() {
       expect(find.textContaining('问题位置'), findsOneWidget);
       expect(find.text('第2段：他低声说道……'), findsOneWidget);
       expect(find.text('第5段：她看着窗外……'), findsOneWidget);
-      // 按钮切换为「收起位置」
-      expect(find.text('收起位置'), findsOneWidget);
     });
 
-    testWidgets('#13 无 locationMarks → 不渲染「标注位置」按钮（向后兼容）', (tester) async {
+    testWidgets('#13 无 locationMarks → 菜单不含「标注位置」项（向后兼容）', (tester) async {
       await tester.pumpWidget(
         wrap(TeacherSuggestionCard(payload: buildPayload())),
       );
 
+      // E-6：打开菜单验证无「标注位置」项
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
       expect(find.text('标注位置'), findsNothing);
-      // 原有四按钮仍在
+      // 主按钮仍在
       expect(find.text('开始练习'), findsOneWidget);
       expect(find.text('跳过此建议'), findsOneWidget);
-      expect(find.text('查看详情'), findsOneWidget);
-      expect(find.text('教我原理'), findsOneWidget);
     });
   });
 }

@@ -84,7 +84,8 @@ void main() {
     expect(find.text('本书诊断 1 次'), findsOneWidget);
     expect(find.text('本书症候概览'), findsOneWidget);
     expect(find.text('1 个活跃'), findsOneWidget);
-    expect(find.text('口语化'), findsWidgets);
+    expect(find.text('口语化'), findsNothing);
+    expect(find.text('情绪标签化'), findsWidgets);
   });
 
   testWidgets('#2 无诊断 → 空态引导', (tester) async {

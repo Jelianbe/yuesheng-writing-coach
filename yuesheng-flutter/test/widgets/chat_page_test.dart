@@ -1533,7 +1533,7 @@ void main() {
 
       expect(find.byType(TaskPanel), findsOneWidget);
       expect(find.text('练习任务'), findsOneWidget);
-      expect(find.text('视角跳跃症'), findsOneWidget);
+      expect(find.text('信息倾泻症'), findsOneWidget); // P002 注册表名称（D-W1 反查）
       expect(find.text('注意'), findsOneWidget); // L2 严重度中文标签
       expect(find.text('完成'), findsOneWidget);
 
@@ -1685,10 +1685,10 @@ void main() {
 
       // 症候名称 chip（显示名称而非代号）
       expect(find.text('情绪标签化'), findsOneWidget);
-      // 三按钮
+      // 主按钮 + 更多菜单（E-6）
       expect(find.text('开始练习'), findsOneWidget);
       expect(find.text('跳过此建议'), findsOneWidget);
-      expect(find.text('查看详情'), findsOneWidget);
+      expect(find.byIcon(Icons.more_horiz), findsWidgets);
       // 任务描述
       expect(find.text('请改写这段对话，让情绪描写更含蓄。'), findsOneWidget);
     });

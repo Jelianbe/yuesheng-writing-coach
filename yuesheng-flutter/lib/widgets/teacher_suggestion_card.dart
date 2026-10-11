@@ -340,15 +340,13 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     }
   }
 
-  /// 两行按钮：第一行「开始练习 | 跳过此建议」，第二行「查看详情 | 教我原理」
-  /// 批次63（B62d）：locationMarks 非空时第二行追加「标注位置」按钮
+  /// 按钮分级（E-6）：主行动「开始练习」+ 负向主操作「跳过此建议」+ 次级操作「更多」菜单
+  /// 次级操作（查看详情 / 教我原理 / 标注位置）收进 PopupMenu，减少按钮堆叠
   Widget _buildButtons() {
     final hasLocations = widget.payload.locationMarks.isNotEmpty;
     return Column(
       children: [
-        _buildPracticeRow(),
-        const SizedBox(height: 8),
-        _buildSecondaryRow(hasLocations),
+        _buildActionRow(hasLocations),
         if (_showLocations && hasLocations) ...[
           const SizedBox(height: 10),
           _buildLocations(widget.payload.locationMarks),
@@ -357,7 +355,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     );
   }
 
-  Widget _buildPracticeRow() {
+  Widget _buildActionRow(bool hasLocations) {
     return Row(
       children: [
         Expanded(
@@ -396,70 +394,58 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildSecondaryRow(bool hasLocations) {
-    return Row(
-      children: [
-        Expanded(child: _buildDetailToggleButton()),
         const SizedBox(width: 8),
-        Expanded(child: _buildTeachButton()),
-        if (hasLocations) ...[
-          const SizedBox(width: 8),
-          Expanded(child: _buildLocationToggleButton()),
-        ],
+        _buildMoreMenu(hasLocations),
       ],
     );
   }
 
-  Widget _buildDetailToggleButton() {
-    return SizedBox(
-      height: 34,
-      child: OutlinedButton(
-        onPressed: () => setState(() => _expanded = !_expanded),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: context.palette.textDeep,
-          side: BorderSide(color: context.palette.borderSoft),
-          padding: EdgeInsets.zero,
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  /// 次级操作菜单：查看详情 / 教我原理 / 标注位置（仅当有标注位置时）
+  Widget _buildMoreMenu(bool hasLocations) {
+    return PopupMenuButton<String>(
+      tooltip: '更多操作',
+      onSelected: _handleMoreAction,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'detail',
+          child: Text(_expanded ? '收起详情' : '查看详情'),
         ),
-        child: Text(_expanded ? '收起详情' : '查看详情'),
+        const PopupMenuItem(value: 'teach', child: Text('教我原理')),
+        if (hasLocations)
+          PopupMenuItem(
+            value: 'location',
+            child: Text(_showLocations ? '收起位置' : '标注位置'),
+          ),
+      ],
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: context.palette.borderSoft),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.more_horiz, size: 18, color: context.palette.textDeep),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTeachButton() {
-    return SizedBox(
-      height: 34,
-      child: OutlinedButton(
-        onPressed: _handleTeachPrinciple,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: context.palette.textDeep,
-          side: BorderSide(color: context.palette.borderSoft),
-          padding: EdgeInsets.zero,
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        child: const Text('教我原理'),
-      ),
-    );
-  }
-
-  Widget _buildLocationToggleButton() {
-    return SizedBox(
-      height: 34,
-      child: OutlinedButton(
-        onPressed: () => setState(() => _showLocations = !_showLocations),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: context.palette.primary,
-          side: BorderSide(color: context.palette.primary),
-          padding: EdgeInsets.zero,
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        child: Text(_showLocations ? '收起位置' : '标注位置'),
-      ),
-    );
+  void _handleMoreAction(String action) {
+    switch (action) {
+      case 'detail':
+        setState(() => _expanded = !_expanded);
+        break;
+      case 'teach':
+        _handleTeachPrinciple();
+        break;
+      case 'location':
+        setState(() => _showLocations = !_showLocations);
+        break;
+    }
   }
 
   /// 批次63（B62d）：位置清单块——段落位置 + 原文摘录，供学员自查修改（AI 不代改）
