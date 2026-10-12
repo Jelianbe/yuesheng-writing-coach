@@ -32,6 +32,17 @@
 //   flutter test --tags "live,external" test/services/p029_negative_sample_test.dart
 //
 // 边界（R-010）：纯测试层新增，不改任何 lib/ 产品代码。
+//
+// ── D6.1 增量（2026-10-12 · 舰长裁定 ①②③ 三项）────────────────
+//   ① 判定器**降级为辅助筛查器**（见 `_hitsFacet` 上方注释）：正式读数
+//      一律以**人工逐票复核**为准；判定器只用于常驻组自检 + live 命中辅助定位。
+//   ③ 人工复核采**三态口径**：「报 / 明确不报 / 未提及」；**「未提及」不计入
+//      未通过**（负样本约束是「不得报」，沉默不构成误报）——见 `_runLiveVotes` 内注释。
+//   ② 带②（喜剧荒诞）**暂不收紧判据**：复核报告 §5.1 指出其 3/3 读数
+//      **无法区分**「判据缺陷」与「样本缺类型上下文」，而 `manual_6` 例外② 的
+//      适用前提是「**喜剧/荒诞向作品**」（作品级）⇒ 裸片段投喂下**不可达**。
+//      故先加 **B3g 对照样本**（同文本 + 体裁说明）做判决性实验，据结果再定是否
+//      需要改知识源正文（= 新 R-027 触点）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -96,6 +107,17 @@ class _Case {
   final String name;
   final String probe;
 
+  /// 体裁/意图提示（**可选**）。非空时作为**独立 system 消息**注入，模拟
+  /// 「学员提交时说明了作品体裁」这一生产场景。
+  ///
+  /// 动因（2026-10-12 D6.1）：`manual_6` 例外② 的原文是「**喜剧/荒诞向作品**
+  /// 刻意用降智制造笑点：类型约定」——其适用前提是**作品级体裁判断**。
+  /// 而裸片段投喂下该前提**不可达**（模型无从知道这是不是一部喜剧）⇒ B3 的
+  /// 3/3 误报**无法区分**「判据缺陷」与「样本信息不足」（复核报告 §5.1）。
+  /// 与 N3 批「`'m0'` 不可达」同型：**不可达条款 = 措辞而非约束**。
+  /// ⇒ 设 B3（裸，无 hint）× B3g（带 hint）**对照**，以判决性实验判明根因。
+  final String? genreHint;
+
   /// 合法输出：教练正确地指出别的真问题（或明确不判 P029）⇒ 不应命中。
   final String hitScript;
 
@@ -110,6 +132,7 @@ class _Case {
     required this.band,
     required this.name,
     required this.probe,
+    this.genreHint,
     required this.hitScript,
     required this.missScript,
     required this.anchors,
@@ -259,6 +282,27 @@ final List<_Case> _cases = [
         '荒诞喜剧的节奏：反派自曝，主角接得比反派更狠。笑点在两句话的落差，'
         '不在反派为什么来。',
     missScript: '降智反派症成立：反派上门自曝意图还要对手提醒关门，没有利益动机，纯为剧情需要。',
+    anchors: ['喜剧', '类型约定'],
+  ),
+  // ★ B3g = B3 的**同文本对照**，唯一差异 = 多一条体裁说明 system。
+  //   判决性实验（D6.1）：B3 3/3 报 vs B3g ?/3 报 ⇒ 直接判明带② 误报根因是
+  //   「判据缺陷」（需改 manual_6 例外②，R-027）还是「样本缺类型上下文」（无需改）。
+  //   ⚠️ 它**不是**「把答案喂给模型」——例外② 的适用前提本就是「作品属喜剧/荒诞向」，
+  //      提供体裁信息是在**使前提可达**，而不是在给结论。
+  _Case(
+    id: 'B3g',
+    band: '喜剧荒诞',
+    name: '【对照·带体裁说明】县令荒谬判词（同 B3 文本 + 体裁提示）',
+    genreHint:
+        '补充说明：这是一部荒诞喜剧，作者刻意用夸张的官腔与不合逻辑的判词制造笑点，'
+        '读者预期就是看个热闹，不要求现实可信度。',
+    probe:
+        '县令拍着惊堂木：「本官判你充军三千里——理由？你长得太碍眼。」'
+        '师爷在下面小声提醒律例没有这一条，他一拍桌子：「本官今天就是律例！」',
+    hitScript:
+        '荒诞喜剧的经典结构，县令的蠢是权力本身的一部分，读者笑点在这儿。'
+        '真要建议的是师爷那一句提醒可以再快半拍，笑点会更响。',
+    missScript: '降智反派症：县令毫无利益动机，随意判充军，反派被工具化，冲突失真。',
     anchors: ['喜剧', '类型约定'],
   ),
 
@@ -444,6 +488,22 @@ const List<String> _kNegationMarkers = [
 ///   **够不到**「不报」⇒ 必然漏判。16 覆盖该形态并留余量。
 const int _kNegationWindow = 16;
 
+/// ⚠️ 判定器定位（2026-10-12 D6.1 裁定 · 甲案）：**辅助筛查器，不是判真器**。
+///
+/// 依据 = D6 live 复核实测 **4 处偏差**（3 假阳性 + 1 假阴性），归四类：
+/// 「对象错位」（信号词修饰的是配角不是反派）·「提及 ≠ 判定」（引用/转述标签名）·
+/// 「表述漂移」（同义异形，词表追不上语言多样性）·「正向词表缺口」。
+/// **前三类原理上词表治不了** —— 它没有语义层，看不出「谁被工具化」、
+/// 分不出「说这个词」与「判这个症」。⇒ 结构性上限，不是补两个词能修的
+/// （§4-153 探针缺陷伪装成被测对象问题 · §4-162 rc≠0 不等于断言生效 的镜像）。
+///
+/// 故用途**仅限**两条：
+///   ① 常驻组 ⑥~⑪ 用 FakeLlmClient 验证**判定器自身**有牙齿（该组不依赖真模型）；
+///   ② 跑 live 时打印命中详情，**辅助**人工定位可疑票。
+/// **不得**把本判定器的 `rc` / 读数当作「模型假报率」结论 ——
+/// **正式读数一律以人工逐票复核为准**（15 票约 20 分钟，成本可控）。
+/// 详见 `.ai/reports/2026-10-12-D6-live读数复核-判定器缺陷与带级结论.md` §3 / §6。
+///
 /// 判定输出是否命中 P029 的概念侧面（含左侧否定域守卫）。
 bool _hitsFacet(String output) {
   for (final facet in _kFacetToolization) {
@@ -464,6 +524,10 @@ bool _hitsFacet(String output) {
 /// 训练内容 + few-shot + L3 手册 + 技法，四面齐全）。
 List<ChatMessage> _buildMessages(_Case c) {
   final msgs = <ChatMessage>[ChatMessage(role: 'system', content: _kPreamble)];
+  final hint = c.genreHint;
+  if (hint != null) {
+    msgs.add(ChatMessage(role: 'system', content: hint));
+  }
   final knowledge = getTrainingContent([_kFocusId]);
   if (knowledge.isNotEmpty) {
     msgs.add(ChatMessage(role: 'system', content: knowledge));
@@ -564,27 +628,33 @@ void main() {
   });
 
   group('P029 负样本 · 判定器自身有牙齿（FakeLlmClient，无 key 恒跑）', () {
-    test('⑥ 合法输出（hitScript）判定为「不报 P029」——20/20', () {
-      for (final c in _cases) {
-        expect(
-          _hitsFacet(c.hitScript),
-          isFalse,
-          reason: '${c.id}（${c.band}）的合法输出被误判为 P029：\n${c.hitScript}',
-        );
-      }
-    });
+    test(
+      '⑥ 合法输出（hitScript）判定为「不报 P029」——${_cases.length}/${_cases.length}',
+      () {
+        for (final c in _cases) {
+          expect(
+            _hitsFacet(c.hitScript),
+            isFalse,
+            reason: '${c.id}（${c.band}）的合法输出被误判为 P029：\n${c.hitScript}',
+          );
+        }
+      },
+    );
 
-    test('⑦ 误报路径（missScript）判定为「报 P029」——20/20', () {
-      for (final c in _cases) {
-        expect(
-          _hitsFacet(c.missScript),
-          isTrue,
-          reason:
-              '${c.id}（${c.band}）的误报路径未被抓住，判定器无牙齿：\n'
-              '${c.missScript}',
-        );
-      }
-    });
+    test(
+      '⑦ 误报路径（missScript）判定为「报 P029」——${_cases.length}/${_cases.length}',
+      () {
+        for (final c in _cases) {
+          expect(
+            _hitsFacet(c.missScript),
+            isTrue,
+            reason:
+                '${c.id}（${c.band}）的误报路径未被抓住，判定器无牙齿：\n'
+                '${c.missScript}',
+          );
+        }
+      },
+    );
 
     test('⑧ 走完整装配链仍两向可判（不是只判裸字符串）', () async {
       final c = _cases.firstWhere((e) => e.id == 'C1');
@@ -722,7 +792,10 @@ void main() {
     // 抽样 5 条（4 带全覆盖 + 「局」带 2 条）—— 每条 3 票 ≥2 票。
     // **不跑 20 条**：真模型往返烧 token，且同一判据的多条负例高度同族，
     // 边际信息量低。抽样是刻意裁定，不是省事（读数见 D6 报批材料 §3 乙案）。
-    const sampledIds = <String>['A1', 'B3', 'C1', 'C2', 'D3'];
+    // ★ D6.1 增量：`B3g` = B3 的**同文本对照**（多一条体裁说明 system）⇒
+    //   判决性实验：B3 3/3 报 vs B3g ?/3 报，直接判明带② 误报根因是
+    //   「判据缺陷」还是「样本缺类型上下文」（复核报告 §5.1）。
+    const sampledIds = <String>['A1', 'B3', 'B3g', 'C1', 'C2', 'D3'];
 
     for (final c in _cases.where((e) => sampledIds.contains(e.id))) {
       test(
@@ -811,6 +884,18 @@ Future<void> _runLiveVotes(_Case c, _Provider prov) async {
         '本样本本轮**无法判定**，不得记为「通过」',
   );
 
+  // ★ 三态口径（2026-10-12 D6.1 裁定 · 丙案）：
+  //   人工复核时输出应分**三态** ——
+  //     ①「报 P029」（= 误报，计入分子）
+  //     ②「明确不报 P029」（= 完成负样本要求的识别）
+  //     ③「未提及 P029」（答了别的真问题，既未报、也未排除）
+  //   口径裁定：**「未提及」不计入「未通过」**。理由 = 本负样本集的约束是
+  //   「**不得报** P029」，沉默不构成误报；要求模型主动否定 = 更高的
+  //   「显式拒绝率」标准，应单列、不混入误报分母。
+  //   ⇒ 正确识别率 =（有效票 − 命中票）/ 有效票（即 明确不报 + 未提及）。
+  //   ⚠️ 判定器**分不出** ② 与 ③（两者都是「未命中」）⇒ 这正是「读数须人工复核」
+  //      的直接原因；本打印只能给「是否命中」，三态归属须人工标注。
+  //
   // ★ 本组是**测量器**，不是阈值门（2026-10-12 D6 裁定）：
   //   假报率是真实产品缺陷信号，不是「测试该断言的东西」。若写成硬阈值就必须
   //   现在决定「可接受误报率是多少」——而该数无依据（首轮读数见 D6 报告）。
