@@ -98,6 +98,7 @@ import 'package:writingcoach/services/student_profile_format.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/spaced_repetition.dart';
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
+import 'package:writingcoach/services/teaching_arbiter.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_input_builder.dart';
@@ -775,6 +776,10 @@ class MessageInjector {
       focusProblem: focusProblem,
       messages: messages,
       markStage: markStage,
+      // D3：复用 arbiter 已算好的 trainingInput（fallback 时为 null，
+      // _injectTrainingFsmAndContext 会回退到原 buildTrainingInputForActiveSyndrome
+      // 调用——守「字节级一致」边界）
+      trainingInput: focusResult.trainingInput,
     );
   }
   // ════════════════════════════════════════════════════════════════
@@ -1764,16 +1769,59 @@ class MessageInjector {
       userFocusOverride: userFocusOverride,
       subphase: currentSubphase,
       focusHistory: focusHistoryEntries,
-      // 批次60：学员当前技能层级
       studentSkillLevel: skillLevelForBeginner(beginnerLevel),
     );
-    final result = focus.resolveTeachingFocus(focusInput);
-    return _FocusResolveResult(
-      activatedFocusId: result.activatedFocusId,
-      source: result.source,
-      reason: result.reason,
-      rejectReason: result.rejectReason,
+    return _invokeArbiterAndWrap(
+      sessionId: sessionId,
+      activeProblems: activeProblems,
+      focusInput: focusInput,
     );
+  }
+
+  /// D3：调用 teaching_arbiter 并把结果包成 _FocusResolveResult（R-019 拆出）
+  ///
+  /// arbiter 内部按 3 阀顺序调；守「不触 R-027」边界——shouldTeach 字段
+  /// 不闸门注入路径，仅作 trace + D3.5/D7 闸门预留位
+  Future<_FocusResolveResult> _invokeArbiterAndWrap({
+    required String sessionId,
+    required List<ActiveProblemView> activeProblems,
+    required focus.ResolveFocusInput focusInput,
+  }) async {
+    final arbitration = await arbitrate(
+      ArbitrationInput(
+        syndromes: _toSyndromes(activeProblems),
+        focusInput: focusInput,
+        studentModelRepo: _studentModelRepo,
+        sessionId: sessionId,
+        activeProblems: activeProblems,
+        diagnosisRepo: _diagnosisRepo,
+      ),
+    );
+    return _FocusResolveResult(
+      activatedFocusId: arbitration.focusOutput.activatedFocusId,
+      source: arbitration.focusOutput.source,
+      reason: arbitration.focusOutput.reason,
+      rejectReason: arbitration.focusOutput.rejectReason,
+      trainingInput: arbitration.trainingInput,
+    );
+  }
+
+  /// D3：ActiveProblemView → Syndrome 转换（供 shouldTriggerTeacherForDiagnosis）
+  ///
+  /// ActiveProblemView 不携带 evidence/explanation，但 shouldTriggerTeacherForDiagnosis
+  /// 只看 severity + syndromes.length，缺字段不影响结果。
+  List<Syndrome> _toSyndromes(List<ActiveProblemView> activeProblems) {
+    return activeProblems
+        .map(
+          (p) => Syndrome(
+            syndromeId: p.syndromeId,
+            name: p.syndromeName,
+            severity: Severity.fromString(p.severity) ?? Severity.l2,
+            evidence: const [],
+            explanation: '',
+          ),
+        )
+        .toList();
   }
 
   /// ActiveProblemView → FocusProblem 转换（R-019 行数止血）
@@ -1935,6 +1983,9 @@ class MessageInjector {
     required ActiveProblemView focusProblem,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
+    // D3：arbiter 已算好的 trainingInput；fallback 时为 null，
+    // 由 _injectTrainingFsmAndContext 重新调 buildTrainingInputForActiveSyndrome
+    EvaluationSummaryInput? trainingInput,
   }) async {
     try {
       await _injectTrainingFsmAndContext(
@@ -1942,6 +1993,7 @@ class MessageInjector {
         focusSyndromeId: focusSyndromeId,
         focusProblem: focusProblem,
         messages: messages,
+        trainingInput: trainingInput,
       );
     } catch (e, st) {
       _logSafeRun('训练上下文构建失败不阻断主流程', e, st);
@@ -1954,30 +2006,40 @@ class MessageInjector {
   }
 
   /// 6.3 子任务 A：buildTrainingInput + FSM 迁移写回 + contextInjection 注入
+  ///
+  /// D3：若 arbiter 已算好 [trainingInput]（activatedFocusId 路径），直接复用；
+  /// 若为 null（fallback syndromeId 路径，activatedFocusId 原为空），回退到
+  /// 原始 `buildTrainingInputForActiveSyndrome` 调用——守「字节级一致」边界。
   Future<void> _injectTrainingFsmAndContext({
     required String sessionId,
     required String focusSyndromeId,
     required ActiveProblemView focusProblem,
     required List<ChatMessage> messages,
+    EvaluationSummaryInput? trainingInput,
   }) async {
-    final trainingInput = await buildTrainingInputForActiveSyndrome(
-      _studentModelRepo,
-      sessionId,
+    final effectiveTrainingInput =
+        trainingInput ??
+        await buildTrainingInputForActiveSyndrome(
+          _studentModelRepo,
+          sessionId,
+          focusSyndromeId,
+          ActiveProblemMeta(
+            currentSeverity:
+                Severity.fromString(focusProblem.severity) ?? Severity.l2,
+          ),
+          // v19：传 DiagnosisRepo 让 startingTeachingState 优先读持久化起点
+          diagnosisRepo: _diagnosisRepo,
+        );
+    if (effectiveTrainingInput == null) return;
+    final summary = buildEvaluationSummary(
       focusSyndromeId,
-      ActiveProblemMeta(
-        currentSeverity:
-            Severity.fromString(focusProblem.severity) ?? Severity.l2,
-      ),
-      // v19：传 DiagnosisRepo 让 startingTeachingState 优先读持久化起点
-      diagnosisRepo: _diagnosisRepo,
+      effectiveTrainingInput,
     );
-    if (trainingInput == null) return;
-    final summary = buildEvaluationSummary(focusSyndromeId, trainingInput);
     await _persistFsmTransitionOnMastered(
       sessionId: sessionId,
       focusSyndromeId: focusSyndromeId,
       summary: summary,
-      trainingInput: trainingInput,
+      trainingInput: effectiveTrainingInput,
       focusProblem: focusProblem,
     );
     if (summary.contextInjection.isNotEmpty) {
@@ -2324,11 +2386,16 @@ class _FocusResolveResult {
   final focus.FocusSource source;
   final String reason;
   final String? rejectReason;
+
+  /// D3：arbiter 一次算好的 trainingInput（_injectTrainingFsmAndContext 复用，
+  /// 避免重复调用 buildTrainingInputForActiveSyndrome；守「不触 R-027」边界）
+  final EvaluationSummaryInput? trainingInput;
   const _FocusResolveResult({
     required this.activatedFocusId,
     required this.source,
     required this.reason,
     required this.rejectReason,
+    this.trainingInput,
   });
 }
 
