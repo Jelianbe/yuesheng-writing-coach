@@ -44,6 +44,24 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
     对照组逐个不变；本批它们**确实变了**且变化已验证 ⇒ 不上移会让门禁永久红，
     等于把判据变成装饰）。**区分点**：不是「改动该不该做」，而是「读数有没有变」。
 
+· 2026-10-12 第六次（D1 体积实测治理批 · 舰长「批」批准 D1.5）：
+  **受控组 diagnosis 两组各 +572**（55,473→56,045 · 53,690→54,262）、
+  **对照组 6 组各 +70、beginner_gentle +91**（64,278→64,369）。
+  ⚠️ **方向 = 清偿存量越线，不是新增预算**。这批把「第五次之后本脚本长期假绿」
+  的账一次算清（详见 `.ai/reports/2026-10-12-D1-prompt体积实测与预算治理判定.md`）：
+  甲-1 之后 7 个改 prompt 的批次重冻了锚点、**无一回跑本脚本**（纪律①无执行点
+  ——本脚本不在 gate.sh ⇒ 门禁 18/18 绿也从未跑它）。逐键对账（c3d38668→HEAD）：
+  - diagnosis +572 = a04fcf83 −8（断固定夸一句）+ a5ed6f4b −148（撤回裁定 6 实现）
+    + 724a6adf +53（正面反馈证据触发）+ 1fe595da +47（取缔 confirmation 固定话术）
+    + c6fbfc29 +460（P038）+ d3263e21 +30（P018 扩）+ 4b145aa0 +138（P039）；
+  - 对照组 +70 = a04fcf83 −8 + 724a6adf +53 + 4b145aa0 +25（P039 进
+    `skills_l1_core_p1` L1 公共分类表 ⇒ 每组公共层同增，实测合理）；
+  - beginner_gentle 多出的 +21 = a04fcf83 单独 +13（gentle 口吻配额描述调整，
+    同提交其他组 −8 ⇒ 差 21）。
+  本次同步把本脚本接入 `scripts/gate.sh`（消灭「硬约束无执行点」形态），
+  并登记覆盖缺口：运行时 system 消息注入通道（F07/后续 D2 画像）不经
+  skill dispatcher ⇒ **不在本脚本计量面内**，其增量须在触该通道的批次单独实测。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -111,9 +129,10 @@ ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'skill_prompt_anchor.json')
 
 # 舰长 2026-10-05 裁定的红线（= A2/A3 批落地后的实测值）
 REDLINE = {
-    # ★ 2026-10-06 甲-1 后重贴实测值（全域 +111，理由见头注「红线沿革」第五次）。
-    'diagnosis_yuesheng': 55473,
-    'diagnosis_p1_yuesheng': 53690,
+    # ★ 2026-10-12 D1.5 治理批重贴实测值（+572，逐键对账见头注「红线沿革」第六次；
+    # 方向 = 清偿甲-1 之后 7 个批次的存量越线，不是新增预算）。
+    'diagnosis_yuesheng': 56045,
+    'diagnosis_p1_yuesheng': 54262,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
@@ -210,13 +229,15 @@ def main():
 #
 # ⇒ 区分点不是「改动该不该做」，而是「**读数有没有变**」（§4-159）。
 MUST_NOT_GROW_BASE = {
-    'beginner_gentle': 64278,
-    'beginner_yuesheng': 64265,
-    'beginner_sensei': 64133,
-    'beginner_p1_yuesheng': 63956,
-    'beginner_p3_yuesheng': 65739,
-    'beginner_p4_yuesheng': 65739,
-    'none_p0_yuesheng': 29923,
+    # ★ 2026-10-12 D1.5 治理批重贴（6 组 +70 / beginner_gentle +91，逐键对账见
+    # 头注「红线沿革」第六次；beginner_gentle 多出的 +21 来自 a04fcf83 单独 +13）。
+    'beginner_gentle': 64369,
+    'beginner_yuesheng': 64335,
+    'beginner_sensei': 64203,
+    'beginner_p1_yuesheng': 64026,
+    'beginner_p3_yuesheng': 65809,
+    'beginner_p4_yuesheng': 65809,
+    'none_p0_yuesheng': 29993,
 }
 
 
