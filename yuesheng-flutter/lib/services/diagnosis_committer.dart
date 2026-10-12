@@ -71,9 +71,14 @@ import 'package:writingcoach/utils/chapter_number.dart';
 ///   - 可选依赖（X-041c 模式）：4 个 nullable 仓储，不装配则跳过对应落库
 ///   - 内部状态：B1 连续失败计数（按 session 隔离，`Map<String, int>`）
 ///
-/// K-1 阶段无任何方法体——仅类骨架，用于验证构造签名可编译、Provider 装配
-/// 可实例化，且 ChatService 加 `final DiagnosisCommitter? _diagnosisCommitter`
-/// 字段后六道门禁全绿（行为零变化护栏）。
+/// 现状披露（2026-10-12 D5-B1 订正，原文档为 K-1 期陈旧描述）：
+/// 本类早已不是「仅类骨架」——承载阶段迁移统一处理（applyPhaseMigration
+/// 及两条路径）、协议块字符串构造、事实/实体落库辅助等职责。K-1 期「ChatService
+/// 持有 `final DiagnosisCommitter? _diagnosisCommitter` 字段」的形态**已不存在**：
+/// 该字段随 K-9 后的拆分被移除，生产侧本类实例由
+/// `session_providers.dart` 的 `diagnosisCommitterProvider` 构造，经
+/// `messageInjectorProvider` / `diagnosisFlowHandlerProvider` 的
+/// `ref.watch` 注入（DI，非 ChatService 字段持有）。
 class DiagnosisCommitter {
   // ─── 必备依赖（K-2 阶段升级为 nullable，K-3 ~ K-5 阶段随方法迁入
   //    按需收紧为 required）───

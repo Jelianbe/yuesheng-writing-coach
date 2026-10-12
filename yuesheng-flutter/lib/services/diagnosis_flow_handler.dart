@@ -8,6 +8,14 @@
 //   - _commitDiagnosisAndSuggestions
 //   - _handleTrainingResult
 //
+// ★ 现状披露（2026-10-12 D5-B1 订正，外部评审 N3）：上述「4 个方法」是
+//   **K-9 迁入时的起点**，不是当前职责面。本类现已承载落库序列
+//   （_runDiagnosisCommitSequence，含 D4/O1 顺序不变量）、阶段迁移调用、
+//   Teacher 触发、GenUI 卡片、事实抽取、V3 信号埋点、风格画像旁路等多类
+//   关注点；ADR-0005 D3 又新增 5 阀裁决链的调用透传。行数与成员数以
+//   `wc -l` / grep 实测为准，**不以本头注为准**——头注只写迁入史。
+//   U7（1506 行拆分评估）排期见 `.ai/reports/2026-10-12-诊断链二次排期-0005与0006合并序列.md` D5 节。
+//
 // 字段依赖建模原则（同 DiagnosisCommitter / MessageInjector 样板）：
 //   - 必备依赖（required）：10 个仓储 / 服务 / 编排器
 //   - 可选依赖（X-041c 模式）：1 个 nullable 仓储，不装配则跳过对应落库
@@ -139,9 +147,10 @@ typedef _TeacherOutcome = ({String displayContent, TeacherResult? teacher});
 
 /// 诊断流编排器
 ///
-/// sendMessage 主流程中 4 个诊断链路方法（步骤 9-11：解析 + 持久化 + 卡片 +
-/// 训练结果）的独立持有者。通过 callbacks / output record 参数与 chat_service
-/// 主链解耦。
+/// K-9 迁入时持有 sendMessage 主流程中 4 个诊断链路方法（步骤 9-11：解析 +
+/// 持久化 + 卡片 + 训练结果）；**当前职责面已远超该 4 个方法**（见文件头
+/// 「现状披露」）。注入侧判据在 `DiagnosisInjectionService.runDiagnosisFlow`，
+/// 本类经 callbacks / output record 参数与 chat_service 主链解耦。
 class DiagnosisFlowHandler {
   // ─── 必备依赖（聚类 B 共性）───
   final SessionRepository _sessionRepo;

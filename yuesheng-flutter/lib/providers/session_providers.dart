@@ -118,11 +118,13 @@ final llmConfigResolvedProvider = FutureProvider<LlmConfigValues?>((ref) async {
   return resolveLlmConfig(db);
 });
 
-/// 诊断提交编排器 Provider（ADR-C74 K-1）
+/// 诊断提交编排器 Provider（ADR-C74 K-1 立项，K-2~K-5 已全部落地）
 ///
-/// K-1 阶段仅供 chatServiceProvider 注入；ChatService 内暂不消费（行为零变化
-/// 护栏）。K-2 ~ K-5 阶段随方法迁入时逐步收紧——届时 ChatService 内部开始
-/// 委派到本 provider 实例。
+/// 消费方（2026-10-12 D5-B1 实测订正，原文档写「ChatService 内暂不消费」为
+/// K-1 期陈旧口径）：本 provider 由 `messageInjectorProvider`（:171）与
+/// `diagnosisFlowHandlerProvider` 经 `ref.watch` 消费。ChatService **不再持有**
+/// 该字段（原 `_diagnosisCommitter` 已随拆分移除，见 chat_service.dart 历史注记）
+/// —— 不是「暂不消费」，是「已改为经 provider 的 DI 装配」。
 final diagnosisCommitterProvider = Provider<DiagnosisCommitter>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return DiagnosisCommitter(

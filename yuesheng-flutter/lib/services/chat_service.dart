@@ -21,6 +21,13 @@
 //  10. parseTrainingResult + appendTeachingHistory（FEEDBACK 子阶段）
 //  11. onComplete
 //
+// ★ 步骤归属订正（2026-10-12 D5-B1，外部评审 N6）：步骤 9-11 的**实现已不在
+//   本文件**——诊断流编排在 `DiagnosisFlowHandler`（落库序列 / 阶段迁移 /
+//   Teacher / GenUI / 训练结果），注入侧判据在 `DiagnosisInjectionService
+//   .runDiagnosisFlow`；本文件只保留 `_runDiagnosisFlow` 纯参数转接薄壳
+//   （见下方 :765 附近注释）。此处保留编号仅为**链路可读性**，不再是
+//   「本类实现」的声明——两份文档同时自称持有 9-11 即为该条评审命中处。
+//
 // 学员画像注入（批次1-7-3）：
 //   - 在 system prompt 之后、引用内容注入之前，插入 buildStudentContext 文本
 // ─────────────────────────────────────────────────────────────
@@ -33,7 +40,10 @@
 // 委派。下游消费者（DiagnosisCommitter K-2..K-5 字段 + MessageInjector 装配参数）
 // 仍需 ChatService 持仓储引用作为 DI 中转，故以下字段在 ChatService 内部暂未
 // 直接消费但保留（X-041c / 批次66-72 装配契约不变，测试 fixture 兼容）。
-// ignore_for_file: unused_field
+// ★ D5-B4（2026-10-12）：原此处有 `// ignore_for_file: unused_field`。
+//   实测移除后 `dart analyze lib` 仍 **rc=0 / 0 warning / 0 条 unused_field**
+//   ⇒ 该 ignore 掩盖零个字段（外部评审 U4 记的「未知数量」实测为 0），
+//   已删除。理由：留着它会**持续掩盖未来新引入的死字段**（评审 §197）。
 
 import 'chat_service_diagnosis_focus.dart';
 import 'dart:async';
@@ -111,11 +121,12 @@ class ChatService {
   /// K-9 起 outlineRepo 由 DiagnosisFlowHandler / MessageInjector 各自持有，
   /// ChatService 不再直接消费；保留构造参数以兼容既有测试 fixture（无副作用）。
 
-  /// 诊断提交编排器（ADR-C74 K-1 骨架）
-  ///
-  /// K-1 阶段：nullable + ChatService 不消费，仅证明「独立类 + DI」路径
-  /// 可行（X-025-ARCH 教训复盘）。K-2 ~ K-5 阶段随方法迁入时逐步收紧为
-  /// non-null + required；K-5 收尾时本字段升级。
+  /// （历史注记，2026-10-12 D5-B1 订正）此处原为 `final DiagnosisCommitter?
+  /// _diagnosisCommitter` 字段及其 K-1 期文档。该字段已随拆分移除——ChatService
+  /// 不再直接持有 DiagnosisCommitter；生产实例由
+  /// `session_providers.dart` 的 `diagnosisCommitterProvider` 构造并经
+  /// `messageInjectorProvider` / `diagnosisFlowHandlerProvider` 注入。
+  /// 保留本注记而非静默删除，是为防「字段曾在此」的旧结论被后续会话复述。
 
   /// 系统消息注入编排器（ADR-C74 K-7）
   ///
