@@ -44,7 +44,11 @@ void main() {
     });
 
     test('#4 请求分析 → ask', () {
-      expect(classifyUserIntent('帮我分析一下这段对话'), UserIntent.ask);
+      // ★ ADR-0005（2026-10-12）订正：「帮我分析一下这段对话」含显式诊断
+      //   强信号「帮我分析」⇒ 现判 compose。旧期望 ask 保护的正是矛盾行为：
+      //   ask 指令「不要展开新的诊断」与强信号触发的协议注入同帧并存。
+      //   「教我什么是潜台词」无显式信号，仍为 ask（纯教学提问）。
+      expect(classifyUserIntent('帮我分析一下这段对话'), UserIntent.compose);
       expect(classifyUserIntent('教我什么是潜台词'), UserIntent.ask);
     });
 

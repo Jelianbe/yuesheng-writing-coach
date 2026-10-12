@@ -56,6 +56,8 @@ import 'package:writingcoach/services/chat_training_parser.dart'
 import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
+// V3 埋点（ADR-0005）：出块事件 = 假报判读口径的分母，必须在解析成功处登记
+import 'package:writingcoach/services/diagnosis_signal_monitor.dart';
 import 'package:writingcoach/services/fact_parser.dart' show stripFactBlock;
 import 'package:writingcoach/services/genui_parser.dart' show stripGenuiBlock;
 import 'package:writingcoach/services/llm_client.dart';
@@ -370,6 +372,10 @@ class DiagnosisFlowHandler {
         chapterContent: chapterContent,
       );
     }
+    // V3 埋点（ADR-0005）：长文链路同样出块 ⇒ 分母必须含此路径，
+    // 否则写作面板诊断的确认/质疑（分子全）会**虚高**质疑率（分母缺）。
+    // 本路径 attempted 恒 true（章节诊断入口），故 inDiagnosisBlock 传 true。
+    _recordBlockEmittedSignal(diagnosis, inDiagnosisBlock: true);
     await _recordDiagnosisOutcome(
       sessionId,
       attempted: true,
@@ -731,6 +737,8 @@ class DiagnosisFlowHandler {
     displayContent = validated.displayContent;
     diagnosis = validated.diagnosis;
 
+    _recordBlockEmittedSignal(diagnosis, inDiagnosisBlock: inDiagnosisBlock);
+
     // ADR-C105 A1 / N6：协议层三项（剥离 / GenUI / 训练判定）聚合为一处。
     final protocol = _resolveProtocolLayer(fullContent, displayContent);
     displayContent = protocol.displayContent;
@@ -757,6 +765,23 @@ class DiagnosisFlowHandler {
     debugPrint(
       '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}'
       '${_diagnosisDropLog(rawParse)}',
+    );
+  }
+
+  /// V3 埋点（ADR-0005）：出块事件登记（条数 + 症候 ID）。
+  ///
+  /// 这是判读口径「质疑数 / 出块条数」的**分母**，落在解析成功之后 ——
+  /// 解析失败的轮次对分母贡献 0 条，且无从取 ID（不登记）。
+  /// R-019：从 `_parseAndValidate` 抽出（内联会使该函数 49→58 行超限），
+  /// 抽的是独立职责 + 独立失败模式（观测旁路），非机械切分。
+  void _recordBlockEmittedSignal(
+    ParsedDiagnosis? diagnosis, {
+    required bool inDiagnosisBlock,
+  }) {
+    if (!inDiagnosisBlock || diagnosis == null) return;
+    kSharedDiagnosisSignalMonitor.recordBlockEmitted(
+      itemCount: diagnosis.syndromes.length,
+      syndromeIds: diagnosis.syndromes.map((s) => s.syndromeId).toList(),
     );
   }
 

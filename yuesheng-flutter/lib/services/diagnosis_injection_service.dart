@@ -136,6 +136,15 @@ class DiagnosisInjectionService {
   /// TH 五批：判据不只有措辞 —— 弱信号措辞需 [hasDiagnosisContext] 佐证，
   /// 否则教学场景的「这段怎么改」会误触发注入（后果见 intent_classifier）。
   ///
+  /// ★ ADR-0005 意图硬门（2026-10-12）：措辞判据与意图判据**合并裁决** ——
+  ///   旧结构下「好的，哪里不好」（闲聊 + 弱信号 + 有上下文）会同时收到
+  ///   「不要发起诊断」的意图指令与诊断协议块，两类指令同帧矛盾。
+  ///   现由 [shouldInjectDiagnosisProtocol] 统一裁决：显式强信号任何意图
+  ///   都放行；弱信号仅 compose/revise 放行。意图在本处用**同一纯函数**
+  ///   现算（与 `message_injector._injectUserIntentVector` 同输入同输出），
+  ///   不穿 4 层签名 —— `_SendContext` 是本文件看不到的私有 typedef，
+  ///   穿参会把可见性问题搬进发送主链。
+  ///
   /// ★ 2026-10-04 症状格式污染修复（真机 0.4.1 反馈：说问题时出现
   /// 「【（症状名）】：（症状说明）」）。根因不在模型，在**同一条 user 消息里
   /// 混了三套标记**：协议块用 `[YS_DIAGNOSIS]`、全貌块用 `【】` 标题、
@@ -150,10 +159,23 @@ class DiagnosisInjectionService {
     required bool hasDiagnosisContext,
     required String sessionId,
   }) async {
-    if (!isDiagnosisRequest(
+    final intent = classifyUserIntent(content);
+    if (!shouldInjectDiagnosisProtocol(
       content,
+      intent: intent,
       hasDiagnosisContext: hasDiagnosisContext,
     )) {
+      // 过程可见（R-022）：门拦下一次「本会注入」的请求必须留痕，
+      // 否则硬门成为第二个静默行为变更（无从读数、无从归因）。
+      if (isDiagnosisRequest(
+        content,
+        hasDiagnosisContext: hasDiagnosisContext,
+      )) {
+        debugPrint(
+          '[ChatService] ADR-0005 意图硬门：命中诊断措辞但意图=${intent.value}'
+          '（非显式强信号）⇒ 跳过协议注入',
+        );
+      }
       return;
     }
     final lastUser = messages.lastIndexWhere((m) => m.role == 'user');

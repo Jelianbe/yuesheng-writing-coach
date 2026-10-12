@@ -21,6 +21,9 @@ import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/types/teaching_types.dart';
+// V3 埋点（ADR-0005）：学员确认/质疑 = 假报判读口径的分子，
+// 在本服务层统一登记（全部 UI 入口都经此 choke point，不在各 widget 重复埋）
+import 'package:writingcoach/services/diagnosis_signal_monitor.dart';
 
 /// 解锁触发判断结果
 class UnlockTrigger {
@@ -221,6 +224,9 @@ class DiagnosisService {
       syndromeName,
       severity.value,
     );
+    // V3 埋点（ADR-0005）：学员确认事件（假报判读口径的分子侧）。
+    // 登记点在仓储写成功之后 —— 事件语义 = 「学员裁决已生效」。
+    kSharedDiagnosisSignalMonitor.recordSyndromeConfirmed(syndromeId);
     await _studentModelRepo.appendTeachingHistory(sessionId, {
       'type': 'confirmation',
       'syndromes': [syndromeId],
@@ -247,6 +253,9 @@ class DiagnosisService {
     String? reason,
   }) async {
     await _diagnosisRepo.disputeDiagnosis(sessionId, syndromeId, syndromeName);
+    // V3 埋点（ADR-0005）：学员质疑事件 —— **假报的唯一直接信号**
+    // （外部评审 §4.3 V3 事件 2）。登记点在仓储写成功之后。
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed(syndromeId);
     final history = <String, dynamic>{
       'type': 'confirmation',
       'syndromes': [syndromeId],

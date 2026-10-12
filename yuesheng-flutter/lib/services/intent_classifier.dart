@@ -14,6 +14,13 @@
 //   revise        → 降诊断强度、只提示关键问题、不替写正文
 //   compose       → 正常诊断链路
 //
+// ★ ADR-0005（2026-10-12）意图硬门：分类与**诊断协议注入**原先是两套独立
+//   关键词表、中间无门 ⇒ 「好的，哪里不好」这类混合句会同时拿到「不要
+//   发起诊断」的意图指令和诊断协议块，模型行为不可预测。现收敛为：
+//   ① [hasExplicitDiagnosisSignal] 是两侧共用的唯一显式判据；
+//   ② 显式信号出现时意图升级为 compose（见 [classifyUserIntent] 步 0）；
+//   ③ 注入侧硬门 [shouldInjectDiagnosisProtocol] 同文件同判据裁决。
+//
 // 纯函数、无副作用、无外部依赖，便于单测。
 // ─────────────────────────────────────────────────────────────
 
@@ -200,6 +207,16 @@ UserIntent classifyUserIntent(String text) {
   final t = text.trim();
   if (t.isEmpty) return UserIntent.compose;
 
+  // 0. 显式诊断请求优先（ADR-0005 意图硬门，2026-10-12）：
+  //    「你好，评价一下这段」「帮我分析一下这段对话」语义上就是诊断请求。
+  //    若按社交词/疑问词判为 smalltalk/ask，意图指令（「不要发起诊断」/
+  //    「不要展开新的诊断」）会与诊断协议块在同一次请求里**互相矛盾**
+  //    （旧行为实证：ask 指令与强信号触发的协议注入长期并存）。
+  //    显式强信号出现时一律按创作链处理 —— 与注入侧硬门
+  //    [shouldInjectDiagnosisProtocol] 同一判据、同一真源（本文件），
+  //    两侧不可能再分叉。
+  if (hasExplicitDiagnosisSignal(t)) return UserIntent.compose;
+
   // 1. 闲聊：短句 + 社交信号
   // 批次4（4.7 O3）：教学相关性二次校验——短句同时含实质意图信号（疑问/修改）时，
   // 按实质意图分类，避免"谢谢，你觉得我今天写得怎么样"这类提问被当闲聊吞掉。
@@ -348,4 +365,59 @@ bool isDiagnosisRequest(String text, {bool hasDiagnosisContext = false}) {
     return _contextualDiagnosisSignals.any(lower.contains);
   }
   return false;
+}
+
+/// 显式诊断强信号是否存在（ADR-0005 硬门判据，2026-10-12）。
+///
+/// 「显式」= 中文强信号表 [_diagnosisSignals]（语义上就是「请评价/诊断」，
+/// 与教学语汇重合度低），**不含**需上下文佐证的英文降级项与弱信号项
+/// （[_englishDiagnosisSignals] / [_contextualDiagnosisSignals]）——
+/// 后两者单独出现时不构成明确诊断请求。否定前缀修饰的命中不算
+/// （「别诊断了」是取消，不是请求）。
+///
+/// 两个消费方共用本判据（单一真源，防两侧漂移）：
+///   ① [classifyUserIntent] 步 0 —— 显式信号出现时意图升级为 compose；
+///   ② [shouldInjectDiagnosisProtocol] —— 显式信号是任何意图形态下
+///      放行协议注入的唯一条件。
+bool hasExplicitDiagnosisSignal(String text) {
+  final t = text.trim();
+  if (t.isEmpty) return false;
+  final lower = t.toLowerCase();
+  for (final sig in _diagnosisSignals) {
+    if (lower.contains(sig) && !_hasNegationBeforeSignal(lower, sig)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// 诊断协议注入硬门（ADR-0005，2026-10-12）：
+/// **意图分类与协议注入不得互相矛盾**。
+///
+/// 旧结构问题（本批立项依据，实测）：意图分类（[classifyUserIntent]）与
+/// 协议注入判据（[isDiagnosisRequest]）是两套独立关键词表、中间无门 ⇒
+/// 「好的，哪里不好」（闲聊形态 + 弱信号 + 有诊断上下文）会同时拿到
+/// 「不要发起诊断」的意图指令和诊断协议块；ask 形态 + 强信号同样并存
+/// 「不要展开新的诊断」与协议块。两类矛盾在本批前均真实存在。
+///
+/// 裁决规则：
+///   · 未命中诊断判据 ⇒ 不注入（判据同 [isDiagnosisRequest]）；
+///   · 命中**显式**强信号 ⇒ 任何意图都注入 —— 「你好，评价一下这段」是
+///     带寒暄的诊断请求，不该被社交词吞掉；且分类侧已同步升级为
+///     compose，两侧不会矛盾；
+///   · 仅弱信号 / 英文降级项命中 ⇒ 只有 compose / revise 注入；
+///     smalltalk / ask 不注入 —— 这两类意图的指令文本明写禁止诊断。
+///
+/// 纯函数、无副作用。与 [classifyUserIntent] 同文件同判据 ⇒ 调用方对同一
+/// 文本分类得到同一意图，两侧不可能分叉。
+bool shouldInjectDiagnosisProtocol(
+  String text, {
+  required UserIntent intent,
+  required bool hasDiagnosisContext,
+}) {
+  if (!isDiagnosisRequest(text, hasDiagnosisContext: hasDiagnosisContext)) {
+    return false;
+  }
+  if (hasExplicitDiagnosisSignal(text)) return true;
+  return intent == UserIntent.compose || intent == UserIntent.revise;
 }

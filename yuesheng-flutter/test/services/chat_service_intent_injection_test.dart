@@ -456,13 +456,43 @@ void main() {
       expect(sent, contains('用户明确请求诊断'));
     });
 
-    test('#11 带待诊断全文 + 弱信号措辞 → 注入协议（上下文成立）', () async {
+    // ★ ADR-0005（2026-10-12）行为变更订正：原断言「带全文 + 弱信号 ⇒ 注入」。
+    //   硬门落地后，弱信号 + 询问意图不再注入（意图指令「不要展开新的诊断」
+    //   与协议块同帧矛盾，正是本批要消灭的状态）。
+    //   生产侧无此组合：三个挂全文入口的 prompt 全部含显式「诊断」信号
+    //   （writing_coach_panel_interactions.dart:31/36「请诊断本章/请诊断选中文本」·
+    //    chat_diagnosis_controller.dart:156「请诊断本章：《title》」）
+    //   ⇒ 该合成场景在生产不可达；正对照见 #11b。
+    test('#11 带待诊断全文 + 弱信号措辞 + 询问意图 → 不注入协议（ADR-0005 硬门）', () async {
       final llm = _CaptureLlmClient();
       final service = buildChatService(llm);
 
       await service.sendMessage(
         sessionId,
         '这段怎么改更好一点？',
+        callbacks(),
+        const SendMessageOptions(
+          phase: TeachingPhase.p1World,
+          attitude: AttitudeLevel.gentle,
+          chapterFullText: '她推开门，发现房间里没有人。',
+        ),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, isNot(contains('[YS_DIAGNOSIS]')));
+      expect(sent, isNot(contains('用户明确请求诊断')));
+    });
+
+    // ★ ADR-0005 正对照：挂全文 + **显式**诊断信号 ⇒ 照常注入（含全文）。
+    //   这条守住真实入口流程（「请诊断本章」类 prompt 恒含「诊断」二字），
+    //   硬门不得以任何理由误伤它。
+    test('#11b 带待诊断全文 + 显式诊断信号 → 仍注入协议（正对照）', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      await service.sendMessage(
+        sessionId,
+        '请诊断本章：《重逢》',
         callbacks(),
         const SendMessageOptions(
           phase: TeachingPhase.p1World,
