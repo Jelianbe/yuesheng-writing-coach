@@ -201,6 +201,17 @@ class DiagnosisCommitter {
   ///   2. effectivePhase → M4-B validatePhaseTransition 校验 → updatePhase + 子阶段重置 + 升级卡片
   ///   3. effectiveBeginnerLevel → updateBeginnerLevel
   ///   4. 所有活跃症候已 resolved → M4-A 自动迁移（M4-C 达标率 ≥ phasePassRate 才放行）
+  ///
+  /// ★ D4/O1 不变量（2026-10-12 判决性实验实证，锁测试见
+  /// `test/services/d4_o1_double_owner_test.dart`）：
+  /// ① 本方法**非幂等** —— 同轮二次调用会在已升阶的状态上再次评估 M4-A
+  ///   ⇒ 链跳（P3→P4）+ 重复升级卡（实验 C1 已变红证实）。当前生产每轮
+  ///   恰一处调用点（`_runDiagnosisCommitSequence`；长/短两条诊断路径互斥）
+  ///   ⇒ 该重入向量当前不可达；但**新增任何第二调用点前必须先加重入守卫**
+  ///   （如以「本轮已评估」短路），否则链跳立即可达。
+  /// ② M4-A 的「活跃症候全 resolved」判据依赖解锁族已在本轮**先跑**——
+  ///   单独调用本方法时该前提不成立，语义退化为「仅历史已清空时才升阶」。
+  ///   两步的载荷顺序见 `_runDiagnosisCommitSequence` 的 D4/O1 不变量注释。
   Future<void> applyPhaseMigration({
     required String sessionId,
     required ParsedDiagnosis? diagnosis,

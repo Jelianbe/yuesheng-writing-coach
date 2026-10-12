@@ -600,6 +600,16 @@ class DiagnosisFlowHandler {
   /// 收敛为唯一实现，顺序定为「诊断卡 → 阶段迁移 → 风格画像」：
   /// 先展示诊断结果再展示阶段升级更符合阅读顺序；风格画像是旁路（写
   /// student_model 表、不进消息流），放最后最安全。
+  ///
+  /// ★ D4/O1 顺序不变量（2026-10-12 判决性实验实证，锁测试见
+  /// `test/services/d4_o1_double_owner_test.dart`）：
+  /// step1 的解锁族（[DiagnosisService.checkAndResolveMastered] /
+  /// [DiagnosisService.autoCheckAndUnlock] → resolveSyndromesBatch）**必须
+  /// 先于** step4 的 applyPhaseMigration —— M4-A 自动迁移的触发条件读的是
+  /// **解锁后**的 active_problems（`diagnosis_committer.dart` 的
+  /// `_applyAutomaticMigration`）。逆序会让「最后一题达标的那一轮」看不到
+  /// 已解锁状态 ⇒ 同轮不升阶、延迟到下一轮（实验 B1 已变红证实）。
+  /// ⇒ 这两步不是可互换的编排，是**载荷顺序**；调整前须重跑该实验。
   Future<void> _runDiagnosisCommitSequence({
     required String sessionId,
     required String messageId,
