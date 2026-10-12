@@ -467,6 +467,7 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
     currentTeachingFocusId: focusId,
     focusReason: raw.focusReasonRaw is String ? raw.focusReasonRaw : null,
     styleProfile: _parseStyleProfile(data),
+    overall: _parseOverall(data),
   );
 }
 
@@ -645,6 +646,17 @@ WritingStyleProfile? _parseStyleProfile(Map<String, dynamic> data) {
     logDecodeFailure(field: 'diagnosis', error: e, stack: st, category: 'api');
     return null; // 缺 summary 等非法结构 → 忽略
   }
+}
+
+/// 解析整体判定（ADR-0006；与 parser 侧 `_parseOverall` 同规则）。
+/// H-3：coverage 缺失/空串或 verdict 非三档 ⇒ 置 null（不阻断其余字段）。
+OverallDiagnosis? _parseOverall(Map<String, dynamic> data) {
+  final raw = data['overall'];
+  if (raw is! Map<String, dynamic>) return null;
+  final parsed = OverallDiagnosis.fromJson(raw);
+  if (parsed.coverage.trim().isEmpty) return null;
+  if (!kOverallVerdicts.contains(parsed.verdict)) return null;
+  return parsed;
 }
 
 /// 格式化校验错误信息

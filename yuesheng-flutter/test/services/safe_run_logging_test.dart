@@ -111,13 +111,17 @@ void main() {
       //   资格裁决失败）随 DiagnosisInjectionService 迁出，通道仍是
       //   `_logSafeRun`（经构造注入的函数参数）⇒ **总数 39 不变，换了归属**，
       //   覆盖面**扩大**（多扫一个文件），不是放宽。
+      // ★ ADR-0006 批（2026-10-12）：message_injector 新增结构画像注入
+      //   `_injectStoryStructureProfile` 的降级点（异常不阻断主流程，
+      //   经 _logSafeRun 留痕）⇒ 总数 39 → 40。新降级点与 F07 因果观察
+      //   同款守卫形态（契约 3 已验 catch 带栈传入 helper）。
       final dis = File(
         'lib/services/diagnosis_injection_service.dart',
       ).readAsStringSync();
       final disCalls = '_logSafeRun('.allMatches(dis).length;
       expect(
         miCalls + csCalls + dfCalls + disCalls,
-        39,
+        40,
         reason:
             'CR-53 应覆盖全部降级点'
             '（实际 mi=$miCalls cs=$csCalls df=$dfCalls dis=$disCalls）',

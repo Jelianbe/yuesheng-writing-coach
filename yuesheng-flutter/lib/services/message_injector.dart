@@ -74,6 +74,7 @@ import 'package:writingcoach/services/chat_context_builder.dart'
         buildSubplotClosureContext,
         buildParticipatingSettingsContext,
         findKeywordExcerpt;
+import 'package:writingcoach/services/story_structure_profile.dart';
 import 'package:writingcoach/services/character_identity.dart';
 // 批次 E1-b-2：设定层适配入口（对位 character_identity 的共享判据出口）。
 import 'package:writingcoach/services/world_setting.dart';
@@ -411,6 +412,81 @@ class MessageInjector {
       messages: messages,
       markStage: markStage,
     );
+    await _injectStoryStructureProfile(
+      sessionId: sessionId,
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+  }
+
+  /// ADR-0006：故事结构画像注入（事件序列 → 结构指标压缩块）。
+  ///
+  /// 与 F07 因果观察同款通道（运行时 system 消息、诊断轮守卫、chapter 引用
+  /// 守卫、repo 非空守卫、异常不阻断），差异只在内容源：F07 只报「断裂」
+  /// 清单，本块给「整体结构画像」（类型分布/因果覆盖/密度曲线/孤儿计数），
+  /// 首行强制覆盖度声明（H-1）——事件是诊断派生的，不标注覆盖度就会
+  /// 「局部冒充整体」。
+  ///
+  /// 覆盖度分子 = 本书 diagnosis_results 中 targetRefType=chapter 的
+  /// targetRefId 去重集合（真实已诊断章节，非估计）；分母 = 非归档章节数。
+  Future<void> _injectStoryStructureProfile({
+    required String sessionId,
+    required String content,
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
+    if (!content.contains(_kDiagnosisRequestMarker)) return;
+    if (primaryRef?.refType != 'chapter') return;
+    if (_eventFactRepo == null) return;
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return;
+      final events = await _eventFactRepo.listEvents(chapter.manuscriptId);
+      if (events.isEmpty) return;
+      final chapters = await _chapterRepo.listChapters(chapter.manuscriptId);
+      if (chapters.isEmpty) return;
+      final diagnosedKeys = await _collectDiagnosedChapterKeys(
+        chapter.manuscriptId,
+      );
+      final profile = buildStoryStructureProfile(
+        events: events
+            .map(
+              (e) => (
+                name: e.name,
+                chapter: e.chapter,
+                chapterSortOrder: e.chapterSortOrder,
+                eventType: e.eventType,
+                causeEventId: e.causeEventId,
+                stale: e.stale != 0,
+              ),
+            )
+            .toList(),
+        diagnosedChapterKeys: diagnosedKeys,
+        totalChapters: chapters.length,
+      );
+      // H-2/降级路径：画像不可注入 ⇒ 不注入、不报错、不编造。
+      if (!profile.injectable) return;
+      markStage(BudgetStageNames.ruleDetectors);
+      messages.add(ChatMessage(role: 'system', content: profile.text!));
+    } catch (e, st) {
+      _logSafeRun('结构画像注入失败不阻断主流程', e, st);
+    }
+  }
+
+  /// 本书已诊断章节的身份键集合（chapter.sort_order 字符串化）。
+  /// 诊断行 targetRefType=chapter 的 targetRefId 即 chapter id。
+  Future<Set<String>> _collectDiagnosedChapterKeys(String manuscriptId) async {
+    final rows = await _diagnosisRepo.listDiagnosesForManuscript(manuscriptId);
+    final chapterIds = rows
+        .where((r) => r.targetRefType == 'chapter' && r.targetRefId != null)
+        .map((r) => r.targetRefId!)
+        .toSet();
+    if (chapterIds.isEmpty) return const {};
+    final chapters = await _chapterRepo.getChaptersByIds(chapterIds.toList());
+    return chapters.map((c) => c.sortOrder.toString()).toSet();
   }
 
   /// 设定类观察注入（第二批）：命中展开 →（无命中退化）钉选名片 +

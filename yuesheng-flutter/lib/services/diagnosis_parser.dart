@@ -93,6 +93,7 @@ const List<String> kDiagnosisParseNotes = [
   'beginner_level_dropped', // suggested_beginner_level 白名单未命中
   'teaching_mode_dropped', // teaching_mode 白名单未命中
   'syndrome_id_format', // syndrome_id 不是 P0xx 格式（N5，只观测不拦截）
+  'overall_coverage_missing', // ADR-0006 H-3：overall 缺 coverage → 块作废
 ];
 
 /// `syndrome_id` 的严格格式（N5）。
@@ -379,7 +380,6 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
     return const _DiagnosisValidation.reject('root_not_object');
   }
   final obj = raw;
-
   final notes = <String>[];
 
   // syndromes 必填，数组
@@ -406,6 +406,7 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   final whitelist = _parseWhitelistFields(obj, notes);
   final plan = _parseTeachingPlan(obj, syndromes, notes);
   final styleProfile = _parseStyleProfile(obj);
+  final overall = _parseOverall(obj, notes); // ADR-0006：H-3 判据在 helper 内落地
   // 兼容性策略（设计 5.8.4）：teaching_plan.next_step 优先，null 回退 next_focus
   final finalNextFocus = plan.teachingPlanNextStep ?? texts.nextFocus;
 
@@ -419,6 +420,7 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
       whitelist,
       plan,
       styleProfile,
+      overall,
     ),
     notes,
   );
@@ -434,6 +436,7 @@ ParsedDiagnosis _buildParsedDiagnosis(
   _WhitelistFields whitelist,
   _TeachingPlanFields plan,
   WritingStyleProfile? styleProfile,
+  OverallDiagnosis? overall,
 ) {
   return ParsedDiagnosis(
     syndromes: syndromes,
@@ -448,6 +451,7 @@ ParsedDiagnosis _buildParsedDiagnosis(
     currentTeachingFocusId: plan.currentTeachingFocusId,
     focusReason: plan.focusReason,
     styleProfile: styleProfile,
+    overall: overall,
   );
 }
 
@@ -565,6 +569,26 @@ WritingStyleProfile? _parseStyleProfile(Map<String, dynamic> obj) {
     );
     return null; // 缺 summary 等非法结构 → 忽略
   }
+}
+
+/// 解析整体判定（ADR-0006）。
+///
+/// H-3 判据在**本函数内**落地（调用方只一行）：overall 存在但 coverage
+/// 缺失/空串、或 verdict 非三档 ⇒ 返回 null 并记观测码
+/// `overall_coverage_missing`——整块诊断仍通过（overall 是可选增强字段，
+/// 为它丢弃整块会把「症候照常报」拖成「什么都不报」，同 N5 只观测不拦截）。
+///
+/// **为何不整块 reject**：同 style_profile 降级形态。
+OverallDiagnosis? _parseOverall(Map<String, dynamic> obj, List<String> notes) {
+  final raw = obj['overall'];
+  if (raw is! Map<String, dynamic>) return null;
+  final parsed = OverallDiagnosis.fromJson(raw);
+  if (parsed.coverage.trim().isEmpty ||
+      !kOverallVerdicts.contains(parsed.verdict)) {
+    notes.add('overall_coverage_missing');
+    return null;
+  }
+  return parsed;
 }
 
 /// 检查 fullContent 尾部是否匹配 [YS_DIAGNOSIS] 的某个前缀

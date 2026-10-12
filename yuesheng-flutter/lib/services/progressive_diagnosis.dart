@@ -291,6 +291,12 @@ const String _kMergeOutputRequirement = '''输出结构说明（下面两部分�
 - suggested_actions (string[]): 建议动作编号数组（如 ["A009","A005"]），必填且必须为字符串数组
 - confidence (number): 0-1 置信度，必填
 - root_cause_analysis / next_focus / feedback_summary: 可选
+- overall (object): 整体判定（结构完整度诊断，非文学打分、不给分数），仅当已诊断章节覆盖度足够时输出：
+  - verdict (string): 三档之一「结构完整」「基本完整」「存在结构性缺口」
+  - reasons (string[]): 1-3 条核心理由，须引用上面的结构画像或已报症候证据
+  - keep (string): 最值得保持的一点（1 条）
+  - priority (string[]): 建议先改的顺序（1-3 条）
+  - coverage (string): 复述覆盖度声明（如「基于已诊断 3/20 章」），必填；缺此项 overall 无效
 
 请输出标准诊断格式，包含 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 标记。''';
 
@@ -446,10 +452,14 @@ $_kMergeRelevanceGate
 /// 构造跨分片合并的系统 prompt。
 ///
 /// [diagnosisContext] 来自前次活跃症候累积（对齐 RN buildDiagnosisContext）。
+/// [structureProfile] ADR-0006：故事结构画像文本块（空 = 不注入；由调用方
+/// 经 [buildStoryStructureProfileText] 构建——覆盖度不足/事件表空时返回
+/// 空串，此处照常工作，零耦合）。
 /// [disabledSyndromeIds] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
 String buildMergePrompt(
   List<ChunkAnalysisResult> chunkResults, {
   String diagnosisContext = '',
+  String structureProfile = '',
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
 }) {
@@ -459,7 +469,13 @@ String buildMergePrompt(
       ? '$diagnosisContext\n---\n\n'
       : '';
 
-  return '''$contextSection# SKILL: 症候诊断手册
+  // ADR-0006：结构画像置于笔记之前（先给全局形状，再看逐块问题）；
+  // 首行覆盖度声明由 buildStoryStructureProfile 保证（H-1）。
+  final profileSection = structureProfile.isNotEmpty
+      ? '$structureProfile\n\n---\n\n'
+      : '';
+
+  return '''$contextSection$profileSection# SKILL: 症候诊断手册
 （引用内置 syndrome-diagnosis 技能，请严格按照症候定义与例外规则进行裁决。）
 
 ---
@@ -533,6 +549,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   ProgressCallback? onProgress,
   String? sessionId,
   String diagnosisContext = '',
+  String structureProfile = '',
   CancelToken? cancelToken,
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
@@ -572,6 +589,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   final mergePrompt = buildMergePrompt(
     chunkResults,
     diagnosisContext: diagnosisContext,
+    structureProfile: structureProfile,
     disabledSyndromeIds: disabledSyndromeIds,
     teachingMode: teachingMode,
   );

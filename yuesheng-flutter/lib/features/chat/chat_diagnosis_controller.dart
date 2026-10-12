@@ -20,11 +20,13 @@ import '../../data/database/database.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/event_fact_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/session_providers.dart';
 import '../../services/progressive_diagnosis.dart';
+import '../../services/story_structure_profile.dart';
 import '../../services/syndrome_tracker.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
@@ -111,6 +113,18 @@ class ChatDiagnosisController {
   }
 
   /// 执行诊断：超长分块优先，失败回退单次诊断 prompt。
+  /// ADR-0006：本书结构画像文本（覆盖度不足/事件表空/异常 ⇒ 空串）。
+  Future<String> _structureProfileText(Chapter chapter) async {
+    final db = host.ref.read(appDatabaseProvider);
+    final text = await buildStoryStructureProfileText(
+      eventFactRepo: EventFactRepository(db),
+      chapterRepo: ChapterRepository(db),
+      diagnosisRepo: DiagnosisRepository(db),
+      manuscriptId: chapter.manuscriptId,
+    );
+    return text ?? '';
+  }
+
   Future<void> _runDiagnosis(
     Chapter chapter,
     SessionBootstrapState bootstrap,
@@ -133,6 +147,8 @@ class ChatDiagnosisController {
       llmClient: host.ref.read(llmClientProvider),
       sessionId: bootstrap.sessionId,
       diagnosisContext: historySection,
+      // ADR-0006：结构画像（覆盖度不足/事件表空 ⇒ 空串，零行为变更）
+      structureProfile: await _structureProfileText(chapter),
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
       onContent: (delta) {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);

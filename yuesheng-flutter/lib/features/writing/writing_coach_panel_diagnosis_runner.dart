@@ -11,6 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/app_state_repository.dart';
+import '../../data/repositories/chapter_repository.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/event_fact_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
@@ -19,6 +22,7 @@ import '../../services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import '../../services/chat_service.dart';
 import '../../services/progressive_diagnosis.dart';
+import '../../services/story_structure_profile.dart';
 import '../../types/teaching_types.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
 import 'writing_coach_panel_host.dart';
@@ -43,6 +47,19 @@ class WritingCoachDiagnosisRunner {
   WidgetRef get _ref => _host.ref;
 
   String get _chapterId => _host.chapterId;
+
+  /// ADR-0006：构建结构画像文本（失败/降级 ⇒ null ⇒ 调用方按空串处理）。
+  Future<String?> _buildProfileText() async {
+    final db = _ref.read(appDatabaseProvider);
+    final chapter = await ChapterRepository(db).getChapter(_chapterId);
+    if (chapter == null) return null;
+    return buildStoryStructureProfileText(
+      eventFactRepo: EventFactRepository(db),
+      chapterRepo: ChapterRepository(db),
+      diagnosisRepo: DiagnosisRepository(db),
+      manuscriptId: chapter.manuscriptId,
+    );
+  }
 
   /// 诊断链路编排：共用取消令牌 + 分块/单次路由 + 取消/错误处理。
   Future<void> runChain({
@@ -74,6 +91,19 @@ class WritingCoachDiagnosisRunner {
   }
 
   /// 长度路由执行：先分块链路（长文本），null（≤THRESHOLD）则单次 sendMessage。
+  /// ADR-0006：结构画像文本（失败/降级 ⇒ 空串）。
+  Future<String> _profileText() async => (await _buildProfileText()) ?? '';
+
+  /// 分块/单次链路共用的写入目标（store + chatService + 症候启用集下传）。
+  ({ChatStore store, ChatService chatService}) _prepareTargets(
+    DiagnosisPrefs? diagPrefs,
+  ) {
+    final store = _ref.read(writingCoachStoreProvider(_chapterId).notifier);
+    final chatService = _ref.read(chatServiceProvider)
+      ..disabledSyndromeIds = diagPrefs?.effectiveDisabledIds ?? const {};
+    return (store: store, chatService: chatService);
+  }
+
   Future<void> _runProgressiveOrSend({
     required String sid,
     required String content,
@@ -85,12 +115,15 @@ class WritingCoachDiagnosisRunner {
     final diagPrefs = await AppStateRepository(
       _ref.read(appDatabaseProvider),
     ).getDiagnosisPrefs();
+    // ADR-0006：结构画像（覆盖度不足/事件表空 ⇒ 空串，零行为变更）。
+    final profileText = await _profileText();
     final progressive = await runProgressiveDiagnosis(
       content: content,
       title: title,
       llmClient: _ref.read(llmClientProvider),
       sessionId: sid,
       teachingMode: _host.teachingMode,
+      structureProfile: profileText,
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
       onContent: (delta) {
         _ref
@@ -101,12 +134,10 @@ class WritingCoachDiagnosisRunner {
       cancelToken: cancelToken,
     );
 
-    final store = _ref.read(writingCoachStoreProvider(_chapterId).notifier);
-    final chatService = _ref.read(chatServiceProvider)
-      ..disabledSyndromeIds = diagPrefs?.effectiveDisabledIds ?? const {};
+    final targets = _prepareTargets(diagPrefs);
     if (progressive != null) {
       // D4-A：分块链路完成 → 解析+持久化+卡片插入
-      await _commitProgressive(sid, progressive, content, chatService);
+      await _commitProgressive(sid, progressive, content, targets.chatService);
       await handleComplete(sid);
       return;
     }
@@ -116,8 +147,8 @@ class WritingCoachDiagnosisRunner {
       sid: sid,
       diagPrompt: diagPrompt,
       fullText: content,
-      store: store,
-      chatService: chatService,
+      store: targets.store,
+      chatService: targets.chatService,
       cancelToken: cancelToken,
     );
   }

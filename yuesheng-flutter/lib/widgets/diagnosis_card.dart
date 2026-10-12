@@ -115,6 +115,12 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   /// ADR-C132 批3（anchor_ack）：诊断消息 ID（埋点关联触发反馈用）。
   final String? messageId;
 
+  /// ADR-0006：整体判定（结构完整度诊断，非文学打分）。
+  ///
+  /// null = 不渲染整体判定区（协议未输出 / H-3 coverage 缺失）。
+  /// 呈现规则：verdict + 覆盖度 + reasons + keep + priority，**无分数**。
+  final OverallDiagnosis? overall;
+
   const DiagnosisCard({
     super.key,
     required this.syndromeCount,
@@ -126,6 +132,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     this.sessionId,
     this.chapterId,
     this.messageId,
+    this.overall,
   });
 
   /// 便利构造：从 Message.content 的 JSON 解析 payload 渲染
@@ -149,6 +156,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         focusReason: payload.focusReason,
         sessionId: sessionId,
         messageId: messageId,
+        overall: payload.overall,
       );
     } catch (_) {
       // 兜底：空诊断卡
@@ -352,6 +360,10 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         // P1-7：常驻弱提示——条目≠总评（prompt 里只写给模型听，UI 反而渲染成
         // 「严重度评估」让学员当成整篇总评）。
         _buildNotOverallHint(),
+        // ADR-0006：整体判定区——结构完整度诊断（非文学打分、无分数），
+        // 置 P1-7 提示**上方**：该提示的「总评」指逐条症候清单，本区是
+        // 显式的结构画像结论，语义分区明示后不矛盾（报批确认点 4）。
+        _buildOverallSection(),
         SizeTransition(
           sizeFactor: CurvedAnimation(
             parent: _expandAnim,
@@ -549,6 +561,93 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       ),
     );
   }
+
+  // ── ADR-0006：整体判定区（结构完整度诊断，非文学打分）──
+  /// 呈现规则（C-4）：
+  /// - verdict 三档 + 覆盖度标注（H-3 缺 coverage 不渲染——widget.overall
+  ///   为 null 时整体跳过）；
+  /// - **无任何数字分数**（R-009 用户主权：「好不好」的最终判断权在学员）；
+  /// - 尾部诚实边界句：文笔/情绪感染/意象留存等维度不在系统覆盖内
+  ///   （尺子转换方案 C 档豁免），防「系统看起来什么都能评」的信任透支。
+  Widget _buildOverallSection() {
+    final overall = widget.overall;
+    if (overall == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 8, AppSpacing.lg, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildOverallHeaderRow(overall),
+          const SizedBox(height: 2),
+          Text(
+            overall.verdict,
+            style: context.text.title.copyWith(fontWeight: FontWeight.w600),
+          ),
+          ...overall.reasons.map(_buildOverallReasonLine),
+          if (overall.keep != null && overall.keep!.isNotEmpty)
+            _buildOverallLine('最值得保持：${overall.keep}'),
+          if (overall.priority.isNotEmpty)
+            _buildOverallLine('建议先改：${overall.priority.join(' → ')}'),
+          const SizedBox(height: 4),
+          Text(
+            '以上是结构层面的判断。文笔质感、情绪感染力、主题立意这些维度不在系统覆盖内，靠你自己或真人教练。',
+            style: context.text.caption.copyWith(
+              color: context.palette.textTertiary,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 整体判定标题行：标题 + 覆盖度标注（H-1 的呈现侧对应——局部结论必须显式）。
+  Widget _buildOverallHeaderRow(OverallDiagnosis overall) {
+    return Row(
+      children: [
+        Text(
+          '整体判定',
+          style: context.text.caption.copyWith(
+            color: context.palette.textTertiary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          overall.coverage,
+          style: context.text.caption.copyWith(
+            color: context.palette.textTertiary,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOverallReasonLine(String reason) => Padding(
+    padding: const EdgeInsets.only(top: 4, bottom: 2),
+    child: Text(
+      '· $reason',
+      style: context.text.caption.copyWith(
+        color: context.palette.textSecondary,
+        fontSize: 11,
+        height: 1.4,
+      ),
+    ),
+  );
+
+  Widget _buildOverallLine(String text) => Padding(
+    padding: const EdgeInsets.only(top: 4),
+    child: Text(
+      text,
+      style: context.text.caption.copyWith(
+        color: context.palette.textSecondary,
+        fontSize: 11,
+      ),
+    ),
+  );
 
   // ── 逻辑链同源提示（ADR-C146 步 3/B3）：卡级、数据驱动、零模型参与 ──
   /// 当本轮诊断命中 ≥2 条「逻辑链」症候（P007/P016/P017/P036）时，提示这些

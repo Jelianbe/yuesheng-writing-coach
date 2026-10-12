@@ -193,6 +193,60 @@ class Syndrome {
   }
 }
 
+/// 整体判定（ADR-0006 顶层 `overall` 块的解析产物）。
+///
+/// 定位 = **结构完整度诊断**，不是文学打分（R-009 用户主权：「好不好」的
+/// 最终判断权在学员）。⇒ 无任何数字字段；[verdict] 仅三档字符串。
+///
+/// H-3（ADR-0006 §C-3）：[coverage] 非空才有效——缺覆盖度复述的整体判定
+/// 宁可整块作废（解析层拒绝或降级），不许呈现「局部冒充整体」。
+class OverallDiagnosis {
+  final String verdict; // kOverallVerdicts 三档之一
+  final List<String> reasons; // 核心理由（1-3 条）
+  final String? keep; // 最值得保持的一点
+  final List<String> priority; // 建议先改顺序（1-3 条）
+  final String coverage; // 覆盖度复述，非空才有效
+
+  const OverallDiagnosis({
+    required this.verdict,
+    required this.reasons,
+    this.keep,
+    required this.priority,
+    required this.coverage,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'verdict': verdict,
+    'reasons': reasons,
+    if (keep != null) 'keep': keep,
+    'priority': priority,
+    'coverage': coverage,
+  };
+
+  factory OverallDiagnosis.fromJson(Map<String, dynamic> json) {
+    final keep = json['keep'];
+    return OverallDiagnosis(
+      verdict: json['verdict'] as String? ?? '',
+      reasons:
+          (json['reasons'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      keep: keep is String && keep.isNotEmpty ? keep : null,
+      priority:
+          (json['priority'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      // 空串按缺失处理（H-3：缺 coverage 的整体判定无效，交由调用方丢弃）。
+      coverage: json['coverage'] is String ? json['coverage'] as String : '',
+    );
+  }
+}
+
+/// 整体判定三档（协议与呈现层共用，单一真源）。
+const List<String> kOverallVerdicts = ['结构完整', '基本完整', '存在结构性缺口'];
+
 /// 诊断结果（解析后的结构化对象，不含 session_id / message_id）
 class ParsedDiagnosis {
   final List<Syndrome> syndromes;
@@ -208,6 +262,12 @@ class ParsedDiagnosis {
   final String? focusReason;
   final WritingStyleProfile? styleProfile; // 可选：写作风格画像（批次53）
 
+  /// ADR-0006：整体判定（结构完整度诊断，非文学打分）。
+  ///
+  /// 可选顶层字段——解析失败（含 H-3 coverage 缺失 ⇒ 置 null）不影响
+  /// 其余字段路径，与 styleProfile 同型。
+  final OverallDiagnosis? overall;
+
   const ParsedDiagnosis({
     required this.syndromes,
     required this.suggestedActions,
@@ -221,6 +281,7 @@ class ParsedDiagnosis {
     this.currentTeachingFocusId,
     this.focusReason,
     this.styleProfile,
+    this.overall,
   });
 }
 

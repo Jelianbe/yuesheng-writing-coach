@@ -19,6 +19,7 @@ import 'dart:convert';
 
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/services/genui_parser.dart';
+import 'package:writingcoach/types/teaching_types.dart';
 
 /// 诊断结果卡片 Payload
 /// 真源：message-card-service.ts DiagnosisResultCardPayload
@@ -36,6 +37,12 @@ class DiagnosisResultCardPayload {
   /// null / 空串时该步骤不渲染（数据诚实：不编造归因）。
   final String? focusReason;
 
+  /// ADR-0006：整体判定（结构完整度诊断，非文学打分）。
+  ///
+  /// null = 本轮无整体判定（协议未输出 / H-3 coverage 缺失被丢弃）⇒
+  /// 呈现区不渲染。无任何数字分数（R-009 用户主权）。
+  final OverallDiagnosis? overall;
+
   final String diagnosisId;
 
   const DiagnosisResultCardPayload({
@@ -45,12 +52,14 @@ class DiagnosisResultCardPayload {
     required this.confidence,
     required this.diagnosisId,
     this.focusReason,
+    this.overall,
   });
 
   factory DiagnosisResultCardPayload.fromJson(Map<String, dynamic> json) {
     final syndromesRaw = json['syndromes'] as List<dynamic>? ?? [];
     final actionsRaw = json['suggestedActions'] as List<dynamic>? ?? [];
     final fr = json['focusReason'];
+    final overallRaw = json['overall'];
     return DiagnosisResultCardPayload(
       syndromeCount: (json['syndromeCount'] as num?)?.toInt() ?? 0,
       syndromes: syndromesRaw
@@ -63,6 +72,14 @@ class DiagnosisResultCardPayload {
       suggestedActions: actionsRaw.map((e) => e.toString()).toList(),
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
       focusReason: (fr is String && fr.isNotEmpty) ? fr : null,
+      // H-3：缺 coverage 的整体判定不入 payload（防御性二次校验——
+      // parser/validator 已拦一道，此处防旧库数据/手工 JSON 绕过）。
+      // 类型判断用 Map（非 Map<String, dynamic>）：生产经 jsonDecode 是
+      // Map<String, dynamic>，但测试/调用方直传 toJson 产物是
+      // Map<String, Object>——两者都须接受（与 syndromes 项同款宽容写法）。
+      overall: overallRaw is Map
+          ? _parseCardOverall(Map<String, dynamic>.from(overallRaw))
+          : null,
       diagnosisId: (json['diagnosisId'] as String?) ?? '',
     );
   }
@@ -76,8 +93,20 @@ class DiagnosisResultCardPayload {
     // 保证 toJson→fromJson 往返稳定）。
     if (focusReason != null && focusReason!.isNotEmpty)
       'focusReason': focusReason,
+    if (overall != null) 'overall': overall!.toJson(),
     'diagnosisId': diagnosisId,
   };
+}
+
+/// payload 侧的整体判定解析（H-3 防御性二次校验）。
+///
+/// parser/validator 已拦过一道；此处防旧库数据/手工构造 JSON 绕过。
+/// verdict 非三档或 coverage 空 ⇒ null（呈现区不渲染）。
+OverallDiagnosis? _parseCardOverall(Map<String, dynamic> raw) {
+  final parsed = OverallDiagnosis.fromJson(raw);
+  if (parsed.coverage.trim().isEmpty) return null;
+  if (!kOverallVerdicts.contains(parsed.verdict)) return null;
+  return parsed;
 }
 
 /// 诊断结果卡片中的症候项

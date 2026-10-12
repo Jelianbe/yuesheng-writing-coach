@@ -1259,6 +1259,8 @@ class DiagnosisFlowHandler {
           // 批次 D-B：把 teaching_plan.focus_reason 接入诊断卡 payload，
           // 供「诊断依据」链渲染「归因」步骤（此前该字段只进 DB + prompt）。
           focusReason: diagnosis.focusReason,
+          // ADR-0006：整体判定（null ⇒ 呈现区不渲染）。
+          overall: diagnosis.overall,
           diagnosisId: messageId,
         ),
       );
@@ -1525,6 +1527,7 @@ class DiagnosisFlowHandler {
         currentTeachingFocusId: d.currentTeachingFocusId,
         focusReason: d.focusReason,
         styleProfile: d.styleProfile,
+        overall: d.overall,
       ),
     );
   }
