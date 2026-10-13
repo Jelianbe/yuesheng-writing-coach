@@ -29,6 +29,7 @@ import '../../types/teaching_types.dart';
 import '../onboarding/api_config_nudge.dart';
 import 'chat_mention_resolver.dart';
 import 'chat_page_host.dart';
+import '../writing/writing_coach_panel_interactions.dart';
 
 /// 聊天页发送与训练动作
 class ChatTeachingController {
@@ -282,13 +283,12 @@ class ChatTeachingController {
   }
 
   /// 批次61：Teacher 建议卡「教我原理」→ 发送原理讲解请求。
+  /// 文案真源：writing_coach_panel_interactions.buildTeachPrincipleMessage
+  /// （原本文件手抄同文「我想了解「X」的原理。…一次只讲一个点。」已删除）。
   void handleTeachPrinciple(String syndromeName) {
     if (host.ref.read(chatStoreProvider).isStreaming) return;
     host.setInputText('');
-    handleSend(
-      '我想了解「$syndromeName」的原理。请用简单的话给我讲清楚：'
-      '它是什么、怎么判断、怎么避免。一次只讲一个点。',
-    );
+    handleSend(buildTeachPrincipleMessage(syndromeName));
     host.scheduleAttitudeCheck();
   }
 }

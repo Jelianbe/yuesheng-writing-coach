@@ -15,19 +15,15 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/teaching_labels.dart';
 import '../types/teaching_types.dart';
 import '../config/app_palette.dart';
 
 /// 徽章尺寸档位（对齐 RN BADGE_LAYOUT.sizes）
 enum TeachingStateBadgeSize { sm, md, lg }
 
-/// 教学状态文案（对齐 RN stateConfig.label）
-const Map<TeachingState, String> teachingStateLabels = {
-  TeachingState.identified: '刚识别',
-  TeachingState.inProgress: '训练中',
-  TeachingState.consolidating: '趋稳中',
-  TeachingState.mastered: '已掌握',
-};
+// 教学状态文案真源：config/teaching_labels.dart 的 kTeachingStateLabels
+// （原本文件私有 teachingStateLabels 已删除，改为引用单一真源）。
 
 class TeachingStateBadge extends StatelessWidget {
   /// 教学状态（identified/in_progress/consolidating/mastered）
@@ -88,7 +84,7 @@ class TeachingStateBadge extends StatelessWidget {
         if (showLabel) ...[
           const SizedBox(width: AppSpacing.sm),
           Text(
-            teachingStateLabels[state]!,
+            kTeachingStateLabels[state]!,
             style: TextStyle(
               fontSize: _fontSize,
               fontWeight: FontWeight.w500,

@@ -581,8 +581,14 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, '提交异议'));
       await tester.pumpAndSettle();
 
-      expect(find.text('已质疑'), findsOneWidget);
-      expect(find.text('诊断已标记为不适用'), findsOneWidget);
+      // §4-194：disputed（异议）状态行 = 「已记录异议」，绝不出现「不适用」。
+      expect(find.text('已记录异议'), findsOneWidget);
+      expect(find.text('可在对话中补充哪里不对'), findsOneWidget);
+      expect(
+        find.textContaining('不适用'),
+        findsNothing,
+        reason: 'disputed（异议）态不得含「不适用」字样（§4-194：不适用语义只归 dismissed）',
+      );
     });
 
     testWidgets('D5B-4 sessionId 为 null → 不渲染确认栏', (tester) async {
@@ -708,7 +714,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('提交异议失败，请稍后重试'), findsOneWidget);
-        expect(find.text('已质疑'), findsNothing);
+        expect(find.text('已记录异议'), findsNothing);
 
         await tester.pumpAndSettle();
         final logs = await ErrorLogRepository(db).queryErrorLogs();
@@ -767,7 +773,7 @@ void main() {
         '第三句我觉得抢话了',
         reason: 'reason 实参必须等于学员所填文本（trim 后）',
       );
-      expect(find.text('已质疑'), findsOneWidget);
+      expect(find.text('已记录异议'), findsOneWidget);
     });
 
     testWidgets('G3-a：填 <5 字理由 → disputeDiagnosis 未被调 + 失败 snack', (
@@ -793,7 +799,7 @@ void main() {
         reason: '<5 字闸（diagnosis_card.dart:1210）必须拦下，不得调用 disputeDiagnosis',
       );
       expect(find.text('请写具体一些（至少 5 个字），说明哪里不对'), findsOneWidget);
-      expect(find.text('已质疑'), findsNothing);
+      expect(find.text('已记录异议'), findsNothing);
     });
 
     testWidgets('G3-a：空串提交 → disputeDiagnosis 未被调', (tester) async {
@@ -849,7 +855,7 @@ void main() {
     testWidgets('D5B-9 重建后：已质疑的症候不再给第二次裁决机会', (tester) async {
       await confirmThenRebuild(tester, '不认同');
       expect(find.text('不认同'), findsNothing);
-      expect(find.text('已质疑'), findsOneWidget);
+      expect(find.text('已记录异议'), findsOneWidget);
     });
 
     testWidgets('D5B-10 负向防护：未裁决症候重建后必须照常提问（勿过度修复）', (tester) async {
@@ -868,6 +874,32 @@ void main() {
       expect(find.text('这个诊断符合你的实际情况吗？'), findsOneWidget);
       expect(find.text('认同'), findsOneWidget);
       expect(find.text('不认同'), findsOneWidget);
+    });
+
+    // ── R-027 §4-194：disputed（异议）与 dismissed（永久静音/不适用）两态分治。──
+    testWidgets('§4-194 dismissed 永久静音态：「已关闭」+「以后不再提示」承接不适用语义', (tester) async {
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      // pending 态：出现「这个问题不适用我，以后别报」永久静音链接
+      expect(find.text('这个问题不适用我，以后别报'), findsOneWidget);
+
+      // 点链接 → 弹确认框 → 确认「以后都别报」
+      await tester.tap(find.text('这个问题不适用我，以后别报'));
+      await tester.pumpAndSettle();
+      expect(find.text('永久静音此问题？'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TextButton, '以后都别报'));
+      await tester.pumpAndSettle();
+
+      // dismissed 态：状态行「已关闭」+ 副提示「以后不再提示（成长页可恢复）」
+      expect(find.text('已关闭'), findsOneWidget);
+      expect(find.text('以后不再提示（成长页可恢复）'), findsOneWidget);
+      // pending 提问句与三按钮消失（已裁决）
+      expect(find.text('这个诊断符合你的实际情况吗？'), findsNothing);
+      expect(find.text('不认同'), findsNothing);
     });
   });
 

@@ -19,6 +19,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:writingcoach/config/shared_constants.dart';
+import 'package:writingcoach/config/svc_copy.dart';
 import 'package:writingcoach/services/agent_skills.dart';
 import 'package:writingcoach/services/editor_parser.dart';
 import 'package:writingcoach/services/editor_validator.dart';
@@ -51,7 +52,7 @@ class EditorStreamResult {
 
 /// 统一兜底结果：API/解析异常时返回给用户（不 throw；取消除外）。
 const _kEditorFallbackResult = EditorStreamResult(
-  displayContent: '审稿通过，但生成编辑观察失败，请稍后重试',
+  displayContent: kEditorObservationFailed,
   observation: null,
 );
 

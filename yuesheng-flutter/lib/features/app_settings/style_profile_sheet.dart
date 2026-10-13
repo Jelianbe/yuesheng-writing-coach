@@ -16,42 +16,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../data/repositories/student_model_repository.dart';
+import '../growth/growth_detail_labels.dart';
 import '../../providers/app_providers.dart';
 import '../../types/teaching_types.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 
-/// 维度值 → 中文标签（注释语义，用于展示）
-String _sensoryLabel(SensoryPreference v) => switch (v) {
-  SensoryPreference.visual => '视觉型',
-  SensoryPreference.auditory => '听觉型',
-  SensoryPreference.kinesthetic => '体感型',
-  SensoryPreference.balanced => '均衡型',
-};
-String _rhythmLabel(RhythmPreference v) => switch (v) {
-  RhythmPreference.long => '长句型',
-  RhythmPreference.short => '短句型',
-  RhythmPreference.alternating => '错落型',
-  RhythmPreference.repetitive => '重复型',
-};
-String _distanceLabel(NarrativeDistance v) => switch (v) {
-  NarrativeDistance.intimate => '贴身型',
-  NarrativeDistance.observational => '观察型',
-  NarrativeDistance.editorial => '评述型',
-  NarrativeDistance.fluid => '游移型',
-};
-String _toneLabel(ToneTexture v) => switch (v) {
-  ToneTexture.poetic => '诗意型',
-  ToneTexture.spare => '冷峻型',
-  ToneTexture.colloquial => '口语型',
-  ToneTexture.elegant => '文雅型',
-};
-String _structureLabel(StructureInstinct v) => switch (v) {
-  StructureInstinct.linear => '线性型',
-  StructureInstinct.fragmented => '碎片型',
-  StructureInstinct.circular => '回环型',
-  StructureInstinct.divergent => '发散型',
-};
+// 五维风格标签真源：growth_detail_labels.dart 的 styleSensoryLabel /
+// styleRhythmLabel / styleNarrativeLabel / styleToneLabel / styleStructureLabel。
+// 原本文件五张逐字手抄 switch（_sensoryLabel / _rhythmLabel / _distanceLabel /
+// _toneLabel / _structureLabel）已删除，改为 import 唯一查表。
 
 class StyleProfileSheet extends ConsumerStatefulWidget {
   const StyleProfileSheet({super.key});
@@ -203,11 +177,11 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
 
   List<Widget> _buildDimensionList(WritingStyleProfile p) {
     return [
-      _dimensionRow('感官偏好', _sensoryLabel(p.sensory)),
-      _dimensionRow('句子节奏', _rhythmLabel(p.rhythm)),
-      _dimensionRow('叙事距离', _distanceLabel(p.narrativeDistance)),
-      _dimensionRow('语气质地', _toneLabel(p.toneTexture)),
-      _dimensionRow('结构本能', _structureLabel(p.structure)),
+      _dimensionRow('感官偏好', styleSensoryLabel(p.sensory)),
+      _dimensionRow('句子节奏', styleRhythmLabel(p.rhythm)),
+      _dimensionRow('叙事距离', styleNarrativeLabel(p.narrativeDistance)),
+      _dimensionRow('语气质地', styleToneLabel(p.toneTexture)),
+      _dimensionRow('结构本能', styleStructureLabel(p.structure)),
       if (p.confidence != null || p.updatedAt != null) ...[
         const SizedBox(height: 10),
         Text(

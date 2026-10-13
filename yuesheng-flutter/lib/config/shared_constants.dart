@@ -4,6 +4,8 @@
 // UI 相关常量（素材/头像/时间格式化）暂不搬运，待 UI 批次再补
 // ─────────────────────────────────────────────────────────────
 
+import 'injection_constraints.dart';
+
 /// LLM 客户端配置
 class LlmConfig {
   const LlmConfig._();
@@ -454,20 +456,19 @@ bool containsNegativeFeedback(String text) {
   return false;
 }
 
-/// 临场输出约束（最高优先级）— 复刻 RN e8c46bb 表达密度提交。
+/// 临场输出约束 — 利用 LLM recency bias，在所有教学内容
+/// 注入后、历史对话前追加，确保「表达密度」规则不被后续详细教学内容覆盖。
 ///
-/// 真源：chat_service_send.dart 步骤 6.5。利用 LLM recency bias，在所有教学内容
-/// 注入后、历史对话前追加，确保「表达密度」规则不被后续详细教学内容覆盖
-///（Flutter 曾缺失：三档态度 skill 表达密度小节 + 本约束，批次 41 补齐）。
-///
-/// 抽为共享常量：① 单一事实来源，避免 chat_service_send 内联字符串漂移；
-/// ② 供合约测试锁定其关键指令（「一次只抛一个点」「表达密度」「不堆叠」）
-/// 不被后续重构误删。
+/// R-027：密度/示范规则正文不再手抄，引用 [InjectionConstraints] 约束目录单表
+/// （唯一权威）。本块只保留「内部参考不是一次性念给学员听」这一本通道框架。
+/// 合约测试锁定关键指令（「一次只抛一个点」「表达密度」「不堆叠」）不被误删。
 const String kLiveOutputConstraints =
     '# 临场输出约束\n\n'
     '以上注入的教学知识、症候定义、训练素材是你的内部参考，不是让你一次性念给学员听。\n'
-    '每次回复遵守当前态度档位的「表达密度」规则：一次只抛一个点，示范按档位执行（温柔语气/月笙可给最小示范一例，Sensei 不给示范只指方向），删掉所有铺垫。\n'
-    '学员问题多时按优先级分轮展开，不堆叠。';
+    '每次回复遵守当前态度档位的「表达密度」规则：'
+    '${InjectionConstraints.densityOnePoint}'
+    '${InjectionConstraints.demoByAttitude}'
+    '不堆叠要点。';
 
 /// 字数格式化（真源：shared-constants.ts WORD_COUNT_FORMAT + formatWordCount）
 class WordCountFormat {

@@ -50,6 +50,11 @@ import 'shared_constants.dart';
 ///
 /// 运行时标记（chat_service 组装时记录"阶段 → 消息索引"）与
 /// 预算闸门（TokenBudgetGuard）均引用这些常量，避免字符串散落漂移。
+///
+/// R-027：此处是注入链 manifest 雏形（各 stage 索引）。纪律正文（R-009/密度/
+/// 档位示范/趋势诚实）不再散落在各 prompt 块自封「最高优先级」——
+/// 唯一权威见 `InjectionConstraints`（lib/config/injection_constraints.dart）。
+/// 本类只保留阶段索引名，不改其措辞（预算/遥测匹配靠它）。
 abstract final class BudgetStageNames {
   static const String l1Core = 'L1 核心 skill（9 命名项 + 3 态度档）';
   static const String l1Attitude = 'L1 态度档位 skill';

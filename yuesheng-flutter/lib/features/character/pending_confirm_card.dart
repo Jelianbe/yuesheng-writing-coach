@@ -20,9 +20,10 @@ import '../../services/setting_library_service.dart';
 import '../../types/character_types.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
+import 'character_dialogs.dart';
 
-/// C78 D-7 拒绝理由 chips（与角色详情页拒绝理由同一枚举，见 character_dialogs）
-const List<String> _kRejectReasons = ['抽取错误', '章节已改写', '重复', '其他'];
+// C78 D-7 拒绝理由 chips 真源：character_dialogs.dart 的公开 kRejectReasons。
+// 原本文件私有 _kRejectReasons 手抄副本已删除。
 
 /// AI 抽取断言待用户裁决的确认卡。
 ///
@@ -182,7 +183,7 @@ class PendingConfirmCard extends ConsumerWidget {
               padding: const EdgeInsets.all(AppSpacing.md),
               child: Text('拒绝理由（可选）', style: context.text.title),
             ),
-            for (final r in _kRejectReasons)
+            for (final r in kRejectReasons)
               ListTile(
                 title: Text(r, style: context.text.body),
                 onTap: () => Navigator.pop(ctx, r),

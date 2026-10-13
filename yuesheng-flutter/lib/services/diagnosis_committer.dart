@@ -24,6 +24,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'package:flutter/foundation.dart';
+import 'package:writingcoach/config/injection_constraints.dart';
 import '../types/character_types.dart';
 import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'package:writingcoach/contracts/genui_capability.dart';
@@ -535,7 +536,8 @@ class DiagnosisCommitter {
         '检测到写作特征与既有风格基线出现明显偏差。\n'
         '若合适，请用**提问的方式**温和地向学员指出**其中一条**'
         '（结合具体数字，如"你的句子长度通常 15-20 字，但这部分平均只有 8 字——'
-        '是刻意加速，还是无意识的变化？"），一次只问一个点，不展开成诊断。\n'
+        '是刻意加速，还是无意识的变化？"）。'
+        '${InjectionConstraints.densityOnePoint}本通道用提问式表达，不展开成诊断。\n'
         '偏差项：\n- ${hints.join('\n- ')}';
   }
 

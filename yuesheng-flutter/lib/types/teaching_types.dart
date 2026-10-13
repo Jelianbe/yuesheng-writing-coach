@@ -79,11 +79,15 @@ enum Severity {
 }
 
 /// 确认状态
+///
+/// R-027（治 §4-194 病灶二）：补 [dismissed] 独立态——学员永久关闭/
+/// 类型声明「不适用」（绑定 disabledIds），与 [rejected]（质疑）语义分离。
 enum ConfirmationStatus {
   suspected('suspected'),
   confirmed('confirmed'),
   rejected('rejected'),
-  ignored('ignored');
+  ignored('ignored'),
+  dismissed('dismissed');
 
   final String value;
   const ConfirmationStatus(this.value);

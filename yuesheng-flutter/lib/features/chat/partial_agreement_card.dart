@@ -14,6 +14,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/teaching_labels.dart';
 import '../../services/message_card_service.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
@@ -49,12 +50,7 @@ String quickOptionLabel(String value) {
   }
 }
 
-/// E-4：严重度中文标签（与 diagnosis_card._severityLabel 一致）
-String _severityLabel(String severity) => switch (severity) {
-  'L2' => '中等',
-  'L3' => '严重',
-  _ => '轻微',
-};
+// 严重度中文标签真源：config/teaching_labels.dart（原本地 _severityLabel 手抄副本已删除）。
 
 class PartialAgreementCard extends StatefulWidget {
   final String syndromeId;
@@ -184,7 +180,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
             const SizedBox(height: 10),
           ],
           Text(
-            '告诉我哪些描述不准确，我会调整诊断结果。',
+            '告诉我哪些描述不准确，把这些差异发给教练重新判断。',
             style: TextStyle(
               fontSize: 14,
               height: 1.4,
@@ -226,7 +222,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Text(
-            _severityLabel(widget.severity),
+            severityLabel(widget.severity),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,

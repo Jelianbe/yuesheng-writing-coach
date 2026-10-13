@@ -25,6 +25,7 @@
 
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:writingcoach/config/shared_constants.dart';
+import 'package:writingcoach/config/svc_copy.dart';
 import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/data/database/database.dart' show Message;
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart'
@@ -489,7 +490,7 @@ class MessageAssemblyService {
     SendMessageOptions options,
   ) async {
     if (!await _sessionRepo.sessionExists(sessionId)) {
-      throw Exception('会话不存在或已被删除，请重新打开教练面板');
+      throw Exception(kSessionMissingReopen);
     }
     final id = await _sessionRepo.addMessage(
       sessionId,

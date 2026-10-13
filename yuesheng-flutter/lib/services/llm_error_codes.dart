@@ -7,13 +7,19 @@
 // ALL_UNAVAILABLE 不落地——批次 D 多账号时再扩展）。
 //
 // 目标：用户看到的不是裸 "HTTP 401"，而是可操作指引
-// （Key 无效→去设置检查；429→稍后再试；超时→重试）。
+// （Key 无效→去设置检查；429→稍后重试；超时→重试）。
+//
+// R-027 任务 A：文案本体收敛到 lib/config/svc_copy.dart（L-SVC 单一真源），
+// 本函数只做「错误码 → 文案」组合分派；统一收尾「重试」（原 429 文案误写
+// 「再试」，随迁移消灭）。
 //
 // 纯函数、无 IO，全部可单测。取消（DioExceptionType.cancel）不在本层
 // 分类——上游 LlmClient 已原样上抛走取消分支。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
+
+import '../config/svc_copy.dart';
 
 /// LLM 错误分类（DioException → 语义类别）
 enum LlmErrorKind {
@@ -78,18 +84,17 @@ String llmErrorMessage(
 }) {
   switch (kind) {
     case LlmErrorKind.timeout:
-      final seconds = timeoutSeconds ?? 60;
-      return '请求超时（$seconds秒无响应），请稍后重试';
+      return kLlmTimeoutMessage(timeoutSeconds ?? 60);
     case LlmErrorKind.network:
-      return '网络连接失败，请检查网络后重试';
+      return kLlmNetworkMessage;
     case LlmErrorKind.unauthorized:
-      return 'API Key 无效或已过期，请到设置页检查';
+      return kLlmUnauthorizedMessage;
     case LlmErrorKind.rateLimited:
-      return '请求过于频繁，请稍后再试';
+      return kLlmRateLimitedMessage;
     case LlmErrorKind.server:
-      return '服务端异常（HTTP $status），请稍后重试';
+      return kLlmServerMessage(status);
     case LlmErrorKind.invalidRequest:
-      return '请求被拒绝（HTTP 400），请检查模型名称与请求参数';
+      return kLlmInvalidRequestMessage;
     case LlmErrorKind.unknown:
       return preview != null && preview.isNotEmpty
           ? 'HTTP $status: $preview'

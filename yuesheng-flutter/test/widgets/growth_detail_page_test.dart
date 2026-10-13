@@ -18,6 +18,17 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 
+// R-027 收敛后：分组标题与教学状态徽章同词（均来自 kTeachingStateLabels 真源）。
+// 二者靠 fontWeight 区分——分组标题 w600（growth_detail_syndrome_groups._buildGroupTitle），
+// 徽章 w500（teaching_state_badge）。测试需据此区分「分组标题」与「每症候徽章」。
+Finder findGroupTitle(String s) => find.byWidgetPredicate(
+  (w) => w is Text && w.data == s && w.style?.fontWeight == FontWeight.w600,
+);
+
+Finder findBadgeLabel(String s) => find.byWidgetPredicate(
+  (w) => w is Text && w.data == s && w.style?.fontWeight == FontWeight.w500,
+);
+
 void main() {
   late AppDatabase db;
   late ProviderContainer container;
@@ -236,8 +247,9 @@ void main() {
       expect(find.text('情绪标签化'), findsWidgets);
       expect(find.text('句式节奏单一'), findsWidgets);
 
-      // 教学状态徽章：occurrenceCount=1 + trend=unknown → identified（刚识别）
-      expect(find.text('刚识别'), findsNWidgets(2));
+      // 教学状态徽章：occurrenceCount=1 + trend=unknown → identified（刚识别）。
+      // R-027 后分组标题也叫「刚识别」，故用 findBadgeLabel 只数每症候徽章。
+      expect(findBadgeLabel('刚识别'), findsNWidgets(2));
       // 严重度 chip 仍显示（E-4：L1/L2/L3 → 轻微/中等/严重）
       expect(find.text('中等'), findsWidgets, reason: '情绪标签化 L2 → 中等');
       expect(find.text('轻微'), findsWidgets, reason: '句式节奏单一 L1 → 轻微');
@@ -252,10 +264,10 @@ void main() {
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
-      // 分组标题按 RN SYNDROME_GROUP_TITLES 显示
-      expect(find.text('练习中'), findsOneWidget); // in_progress
-      expect(find.text('待诊断'), findsOneWidget); // identified
-      expect(find.text('巩固中'), findsOneWidget); // consolidating
+      // 分组标题（R-027 收敛到 kTeachingStateLabels 真源；用 findGroupTitle 区分徽章）
+      expect(findGroupTitle('训练中'), findsOneWidget); // in_progress
+      expect(findGroupTitle('刚识别'), findsOneWidget); // identified
+      expect(findGroupTitle('趋稳中'), findsOneWidget); // consolidating
       // 无 mastered 数据 → 不显示「已掌握」分组
       expect(find.text('已掌握'), findsNothing);
 
@@ -696,8 +708,8 @@ void main() {
       expect(find.text('轻微'), findsWidgets, reason: '情绪标签化 L1 徽章 → 轻微'); // E-4
       expect(find.text('中等'), findsWidgets, reason: '句式节奏单一 L2 徽章 → 中等'); // E-4
 
-      // 分组标题：句式节奏 ×1 + suspected → 一定有「待诊断」identified
-      expect(find.text('待诊断'), findsOneWidget);
+      // 分组标题：句式节奏 ×1 + suspected → 一定有「刚识别」identified
+      expect(findGroupTitle('刚识别'), findsOneWidget);
 
       // 症候名在症候分布出现
       expect(find.text('情绪标签化'), findsWidgets);

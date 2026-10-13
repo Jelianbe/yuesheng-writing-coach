@@ -204,8 +204,8 @@ String _maxAttemptsIds(MaxAttemptsGroup group) =>
     kSyndromeRegistry.where((s) => s.group == group).map((s) => s.id).join('/');
 
 /// training-templates-index 行：| ID | 症候名 | 核心本质一句话 |
-/// 症候名默认 shortName；P018 现有文本为「重复用词/基础语病症」（带"症"字），特例保留
+/// 症候名一律取 registry shortName（R-027：P018「带症」特例已删除，
+/// 与注册表真源「重复用词/基础语病」单一对齐，不再手抄加"症"字）。
 String _trainingIndexRow(SyndromeRecord s) {
-  final name = s.id == 'P018' ? '重复用词/基础语病症' : s.shortName;
-  return '| ${s.id} | $name | ${s.trainingLine} |';
+  return '| ${s.id} | ${s.shortName} | ${s.trainingLine} |';
 }

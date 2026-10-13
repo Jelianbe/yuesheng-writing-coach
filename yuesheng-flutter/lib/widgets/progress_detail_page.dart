@@ -20,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../config/app_theme.dart';
+import '../config/teaching_labels.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../providers/app_providers.dart';
@@ -505,19 +506,28 @@ class _ProblemStats extends StatefulWidget {
 class _ProblemStatsState extends State<_ProblemStats> {
   String _filter = '全部';
 
-  static const _filters = ['全部', 'L3严重', 'L2注意', 'L1建议'];
+  // 筛选 chip 标签真源：config/teaching_labels.dart 的 kSeverityLabels。
+  // 原硬编码「L3严重/L2注意/L1建议」已收敛（注意→中等、建议→轻微）。
+  static final List<String> _filters = [
+    '全部',
+    'L3${kSeverityLabels['L3']}',
+    'L2${kSeverityLabels['L2']}',
+    'L1${kSeverityLabels['L1']}',
+  ];
 
   List<ProblemStat> get _filtered {
-    switch (_filter) {
-      case 'L3严重':
-        return widget.problems.where((p) => p.severity == Severity.l3).toList();
-      case 'L2注意':
-        return widget.problems.where((p) => p.severity == Severity.l2).toList();
-      case 'L1建议':
-        return widget.problems.where((p) => p.severity == Severity.l1).toList();
-      default:
-        return widget.problems;
-    }
+    // chip 文案由 code+中文拼成，筛选用前两位 code（'L1'/'L2'/'L3'）。
+    final level = _filter.startsWith('L') && _filter.length >= 2
+        ? _filter.substring(0, 2)
+        : null;
+    final sev = switch (level) {
+      'L1' => Severity.l1,
+      'L2' => Severity.l2,
+      'L3' => Severity.l3,
+      _ => null,
+    };
+    if (sev == null) return widget.problems;
+    return widget.problems.where((p) => p.severity == sev).toList();
   }
 
   static String _formatDate(int timestamp) {

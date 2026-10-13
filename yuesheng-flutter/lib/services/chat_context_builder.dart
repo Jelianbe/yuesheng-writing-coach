@@ -19,6 +19,8 @@ import 'package:writingcoach/services/event_causality_detector.dart';
 import 'package:writingcoach/services/grammar_lexical_detector.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
+// R-027：F-block 内嵌 P-code → registry 判据名运行时查询（不再硬编码中文名）。
+import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
@@ -207,6 +209,11 @@ String buildStructuredSyndromeContext(
         confirmLabel = '学员已质疑·勿再主动展开';
       case ConfirmationStatus.ignored:
         confirmLabel = '已忽略';
+      // R-027（治 §4-194 病灶二）：注入侧补 dismissed 独立态。
+      // dismissed = 学员永久关闭/类型声明「不适用」（绑定 disabledIds），
+      // 与 rejected（质疑）语义不同——不得再与质疑态混用。4 态 → 5 态。
+      case ConfirmationStatus.dismissed:
+        confirmLabel = '已永久关闭·勿再提及该症候';
       default:
         confirmLabel = '待确认';
     }
@@ -503,9 +510,11 @@ String? buildConflictObservationsContext(
       ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
       : '';
 
+  // R-027：判据名走 registry 查询，不再硬编码中文名（P015 改名/退休自动跟随）。
+  final p015 = syndromeNameOf('P015') ?? 'P015';
   return '## 时序矛盾观察（F05 补充）\n\n'
       '以下是作品中已记录的人物属性前后不一致（同属性不同值，按出现章节标注）。'
-      '若这些矛盾确属事实性错误（而非角色刻意隐瞒或剧情转折），请结合 P015 人设崩塌症'
+      '若这些矛盾确属事实性错误（而非角色刻意隐瞒或剧情转折），请结合 P015「$p015」'
       '的判断原则提示学员，温和指出矛盾位置与前后差异（只定位，不代改正文）。\n\n'
       '${budgeted.kept.join('\n')}$notice';
 }
@@ -532,10 +541,13 @@ String? buildCausalityBreakContext(
       ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
       : '';
 
+  // R-027：判据名走 registry 查询，不再硬编码中文名。
+  final p017 = syndromeNameOf('P017') ?? 'P017';
+  final p014 = syndromeNameOf('P014') ?? 'P014';
   return '## 因果链断裂观察（F07 补充）\n\n'
       '以下是作品中已记录的关键事件（决定/转折/突发类）缺少触发事件（因果前驱缺失）。'
-      '若确属「突然发生」而读者无法理解动机（而非有意留白或后续章节揭示），请结合 P017 跳跃叙事'
-      '/ P014 情节巧合的判断原则提示学员，温和指出事件位置与缺位的前因（只定位，不代改正文）。\n\n'
+      '若确属「突然发生」而读者无法理解动机（而非有意留白或后续章节揭示），请结合 P017「$p017」'
+      '/ P014「$p014」的判断原则提示学员，温和指出事件位置与缺位的前因（只定位，不代改正文）。\n\n'
       '${budgeted.kept.join('\n')}$notice';
 }
 
@@ -565,9 +577,11 @@ String? buildSubplotClosureContext(
       ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
       : '';
 
+  // R-027：判据名走 registry 查询，不再硬编码中文名。
+  final p012 = syndromeNameOf('P012') ?? 'P012';
   return '## 情节闭环观察（F11 补充）\n\n'
       '以下是作品中已引入多章但至今未回收的支线。若这些支线并非有意留待后续收束，'
-      '请结合 P012 结尾仓促 / 伏笔埋设回收问题的判断原则提示学员，'
+      '请结合 P012「$p012」的判断原则提示学员，'
       '温和指出各支线的引入位置与未回收现状（只定位，不代改正文）。\n\n'
       '${budgeted.kept.join('\n')}$summary$notice';
 }
@@ -585,9 +599,11 @@ String? buildGrammarLexicalContext(List<GrammarLexicalIssue> issues) {
       .map((o) => '- ${o.description}：「${o.evidence}」')
       .join('\n');
 
+  // R-027：判据名走 registry 查询，不再硬编码中文名。
+  final p018 = syndromeNameOf('P018') ?? 'P018';
   return '## 基础文法观察（F12 补充）\n\n'
       '以下是文本中检出的重复用词 / 基础文法问题（纯规则精确匹配，可能包含刻意修辞，'
-      '请结合 P018 重复用词/基础语病的判断原则甄别）。'
+      '请结合 P018「$p018」的判断原则甄别）。'
       '若确属语病（而非刻意排比/口语习惯），温和指出位置与原文片段（只定位，不代改正文）。\n\n'
       '$lines';
 }
@@ -604,9 +620,11 @@ String? buildDialogueTagContext(List<DialogueTagIssue> issues) {
       .map((o) => '- ${o.description}：「${o.evidence}」')
       .join('\n');
 
+  // R-027：判据名走 registry 查询，不再硬编码中文名。
+  final p009 = syndromeNameOf('P009') ?? 'P009';
   return '## 对话标签观察（F02 补充）\n\n'
       '以下是文本中重复出现的修饰性对话标签（纯规则精确匹配，'
-      '可能属于刻意修辞或人物特征，请结合 P009 对话疲劳症的判断原则甄别）。'
+      '可能属于刻意修辞或人物特征，请结合 P009「$p009」的判断原则甄别）。'
       '若确属标签过度（而非低声密语场景的功能性需要 / 人物固定的口头式说话方式），'
       '温和指出位置与原文片段，提示可尝试用动作/表情替代标签（只定位，不代改正文）。\n\n'
       '$lines';

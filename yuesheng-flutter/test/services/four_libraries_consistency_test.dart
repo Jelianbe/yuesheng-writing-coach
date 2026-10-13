@@ -139,7 +139,9 @@ void main() {
           ),
           reason: 'v2 动作映射渲染行缺失 ${s.id}',
         );
-        final tName = s.id == 'P018' ? '重复用词/基础语病症' : s.shortName;
+        // R-027：P018 不再特地带"症"，索引行一律取 registry shortName
+        // （真源名「重复用词/基础语病」）。
+        final tName = s.shortName;
         expect(
           templatesIndex,
           contains('| ${s.id} | $tName | ${s.trainingLine} |'),

@@ -40,6 +40,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'package:writingcoach/config/shared_constants.dart';
+import 'package:writingcoach/config/svc_copy.dart';
 import 'package:writingcoach/contracts/genui_capability.dart'
     show GenUiCapability, GenUiComponent;
 import 'package:writingcoach/contracts/reference_capability.dart';
@@ -135,12 +136,11 @@ typedef _ParsedOutput = ({
 /// 硬约束（PRD §6.2）：①「数据已保存」+「缺文字点评」两件事齐说；
 /// ② 无「失败/错误」全盘否定措辞（数据其实落库成功）；③ 教学语气
 ///（对齐 F05 免责句式的温和姿态）。
-String _emptyContentPlaceholder({int? syndromeCount, int? entityCount}) {
-  final saved = syndromeCount != null
-      ? '诊断数据已保存（$syndromeCount 条症候）'
-      : '大纲实体已保存（${entityCount ?? 0} 条）';
-  return '$saved，但这次教练没有附上文字点评——通常是网络或模型临时故障。';
-}
+String _emptyContentPlaceholder({int? syndromeCount, int? entityCount}) =>
+    kEmptyContentSavedNotice(
+      syndromeCount: syndromeCount,
+      entityCount: entityCount,
+    );
 
 /// K-9 中间结果：Teacher 触发输出。
 typedef _TeacherOutcome = ({String displayContent, TeacherResult? teacher});
@@ -556,7 +556,7 @@ class DiagnosisFlowHandler {
   ) async {
     var content = displayContent;
     if (content.trim().isEmpty) {
-      content = '诊断完成';
+      content = kDiagnosisEmptyFallback;
       // FIX-1（2026-09-23）：空输出静默兜底补留痕——此前仅 debugPrint，release
       // 构建完全静默（真机复现证据：logcat 被拒原因=suggested_actions_invalid +
       // error_logs 无记录 + diagnosis_results 无落库，用户只见「诊断完成」）。

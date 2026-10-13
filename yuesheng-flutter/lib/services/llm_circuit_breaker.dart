@@ -18,6 +18,7 @@
 
 import 'package:dio/dio.dart';
 
+import '../config/svc_copy.dart';
 import 'llm_error_codes.dart';
 
 /// 熔断开路异常（LlmClient 入口抛给调用方，UI 转用户可读提示）
@@ -27,7 +28,7 @@ class LlmCircuitOpenException implements Exception {
   const LlmCircuitOpenException(this.remaining);
 
   @override
-  String toString() => '服务暂时不可用（连续失败熔断），${remaining.inSeconds} 秒后自动恢复';
+  String toString() => kCircuitOpenMessage(remaining.inSeconds);
 }
 
 /// LLM 请求熔断器（纯状态机，无 IO，可独立测试）

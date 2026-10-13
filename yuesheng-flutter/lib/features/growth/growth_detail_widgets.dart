@@ -16,6 +16,7 @@ import '../../services/syndrome_recurrence.dart';
 
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
+import '../../config/teaching_labels.dart';
 import '../../theme/app_typography.dart';
 
 /// 通用卡片（左侧 4dp 竹青色条，与 GrowthPage._Card 视觉一致）
@@ -144,17 +145,11 @@ class SeverityChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
-        // E-4：显示中文严重度而非原始 L1/L2/L3 码
+        // E-4：显示中文严重度而非原始 L1/L2/L3 码。
+        // 文案真源：config/teaching_labels.dart（原本地 severityLabel 手抄副本已删除）。
         severityLabel(severity),
         style: TextStyle(fontSize: 11, color: context.palette.textPrimary),
       ),
     );
   }
 }
-
-/// E-4：严重度中文标签（与 diagnosis_card._severityLabel 一致）
-String severityLabel(String severity) => switch (severity) {
-  'L2' => '中等',
-  'L3' => '严重',
-  _ => '轻微',
-};

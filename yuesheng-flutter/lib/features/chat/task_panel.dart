@@ -14,16 +14,13 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/teaching_labels.dart';
 import '../../data/repositories/diagnosis_repository.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
 
-/// 严重度中文标签（对齐 RN SEVERITY_LABELS）
-const Map<String, String> _severityLabels = {
-  'L1': '建议',
-  'L2': '注意',
-  'L3': '严重',
-};
+/// 严重度中文标签真源：config/teaching_labels.dart（原私有 _severityLabels
+/// 「建议/注意/严重」已删除，与诊断卡 / 症候详情统一为「轻微/中等/严重」）。
 
 /// 严重度 → （文字/圆点/边框色, 底色）
 ({Color text, Color bg}) _severityColors(
@@ -243,7 +240,7 @@ class TaskPanel extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            _severityLabels[problem.severity] ?? problem.severity,
+            severityLabel(problem.severity),
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,

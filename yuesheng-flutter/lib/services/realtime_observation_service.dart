@@ -17,6 +17,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
+import 'package:writingcoach/config/injection_constraints.dart';
 import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/services/editor_service.dart';
@@ -25,13 +26,17 @@ import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/llm_client.dart';
 
 /// 实时通道轻量观察约束（批次68 A7，对齐表达密度规则 + A1 措辞约束）
-const String kRealtimeObservationConstraint = '''
+///
+/// R-027：密度/R-009 规则正文引用 [InjectionConstraints] 约束目录单表，
+/// 本通道只留特化尾巴（示范 ≤2 句、提问式表达、只定位不代改）。
+const String kRealtimeObservationConstraint =
+    '''
 # 轻量观察约束（实时通道）
 
 本次是写作过程中的轻量观察，追求低延迟、不打断创作流。请遵守：
-1. 一次只观察一个最值得提的点，不一次性展开所有问题；
+1. ${InjectionConstraints.densityOnePoint}本通道一次只观察一个最值得提的点；
 2. 示范只给最小可感知的一例（不超过 2 句）；
-3. 只定位问题与位置，不代改正文；
+3. ${InjectionConstraints.r009NoWrite}本通道只定位问题与位置，不代改正文；
 4. 语气温和，用提问式表达。''';
 
 /// 实时观察结果

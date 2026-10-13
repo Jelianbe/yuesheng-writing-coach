@@ -103,8 +103,11 @@ void main() {
       expect(msg, contains('设置'));
     });
 
-    test('rateLimited → 稍后再试', () {
-      expect(llmErrorMessage(LlmErrorKind.rateLimited), contains('请求过于频繁'));
+    test('rateLimited → 稍后重试（R-027 消灭「再试」）', () {
+      final msg = llmErrorMessage(LlmErrorKind.rateLimited);
+      expect(msg, contains('请求过于频繁'));
+      expect(msg, contains('请稍后重试'));
+      expect(msg, isNot(contains('再试')));
     });
 
     test('server → 含状态码 + 重试引导', () {

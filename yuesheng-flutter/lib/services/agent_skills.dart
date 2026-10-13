@@ -87,7 +87,7 @@ const String kEditorObservationSkillContent =
     '''# SKILL: 编辑观察（Editor Observation）
 
 > 来源: P4 V2-方向2 后续——Editor Agent 设计规范
-> 定位: 叙事层"编辑观察"，与症候诊断（P001-P020）正交
+> 定位: 叙事层"编辑观察"，与症候诊断（P001-P039）正交
 > 姿态: 观察者，非诊断器——描述现象，不贴标签，不判决
 
 ## 一、核心姿态：编辑，不是诊断器

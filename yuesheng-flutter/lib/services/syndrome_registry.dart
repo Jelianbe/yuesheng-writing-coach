@@ -273,6 +273,14 @@ SyndromeRecord? syndromeRecordOf(String? id) {
 /// 消费方：diagnosis_validator 的 V-03 编号回填（P0'-3，2026-09-30）。
 String? syndromeNameOf(String? id) => syndromeRecordOf(id)?.name;
 
+/// 判据名按 code 取的**共享单一真源查询**（R-027 批，L-TCH/L-INJ 共用）。
+///
+/// 与 [syndromeNameOf] 同实现（精确匹配，未知 → null）；单独命名以便
+/// 「学员话术 / F-block 注入」一律经此入口取判据全名，杜绝手抄判据名
+/// （P034「指称歧义 vs 代词指代不清」、P018「带症/不带症」式漂移）。
+/// 学员侧/注入侧改名只需改本注册表一处，消费方自动跟随。
+String? syndromeNameFor(String? code) => syndromeRecordOf(code)?.name;
+
 /// kSyndromeRegistry 数据段（P001-P011，11 条）
 const List<SyndromeRecord> _syndromeRegistryP1 = [
   // ── L1 基础表达 ──────────────────────────────────────────

@@ -458,16 +458,32 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('A末尾标记'), findsNothing);
 
-      // 切到 B；部分 pump 模拟真机逐帧时序（收敛跨多 postFrame）
+      // 切到 B；部分 pump 模拟真机逐帧时序（收敛跨多 postFrame）。
+      // 快道并发下「固定 10 泵」是任意帧预算：负载抖动偶发让产品侧有界收敛循环
+      // （_settleAtBottom ≤6 复校帧）差 1~2 帧没收敛完即断言 → 假红。改为「有界收敛泵」：
+      // 逐帧 pump 直到「B 末条可见 且 pixels≈max」同时成立即停，上限 30 帧兜底防死循环。
+      // ★ 判据不放宽：收敛 = 末尾可见 + pixels 贴 max（ε=2.0）；二者缺一不算收敛，
+      //   避免空列表/中间态「pixels 恰等于 max」的假收敛提前跳出；若 30 帧仍未收敛，
+      //   settled=false 使断言显式失败（真缺陷，而非假绿）。
       await container.read(sessionBootstrapProvider.notifier).switchTo(bId);
-      for (var i = 0; i < 10; i++) {
+      var settled = false;
+      for (var i = 0; i < 30; i++) {
         await tester.pump(const Duration(milliseconds: 50));
+        final markerVisible = find.text('B末尾标记').evaluate().isNotEmpty;
+        final pos = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
+        if (markerVisible && (pos.pixels - pos.maxScrollExtent).abs() <= 2.0) {
+          settled = true;
+          break;
+        }
       }
 
       // 判别性断言 1：B 末条标记必须被收敛滚入视口
       // （旧实现锁死被低估 max → 末条不可见，本断言必然失败）
       expect(find.text('B末尾标记'), findsOneWidget);
       // 判别性断言 2：滚动位置必须贴真实底部（pixels≈maxScrollExtent）
+      expect(settled, isTrue, reason: '有界收敛泵（≤30 帧）后仍未贴真实底部');
       final pos = tester
           .state<ScrollableState>(find.byType(Scrollable).first)
           .position;
@@ -1534,7 +1550,7 @@ void main() {
       expect(find.byType(TaskPanel), findsOneWidget);
       expect(find.text('练习任务'), findsOneWidget);
       expect(find.text('信息倾泻症'), findsOneWidget); // P002 注册表名称（D-W1 反查）
-      expect(find.text('注意'), findsOneWidget); // L2 严重度中文标签
+      expect(find.text('中等'), findsOneWidget); // L2 严重度中文标签（R-027 统一）
       expect(find.text('完成'), findsOneWidget);
 
       // 再点收起

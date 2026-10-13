@@ -13,6 +13,7 @@
 import 'dart:async';
 
 import '../config/shared_constants.dart';
+import '../config/svc_copy.dart';
 
 /// 对流式解码后的字符串流套一层空闲超时守卫。
 ///
@@ -86,5 +87,5 @@ String _buildTimeoutMessage(
   Duration connect,
   Duration idle,
 ) => firstReceived
-    ? '模型响应中断（超过 ${idle.inSeconds} 秒未收到新内容）'
-    : '模型响应超时（超过 ${connect.inSeconds} 秒未返回首个字符）';
+    ? kStreamIdleInterruptMessage(idle.inSeconds)
+    : kStreamConnectTimeoutMessage(connect.inSeconds);

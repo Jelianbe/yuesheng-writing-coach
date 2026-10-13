@@ -88,8 +88,9 @@ void main() {
         final skill = skillRegistry['training-templates-index'];
         expect(skill, isNotNull);
         // 0.3.6+9：索引由活跃注册表派生（退役记录 mergedInto 指向保留症候，不进索引）。
+        // R-027：P018 不再特地带"症"，索引行一律取 registry shortName。
         for (final s in kSyndromeRegistry) {
-          final name = s.id == 'P018' ? '重复用词/基础语病症' : s.shortName;
+          final name = s.shortName;
           expect(
             skill!.content,
             contains('| ${s.id} | $name |'),

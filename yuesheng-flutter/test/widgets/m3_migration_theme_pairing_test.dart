@@ -34,6 +34,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart' show AppColors;
+import 'package:writingcoach/config/teaching_labels.dart';
 import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/types/teaching_types.dart';
@@ -132,7 +133,7 @@ void main() {
         ),
       );
       final label = t.widget<Text>(
-        find.text(teachingStateLabels[TeachingState.identified]!),
+        find.text(kTeachingStateLabels[TeachingState.identified]!),
       );
       expect(label.style!.color, AppPalette.dark.textTertiary);
       expect(label.style!.color, isNot(AppColors.textTertiary));

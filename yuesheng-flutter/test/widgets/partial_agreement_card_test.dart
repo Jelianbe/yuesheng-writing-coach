@@ -38,7 +38,7 @@ void main() {
     expect(find.text('请补充不符合的地方'), findsOneWidget);
     expect(find.text('中等'), findsOneWidget); // E-4：L2 → 中文
     expect(find.text('视角跳跃症'), findsOneWidget);
-    expect(find.text('告诉我哪些描述不准确，我会调整诊断结果。'), findsOneWidget);
+    expect(find.text('告诉我哪些描述不准确，把这些差异发给教练重新判断。'), findsOneWidget);
     expect(find.text('快速选项：'), findsOneWidget);
     expect(find.text('症状描述不准'), findsOneWidget);
     expect(find.text('缺少某个问题'), findsOneWidget);

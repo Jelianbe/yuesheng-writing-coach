@@ -57,9 +57,9 @@ void main() {
     expect(find.text('2 个问题'), findsOneWidget);
     expect(find.text('视角跳跃症'), findsOneWidget);
     expect(find.text('对话生硬'), findsOneWidget);
-    // 严重度中文标签
-    expect(find.text('建议'), findsOneWidget);
-    expect(find.text('注意'), findsOneWidget);
+    // 严重度中文标签（R-027 统一为 轻微/中等/严重）
+    expect(find.text('轻微'), findsOneWidget); // L1
+    expect(find.text('中等'), findsOneWidget); // L2
   });
 
   testWidgets('#3 severity 标签映射：L3 → 严重', (tester) async {

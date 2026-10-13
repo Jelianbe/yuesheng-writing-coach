@@ -10,8 +10,8 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -20,8 +20,8 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p0_yuesheng_beginner": [
@@ -32,8 +32,8 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -42,8 +42,8 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p1_yuesheng_diagnosis": [
@@ -54,8 +54,8 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -64,8 +64,8 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p2_yuesheng_diagnosis": [
@@ -76,8 +76,8 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -86,20 +86,20 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 68974,
-      "fnv": "78ff8e73f0e4d6c"
+      "len": 69006,
+      "fnv": "6042456ff75ce42"
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -108,8 +108,8 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p2_yuesheng_diagnosis_fulltext": [
@@ -120,18 +120,18 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
-      "len": 1168,
-      "fnv": "b113b024538aa71"
+      "len": 1219,
+      "fnv": "159bca7faec86ef0"
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p3_yuesheng_advanced": [
@@ -142,8 +142,8 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -152,8 +152,8 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p3_sensei_advanced": [
@@ -164,8 +164,8 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -174,8 +174,8 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ],
   "p4_yuesheng_beginner": [
@@ -186,8 +186,8 @@
     },
     {
       "role": "system",
-      "len": 149,
-      "fnv": "3eab0b88c07658f2"
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
     },
     {
       "role": "user",
@@ -196,8 +196,8 @@
     },
     {
       "role": "system",
-      "len": 269,
-      "fnv": "1ceaa7c5701c7c19"
+      "len": 290,
+      "fnv": "aec24484a9871bd"
     }
   ]
 }

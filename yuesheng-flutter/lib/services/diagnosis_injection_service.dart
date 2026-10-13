@@ -28,6 +28,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:writingcoach/config/injection_constraints.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/llm_client.dart' show ChatMessage;
@@ -212,7 +213,8 @@ class DiagnosisInjectionService {
   Future<String> _buildDirectExplainBlock() async {
     final threshold = await _resolveDirectExplainThreshold();
     return '\n\n[全貌呈现]\n'
-        '（全貌模式临时覆盖密度约束——选完一条后回到常规密度「一次只抛一个点」。）\n'
+        '（全貌模式是密度约束的唯一例外：${InjectionConstraints.fullPictureException}'
+        '选完一条后回到常规密度「一次只抛一个点」。）\n'
         '若本次识别出的症候数量 ≥ $threshold：\n'
         '1. 用编号列出全部症候——每条写成一行，行首是「序号. [P005] 症候名称」，'
         '破折号后接「落在哪一句」，如「1. [P005] 对话生硬——落在哪句」，**不要给改法**；\n'

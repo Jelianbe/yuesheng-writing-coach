@@ -53,6 +53,7 @@ import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/l2_route_hysteresis.dart';
 import 'package:flutter/foundation.dart';
 import 'package:writingcoach/config/shared_constants.dart';
+import 'package:writingcoach/config/injection_constraints.dart';
 import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/services/token_budget_guard.dart';
 import 'package:writingcoach/data/database/database.dart';
@@ -254,8 +255,8 @@ class ChatService {
       '不主动给改法、不催更、不追问进度；\n'
       '2. 求助即答：仅当学员主动提问或求助时，才恢复正常介入、深入解答；'
       '学员这次开口即视为求助；\n'
-      '3. R-009 边界重申：不替学员写句子或段落，不打分，不开处方；'
-      '只给结构性提问与方向。';
+      // R-027：R-009 边界重申引用约束目录单表，本通道另锁「不打分/不开处方」。
+      '3. R-009 边界重申：${InjectionConstraints.r009NoWrite}本通道另不打分、不开处方。';
 
   ///
   /// **懒加载**（late final +惰性初始化）：构造期不建，因为其构造参数含两个

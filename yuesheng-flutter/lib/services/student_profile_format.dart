@@ -8,16 +8,18 @@
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/student_profile_compute.dart';
 
-String _severityLabel(Severity s) {
-  switch (s) {
-    case Severity.l1:
-      return '轻微';
-    case Severity.l2:
-      return '中等';
-    case Severity.l3:
-      return '严重';
-  }
-}
+/// 严重度 L1-L3 中文标签（L-INJ 注入侧本地常量）。
+///
+/// R-027：措辞与 L-UI 层 teaching_labels.kSeverityLabels「轻微/中等/严重」对齐，
+/// 但**层间不耦合**（本层不 import L-UI）——此处为本层同值副本，改一侧须手动
+/// 同步另一侧（与 progress_service Severity map 同一措辞族，D7 §4.1 族甲）。
+const Map<Severity, String> kInjectionSeverityLabels = {
+  Severity.l1: '轻微',
+  Severity.l2: '中等',
+  Severity.l3: '严重',
+};
+
+String _severityLabel(Severity s) => kInjectionSeverityLabels[s] ?? '轻微';
 
 String _proficiencyLabel(ProficiencyLevel p) {
   switch (p) {

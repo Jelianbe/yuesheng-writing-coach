@@ -91,7 +91,8 @@ void main() {
   test('syndromeLearnerNoteById：命中与未命中', () {
     final hit = syndromeLearnerNoteById('P034');
     expect(hit, isNotNull);
-    expect(hit!.name, '指称歧义/零回指过载症');
+    // R-027：学员笔记判据名由 registry 派生，断言跟随真源，不再手抄判据名。
+    expect(hit!.name, syndromeNameFor('P034'));
 
     expect(syndromeLearnerNoteById('P999'), isNull);
   });

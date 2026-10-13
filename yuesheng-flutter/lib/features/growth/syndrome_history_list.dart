@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
+import '../../config/teaching_labels.dart';
 import '../../services/growth_service.dart';
 import '../../types/teaching_types.dart';
 import '../../theme/app_typography.dart';
@@ -119,11 +120,8 @@ class _TimelineItem extends StatelessWidget {
     }
   }
 
-  static const Map<String, String> _severityLabels = {
-    'L1': '轻微',
-    'L2': '中等',
-    'L3': '严重',
-  };
+  // 严重度中文标签真源：config/teaching_labels.dart 的 severityLabel
+  // （原静态 _severityLabels 手抄表已删除）。
 
   String _formatTime(int ts) {
     final dt = DateTime.fromMillisecondsSinceEpoch(ts * 1000);
@@ -242,7 +240,7 @@ class _TimelineItem extends StatelessWidget {
     return Row(
       children: [
         Text(
-          _severityLabels[event.severity.value] ?? '',
+          severityLabel(event.severity.value),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,

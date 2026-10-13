@@ -174,7 +174,7 @@ void main() {
 
     testWidgets('#2b 批次78 严重度筛选无匹配 → 空态「该档暂无问题」', (tester) async {
       await setPhase('P2_PRACTICE_LOOP');
-      // 仅 L2 问题 → 点「L1建议」无匹配
+      // 仅 L2 问题 → 点「L1轻微」无匹配
       await insertProblem(
         syndromeId: 's1',
         name: '情绪标签化',
@@ -198,8 +198,8 @@ void main() {
       expect(find.text('情绪标签化'), findsWidgets);
       expect(find.text('该档暂无问题'), findsNothing);
 
-      // 切到 L1建议 → 空态提示（修复前为空白）
-      await tester.tap(find.text('L1建议'));
+      // 切到 L1轻微 → 空态提示（修复前为空白；R-027 chip 文案由 kSeverityLabels 生成）
+      await tester.tap(find.text('L1轻微'));
       await tester.pumpAndSettle();
 
       expect(find.text('该档暂无问题'), findsOneWidget);

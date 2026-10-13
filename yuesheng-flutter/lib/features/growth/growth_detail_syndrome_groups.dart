@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/teaching_labels.dart';
 import '../../data/repositories/diagnosis_repository.dart';
 import '../../providers/growth_providers.dart';
 import '../../types/teaching_types.dart';
@@ -39,13 +40,9 @@ class GrowthSyndromeGroupList extends StatelessWidget {
     TeachingState.mastered,
   ];
 
-  /// 分组标题
-  static const Map<TeachingState, String> _titles = {
-    TeachingState.inProgress: '练习中',
-    TeachingState.identified: '待诊断',
-    TeachingState.consolidating: '巩固中',
-    TeachingState.mastered: '已掌握',
-  };
+  /// 分组标题真源：config/teaching_labels.dart 的 kTeachingStateLabels。
+  /// 原私有表「待诊断/练习中/巩固中/已掌握」已收敛——
+  /// identified→刚识别 / inProgress→训练中 / consolidating→趋稳中 / mastered→已掌握。
 
   /// 症候 → 教学状态（画像聚合；无画像记录时归入 identified，
   /// 对齐 RN byState ?? identified 兜底）
@@ -62,7 +59,7 @@ class GrowthSyndromeGroupList extends StatelessWidget {
           .where((p) => _stateOf(p) == ts)
           .toList();
       if (items.isEmpty) continue;
-      widgets.add(_buildGroupTitle(context, _titles[ts]!));
+      widgets.add(_buildGroupTitle(context, kTeachingStateLabels[ts]!));
       for (final problem in items) {
         widgets.add(
           Padding(

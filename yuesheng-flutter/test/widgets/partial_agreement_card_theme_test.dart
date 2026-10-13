@@ -11,7 +11,7 @@ import 'package:writingcoach/theme/app_theme.dart'
 import 'package:writingcoach/features/chat/partial_agreement_card.dart';
 
 void main() {
-  const hint = '告诉我哪些描述不准确，我会调整诊断结果。';
+  const hint = '告诉我哪些描述不准确，把这些差异发给教练重新判断。';
 
   Future<void> pump(WidgetTester t, ThemeData theme) async {
     await t.pumpWidget(

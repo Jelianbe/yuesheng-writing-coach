@@ -8,6 +8,7 @@
 // R-009 红线：全部输出为「系统建议」，不强制、不替学员决定。
 // ─────────────────────────────────────────────────────────────
 
+import '../config/teaching_labels.dart';
 import '../data/repositories/training_result_repository.dart';
 import '../types/teaching_types.dart';
 import 'student_profile_compute.dart';
@@ -144,19 +145,10 @@ String _trendLabel(Trend trend) {
   }
 }
 
-/// 教学状态中文（既有枚举）。
-String _stateLabel(TeachingState state) {
-  switch (state) {
-    case TeachingState.identified:
-      return '已识别';
-    case TeachingState.inProgress:
-      return '教学中';
-    case TeachingState.consolidating:
-      return '巩固中';
-    case TeachingState.mastered:
-      return '已掌握';
-  }
-}
+/// 教学状态中文（真源 config/teaching_labels.dart 的 kTeachingStateLabels）。
+/// 原私有 switch「已识别/教学中/巩固中/已掌握」已收敛——
+/// identified→刚识别 / inProgress→训练中 / consolidating→趋稳中 / mastered→已掌握。
+String _stateLabel(TeachingState state) => teachingStateLabel(state);
 
 /// P2-10 三轴收束：把 P 系（阶段）/ N 系（零基础）/ 技能层级 / 介入级别
 /// 四套坐标压成一句「你在哪 → 下一步练什么」。纯展示，不评判（R-009）。

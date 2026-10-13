@@ -24,6 +24,7 @@ import '../../router/app_routes.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
 import 'partial_agreement_card.dart';
+import '../writing/writing_coach_panel_interactions.dart';
 import '../../widgets/privacy_notice_dialog.dart';
 
 /// 聊天页消息与画像相关动作
@@ -65,13 +66,15 @@ class ChatMessagesController {
         ? quickOptionLabel(quickOption)
         : feedback;
     if (detail.trim().isEmpty) return;
-    teaching.handleSend('我对刚才的诊断结果有不同看法：$detail。请根据我的反馈调整诊断。');
+    // 发送文案真源：writing_coach_panel_interactions.buildPartialAgreementMessage
+    // （原本文件手抄同文「我对刚才的诊断结果有不同看法：…」已删除）。
+    teaching.handleSend(buildPartialAgreementMessage(feedback, quickOption));
   }
 
   /// H3 PartialAgreementCard 跳过此症候 → 以用户消息请求重新诊断
   void handlePartialAgreementSkip() {
     if (host.ref.read(chatStoreProvider).isStreaming) return;
-    teaching.handleSend('请跳过这个症候，重新给出诊断结果。');
+    teaching.handleSend(buildPartialAgreementSkipMessage());
   }
 
   /// 重试上次失败的消息

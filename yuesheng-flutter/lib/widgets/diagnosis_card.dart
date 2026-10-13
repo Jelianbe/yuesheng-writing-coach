@@ -23,6 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_motion.dart';
 import '../config/app_theme.dart';
+import '../config/teaching_labels.dart';
 import 'thinking_chain.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/app_state_repository.dart';
@@ -462,7 +463,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
     final names = syndromes.map((s) => s.name).join('、');
     final severitySummary = syndromes
-        .map((s) => '${s.name}（${_severityLabel(s.severity)}）')
+        .map((s) => '${s.name}（${severityLabel(s.severity)}）')
         .join('；');
     return [
       ThinkingStep(label: '文本分析', detail: '扫描文本，定位 $totalEvidence 处问题片段'),
@@ -481,11 +482,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     ];
   }
 
-  String _severityLabel(String severity) => switch (severity) {
-    'L2' => '中等',
-    'L3' => '严重',
-    _ => '轻微',
-  };
+  // 严重度中文标签真源：config/teaching_labels.dart（原私有 _severityLabel 删除）。
   // ── Header：本次诊断 · N 个问题 · N% 信心 · 展开/收起 ▾ ──
   Widget _buildHeader() {
     return Material(
@@ -814,11 +811,12 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     TeachingState? teachingState,
   ) {
     final occurrence = _trends[s.syndromeId]?.occurrenceCount ?? 0;
+    // 教学状态标签真源：config/teaching_labels.dart。
+    // E-9 原行为保留：teachingState 为 null 或 identified（刚识别）时 chip 不标注——
+    // 只有已介入训练的状态才显式提示「训练中/趋稳中/已掌握」。
     final stateLabel = switch (teachingState) {
-      TeachingState.inProgress => '训练中',
-      TeachingState.consolidating => '趋稳中',
-      TeachingState.mastered => '已掌握',
-      _ => null,
+      null || TeachingState.identified => null,
+      final s => kTeachingStateLabels[s],
     };
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -839,7 +837,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         ),
         const SizedBox(width: 4),
         Text(
-          _severityLabel(s.severity),
+          severityLabel(s.severity),
           style: TextStyle(
             fontSize: 11,
             color: cfg.textColor.withValues(alpha: 0.85),
@@ -1737,7 +1735,7 @@ class _SyndromeConfirmationBarState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          '这个诊断符合你的实际情况吗？',
+          kConfirmationBarText['pending']![0],
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: context.palette.textDeep),
         ),
@@ -1821,35 +1819,31 @@ class _SyndromeConfirmationBarState
     );
   }
 
-  /// 已确认/质疑：状态行 + 提示文案
+  /// 已确认/质疑：状态行 + 提示文案。
+  /// 文案真源：config/teaching_labels.dart 的 kConfirmationBarText（治 §4-194）。
+  /// ★ disputed（异议）与 dismissed（永久静音/不适用）两态分治：
+  ///   disputed 仅「已记录异议」，绝不出现「不适用」；「不适用」语义只归 dismissed。
   (IconData, String, String, Color) _statusDisplay() {
-    return switch (_status) {
-      'confirmed' => (
-        Icons.check_circle_outline,
-        '已认同',
-        '可以开始针对「${widget.syndrome.name}」的练习',
-        context.palette.primary,
-      ),
-      'partial' => (
-        Icons.change_circle_outlined,
-        '部分认同',
-        '建议继续沟通确认',
-        context.palette.l2Text,
-      ),
-      'disputed' => (
-        Icons.cancel_outlined,
-        '已质疑',
-        '诊断已标记为不适用',
-        context.palette.l3Text,
-      ),
-      'dismissed' => (
-        Icons.do_not_disturb_on_outlined,
-        '已关闭',
-        '以后不再提示（成长页可恢复）',
-        context.palette.l3Text,
-      ),
-      _ => (Icons.help_outline, '', '', context.palette.textSecondary),
+    final icon = switch (_status) {
+      'confirmed' => Icons.check_circle_outline,
+      'partial' => Icons.change_circle_outlined,
+      'disputed' => Icons.cancel_outlined,
+      'dismissed' => Icons.do_not_disturb_on_outlined,
+      _ => Icons.help_outline,
     };
+    final color = switch (_status) {
+      'confirmed' => context.palette.primary,
+      'partial' => context.palette.l2Text,
+      'disputed' => context.palette.l3Text,
+      'dismissed' => context.palette.l3Text,
+      _ => context.palette.textSecondary,
+    };
+    final pair = kConfirmationBarText[_status] ?? const ['', ''];
+    final statusText = pair.first;
+    final hint = pair.length > 1
+        ? pair[1].replaceAll('{name}', widget.syndrome.name)
+        : '';
+    return (icon, statusText, hint, color);
   }
 
   Widget _buildStatus() {

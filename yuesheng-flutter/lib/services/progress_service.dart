@@ -16,6 +16,7 @@ import 'dart:math';
 
 import 'package:drift/drift.dart';
 
+import '../config/svc_copy.dart';
 import '../data/database/database.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/teaching_state_repository.dart';
@@ -320,7 +321,7 @@ class ProgressService {
   /// 报告结尾段（R-019 拆出：generateReport）。
   void _writeReportFooter(StringBuffer buffer) {
     buffer.write('━━━━━━━━━━━━━━━━━━━━\n');
-    buffer.write('✨ 继续加油，坚持写作！');
+    buffer.write(kReportFooter);
   }
 
   /// 解析 syndromes JSON 计数（对齐 RN：Array.isArray ? length : 0）

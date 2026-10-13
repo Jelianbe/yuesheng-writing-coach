@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:writingcoach/config/injection_constraints.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/token_budget_table.dart';
 import 'package:writingcoach/contracts/teaching_capability.dart';
@@ -327,6 +328,10 @@ class PromptAssemblyService {
   }
 
   /// 历史后追加 L1 核心纪律重申（批次4 4.3 + X-040 PHI P2，R-019 拆出）。
+  ///
+  /// R-027：1/2/3 条不再手抄规则正文，统一引用 [InjectionConstraints]
+  /// （约束目录单表为唯一权威，消除与「临场输出约束 / 按需介入」三处各自
+  /// 自封最高优先级的冲突；示范档统一「月笙」）。本块只保留 L1 通道特化尾巴。
   void _appendDisciplineReminder(List<ChatMessage> messages) {
     messages.add(
       ChatMessage(
@@ -334,9 +339,9 @@ class PromptAssemblyService {
         content:
             '# 回复纪律（最后提醒）\n\n'
             '长历史易稀释前置约束，此处重申 L1 核心纪律，回复时严格遵守：\n\n'
-            '1. 不替用户写句子、不替用户做决定；\n'
-            '2. 一次只抛一个点，删掉铺垫；\n'
-            '3. 示范按当前态度档位执行：温柔语气/yuesheng 最小示范，sensei 零示范只给方向；\n'
+            '1. ${InjectionConstraints.r009NoWrite}\n'
+            '2. ${InjectionConstraints.densityOnePoint}\n'
+            '3. ${InjectionConstraints.demoByAttitude}\n'
             '4. 诊断结论必须基于用户实际文本，不假定被预算闸门裁掉的素材内容；\n'
             '5. 回复去 AI 味，不用"让我来帮你"等套话；\n'
             '6. 诊断块按 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 标记输出（用户请求诊断时），卡片块用对应标签，不裸露 JSON。',

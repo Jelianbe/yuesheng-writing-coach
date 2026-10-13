@@ -15,6 +15,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/teaching_labels.dart';
 import '../services/syndrome_tracker.dart';
 import '../utils/time_format.dart';
 import '../theme/app_typography.dart';
@@ -41,7 +42,8 @@ _SeverityTheme _severityThemeFor(AppPalette p, String s) {
   return _SeverityTheme(p.l1, p.primary);
 }
 
-const Map<String, String> _severityLabel = {'L1': '轻微', 'L2': '中等', 'L3': '严重'};
+// 严重度中文标签真源：config/teaching_labels.dart 的 severityLabel
+// （原私有 _severityLabel 手抄表已删除）。
 
 const Map<String, int> _severityScore = {'L1': 1, 'L2': 2, 'L3': 3};
 
@@ -175,8 +177,7 @@ class SyndromeDetailModal extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             // E-4：显示中文严重度而非原始 L1/L2/L3 码
-            _severityLabel[syndrome.currentSeverity] ??
-                syndrome.currentSeverity,
+            severityLabel(syndrome.currentSeverity),
             style: TextStyle(
               fontSize: 12,
               color: sev.fg.withValues(alpha: 0.85),
@@ -362,7 +363,7 @@ class SyndromeDetailModal extends StatelessWidget {
     required bool isLast,
   }) {
     final sev = _sev(context, point.severity);
-    final label = _severityLabel[point.severity] ?? point.severity;
+    final label = severityLabel(point.severity);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       decoration: BoxDecoration(

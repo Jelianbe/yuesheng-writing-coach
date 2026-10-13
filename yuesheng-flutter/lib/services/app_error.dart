@@ -14,7 +14,12 @@
 //   - 文案不进基类（message 由调用方给），避免复制 llmErrorCodes 的
 //     文案映射职责；UI 展示文案由各调用方决定；
 //   - captureError 可识别 AppError：Observer / 钩子层提取 code 入 context。
+//   - R-027 任务 A：新增 [toUserMessage] 作为「内部错误 → 用户可见文案」
+//     唯一通道——按 code 走 lib/config/svc_copy.dart 单一真源，不外露
+//     [message]（调用方给的内部详情，可能含堆栈/对象），防内部信息泄漏。
 // ─────────────────────────────────────────────────────────────
+
+import '../config/svc_copy.dart';
 
 /// 业务错误码（通用层）
 enum AppErrorCode {
@@ -67,6 +72,27 @@ class AppError implements Exception {
 
   @override
   String toString() => 'AppError(${code.name}): $message';
+
+  /// 用户可见文案（R-027 任务 A：内部错误 → 用户可操作指引的唯一通道）。
+  ///
+  /// 只按 [code] 映射 svc_copy 单一真源；[message]（内部详情）不直接外露。
+  /// 与 LLM 层分工：HTTP/超时语义映射走 llm_error_codes.dart 的
+  /// llmErrorMessage，本函数覆盖业务层 AppErrorCode 通用族。
+  /// [AppErrorCode.cancelled] 为用户主动取消（预期行为），返回空串——
+  /// 调用方应自行决定是否给提示（通常不给）。
+  String toUserMessage() => switch (code) {
+    AppErrorCode.network => kLlmNetworkMessage,
+    AppErrorCode.timeout => kOperationFailed('操作'),
+    AppErrorCode.rateLimited => kLlmRateLimitedMessage,
+    AppErrorCode.server => kOperationFailed('服务'),
+    AppErrorCode.auth => kLlmUnauthorizedMessage,
+    AppErrorCode.invalidParams => kOperationFailed('操作'),
+    AppErrorCode.notFound => kOperationFailed('内容加载'),
+    AppErrorCode.database => kOperationFailed('数据读写'),
+    AppErrorCode.validation => kOperationFailed('提交'),
+    AppErrorCode.internal => kOperationFailed('操作'),
+    AppErrorCode.cancelled => '',
+  };
 
   /// 从任意异常识别 AppError（非 AppError 返回 null）
   static AppError? from(Object error) {
