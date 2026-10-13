@@ -78,6 +78,45 @@
 //   ⇒ `_cases` **20 → 15**；断言 ⑥⑦ 随 `${_cases.length}` 自动变 **15/15**。
 //   详见 `.ai/reports/2026-10-13-D6.2-live复核-带②三次重建失败与判据结构性冲突.md`。
 // ─────────────────────────────────────────────────────────────
+// ── D6.5 增量（2026-10-13 · 舰长裁定「甲」· 带④ 样本层重写）─────
+//   **★ 触发**：D6.4 判决性实验（18 票）证明带④ **3/5 失效**：
+//     `D3` 3/3 报 · `D4` 2–3/3 报 · `D5` 2/3 报（`D1` 1/3 ✅、`D2` 0–1/3 ✅）。
+//   **★ 判决性读数**：`D3`（只给立场）3/3 报 ⟂ `D3g`（同场景 + 族老自有账摆明面）
+//     **0/3 报** ⇒ 根因 = **样本形态**（账本是否在文本内可指认），**不是判据缺陷**
+//     —— 与带②（判据与文体结构性互斥、改样本无解）**本质不同**：本条**改样本即可解**。
+//   **★ 根因细目（`DECISIONS §4-186` 第三形态候选）**：模型的**接受门槛高于判据字面**
+//     —— 判据写「为利/活路/欲望至少其一」，模型只认**可在文本内指认的具体得失**
+//     （`D4` 账本"自有但抽象"，模型原话「"位置"是个抽象名词，不是具体利益」）。
+//     ⚠️ 该形态**列为候选**，须专项实验（抽象 vs 具体成对投喂）确认后方可正式立条。
+//   ⇒ **处置（本批 = 甲案：样本层修，零 R-027，不动任何 lib/ 产品代码）**：
+//     ① `D3` 按 `D3g` 形态重写（把族老的**自有账**摆到明面：祭田 + 印子钱 + 族老位子）
+//     ② `D4` 把「保自己的位置」**落到可指认的得失**（云中三城香火田 + 七成灯油钱）
+//     ③ `D5` **给布商一本账**（囤三成货卡下游七家染坊、待入秋涨价）
+//     ④ `sampledIds` → 覆盖带④ 三条（复验用）
+//     ⇒ `_cases` **15 条不变**（只重写带④ 三条的 probe/hitScript/name，不带增减）。
+//   ⚠️ **`D5` 若重写后仍报** ⇒ 确认 **B 类 = 判据作用域问题**（模型把 P029 套到场上
+//      没有账本的第二个人），**须单独立项**，不得靠改样本掩盖（见 D6.4 §4/§7）。
+//   详见 `.ai/reports/2026-10-13-D6.4-判决性实验-带④三样本失效与账本门槛.md`。
+// ─────────────────────────────────────────────────────────────
+// ── D6.6 增量（2026-10-13 · 舰长「按北极星相关内容约束处理」授权）────
+//   ① **判决性 A/B**：新增 `enum _Arm { stripped, production }` + `_kProductionCtx`
+//      ⇒ live 组对带④ 三条**再跑一遍「生产装配臂」**（`abIds`），**唯一变量** =
+//      第一段 system 是否换成 `buildSystemPromptV2(_kProductionCtx).systemPrompt`
+//      （L1 常驻九 skill + 态度档位 + L2 诊断组 + `_kDiagnosisSceneFirst` +
+//      `_kPositionGuidance` + `_kPromptBoundary`）；**档位（`off`）与调用形态
+//      （非流式）两臂刻意保持一致**（多变量会致读数不可归因）。
+//   ② **装置生效实证**：`[M 批 消耗]` prompt **3,018 → 34,912 tokens/票**。
+//   ③ **★ 判决性读数（人工逐票复核为唯一口径）**：
+//      `A1` stripped **0/3 报** ✅ · `C1` stripped **0/3 报** ✅ ·
+//      **`D3` stripped 2/3 报 ❌ / production 0/3（主跑）与 3/3（探针）** ·
+//      **`D4` 两臂都 2/3 报 ❌（跨装置一致）** · `D5` stripped 3/3 ❌ / production 1/3 ✅。
+//   ④ **★ 本批核心结论 = 同装置同上下文重复跑，3 票可整体翻面（`D3`：3/3 ↔ 0/3）**
+//      ⇒ **单次 3 票读数没有分辨率**，**不得**作为判据改动依据（`DECISIONS §4-188`）。
+//      ⇒ 改注入正文（R-027 类）前须先做**功效实验**（同装置同上下文 ≥5 轮 × 3 票）。
+//   ⑤ 判定器偏差量化：本批 **24 票中 12 票（50%）**与人工不一致（假阳 9 / 假阴 3）；
+//      `A1`/`C1` **全 6 票**判定器记「命中」而模型**逐字声明不报** ⇒ 「误报率」是假象。
+//   详见 `.ai/reports/2026-10-13-D6.6-北极星约束裁决与harness生产装配A-B.md`。
+// ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
 
@@ -90,10 +129,12 @@ import 'package:writingcoach/services/llm_concurrency_gate.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
 import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/llm_usage_monitor.dart';
+import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
+import 'package:writingcoach/types/teaching_types.dart';
 
 const String _kFocusId = 'P029';
 
@@ -110,6 +151,34 @@ const String _kPreamble =
     '不要替学员改写句子、不要替他做决定。'
     '请指出这段文字里最核心的一个写作问题：必须点到具体位置（引用原文里的词或句），'
     '并说明这个问题为什么是问题、它伤害了读者的什么阅读体验。一次只聚焦一个最主要的点。';
+
+// ── D6.6 判决性 A/B（2026-10-13 · 舰长「按北极星约束处理」授权）────────
+//   动机：D6~D6.5 的**全部** live 读数都在「精简装置」下取得 —— 该装置**缺
+//   生产 system prompt 的 L1+L2 六块注入**（见 D6.5 报告 §8.2 逐项对照表）
+//   ⇒ 它回答的是「在这套装置下模型怎么判」，**不等于**「线上会怎么判」。
+//   本 A/B 用同一批样本、同一档位、同一调用形态，**唯一变量 = 是否注入 L1+L2**，
+//   以判定「带④ 三条仍被报 P029」到底是**判据作用域缺口**（真）还是
+//   **探针自造的假象**（`DECISIONS-DETAIL §4-153` 同型）。
+
+/// 装配臂（判决性 A/B 的自变量）。
+enum _Arm {
+  /// 现状：自造 `_kPreamble` + 知识四块（D6~D6.5 全部读数所用装置）。
+  stripped,
+
+  /// **对齐生产**：`buildSystemPromptV2` 的完整 system prompt。
+  production,
+}
+
+/// 生产等效诊断上下文。
+///
+/// 逐字段复刻 `test/services/skill_prompt_anchor_test.dart` 的
+/// `diagnosis_yuesheng` 用例 ⇒ `resolveL2Mode` 落 `L2Mode.diagnosis`
+/// ⇒ 触发 `_kDiagnosisSceneFirst` 注入（与线上诊断请求同路径）。
+const SkillLoadContext _kProductionCtx = SkillLoadContext(
+  phase: TeachingPhase.p2PracticeLoop,
+  attitude: AttitudeLevel.yuesheng,
+  subphase: TeachingSubphase.diagnosis,
+);
 
 /// P029 概念侧面：**只收「问题信号」词，不收中性词**。
 ///
@@ -358,27 +427,31 @@ final List<_Case> _cases = [
   _Case(
     id: 'D3',
     band: '利益账本到位',
-    name: '世家家主只为自己族人算账',
+    name: '世家家主自有祭田印子钱押在北岸',
     probe:
         '族老议事，河堤的银子该修南还是北。有人开口：「南边有三千亩。」'
-        '族老当场定了北边：「北边三百亩，但族里三房都在北岸。」',
+        '族老当场定了北边：「北边三百亩。」他自己两百亩祭田、放给三房的印子钱，'
+        '全押在北岸——三房这一垮，他这个族老也就坐到头了。',
     hitScript:
-        '利益动机写得极实（三百亩换三房安稳），这段反而值得提醒一句：'
-        '三千亩这个数字太像反派配置，建议给它一个具体的用途，否则读者会怀疑。',
+        '利益动机写得实在：族老自家的祭田、印子钱全押在北岸，修北边就是保自己的账，'
+        '不是被「南边三千亩」说动的。这段可打磨的是「当场定了北边」太快——'
+        '读者还没来得及起疑，答案就已经摊开了。',
     missScript: '降智反派症：族老放着三千亩不修、偏要修三百亩的地方，没有利益动机，反派被工具化。',
     anchors: ['利益账本', '不得报 P029'],
   ),
   _Case(
     id: 'D4',
     band: '利益账本到位',
-    name: '掌教护短但护的是自己的位置',
+    name: '掌教护短，护的是三城香火田',
     probe:
         '亲传弟子打伤了外门弟子，罚他闭门思过。外人以为掌教护短，'
-        '只有执事堂知道：罚弟子不是护弟子，是保掌教自己的位置——'
-        '若此事传出去，各堂主联名，他这位置就坐不稳了。',
+        '只有执事堂知道：罚弟子不是护弟子——那弟子身后是云中三城的香火田，'
+        '每年供着本堂七成灯油钱；这事一旦捅出去，三城撤了供奉、各堂主联名，'
+        '他这掌教才真坐不住。',
     hitScript:
-        '表层是护短，内核是自保，动机链完整。真问题在视角：这段把底牌一次摊完，'
-        '读者没有参与感——建议让读者先从「只罚不赔」的蹊跷里自己拼出来。',
+        '表层是护短，内核是保那三城的香火田和灯油钱，动机链一环扣一环。'
+        '真问题在视角：这段把底牌一次摊完，读者没有参与感——'
+        '建议让读者先从「只罚不赔」的蹊跷里自己拼出来。',
     missScript: '降智反派症：掌教不护自己宗门规矩、只护亲传弟子，没有利益动机，反派被工具化。',
     anchors: ['利益账本', '不得报 P029'],
   ),
@@ -388,10 +461,13 @@ final List<_Case> _cases = [
     name: '掌柜放走最大买家（为垄断供货源）',
     probe:
         '最大的布商一次买走三成货，掌柜却笑着退了定金，还多送了两匹样布。'
-        '账房不解。掌柜说：「他要是垮了，这门街上就剩我一家能供得起他。」',
+        '账房不解。掌柜说：「他要是垮了，这门街上就剩我一家能供得起他。」'
+        '账房后来才打听到：那布商吃下三成货，是要囤着卡下游七家染坊的料，'
+        '等入秋涨价再放。',
     hitScript:
-        '这一段把「反派」写得比多数主角都清醒。可以建议的是账房那句不解——'
-        '它是唯一让读者进入掌柜视角的缝，这里正好可以把账房写活一点。',
+        '掌柜清醒，布商也不糊涂——退了定金这条街上只剩他供得起，'
+        '而布商囤货卡的是下游七家染坊，两个人都在算自己的账。'
+        '可以建议的是账房那句不解，把它写活一点，好让读者的疑心有个落点。',
     missScript: '降智反派症：掌柜放着大生意不做、主动退定金，没有利益动机，反派被工具化。',
     anchors: ['利益账本', '不得报 P029'],
   ),
@@ -469,10 +545,26 @@ bool _hitsFacet(String output) {
   return false;
 }
 
-/// 组装消息（与生产 `_injectTrainingFsmAndContext` 等价：
+/// 组装消息（知识四块与生产 `_injectTrainingFsmAndContext` 等价：
 /// 训练内容 + few-shot + L3 手册 + 技法，四面齐全）。
-List<ChatMessage> _buildMessages(_Case c) {
-  final msgs = <ChatMessage>[ChatMessage(role: 'system', content: _kPreamble)];
+///
+/// [arm]（D6.6 判决性实验新增）只决定**第一段 system** 用哪一份：
+/// - [\_Arm.stripped] = 自造 `_kPreamble`（现状）；
+/// - [\_Arm.production] = `buildSystemPromptV2(_kProductionCtx).systemPrompt`
+///   （L1 常驻九 skill + 态度档位 + L2 诊断组 + `_kDiagnosisSceneFirst` +
+///   `_kPositionGuidance` + `_kPromptBoundary`）。
+///
+/// ⚠️ 两臂**唯一变量** = 是否注入 L1+L2 装配：知识四块、档位（`off`）、
+/// 调用形态（非流式）、用户消息，两臂逐字相同 —— 否则多变量混杂，读数无法归因。
+List<ChatMessage> _buildMessages(_Case c, {_Arm arm = _Arm.stripped}) {
+  final msgs = <ChatMessage>[
+    ChatMessage(
+      role: 'system',
+      content: arm == _Arm.production
+          ? buildSystemPromptV2(_kProductionCtx).systemPrompt
+          : _kPreamble,
+    ),
+  ];
   final knowledge = getTrainingContent([_kFocusId]);
   if (knowledge.isNotEmpty) {
     msgs.add(ChatMessage(role: 'system', content: knowledge));
@@ -734,7 +826,7 @@ void main() {
       messenger.setMockMethodCallHandler(_kSecureStorageChannel, null);
     });
 
-    // 抽样 3 条（**3 带全覆盖**）—— 每条 3 票 ≥2 票。
+    // 抽样 **5 条（3 带全覆盖，带④ 全测）**—— 每条 3 票 ≥2 票。
     // **不跑全部**：真模型往返烧 token，且同一判据的多条负例高度同族，
     // 边际信息量低。抽样是刻意裁定，不是省事（读数见 D6 报批材料 §3 乙案）。
     // ★ D6.1 增量：`B3g` = B3 的**同文本对照**（多一条体裁说明 system）⇒
@@ -744,11 +836,27 @@ void main() {
     // ⚠️ D6.2：`B1`/`B6` 等带② 样本曾短暂恢复抽样，D6.2-live 复核证明仍 3/3 报。
     // ★ D6.3（舰长裁定「甲」）：**带② 整带废止**（判据与喜剧文体结构性互斥，见文件末
     //   D6.3 块）⇒ 抽样回到 **3 带**（`A1` ① + `C1` ③ + `D3` ④），**9 票**。
-    const sampledIds = <String>['A1', 'C1', 'D3'];
+    // ★ D6.5（舰长裁定「甲」· 样本层修）：带④ 三条（`D3`/`D4`/`D5`）**本批全部重写**
+    //   ⇒ 抽样扩到 **5 条**（`A1` ① + `C1` ③ + `D3`/`D4`/`D5` ④），**15 票**——
+    //   带④ 是本批唯一改动对象，须逐条复验（D6.4 判决性读数：`D3` 3/3 · `D4` 2–3/3 ·
+    //   `D5` 2/3 报）。①③ 各留 1 条作非改动带对照。
+    const sampledIds = <String>['A1', 'C1', 'D3', 'D4', 'D5'];
+
+    // ★ D6.6 判决性 A/B（2026-10-13）：带④ 三条**再跑一遍「生产装配臂」**。
+    //   唯一变量 = 第一段 system 是否换成 `buildSystemPromptV2` 的完整装配
+    //   （L1 常驻九 skill + 态度档位 + L2 诊断组 + `_kDiagnosisSceneFirst` +
+    //   `_kPositionGuidance` + `_kPromptBoundary`）。档位（`off`）与调用形态
+    //   （非流式）两臂保持一致 ⇒ 多变量不混杂。
+    //   判读规则：
+    //     · 生产臂「不报」而精简臂「报」 ⇒ 精简装置在**自造**缺口（§4-153 同型），
+    //       改 `manual_6`（触 R-027）**不成立**；
+    //     · 两臂**都报** ⇒ 缺口为**真** ⇒ ② 类停线项才取得立项资格。
+    //   只跑带④：①③ 两带在 D6~D6.5 中从未失守，无 A/B 必要（省 token）。
+    const abIds = <String>['D3', 'D4', 'D5'];
 
     for (final c in _cases.where((e) => sampledIds.contains(e.id))) {
       test(
-        '[${c.id}] ${c.name}：3 票 ≥2 票不报 P029',
+        '[stripped][${c.id}] ${c.name}：3 票 ≥2 票不报 P029',
         () async {
           if (!hasKey) {
             markTestSkipped('未设置 ${prov.envKey}，跳过真实链路');
@@ -760,11 +868,35 @@ void main() {
         timeout: const Timeout(Duration(seconds: 300)),
       );
     }
+
+    // ★ D6.6 生产装配臂（同上样本、同档位、同调用形态 ⇒ 唯一变量 = 装配）。
+    for (final c in _cases.where((e) => abIds.contains(e.id))) {
+      test(
+        '[production][${c.id}] ${c.name}：3 票 ≥2 票不报 P029（生产装配臂）',
+        () async {
+          if (!hasKey) {
+            markTestSkipped('未设置 ${prov.envKey}，跳过真实链路');
+            return;
+          }
+          await _runLiveVotes(c, prov, arm: _Arm.production);
+        },
+        tags: const ['live', 'external'],
+        // 生产装配 prompt 实测 74,571 字符（`skill_dispatcher.dart` 头注）
+        // ⇒ 单票往返显著慢于精简臂，超时放宽。
+        timeout: const Timeout(Duration(seconds: 900)),
+      );
+    }
   });
 }
 
 /// 跑 3 票真实调用并断言 ≥2 票「未报 P029」。
-Future<void> _runLiveVotes(_Case c, _Provider prov) async {
+///
+/// [arm] 见 `_buildMessages`：两臂共用同一判定器、同一用户消息、同一有效票守卫。
+Future<void> _runLiveVotes(
+  _Case c,
+  _Provider prov, {
+  _Arm arm = _Arm.stripped,
+}) async {
   final key = Platform.environment[prov.envKey]!;
   final cfg = LlmConfigValues(
     apiKey: key,
@@ -805,7 +937,7 @@ Future<void> _runLiveVotes(_Case c, _Provider prov) async {
   var valid = 0;
   var passes = 0;
   for (var v = 1; v <= 3; v++) {
-    final msgs = _buildMessages(c);
+    final msgs = _buildMessages(c, arm: arm);
     final res = await client.chatCompletionWithMeta(msgs);
     final isValid = res.content.trim().isNotEmpty && !res.isTruncated;
     final hit = _hitsFacet(res.content);
@@ -815,14 +947,16 @@ Future<void> _runLiveVotes(_Case c, _Provider prov) async {
     }
     // ignore: avoid_print
     print(
-      '[${c.id}][票$v] 有效=$isValid 未报P029=${!hit} hit=$hit '
+      '[${arm.name}][${c.id}][票$v] 有效=$isValid 未报P029=${!hit} hit=$hit '
       'finish=${res.finishReason} len=${res.content.length}',
     );
     // ignore: avoid_print
     print('  输出: ${res.content.trim()}');
   }
   // ignore: avoid_print
-  print('[${c.id}] 累计用量: ${monitor.totals}（有效票 $valid/3，未报 $passes/3）');
+  print(
+    '[${arm.name}][${c.id}] 累计用量: ${monitor.totals}（有效票 $valid/3，未报 $passes/3）',
+  );
 
   // 唯一硬断言：读数必须**有效**。不足即报「无法判定」，不得记为通过。
   expect(
@@ -858,7 +992,7 @@ Future<void> _runLiveVotes(_Case c, _Provider prov) async {
   final falseRate = valid == 0 ? 0.0 : hits / valid;
   // ignore: avoid_print
   print(
-    '[${c.id}] ★读数：命中(误报)=$hits/$valid 假报率 '
+    '[${arm.name}][${c.id}] ★读数：命中(误报)=$hits/$valid 假报率 '
     '${(falseRate * 100).toStringAsFixed(1)}%  '
     '｜未报(正确)=$passes/$valid '
     '正确率 ${(100 - falseRate * 100).toStringAsFixed(1)}%'
