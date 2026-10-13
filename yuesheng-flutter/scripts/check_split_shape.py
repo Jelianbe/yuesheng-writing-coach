@@ -49,6 +49,38 @@ part 拆分与内容领域边界严格一致、无逻辑耦合、无 override �
 豁免规则：被豁免的**宿主**不参与 S1/S2 判定；但豁免**不递归**——
 非豁免宿主下的 part 仍照常判定。
 
+规划拆分豁免通道（plannedMigrations，**R-027 B6 新增**）
+----------------------------------------------------
+**要解决的误伤**：S2 = 「宿主 >300 行」。当一个巨型服务类（如
+`diagnosis_flow_handler.dart`，实测 1553 行）按 ADR-0004 R-3 做**分阶段真
+分解**（独立类 + DI、「不硬拆」逐步迁出）时，它从「无 part 的普通文件」
+变为「宿主」的那一刻，宿主行数必然仍 >300（一次不可能降到 300 以下），
+于是 S2 作为**新增**违规冒红——而这正是真实迁移的中途态，不是伪拆分。
+有效下限 = 当前位 = 零余量：每迁一片都撞 S2。
+
+**通道语义（在 baseline JSON 里逐条登记，须有拆分计划佐证）**::
+
+    "plannedMigrations": [
+      { "host": "services/diagnosis_flow_handler.dart",
+        "reason": "U7 分阶段真分解（ADR-0004 R-3）",
+        "registeredHostLines": 1553 }
+    ]
+
+  - 仅当某宿主**命中登记表**、且 `宿主行数 <= registeredHostLines`（单调不
+    回涨）时，**豁免其 S2**（承认「迁移中途态」）。
+  - 宿主**回涨**（宿主行数 > registeredHostLines）⇒ S2 **照常报红**——
+    迁移不得把文件越改越大。
+  - **S1 / S3 对规划宿主完全不豁免**：任何 part 仍不得 >300 行。这是防伪
+    拆分的牙齿——你可以被容许「慢慢迁」，但**不许**把一团 >300 行的逻辑
+    塞进一个 part 来凑文件数。
+  - 登记表是**逐条、按宿主、需写 reason** 的显式豁免，不是把 300 阈值放宽；
+    未登记的一切宿主仍受 S1/S2/S3 全量约束。防「刷行数/刷文件名」本质不丢。
+  - 登记宿主**暂未成为宿主**（尚未声明 part）时静默休眠，不报错——
+    允许在拆分开工前预先登记（本批即如此）。
+
+fail-closed：登记表条目缺 host / reason 为空 / registeredHostLines 非正整数
+⇒ `exit 2`（无效豁免 = 无豁免，对齐 ADR-0004 §2.3）。
+
 CLI 与退出码
 ------------
     python scripts/check_split_shape.py                          # 全量报告
@@ -182,6 +214,21 @@ class Family:
     host_lines: int
     parts: Dict[str, int]
     exempt: bool
+
+
+@dataclass
+class PlannedMigration:
+    """一条规划拆分豁免登记（baseline JSON ``plannedMigrations`` 的实体）。
+
+    Attributes:
+        host: 宿主文件相对路径（POSIX 风格，与 family.host 同口径）。
+        reason: 拆分计划佐证（不得为空；空 = 无效豁免）。
+        registered_host_lines: 登记时实测的宿主行数上限（单调不回涨判据）。
+    """
+
+    host: str
+    reason: str
+    registered_host_lines: int
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +411,11 @@ def oversized_parts(family: Family, limit: int) -> Dict[str, int]:
     }
 
 
-def evaluate_family(family: Family, limit: int) -> List[Violation]:
+def evaluate_family(
+    family: Family,
+    limit: int,
+    planned_map: Optional[Dict[str, PlannedMigration]] = None,
+) -> List[Violation]:
     """对单个家族求值，返回其触发的所有违规项。
 
     判据（详见模块 docstring）：
@@ -373,22 +424,37 @@ def evaluate_family(family: Family, limit: int) -> List[Violation]:
       S3 = 有 part >limit（无论宿主）。
     被豁免的宿主不参与 S1/S2；S3 仍照常判定（豁免不递归）。
 
+    规划拆分豁免（R-027 B6）：命中 ``planned_map`` 的宿主，**仅当**宿主行数
+    ``<= registered_host_lines``（迁移中途态、单调不回涨）时豁免其 **S2**；
+    宿主行数**超过**登记上限视为「迁移中回涨」⇒ S2 照常报红。**S1/S3 对规划
+    宿主不豁免**——任何 part 仍不得 >limit 行（防伪拆分的牙齿）。
+
     Args:
         family: 家族对象。
         limit: 行数阈值。
+        planned_map: ``{宿主相对路径: PlannedMigration}``；None 表示无登记。
 
     Returns:
         违规项列表。
     """
+    planned_map = planned_map or {}
     over = oversized_parts(family, limit)
     host_over = family.host_lines > limit
     violations: List[Violation] = []
 
+    # S2 是否被规划拆分豁免：命中登记 且 宿主未回涨（行数 <= 登记上限）。
+    planned = planned_map.get(family.host)
+    s2_planned_exempt = bool(
+        planned is not None
+        and host_over
+        and family.host_lines <= planned.registered_host_lines
+    )
+
     if not family.exempt and host_over and over:
-        # S1：取行数最大的超限 part 作为触发标识。
+        # S1：取行数最大的超限 part 作为触发标识。规划宿主亦不豁免 S1。
         violations.append(_make_part_violation(family, RULE_S1, over))
-    if not family.exempt and host_over:
-        # S2：不依赖 part，part 字段留空。
+    if not family.exempt and host_over and not s2_planned_exempt:
+        # S2：不依赖 part，part 字段留空。规划宿主未回涨时豁免；回涨照常报。
         violations.append(
             Violation(
                 host=family.host,
@@ -428,7 +494,10 @@ def _make_part_violation(
 
 
 def scan(
-    lib_dir: str, limit: int, errors: List[str]
+    lib_dir: str,
+    limit: int,
+    errors: List[str],
+    planned_map: Optional[Dict[str, PlannedMigration]] = None,
 ) -> tuple[List[Family], List[Violation]]:
     """扫描 lib 目录，返回（家族列表, 违规列表）。
 
@@ -436,6 +505,7 @@ def scan(
         lib_dir: ``lib`` 目录绝对路径。
         limit: 行数阈值。
         errors: 错误累积列表。
+        planned_map: 规划拆分豁免表（``{宿主相对路径: PlannedMigration}``）。
 
     Returns:
         ``(families, violations)`` 二元组。
@@ -444,7 +514,7 @@ def scan(
     families = build_families(lib_dir, dart_files, errors)
     violations: List[Violation] = []
     for family in families:
-        violations.extend(evaluate_family(family, limit))
+        violations.extend(evaluate_family(family, limit, planned_map))
     return families, violations
 
 
@@ -478,6 +548,73 @@ def load_baseline_keys(path: str) -> List[str]:
         part = item.get("part", "")
         keys.append(f"{host}:{rule}:{part}")
     return keys
+
+
+def load_baseline_doc(path: str) -> tuple[List[str], Dict[str, PlannedMigration]]:
+    """一次性读取基线 JSON，返回（违规键列表, 规划拆分豁免表）。
+
+    与 ``load_baseline_keys`` 同源，但**额外**解析 ``plannedMigrations``
+    （R-027 B6），供扫描前注入判定。登记表校验失败 ⇒ ``ValueError``（fail-closed，
+    由调用方 exit 2）。
+
+    Args:
+        path: 基线 JSON 路径。
+
+    Returns:
+        ``(baseline_keys, planned_map)``。
+
+    Raises:
+        OSError: 读取失败。
+        ValueError: JSON 结构非法或 plannedMigrations 条目无效。
+    """
+    with open(path, encoding="utf-8") as fh:
+        data = json.load(fh)
+    keys = load_baseline_keys(path)  # 复用 violations 结构校验
+    planned_map, err = load_planned_migrations(data)
+    if err:
+        raise ValueError(f"plannedMigrations 非法：{err}")
+    return keys, planned_map
+
+
+def load_planned_migrations(data: object) -> tuple[Dict[str, PlannedMigration], Optional[str]]:
+    """从基线 JSON 顶层对象中解析 ``plannedMigrations``（fail-closed）。
+
+    逐条校验：``host`` 为非空字符串、``reason`` 为非空字符串、
+    ``registeredHostLines`` 为**正**整数。任一不符 ⇒ 返回错误消息（由调用方
+    ``exit 2``）——无效豁免等于无豁免，绝不静默放行。
+
+    Args:
+        data: 已解析的基线 JSON 顶层对象（``json.load`` 的返回）。
+
+    Returns:
+        ``{宿主相对路径(POSIX): PlannedMigration}``；无登记表时为空 dict。
+        校验失败时返回 ``(空dict, 错误消息)``。
+    """
+    if data is None:
+        return {}, None
+    raw = data.get("plannedMigrations")
+    if raw is None:
+        return {}, None  # 无登记表 = 无规划豁免（向后兼容旧基线）
+    if not isinstance(raw, list):
+        return {}, "plannedMigrations 必须是数组"
+    out: Dict[str, PlannedMigration] = {}
+    for i, item in enumerate(raw):
+        if not isinstance(item, dict):
+            return {}, f"plannedMigrations[{i}] 不是对象"
+        host = item.get("host")
+        reason = item.get("reason")
+        lines = item.get("registeredHostLines")
+        if not isinstance(host, str) or not host.strip():
+            return {}, f"plannedMigrations[{i}].host 缺失或为空"
+        if not isinstance(reason, str) or not reason.strip():
+            return {}, f"plannedMigrations[{i}].reason 缺失或为空（须有拆分计划佐证）"
+        if not isinstance(lines, int) or isinstance(lines, bool) or lines <= 0:
+            return {}, f"plannedMigrations[{i}].registeredHostLines 必须为正整数"
+        key = _norm(host)
+        out[key] = PlannedMigration(
+            host=key, reason=reason.strip(), registered_host_lines=lines
+        )
+    return out, None
 
 
 def filter_new(
@@ -538,6 +675,7 @@ def build_snapshot(
     file_count: int,
     families: List[Family],
     violations: List[Violation],
+    planned_map: Optional[Dict[str, PlannedMigration]] = None,
 ) -> Dict[str, object]:
     """构造基线快照字典（结构参考 tool/r019_baseline.json）。
 
@@ -547,11 +685,14 @@ def build_snapshot(
         file_count: 扫描到的 ``.dart`` 文件数。
         families: 家族列表。
         violations: 全量违规列表。
+        planned_map: 规划拆分豁免表（R-027 B6）；随快照一并落盘，
+            使 ``--json`` 重生成基线时**不丢**登记表。
 
     Returns:
         可直接 json.dump 的快照字典（含 dir/limit/fileCount/familyCount/
-        ruleCount/violations）。
+        ruleCount/violations/plannedMigrations）。
     """
+    planned_map = planned_map or {}
     return {
         "dir": dir_arg,
         "limit": limit,
@@ -559,6 +700,14 @@ def build_snapshot(
         "familyCount": len(families),
         "ruleCount": RULE_COUNT,
         "violations": [violation_to_dict(v) for v in violations],
+        "plannedMigrations": [
+            {
+                "host": p.host,
+                "reason": p.reason,
+                "registeredHostLines": p.registered_host_lines,
+            }
+            for p in sorted(planned_map.values(), key=lambda x: x.host)
+        ],
     }
 
 
@@ -782,28 +931,6 @@ def count_generated_files(lib_dir: str) -> int:
     return gen
 
 
-def _resolve_baseline(
-    baseline_arg: str, violations: List[Violation]
-) -> tuple[Optional[List[Violation]], int, Optional[str]]:
-    """按基线过滤违规，返回（展示列表, 基线总数, 错误消息）。
-
-    Args:
-        baseline_arg: 基线路径（空串表示全量模式）。
-        violations: 当前全量违规列表。
-
-    Returns:
-        ``(shown, baseline_total, error)`` 三元组；``error`` 非空表示
-        基线读取失败，调用方应 ``exit 2``。
-    """
-    if not baseline_arg:
-        return violations, 0, None
-    try:
-        keys = load_baseline_keys(baseline_arg)
-    except (OSError, ValueError) as exc:
-        return None, 0, f"无法读取基线 {baseline_arg!r}: {exc}"
-    return filter_new(violations, keys), len(keys), None
-
-
 def _write_snapshot(
     json_path: str,
     dir_arg: str,
@@ -811,6 +938,7 @@ def _write_snapshot(
     file_count: int,
     families: List[Family],
     violations: List[Violation],
+    planned_map: Optional[Dict[str, PlannedMigration]] = None,
 ) -> Optional[str]:
     """把当前扫描结果以**全量**写入 JSON 基线快照。
 
@@ -821,11 +949,14 @@ def _write_snapshot(
         file_count: 扫描到的 ``.dart`` 文件数。
         families: 家族列表。
         violations: 全量违规列表。
+        planned_map: 规划拆分豁免表（随快照落盘，不丢登记）。
 
     Returns:
         成功返回 None，失败返回错误消息。
     """
-    snapshot = build_snapshot(dir_arg, limit, file_count, families, violations)
+    snapshot = build_snapshot(
+        dir_arg, limit, file_count, families, violations, planned_map
+    )
     try:
         parent = os.path.dirname(os.path.abspath(json_path))
         if parent:
@@ -890,7 +1021,11 @@ def _validate_env(dir_arg: str) -> tuple[Optional[str], List[str], int, int]:
     return lib_dir, all_dart, count_generated_files(lib_dir), 0
 
 
-def _run_scan_phase(dir_arg: str, limit: int) -> tuple[Optional[ScanOutcome], int]:
+def _run_scan_phase(
+    dir_arg: str,
+    limit: int,
+    planned_map: Optional[Dict[str, PlannedMigration]] = None,
+) -> tuple[Optional[ScanOutcome], int]:
     """执行环境校验与扫描阶段（fail-closed）。
 
     依次完成：环境校验 → 扫描 → 读取错误校验。任一步失败均返回错误退出码。
@@ -898,6 +1033,7 @@ def _run_scan_phase(dir_arg: str, limit: int) -> tuple[Optional[ScanOutcome], in
     Args:
         dir_arg: ``--dir`` 参数。
         limit: 行数阈值。
+        planned_map: 规划拆分豁免表（扫描前由基线注入；None 表示无登记）。
 
     Returns:
         ``(outcome, exit_code)``；成功时 ``exit_code`` 为 0 且 ``outcome``
@@ -908,7 +1044,7 @@ def _run_scan_phase(dir_arg: str, limit: int) -> tuple[Optional[ScanOutcome], in
         return None, code
 
     errors: List[str] = []
-    families, violations = scan(lib_dir, limit, errors)
+    families, violations = scan(lib_dir, limit, errors, planned_map)
 
     # 读取失败不得静默跳过：打印到 stderr，并计入错误使退出码升级。
     if errors:
@@ -938,6 +1074,7 @@ def _emit_report_and_snapshot(
     outcome: ScanOutcome,
     shown: List[Violation],
     baseline_total: int,
+    planned_map: Optional[Dict[str, PlannedMigration]] = None,
 ) -> int:
     """打印报告并在需要时落盘全量快照，返回退出码。
 
@@ -946,6 +1083,7 @@ def _emit_report_and_snapshot(
         outcome: 扫描阶段结果。
         shown: 待展示的违规列表（全量或过滤后）。
         baseline_total: 基线内违规总数。
+        planned_map: 规划拆分豁免表（随快照落盘，不丢登记）。
 
     Returns:
         进程退出码（0 通过 / 1 违规 / 2 落盘失败）。
@@ -971,6 +1109,7 @@ def _emit_report_and_snapshot(
             outcome.file_count,
             outcome.families,
             outcome.violations,
+            planned_map,
         )
         if write_err:
             print(f"{C.RED}ERROR{C.RESET}: {write_err}", file=sys.stderr)
@@ -1006,7 +1145,21 @@ def main(argv: List[str]) -> int:
         )
         return 2
 
-    outcome, code = _run_scan_phase(args.dir, args.limit)
+    # ★ 基线必须在**扫描前**解析：plannedMigrations（R-027 B6）要在判定阶段
+    #   注入 evaluate_family，故不能等扫完再读基线。
+    baseline_keys: List[str] = []
+    planned_map: Dict[str, PlannedMigration] = {}
+    if args.baseline:
+        try:
+            baseline_keys, planned_map = load_baseline_doc(args.baseline)
+        except (OSError, ValueError) as exc:
+            print(
+                f"{C.RED}ERROR{C.RESET}: 无法读取基线 {args.baseline!r}: {exc}",
+                file=sys.stderr,
+            )
+            return 2
+
+    outcome, code = _run_scan_phase(args.dir, args.limit, planned_map)
     if outcome is None:
         return code
 
@@ -1017,15 +1170,16 @@ def main(argv: List[str]) -> int:
         return 1
 
     # 基线过滤（只影响展示与退出码，不影响落盘全量）
-    shown, baseline_total, base_err = _resolve_baseline(
-        args.baseline, outcome.violations
-    )
-    if base_err:
-        print(f"{C.RED}ERROR{C.RESET}: {base_err}", file=sys.stderr)
-        return 2
-    assert shown is not None  # base_err 为 None 时 shown 必非 None
+    if args.baseline:
+        shown = filter_new(outcome.violations, baseline_keys)
+        baseline_total = len(baseline_keys)
+    else:
+        shown = outcome.violations
+        baseline_total = 0
 
-    return _emit_report_and_snapshot(args, outcome, shown, baseline_total)
+    return _emit_report_and_snapshot(
+        args, outcome, shown, baseline_total, planned_map
+    )
 
 
 if __name__ == "__main__":

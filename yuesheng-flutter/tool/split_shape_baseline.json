@@ -4,5 +4,12 @@
   "fileCount": 378,
   "familyCount": 4,
   "ruleCount": 3,
-  "violations": []
+  "violations": [],
+  "plannedMigrations": [
+    {
+      "host": "services/diagnosis_flow_handler.dart",
+      "reason": "U7 分阶段真分解（ADR-0004 R-3 独立类+DI，不硬拆、逐步迁出）；R-027 B6 登记于 2026-10-13。登记时实测宿主 1553 行、尚无 part（登记休眠中）；开工首批须复测行数并同步本 registeredHostLines。S1/S3 不豁免：任何 part 仍不得 >300 行。",
+      "registeredHostLines": 1553
+    }
+  ]
 }
