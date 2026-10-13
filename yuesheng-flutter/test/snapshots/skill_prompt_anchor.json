@@ -60,9 +60,9 @@
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "training_yuesheng": {
-      "len": 68974,
-      "fnv": "78ff8e73f0e4d6c",
-      "tokens": 68974,
+      "len": 69006,
+      "fnv": "6042456ff75ce42",
+      "tokens": 69006,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,teaching-mode-socratic,coaching-actions-v2,technique-library-index,training-loop-v2,training-templates-index,training-evaluation-v2,text-surgery-v2,demonstration,comparison,timed-rewrite,model-rewrite,revision-methodology,reader-awareness,writer-psychology"
     },
     "advanced_sensei": {
@@ -204,8 +204,8 @@
       "fnv": "5c5c594679ce3769"
     },
     "technique-library-index": {
-      "len": 2941,
-      "fnv": "51b4a21dd49bdafc"
+      "len": 2974,
+      "fnv": "6fa3d76d87662e35"
     },
     "text-surgery-v2": {
       "len": 660,
@@ -224,8 +224,8 @@
       "fnv": "4b97a6572151e651"
     },
     "training-templates-index": {
-      "len": 2707,
-      "fnv": "54ff8c5932e146cd"
+      "len": 2706,
+      "fnv": "2983b92df3ddb294"
     },
     "validation-rules": {
       "len": 2049,
@@ -246,16 +246,16 @@
   },
   "l3Inject": {
     "syndrome_P003": {
-      "len": 1847,
-      "fnv": "3a28d9ec34186c13"
+      "len": 1882,
+      "fnv": "a336386c9bee6a4"
     },
     "technique_T001_T008": {
       "len": 810,
       "fnv": "3fcbffa5b42a19e7"
     },
     "both_P003_P007_T001": {
-      "len": 3293,
-      "fnv": "c26640257da95b0"
+      "len": 3304,
+      "fnv": "297ae07c19b4d245"
     },
     "empty": {
       "len": 0,
