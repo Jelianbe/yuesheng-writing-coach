@@ -133,6 +133,9 @@
 //   live 复跑由 `reshell` 文件 live 组承担（stripped 8 条 + production 3 条，
 //   D6.9 臂 B 已跑 33 票；N-D2 等修壳复跑沿用该文件）。
 //   ⚠️ 常驻断言 ⑥⑦ 随 `_cases.length` 自动变为 **19/19**（hit/miss 两向）。
+//   **指纹防护**：本文件新增 `_kReshellForbidden` 指纹表 + 常驻卡死断言
+//     （与 `reshell` 文件常驻断言③ 同等），只对这 4 条 N- 样本生效，
+//     防其未来被改回 KB 原文/古代外壳形态（原 15 条古代外壳不受此约束）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -217,6 +220,42 @@ const List<String> _kFacetToolization = [
   '送人头',
   '剧情需要他',
   '当剧情需要',
+];
+
+/// D6.9 换壳并入指纹表（与 `p029_negative_sample_reshell_test.dart` 的
+/// `_kReshellForbidden` 同源同表）：KB 原文示例词 + 原古代外壳指纹词。
+///
+/// 用途：**只**对本文件 D6.9 并入的 4 条换壳样本（`N-C1`/`N-D1`/`N-D3`/`N-D4`）
+/// 做静态卡死（见下方「D6.9 换壳并入样本指纹卡死」常驻测试）——防止未来把这 4 条
+/// 的 probe 改回古代官场/医馆/世家/教派/商号外壳（那样就与 KB few-shot 原文同源，
+/// 退化成「模型认得这段」而非「按判据独立判断」，正是 D6.8 §4-189 换壳要消除的瑕疵）。
+/// ⚠️ 不得对全部 `_cases` 套用：原样本本就是古代外壳（`D1` 含「地契」、
+///    `D3` 含「祭田/印子钱/族老」、`D4` 含「掌教/香火田/灯油钱」），命中属正常。
+const List<String> _kReshellForbidden = [
+  '墨大夫',
+  '韩立',
+  '夺舍',
+  '元寿',
+  '千军万马',
+  '送人头',
+  '恼羞成怒',
+  '祭田',
+  '印子钱',
+  '族老',
+  '掌教',
+  '香火田',
+  '灯油钱',
+  '染坊',
+  '地契',
+  '黑旗',
+  '死士',
+  '碗沿',
+  '魔教',
+  '崖边',
+  '知府',
+  '师爷',
+  '布商',
+  '账房',
 ];
 
 /// 单条负样本。四带对应 manual_6 的 ①~④ 条例外；`band` 仅作分组标题，
@@ -740,6 +779,28 @@ void main() {
             corpus,
             contains(a),
             reason: '${c.id} 的判据锚点「$a」未在知识库中找到 ⇒ 该样本可能锚在虚空',
+          );
+        }
+      }
+    });
+
+    // ★ D6.9（2026-10-13 · 舰长「D 系列收尾直接批」）：换壳并入样本的指纹卡死。
+    //   与 `p029_negative_sample_reshell_test.dart` 常驻断言③ 同等防护 ——
+    //   并入正式集后，这 4 条的 probe 不得被未来改回 KB 原文/古代外壳形态。
+    test('D6.9 换壳并入样本指纹卡死（N-C1/N-D1/N-D3/N-D4）：probe 不得回含 KB 原文/原外壳指纹词', () {
+      const mergedIds = ['N-C1', 'N-D1', 'N-D3', 'N-D4'];
+      for (final id in mergedIds) {
+        final c = _cases.firstWhere(
+          (e) => e.id == id,
+          orElse: () => throw StateError('缺少 D6.9 换壳并入样本 $id'),
+        );
+        for (final f in _kReshellForbidden) {
+          expect(
+            c.probe.contains(f),
+            isFalse,
+            reason:
+                '${c.id} 的 probe 含同源指纹「$f」⇒ 换壳外壳被改回古代/KB 同源形态，'
+                'D6.9 并入失效（防未来被改）',
           );
         }
       }
