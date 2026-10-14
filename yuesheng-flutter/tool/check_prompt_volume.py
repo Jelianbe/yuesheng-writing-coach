@@ -62,6 +62,20 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   并登记覆盖缺口：运行时 system 消息注入通道（F07/后续 D2 画像）不经
   skill dispatcher ⇒ **不在本脚本计量面内**，其增量须在触该通道的批次单独实测。
 
+· 2026-10-14 第七次（D-6 协议收敛 + 2a 遗留对齐 · 均为舰长批准）：
+  **受控组 diagnosis 两组各 +122**（56,045→56,167 · 54,262→54,384）、
+  **force 组 66,348→66,296（下调 52）**、**对照组 7 组各 +26**。
+  逐键对账（0761efc2→HEAD，三份快照实测互证）：
+  - diagnosis +122 = fa9360c4 +170（D-6 协议收敛五处注入段：输出规范第 4 条 /
+    JSON 括注 / 主次排序尾注等）+ b02172b4 −74（舰长基线措辞对齐精简）
+    + 3423d0c1 +26（2a 的 skills_l1_core_p2:326 对齐，L1 常驻进所有组）；
+  - 对照组 +26 = 3423d0c1 同源（L1 常驻）；D-6 两轮对照组实测逐键为 0
+    （协议改动全部落在 diagnosis 组专属的 _kIndexFooter，不在对照组注入面）；
+  - force −52：起点勘误——甲-1 贴的 66,348 之后已有批次实际回落至 66,270
+    （0761efc2 实测）未贴线（存量漂移），2a +26 ⇒ 66,296。本次重贴为收紧。
+  ⚠️ 与前两次「必须上移」同判据：读数确实变了（三份锚点快照互证），不上移
+    会让门禁永久红。方向均已获舰长批准（D-6 改协议 + 2a 落实）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -129,14 +143,18 @@ ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'skill_prompt_anchor.json')
 
 # 舰长 2026-10-05 裁定的红线（= A2/A3 批落地后的实测值）
 REDLINE = {
-    # ★ 2026-10-12 D1.5 治理批重贴实测值（+572，逐键对账见头注「红线沿革」第六次；
-    # 方向 = 清偿甲-1 之后 7 个批次的存量越线，不是新增预算）。
-    'diagnosis_yuesheng': 56045,
-    'diagnosis_p1_yuesheng': 54262,
+    # ★ 2026-10-14 第七次重贴实测值（+122 / force −52，逐键对账见头注
+    # 「红线沿革」第七次；方向 = D-6 协议收敛（舰长批准 R-027 改协议路线
+    # fa9360c4+b02172b4）+ 2a 遗留对齐（3423d0c1）的已批准文案增量净额，
+    # 不是新增预算）。
+    'diagnosis_yuesheng': 56167,
+    'diagnosis_p1_yuesheng': 54384,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
-    'beginner_p3_yuesheng_forceSceneFirst': 66348,
+    # ★ 2026-10-14 重贴 66296：甲-1 后某批已实际回落至 66270 未贴线（存量
+    #   漂移，非本批造成），2a 对齐 +26 ⇒ 66296。方向 = 下调收紧，贴实测。
+    'beginner_p3_yuesheng_forceSceneFirst': 66296,
 }
 # 对照组：这些组本批不应增长（beginner 组不涉及新症候）
 MUST_NOT_GROW = [
@@ -229,15 +247,15 @@ def main():
 #
 # ⇒ 区分点不是「改动该不该做」，而是「**读数有没有变**」（§4-159）。
 MUST_NOT_GROW_BASE = {
-    # ★ 2026-10-12 D1.5 治理批重贴（6 组 +70 / beginner_gentle +91，逐键对账见
-    # 头注「红线沿革」第六次；beginner_gentle 多出的 +21 来自 a04fcf83 单独 +13）。
-    'beginner_gentle': 64369,
-    'beginner_yuesheng': 64335,
-    'beginner_sensei': 64203,
-    'beginner_p1_yuesheng': 64026,
-    'beginner_p3_yuesheng': 65809,
-    'beginner_p4_yuesheng': 65809,
-    'none_p0_yuesheng': 29993,
+    # ★ 2026-10-14 第七次重贴（7 组各 +26，逐键对账见头注「红线沿革」第七次；
+    # 来源 = 3423d0c1 的 skills_l1_core_p2:326 收敛语义对齐——L1 常驻进每组）。
+    'beginner_gentle': 64395,
+    'beginner_yuesheng': 64361,
+    'beginner_sensei': 64229,
+    'beginner_p1_yuesheng': 64052,
+    'beginner_p3_yuesheng': 65835,
+    'beginner_p4_yuesheng': 65835,
+    'none_p0_yuesheng': 30019,
 }
 
 
