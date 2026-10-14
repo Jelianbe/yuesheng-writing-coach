@@ -175,7 +175,12 @@ String buildStructuredSyndromeContext(
     activeFocus,
     focusId,
   );
-  final body = '$header\n\n---\n\n${built.sections.join('\n\n---\n\n')}';
+  // H6 动作1（2026-10-14 舰长批准）：prior_diagnosis 元信息标注（批1 H6
+  // 三路证实既有结论无溯源、run4/6 实拍 24 样本 suspected 全部落库待注入）。
+  final metaNote = _buildPriorDiagnosisMetaNote(sortedProblems);
+  final headerWithMeta = metaNote.isEmpty ? header : '$header\n\n$metaNote';
+  final body =
+      '$headerWithMeta\n\n---\n\n${built.sections.join('\n\n---\n\n')}';
 
   // 2026-08-18 批次：文笔画像→技法旁路段（无候选时调用方传 null，零成本）
   if (styleTechniqueSection == null || styleTechniqueSection.isEmpty) {
@@ -339,6 +344,26 @@ String _buildTruncationNotice(List<String> skippedIds) {
       '由于本轮症候段预算 ${ContextBudget.syndromeSectionBudget} chars 耗尽，'
       '以下症候未注入详情：${skippedIds.join('、')}。'
       '回复时不要主动展开这些症候；如需诊断请引导学员聚焦当前教学焦点。';
+}
+
+/// H6 动作1（2026-10-14 舰长批准）：prior_diagnosis 元信息标注。
+///
+/// 活跃症候中存在「待确认」（= 上一轮模型报出、未经用户确认，suspected/
+/// null）条目时，在注入头部追加来源标注，防既有结论无溯源、被当「成立」
+/// 依据复用（批1 H6 三路证实）。confirmed/rejected/ignored/dismissed 均
+/// 为用户已裁决状态，不受此标注约束（用户主权 R-009）；rejected 另有
+/// 「学员已质疑」独立标注链路（P0-3），此处不重复包裹。
+String _buildPriorDiagnosisMetaNote(List<ActiveSyndromeView> problems) {
+  final hasSuspected = problems.any(
+    (p) =>
+        p.confirmationStatus == null ||
+        p.confirmationStatus == ConfirmationStatus.suspected,
+  );
+  if (!hasSuspected) return '';
+  return '### 来源标注（prior_diagnosis 元信息）\n\n'
+      '下方标注 [待确认] 的条目是上一轮模型自身输出，未经用户确认，'
+      '不得单独作为「成立」依据；[已确认] 等条目为用户已裁决的诊断，'
+      '不受此标注约束。';
 }
 
 /// 症候段头部说明（R-019 拆出）。

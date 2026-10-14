@@ -1,20 +1,18 @@
 // ─────────────────────────────────────────────────────────────
-// teaching_arbiter — 五阀联动编排层（D3 批落地）
+// teaching_arbiter — 五阀联动编排层（D3 批落地；H6 动作2 阀1 启用）
 //
 // 职责：把原本散落在 message_injector / diagnosis_flow_handler /
 // message_assembly_service 的 5 阀调用收成一条显式管线，统一调用入口。
 //
-// 本批边界（方案 X · 守「不触 R-027」）：
-//   - arbiter 是「编排层 + trace 容器」
-//   - shouldTeach 字段仅作 trace + 未来 D3.5/D7 闸门决策的预留位
-//   - **不闸门**：shouldTriggerTeacherForDiagnosis=false 时，
-//     resolveTeachingFocus / buildTrainingInputForActiveSyndrome 仍照常调用
-//   - 各阀内部判据 100% 不动（focus_resolver 6 门 / chat_gates 阈值 /
-//     training_input_builder 构造逻辑）
-//   - 注入路径输出内容字节级不变（守 R-027）
+// ★ H6 动作2（2026-10-14 舰长批准启用）：阀 1 起真闸门——
+//   shouldTriggerTeacherForDiagnosis=false（活跃症候无 L2/L3 且总数 <3）
+//   ⇒ 跳过阀 2/阀 3：本轮不解析教学焦点（activatedFocusId=null，症候段
+//   退为概览注入）、不构造训练输入（trainingInput=null，训练 FSM 不注入）。
+//   shouldTeach=true 时行为与 D3 批完全一致。
+//   阀 1 判据本身 = chat_gates 既有阈值，本批零改动。
 //
-// 5 阀联动顺序（推荐）：
-//   1. shouldTriggerTeacherForDiagnosis(syndromes) —— trace，不闸门
+// 5 阀联动顺序：
+//   1. shouldTriggerTeacherForDiagnosis(syndromes) —— 闸门（H6 动作2 启用）
 //   2. resolveTeachingFocus(focusInput) —— 教哪个（输出 activatedFocusId）
 //   3. buildTrainingInputForActiveSyndrome(...) —— 怎么教（输出 trainingInput）
 //   ※ isInFlow / shouldBypassFlowWindow 由 message_assembly_service 调用，
@@ -36,7 +34,7 @@ import 'training_input_builder.dart';
 
 /// arbiter 输入（编排五阀所需上下文）
 class ArbitrationInput {
-  /// 用于 shouldTriggerTeacherForDiagnosis（trace，当前不闸门）
+  /// 用于 shouldTriggerTeacherForDiagnosis（H6 动作2：真闸门）
   final List<Syndrome> syndromes;
 
   /// 用于 resolveTeachingFocus（教哪个）
@@ -84,9 +82,10 @@ class ArbitrationResult {
   /// 来自 buildTrainingInputForActiveSyndrome（怎么教）
   final EvaluationSummaryInput? trainingInput;
 
-  /// 来自 shouldTriggerTeacherForDiagnosis（trace + D3.5/D7 闸门预留位）
+  /// 来自 shouldTriggerTeacherForDiagnosis（H6 动作2 起为真闸门判定）
   ///
-  /// ⚠️ 当前 arbiter 不基于此字段闸门注入路径（守「不触 R-027」边界）
+  /// false ⇒ focusOutput 为「未激活」占位（activatedFocusId=null）、
+  /// trainingInput=null，阀 2/阀 3 不调用
   final bool shouldTeach;
 
   /// 调试用 trace（每阀调用结果按顺序记录）
@@ -100,17 +99,33 @@ class ArbitrationResult {
   });
 }
 
-/// 五阀联动编排入口（D3 批 · 方案 X 不闸门）
+/// 五阀联动编排入口（D3 批；H6 动作2 起阀 1 为真闸门）
 ///
 /// 调用顺序：
-///   1. shouldTriggerTeacherForDiagnosis → 写入 shouldTeach（trace）
-///   2. resolveTeachingFocus → 取 activatedFocusId
-///   3. buildTrainingInputForActiveSyndrome → 取 trainingInput
+///   1. shouldTriggerTeacherForDiagnosis → shouldTeach（H6 动作2：闸门）
+///   2. resolveTeachingFocus → 取 activatedFocusId（仅 shouldTeach=true）
+///   3. buildTrainingInputForActiveSyndrome → 取 trainingInput（仅 shouldTeach=true）
 ///
-/// 守「不触 R-027」边界：shouldTeach=false 时仍调 #2 #3（注入路径输出不变）
+/// shouldTeach=false ⇒ 跳过 #2 #3（activatedFocusId=null / trainingInput=null）
 Future<ArbitrationResult> arbitrate(ArbitrationInput input) async {
   final trace = <String>[];
   final shouldTeach = _evaluateShouldTeach(input.syndromes, trace);
+  // H6 动作2（2026-10-14 舰长批准启用）：阀 1 闸门生效。
+  if (!shouldTeach) {
+    _appendTrace(trace, '阀1 闸门生效：shouldTeach=false ⇒ 跳过阀2/阀3');
+    return ArbitrationResult(
+      focusOutput: const ResolveFocusOutput(
+        activatedFocusId: null,
+        source: FocusSource.none,
+        reason:
+            '阀1 闸门：活跃症候未达教学触发条件（无 L2/L3 且总数 <3），'
+            '本轮不激活教学焦点',
+      ),
+      trainingInput: null,
+      shouldTeach: false,
+      arbitrationTrace: trace,
+    );
+  }
   final focusOutput = _resolveActivatedFocus(input.focusInput, trace);
   final trainingInput = await _buildTrainingInput(
     focusOutput.activatedFocusId,
@@ -125,7 +140,7 @@ Future<ArbitrationResult> arbitrate(ArbitrationInput input) async {
   );
 }
 
-/// 阀 1：shouldTriggerTeacherForDiagnosis（trace，不闸门）
+/// 阀 1：shouldTriggerTeacherForDiagnosis（H6 动作2：闸门）
 bool _evaluateShouldTeach(List<Syndrome> syndromes, List<String> trace) {
   final shouldTeach = shouldTriggerTeacherForDiagnosis(syndromes);
   _appendTrace(trace, '阀1 shouldTriggerTeacherForDiagnosis=$shouldTeach');
