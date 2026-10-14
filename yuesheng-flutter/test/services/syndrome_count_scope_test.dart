@@ -91,11 +91,11 @@ const String kAttitude = 'lib/services/skills_attitude.dart';
 const String kL1P1 = 'lib/services/skills_l1_core_p1.dart';
 const String kL1P2 = 'lib/services/skills_l1_core_p2.dart';
 
-/// 收敛侧分工说明（ADR-C67 §3 改动 ①；D-6 2026-10-14 改锁收敛报出语义）
-const String kUncappedScopeNote = '本条只约束诊断块 JSON 的报出范围';
+/// 收敛侧分工说明（ADR-C67 §3 改动 ①；D-6 2026-10-14 改锁按判据收敛报出语义）
+const String kUncappedScopeNote = '本条只约束诊断块 JSON 的报出集合';
 
 /// 收敛报出规则原文（④ 的基线：D-6 必要条件门）
-const String kConvergenceRule = '判据不满足就不报，证据不足时宁可不报';
+const String kConvergenceRule = '宁缺勿滥，不凑数';
 
 /// 封顶侧三处分工说明（ADR-C67 §3 改动 ③④⑤），按文件对应
 const Map<String, String> kCappedScopeNotes = {
@@ -214,7 +214,7 @@ void main() {
       const fake =
           'final String kSyndromeIndexContent = ...\n'
           'final String kSyndromeManualContent = ...\n'
-          '本条只约束诊断块 JSON 的报出范围';
+          '本条只约束诊断块 JSON 的报出集合';
       final idxManualFake = fake.indexOf(
         'final String kSyndromeManualContent =',
       );

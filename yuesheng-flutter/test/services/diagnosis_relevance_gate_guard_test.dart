@@ -64,8 +64,8 @@ const List<String> kTightMarkers = ['最终裁决步骤，从严', '一律不算
 /// 收紧时必须消失的旧宽松措辞
 const String kLooseGate = '只有当答案是';
 
-/// 数量规则原文（merge prompt 侧，D-6 收敛报出）——③ 的锁定基线
-const String kNumberRuleInMergePrompt = '数量原则（收敛报出）：只报「必要条件成立」的症候';
+/// 数量规则原文（merge prompt 侧，D-6 按判据收敛报出）——③ 的锁定基线
+const String kNumberRuleInMergePrompt = '数量原则（按判据收敛报出）：只有当某症候的成立条件能够逐条满足';
 
 void main() {
   group('① 收紧标记存在（生效侧 + 防御侧）', () {
@@ -134,7 +134,10 @@ void main() {
       expect(_count('只有当答案是"是"时，这条症候才进入最终输出。', kLooseGate), 1);
       expect(_count('叙事合理性判定（最终裁决步骤，从严）：', '最终裁决步骤，从严'), 1);
       expect(
-        _count('数量原则（收敛报出）：只报「必要条件成立」的症候——成立条件逐条满足。', kNumberRuleInMergePrompt),
+        _count(
+          '数量原则（按判据收敛报出）：只有当某症候的成立条件能够逐条满足、且你能为它引用可指认的原文证据时，才报出该症候。',
+          kNumberRuleInMergePrompt,
+        ),
         1,
       );
       expect(_count('数量原则：不限制输出问题数量', kNumberRuleInMergePrompt), 0);

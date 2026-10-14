@@ -97,12 +97,7 @@ const String kOutputFormatHeading = '## 输出格式';
 /// ④ 的反向基线：既有规则原文（D-6 后收敛规则为现行原文；其余只补不删）
 const Map<String, List<String>> kUntouchedRules = {
   kDiagnosisP1: ['教练在第一次诊断前需要确认学员的作品体裁'],
-  kSyndromeKb: [
-    '判据不满足就不报，证据不足时宁可不报',
-    kOutputFormatHeading,
-    kH3Natural,
-    kH3Json,
-  ],
+  kSyndromeKb: ['宁缺勿滥，不凑数', kOutputFormatHeading, kH3Natural, kH3Json],
 };
 
 /// 取 `heading` 之后、下一个 `###` 或 `##` 标题之前的区间文本。
@@ -366,17 +361,11 @@ void main() {
         isTrue,
         reason: '自然说明段应提及「聚焦」，表明它受教学层聚焦规则约束',
       );
-      // JSON 段：必须提到「收敛报出」+「最多 5 条」，即声明自己按 D-6
-      // 收敛语义执行；同时防 N28 反向失败——不因聚焦 1-2 个而砍到只剩 1-2 条
+      // JSON 段：必须提到「按判据收敛报出」，即声明自己按 D-6 收敛语义执行
       expect(
-        json.contains('收敛报出'),
+        json.contains('按判据收敛报出'),
         isTrue,
-        reason: 'JSON 段应提及「收敛报出」，表明 syndromes 数组按 D-6 必要条件门执行',
-      );
-      expect(
-        json.contains('最多 5 条'),
-        isTrue,
-        reason: 'JSON 段应提及「最多 5 条」，与诊断输出规范第 4 条的上限一致',
+        reason: 'JSON 段应提及「按判据收敛报出」，表明 syndromes 数组按 D-6 必要条件门执行',
       );
     });
   });
