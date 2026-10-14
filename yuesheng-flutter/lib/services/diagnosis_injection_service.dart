@@ -35,6 +35,7 @@ import 'package:writingcoach/services/llm_client.dart' show ChatMessage;
 import 'package:writingcoach/services/chat_context_builder.dart'
     show ReferenceItem;
 import 'package:writingcoach/types/teaching_types.dart';
+import 'package:writingcoach/services/prompt_sanitizer.dart';
 import 'package:writingcoach/services/chat_message_types.dart';
 import 'package:writingcoach/services/chat_service_diagnosis_focus.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
@@ -184,9 +185,15 @@ class DiagnosisInjectionService {
     final m = messages[lastUser];
     // 批次98：诊断全文运行时注入（不落库）—— 对话历史只展示简洁消息，
     // AI 侧仍收到全文；历史重放不含全文（避免长对话被整章内容稀释）。
+    // ★ D-1 修复（2026-10-14）：清洗调用在 appendHistoryAndConstraints（步骤7）
+    //   执行，而本方法在其后（chat_service._sendMessageCore 步骤7.5）才把整章
+    //   正文拼入 user 消息 ⇒ 正文此前从未过 sanitizeUserContent，伪指令
+    //   （<system>/[INST]/整行 ---）可借正文直达模型。现复用同一纯函数在
+    //   **拼接前**清洗（零 prompt 文案改动，不触 R-027）；「## 待诊断全文」
+    //   标题即为正文与其他内容之间的既有分隔边界，沿用不动。
     final fullTextBlock = chapterFullText == null || chapterFullText.isEmpty
         ? ''
-        : '\n\n## 待诊断全文\n\n$chapterFullText';
+        : '\n\n## 待诊断全文\n\n${sanitizeUserContent(chapterFullText)}';
     final directExplain = await _buildDirectExplainBlock();
     // ADR-C134：fading 支架渐退 override 块（运行时条件注入；无复发/失败 → ''）。
     final fadingBlock = await _buildFadingBlock(sessionId);
