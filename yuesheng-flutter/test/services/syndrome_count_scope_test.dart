@@ -100,7 +100,7 @@ const String kConvergenceRule = '宁缺勿滥，不凑数';
 /// 封顶侧三处分工说明（ADR-C67 §3 改动 ③④⑤），按文件对应
 const Map<String, String> kCappedScopeNotes = {
   kAttitude: '只约束本轮讲解',
-  kL1P1: '只约束本轮讲解，不影响诊断块的全量识别',
+  kL1P1: '只约束本轮讲解，不影响诊断块的报出范围',
   kL1P2: '只约束本轮讲解范围',
 };
 
