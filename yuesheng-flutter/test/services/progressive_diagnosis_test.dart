@@ -247,7 +247,7 @@ void main() {
       // 必含跨片段合并规则
       expect(prompt, contains('同一个症候在不同分片中出现的信号'));
       expect(prompt, contains('严重度取最高'));
-      expect(prompt, contains('不限制输出问题数量'));
+      expect(prompt, contains('收敛报出'));
       expect(prompt, contains('[YS_DIAGNOSIS]'));
       expect(prompt, contains('[/YS_DIAGNOSIS]'));
       // 两个分片的分析结果都包含在 prompt 里

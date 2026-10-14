@@ -1,26 +1,30 @@
 // ─────────────────────────────────────────────────────────────
-// 症候数量上限「分工说明」护栏（ADR-C67 / 台账 N28）
+// 症候数量「分工说明」护栏（ADR-C67 / 台账 N28；D-6 收敛改协议 2026-10-14 更新）
 //
 // 病因：无上限侧（症候库「识别到多少就报多少」）与封顶侧（教学层
 //   「每轮聚焦 1-2 个症候」）**语义其实可分**——前者管诊断块 JSON 的
 //   全量识别，后者管本轮自然语言讲解覆盖几条——但 prompt 从未明说，
 //   模型只能猜（台账 2146-2149，gp-13 独立命中同一问题）。
 //
+// ★ D-6（2026-10-14 舰长批准改协议路线）：「不限制数量全量识别」已被
+//   「收敛报出（必要条件门）」取代——判据成立才报、最多 5 条。本护栏
+//   随之改锁新语义：无上限侧的分工说明改为收敛侧的分工说明。
+//
 // 本护栏守四条不变量：
-//   ① 无上限侧有「只约束诊断块 JSON」的分工说明
+//   ① 收敛侧有「只约束诊断块 JSON」的分工说明
 //   ② 封顶侧三处各有「只约束本轮讲解」的分工说明（按**出现次数**判，
 //      不用 contains —— 见 ADR-C66 §4.2 / AGENTS.md V4.7 的假判据教训）
 //   ③ 双向成对：任一侧的说明必须提及对向，防止只补一侧
-//   ④ 数量规则本身没被偷偷改掉（消歧 ≠ 改规则）
+//   ④ 数量规则没被偷偷改回「全量识别」（D-6 ≠ 可逆开关）
 //   ⑤ **生效性**：分工说明必须落在会被注入的 kSyndromeIndexContent 区间内，
 //      不得落在 kSyndromeManualContent 区间——后者按症候 ID 切片注入，
 //      写在那里模型根本看不到（ADR-C67 §2.4，本批实测过一次）
 //
 // 变异验证：
-//   A 删掉无上限侧分工说明   → ① ③ 失败
-//   B 删掉封顶侧任一说明     → ② ③ 失败
+//   A 删掉收敛侧分工说明       → ① ③ 失败
+//   B 删掉封顶侧任一说明       → ② ③ 失败
 //   C 把「1-2 个」改成「1-3 个」→ ④ 失败
-//   D 把「不限制问题数量」改成「最多 3 个」→ ④ 失败
+//   D 把「收敛报出」改回「识别到多少就报多少」→ ④ 失败
 //   E 把说明挪到 kSyndromeManualContent 区间 → ⑤ 失败
 // ─────────────────────────────────────────────────────────────
 
@@ -87,8 +91,11 @@ const String kAttitude = 'lib/services/skills_attitude.dart';
 const String kL1P1 = 'lib/services/skills_l1_core_p1.dart';
 const String kL1P2 = 'lib/services/skills_l1_core_p2.dart';
 
-/// 无上限侧分工说明（ADR-C67 §3 改动 ①）
-const String kUncappedScopeNote = '本条只约束诊断块 JSON 的全量识别';
+/// 收敛侧分工说明（ADR-C67 §3 改动 ①；D-6 2026-10-14 改锁收敛报出语义）
+const String kUncappedScopeNote = '本条只约束诊断块 JSON 的报出范围';
+
+/// 收敛报出规则原文（④ 的基线：D-6 必要条件门）
+const String kConvergenceRule = '判据不满足就不报，证据不足时宁可不报';
 
 /// 封顶侧三处分工说明（ADR-C67 §3 改动 ③④⑤），按文件对应
 const Map<String, String> kCappedScopeNotes = {
@@ -99,14 +106,14 @@ const Map<String, String> kCappedScopeNotes = {
 
 /// 未被改动的数量规则原文（④ 的基线）
 const Map<String, String> kUntouchedRules = {
-  kSyndromeKb: '4. 不限制问题数量——识别到多少就报多少',
+  kSyndromeKb: kConvergenceRule,
   kAttitude: '每轮聚焦 1-2 个症候',
   kL1P1: '一次聚焦 1-2 个症候',
   kL1P2: '1-2 个症候',
 };
 
 void main() {
-  group('① 无上限侧有「只约束诊断块 JSON」的分工说明', () {
+  group('① 收敛侧有「只约束诊断块 JSON」的分工说明', () {
     test('syndrome_kb_content.dart', () {
       final src = _readSrc(kSyndromeKb);
       expect(
@@ -114,7 +121,7 @@ void main() {
         1,
         reason:
             '$kSyndromeKb 中「$kUncappedScopeNote」应出现 1 次。\n'
-            '（ADR-C67 §3 改动 ①：症候库的"不限制数量"必须声明只约束诊断块）',
+            '（ADR-C67 §3 改动 ① + D-6：收敛报出规则必须声明只约束诊断块）',
       );
     });
   });
@@ -135,12 +142,12 @@ void main() {
   });
 
   group('③ 分工说明双向成对（防止只补一侧）', () {
-    test('无上限侧提及「讲解」，封顶侧提及「诊断块」', () {
+    test('收敛侧提及「讲解」，封顶侧提及「诊断块」', () {
       final uncapped = _readSrc(kSyndromeKb);
       expect(
         _count(uncapped, '讲解'),
         greaterThanOrEqualTo(1),
-        reason: '无上限侧必须提到「讲解」，否则模型无从知道两者是两件事',
+        reason: '收敛侧必须提到「讲解」，否则模型无从知道两者是两件事',
       );
 
       // 逐处断言，不用「总数 >= 处数」——总数判据允许某处缺失被别处重复掩盖，
@@ -155,7 +162,7 @@ void main() {
     });
   });
 
-  group('④ 数量规则本身未被改动（消歧 ≠ 改规则）', () {
+  group('④ 数量规则未被改回旧语义（D-6 收敛报出，不可静默回退）', () {
     for (final entry in kUntouchedRules.entries) {
       test(entry.key, () {
         final src = _readSrc(entry.key);
@@ -164,7 +171,8 @@ void main() {
           greaterThanOrEqualTo(1),
           reason:
               '${entry.key} 中数量规则原文「${entry.value}」缺失。\n'
-              '（ADR-C67 §3：本批只补分工说明，不得改动任何数量规则）',
+              '（D-6 2026-10-14：收敛报出为现行规则，回退「全量识别」须先'
+              '经舰长批准重开协议，不得在这里偷改）',
         );
       });
     }
@@ -206,7 +214,7 @@ void main() {
       const fake =
           'final String kSyndromeIndexContent = ...\n'
           'final String kSyndromeManualContent = ...\n'
-          '本条只约束诊断块 JSON 的全量识别';
+          '本条只约束诊断块 JSON 的报出范围';
       final idxManualFake = fake.indexOf(
         'final String kSyndromeManualContent =',
       );
