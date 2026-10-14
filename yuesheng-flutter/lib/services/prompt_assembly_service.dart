@@ -245,14 +245,20 @@ class PromptAssemblyService {
 
   // ── 历史追加 + 约束 ──────────────────────────────────────────────────
 
-  /// 7. 追加历史消息 + 每轮必变提示 + 纪律重申 + token 预算闸门（R-019 编排 helper）。
+  /// 7. 追加历史消息 + 每轮必变提示 + 纪律重申（R-019 编排 helper）。
   ///
   /// ★ A-1（2026-09-15）：[sessionId]/[content] 为「每轮必变提示」注入所需。
   /// 顺序契约（上下文缓存前缀稳定性）：
   ///   system prompt → 稳定注入段 → Live 约束 → 历史 → **本方法注入的
-  ///   意图/颗粒度提示** → 纪律重申 → 预算闸门
+  ///   意图/颗粒度提示** → 纪律重申
   /// 意图/颗粒度依赖当前 user 消息与会话滚动意图窗口，逐轮必变；若留在
   /// 注入段中段，会让其后的一切（含追加式历史）每轮全价 miss。
+  ///
+  /// ★ D-2/S4（2026-10-14）：本方法**不再**收尾执行预算闸门——原位置在
+  ///   装配中段，其后主链仍追加诊断协议后缀/「## 待诊断全文」/全貌块/
+  ///   fading 块/附件，均不计费（批1 H1 缺陷，M1 known-fail）。闸门移至
+  ///   全部追加之后的最终位置 = [applyFinalBudgetGate]，由宿主在
+  ///   _sendMessageCore 附件挂载后调用。
   void appendHistoryAndConstraints(
     List<Message> history,
     List<ChatMessage> messages,
@@ -284,8 +290,40 @@ class PromptAssemblyService {
         content: _wholeChapterBlock,
       );
     }
+  }
+
+  /// D-2/S4 终局预算闸门（2026-10-14 舰长批准随批；M1 转绿）。
+  ///
+  /// 批1 H1（四路证实）：原闸门在装配中段（appendHistoryAndConstraints
+  /// 尾部），其后主链仍追加诊断协议后缀/「## 待诊断全文」/全貌块/fading
+  /// 块/附件，均不过闸 ⇒ 裁剪决策在不知追加量的情况下做出。
+  ///
+  /// 选型（a）单闸门移到全部追加之后的最终位置，理由：
+  ///   - 裁剪语义不变：仍按 [TokenBudgetTable.degradePriority] 顺序整段裁
+  ///     **已标记的可降级阶段**（L2 组最先…history 最后；协议块/纪律块/
+  ///     临场约束为保底层永不裁）——与预算表头部声明的优先级一致；
+  ///   - 幂等且无索引漂移：单闸门只跑一次；追加链只「末尾追加/原位替换」
+  ///     不删消息 ⇒ stageIndexes 全程有效（若保留原闸门再补第二道，
+  ///     首道裁剪会使索引移位，第二道会裁错消息——候选 (b) 否决）；
+  ///   - **当前 user 消息显式豁免 history 裁剪**：它是诊断对象/正文本体
+  ///     载体（含「## 待诊断全文」），裁掉即毁掉本轮诊断——超限不可归零时
+  ///     宁可 overBudget 上报（M1 门槛定义允许「或显式登记为已接受风险」），
+  ///     绝不切正文本体；
+  ///   - 候选 (c)（闸门前声明全部注入项）需要预知运行期条件块（fading/
+  ///     全貌/附件）的体积，等于把闸门逻辑复制一份，否决。
+  void applyFinalBudgetGate(
+    List<ChatMessage> messages,
+    Map<String, List<int>> stageIndexes,
+  ) {
+    final lastUser = messages.lastIndexWhere((m) => m.role == 'user');
+    final adjusted = <String, List<int>>{
+      for (final e in stageIndexes.entries)
+        e.key: (e.key == BudgetStageNames.history && lastUser >= 0)
+            ? e.value.where((i) => i != lastUser).toList()
+            : e.value,
+    };
     _logBudgetOutcome(
-      TokenBudgetGuard.apply(messages, stageIndexes: stageIndexes),
+      TokenBudgetGuard.apply(messages, stageIndexes: adjusted),
       messages,
     );
   }

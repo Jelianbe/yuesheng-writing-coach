@@ -718,6 +718,9 @@ typedef _SendContext = ({
   TeachingSubphase? currentSubphase,
   bool rapidFire,
   bool flowBypassed,
+
+  /// D-2/S4：终局预算闸门的阶段索引（追加链只追加/原位替换，索引全程有效）
+  Map<String, List<int>> stageIndexes,
 });
 
 extension ChatServiceSend on ChatService {
@@ -749,6 +752,8 @@ extension ChatServiceSend on ChatService {
       // （ADR-0004 步 5 批 1：诊断簇已抽出独立类，此处改调服务）
       await _applyDiagnosisInjection(ctx, content, options, sessionId);
       _attachUserAttachments(ctx.messages, options); // C147 图片挂最后 user 消息
+      // D-2/S4 终局闸门：追加链（协议/全文/全貌/fading/附件）全部计费（M1）。
+      _assemblyService.applyFinalBudgetGate(ctx.messages, ctx.stageIndexes);
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
         messages: ctx.messages,

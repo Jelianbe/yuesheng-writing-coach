@@ -76,6 +76,9 @@ typedef AssembledContextResult = ({
 });
 
 /// 装配后的发送上下文（对应原 `_SendContext`，逐字段对齐）。
+///
+/// ★ D-2/S4（2026-10-14）：新增 [stageIndexes] 透传——终局预算闸门
+///   （applyFinalBudgetGate）由宿主在全部追加之后调用，需要阶段索引。
 typedef SendContextResult = ({
   List<ChatMessage> messages,
   String userMessageId,
@@ -86,6 +89,7 @@ typedef SendContextResult = ({
   TeachingSubphase? currentSubphase,
   bool rapidFire,
   bool flowBypassed,
+  Map<String, List<int>> stageIndexes,
 });
 
 /// 喂 LLM 的 history 副本需剔除的消息类型白名单（单一真源）。
@@ -271,7 +275,9 @@ class MessageAssemblyService {
     assembled.messages.add(
       ChatMessage(role: 'system', content: kLiveOutputConstraints),
     );
-    // 7. 追加历史消息 + 每轮必变提示 + 纪律重申 + token 预算闸门
+    // 7. 追加历史消息 + 每轮必变提示 + 纪律重申
+    //    （D-2/S4：预算闸门移至发送前终局，见 prompt_assembly_service.
+    //      applyFinalBudgetGate——chat_service 在附件挂载后调用）
     _prompt.appendHistoryAndConstraints(
       loaded.history,
       assembled.messages,
@@ -294,7 +300,20 @@ class MessageAssemblyService {
       currentSubphase: loaded.currentSubphase,
       rapidFire: flow.rapidFire,
       flowBypassed: flow.flowBypassed,
+      stageIndexes: assembled.stageIndexes,
     );
+  }
+
+  /// D-2/S4 终局预算闸门（薄转发到 [PromptAssemblyService]）。
+  ///
+  /// 宿主（chat_service._sendMessageCore）在全部追加（协议后缀/待诊断全文/
+  /// 全貌块/fading/附件）完成之后调用；语义见
+  /// PromptAssemblyService.applyFinalBudgetGate 文档。
+  void applyFinalBudgetGate(
+    List<ChatMessage> messages,
+    Map<String, List<int>> stageIndexes,
+  ) {
+    _prompt.applyFinalBudgetGate(messages, stageIndexes);
   }
 
   /// 1-4. 用户消息落库 + 会话/教学上下文加载（R-019 第二层编排 helper）。
