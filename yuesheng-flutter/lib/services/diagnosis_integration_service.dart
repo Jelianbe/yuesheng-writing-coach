@@ -1,0 +1,297 @@
+// ─────────────────────────────────────────────────────────────
+// diagnosis_integration_service — 诊断整合与决策层 · 阶段一（W-21）
+//
+// 设计稿：docs/designs/2026-10-15-W21-诊断整合与决策层-阶段一-最小整合层与数据契约-设计稿.md
+// 舰长已批（2026-10-15）。A 批 = 四数据契约 + A1 分组 + A4 未决收口；
+// B 批 = A2 全局假设 + A3 焦点候选 + commit 旁路接线。
+//
+// 铁律（设计稿 §四「能用代码保证的不交给模型」）：
+//   - 本服务**零 LLM 调用**：全部输出是既有诊断数据的确定性变换；
+//   - 只读观察者：不新增表、不改 commit 链路、不接教学闸门；
+//   - 纯函数：不改输入；旁路纪律（未来接线时失败静默不阻断主流程）。
+// ─────────────────────────────────────────────────────────────
+
+import '../types/teaching_types.dart';
+import 'merge_convergence.dart' show evidenceJaccard, kEvidenceJaccardThreshold;
+
+// ── 输入契约：诊断条目引用（来自 diagnosis_results 行，不复制原文）──
+
+/// 单条诊断条目的引用视图（A1 分组输入）。
+class DiagnosisEntryRef {
+  final String rowId; // diagnosis_results 行主键
+  final int entryIndex; // 行内 syndromes[] 下标
+  final String syndromeId;
+  final Severity severity;
+  final List<String> evidence;
+  final String chapterId; // 诊断发生时正在写的章节（跨章分组依据）
+  final int createdAtSec; // epoch 秒（台账时间口径）
+
+  const DiagnosisEntryRef({
+    required this.rowId,
+    required this.entryIndex,
+    required this.syndromeId,
+    required this.severity,
+    required this.evidence,
+    required this.chapterId,
+    required this.createdAtSec,
+  });
+
+  String get ref => '$rowId#$entryIndex';
+}
+
+// ── 输出契约（四结构，设计稿 §三）──
+
+/// A1 产物：症候组（同 syndrome_id 为分组主键）。
+class DiagnosisGroup {
+  final String groupId;
+  final String syndromeId;
+
+  /// 全部成员条目引用（含被归并的同章重复——不丢任何引用）。
+  final List<String> memberRefs;
+
+  final int firstSeenSec;
+  final int lastSeenSec;
+
+  /// 独立出现过的章节（同章重复条目不重复计数，见 [kEvidenceJaccardThreshold] 用法）。
+  final List<String> chapterSpan;
+
+  final Severity severityMax;
+  final List<String> evidencePool; // 去重并集
+
+  /// 独立出现次数（= chapterSpan.length；系统性判定 N 的分母，A2/B 批消费）。
+  int get chapterCount => chapterSpan.length;
+
+  /// 同章高重叠被归并的条目数（归并不删引用，仅不重复计数章节）。
+  final int duplicateMergedCount;
+
+  const DiagnosisGroup({
+    required this.groupId,
+    required this.syndromeId,
+    required this.memberRefs,
+    required this.firstSeenSec,
+    required this.lastSeenSec,
+    required this.chapterSpan,
+    required this.severityMax,
+    required this.evidencePool,
+    required this.duplicateMergedCount,
+  });
+}
+
+/// A2 产物（B 批实现，本批仅契约占位）。
+class GlobalHypothesis {
+  final String hypothesisId;
+  final String kind; // 'systematic' | 'structural'
+  final String statement; // 代码模板生成，非 LLM
+  final List<String> sourceGroupIds;
+  final String ruleId;
+  final String status; // active | confirmed | rejected
+
+  const GlobalHypothesis({
+    required this.hypothesisId,
+    required this.kind,
+    required this.statement,
+    required this.sourceGroupIds,
+    required this.ruleId,
+    required this.status,
+  });
+}
+
+/// A3 产物（B 批实现，本批仅契约占位）。
+class TeachingFocusCandidate {
+  final String candidateId;
+  final String syndromeId;
+  final String groupId;
+  final Map<String, num> scoreBreakdown; // 各分量独立可解释
+  final String rationale; // 代码拼接，非 LLM
+  final String status; // proposed（决定权在用户/阶段二）
+
+  const TeachingFocusCandidate({
+    required this.candidateId,
+    required this.syndromeId,
+    required this.groupId,
+    required this.scoreBreakdown,
+    required this.rationale,
+    required this.status,
+  });
+}
+
+/// A4 产物：未决问题（三类显式收口，禁止静默丢弃）。
+class UnresolvedQuestion {
+  static const kindPendingContext = 'pending_context';
+  static const kindInsufficientEvidence = 'insufficient_evidence';
+  static const kindNeedsHuman = 'needs_human';
+
+  final String questionId;
+  final String kind;
+  final String statement; // 代码模板生成
+  final List<String> blockingRefs;
+  final int createdAtSec;
+  final int? resolvedAt; // null = 未决
+
+  const UnresolvedQuestion({
+    required this.questionId,
+    required this.kind,
+    required this.statement,
+    required this.blockingRefs,
+    required this.createdAtSec,
+    this.resolvedAt,
+  });
+}
+
+/// 整合快照（四契约容器；hypotheses/candidates 由 B 批填充）。
+class IntegrationSnapshot {
+  final List<DiagnosisGroup> groups;
+  final List<GlobalHypothesis> hypotheses; // B 批：恒空
+  final List<TeachingFocusCandidate> candidates; // B 批：恒空
+  final List<UnresolvedQuestion> questions;
+
+  const IntegrationSnapshot({
+    required this.groups,
+    required this.hypotheses,
+    required this.candidates,
+    required this.questions,
+  });
+}
+
+// ── A4 输入：外部未决源（pending_context 由 W-15-B 产出；人裁冲突由调用方给）──
+
+/// 未决源条目（pending_context / needs_human 共用形态）。
+class UnresolvedSource {
+  final String statement;
+  final List<String> blockingRefs;
+
+  const UnresolvedSource(this.statement, this.blockingRefs);
+}
+
+// ── A1：分组（纯代码）──
+
+/// 按 syndrome_id 分组；组内「同章 + 证据重叠 ≥ 阈值」的条目归并
+/// （章节不重复计数，但引用全保留——不丢任何落库痕迹）。
+List<DiagnosisGroup> buildDiagnosisGroups(List<DiagnosisEntryRef> entries) {
+  final byId = <String, List<DiagnosisEntryRef>>{};
+  for (final e in entries) {
+    byId.putIfAbsent(e.syndromeId, () => []).add(e);
+  }
+  final groups = <DiagnosisGroup>[];
+  for (final id in byId.keys.toList()..sort()) {
+    groups.add(_buildGroup(id, byId[id]!));
+  }
+  return groups;
+}
+
+DiagnosisGroup _buildGroup(String syndromeId, List<DiagnosisEntryRef> members) {
+  final sorted = List<DiagnosisEntryRef>.of(members)
+    ..sort((a, b) => a.createdAtSec.compareTo(b.createdAtSec));
+  final chapterClusters = <String, List<DiagnosisEntryRef>>{}; // 章 → 簇首条目组
+  var duplicateMerged = 0;
+  for (final e in sorted) {
+    final prior = chapterClusters[e.chapterId];
+    final isDup =
+        prior != null &&
+        prior.any(
+          (p) =>
+              evidenceJaccard(p.evidence, e.evidence) >=
+              kEvidenceJaccardThreshold,
+        );
+    if (isDup) {
+      duplicateMerged++;
+    } else {
+      chapterClusters.putIfAbsent(e.chapterId, () => []).add(e);
+    }
+  }
+  final evidencePool = <String>{};
+  for (final e in sorted) {
+    evidencePool.addAll(e.evidence.where((x) => x.trim().isNotEmpty));
+  }
+  return DiagnosisGroup(
+    groupId: 'dg-$syndromeId',
+    syndromeId: syndromeId,
+    memberRefs: sorted.map((e) => e.ref).toList(),
+    firstSeenSec: sorted.first.createdAtSec,
+    lastSeenSec: sorted.last.createdAtSec,
+    chapterSpan: chapterClusters.keys.toList()..sort(),
+    severityMax: sorted
+        .reduce((a, b) => a.severity.index >= b.severity.index ? a : b)
+        .severity,
+    evidencePool: evidencePool.toList()..sort(),
+    duplicateMergedCount: duplicateMerged,
+  );
+}
+
+// ── A4：未决问题（显式收口）──
+
+/// 三源收口：① pending_context（W-15-B 产出，未施工前为空）
+/// ② 证据不足（证据池为空的组——「报了条目但拿不出证据」）
+/// ③ 需人裁决（调用方显式传入的规则冲突/人工挂起项）。
+List<UnresolvedQuestion> collectUnresolvedQuestions(
+  List<DiagnosisGroup> groups, {
+  List<UnresolvedSource> pendingContexts = const [],
+  List<UnresolvedSource> humanConflicts = const [],
+  required int nowSec,
+}) {
+  final out = <UnresolvedQuestion>[];
+  var i = 0;
+  for (final p in pendingContexts) {
+    out.add(
+      UnresolvedQuestion(
+        questionId: 'uq-pending-$nowSec-$i',
+        kind: UnresolvedQuestion.kindPendingContext,
+        statement: p.statement,
+        blockingRefs: p.blockingRefs,
+        createdAtSec: nowSec,
+      ),
+    );
+    i++;
+  }
+  for (final g in groups) {
+    if (g.evidencePool.isEmpty) {
+      out.add(
+        UnresolvedQuestion(
+          questionId: 'uq-evidence-$nowSec-${g.syndromeId}',
+          kind: UnresolvedQuestion.kindInsufficientEvidence,
+          statement:
+              '症候 ${g.syndromeId} 共 ${g.memberRefs.length} 条诊断'
+              '，但证据池为空——无法追溯，待补充原文证据或人工复核',
+          blockingRefs: g.memberRefs,
+          createdAtSec: nowSec,
+        ),
+      );
+    }
+  }
+  for (final c in humanConflicts) {
+    out.add(
+      UnresolvedQuestion(
+        questionId: 'uq-human-$nowSec-$i',
+        kind: UnresolvedQuestion.kindNeedsHuman,
+        statement: c.statement,
+        blockingRefs: c.blockingRefs,
+        createdAtSec: nowSec,
+      ),
+    );
+    i++;
+  }
+  return out;
+}
+
+// ── 快照组装（A 批：hypotheses/candidates 恒空，B 批填充）──
+
+IntegrationSnapshot buildIntegrationSnapshot({
+  required List<DiagnosisEntryRef> entries,
+  required int nowSec,
+  List<UnresolvedSource> pendingContexts = const [],
+  List<UnresolvedSource> humanConflicts = const [],
+}) {
+  final groups = buildDiagnosisGroups(entries);
+  final questions = collectUnresolvedQuestions(
+    groups,
+    pendingContexts: pendingContexts,
+    humanConflicts: humanConflicts,
+    nowSec: nowSec,
+  );
+  return IntegrationSnapshot(
+    groups: groups,
+    hypotheses: const [],
+    candidates: const [],
+    questions: questions,
+  );
+}
