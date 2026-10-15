@@ -1,0 +1,32 @@
+# 月笙项目换行口径（W-05 · 2026-10-15 舰长裁定方案一）
+# 口径：全仓文本统一 LF。索引侧当时已 100% i/lf（干跑报告
+# yuesheng-flutter/docs/audits/W05-换行口径-干跑报告-2026-10-15.md），
+# 故本文件落地 = 索引零变更；工作区 CRLF 文件在下次 checkout 时刷为 LF。
+# 裁定依据：Flutter/Gradle/GitHub Actions 全链路无 LF 敏感项。
+
+* text=auto eol=lf
+
+# ---- 二进制白名单（text=auto 本可自动检测，显式声明为兜底防误判）----
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.avif binary
+*.webp binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.jar binary
+*.zip binary
+*.apk binary
+*.keystore binary
+*.jks binary
+*.exe binary
+*.dll binary
+*.so binary
+*.pdf binary
+*.mp3 binary
+*.mp4 binary
+*.wav binary
