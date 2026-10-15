@@ -97,6 +97,10 @@ const List<List<String>> _kMutexSyndromePairs = [
   ['P007', 'P015'],
 ];
 
+/// W-21-B：互斥对表的**公开只读别名**（真源仍 = 上方 `_kMutexSyndromePairs`）。
+/// 整合层 A2 结构性假设消费此表——只引用、不复制定义，防两处漂移。
+const List<List<String>> kMutexSyndromePairs = _kMutexSyndromePairs;
+
 /// 批次4（4.1 O6）：症候互斥代码层校验——互斥对同时命中时返回 warning 提示。
 /// warning 级起步（不阻断诊断落库），用于观察误伤率后再决定是否升级为拦截。
 List<String> validateSyndromeMutexWarnings(List<String> syndromeIds) {

@@ -70,6 +70,8 @@ import 'package:writingcoach/services/diagnosis_signal_monitor.dart';
 import 'package:writingcoach/services/fact_parser.dart' show stripFactBlock;
 import 'package:writingcoach/services/genui_parser.dart' show stripGenuiBlock;
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/diagnosis_integration_service.dart'
+    show DiagnosisEntryRef, buildIntegrationSnapshot;
 import 'package:writingcoach/services/merge_convergence.dart'
     show mergeOutputConvergence;
 import 'package:writingcoach/services/message_card_service.dart'
@@ -655,8 +657,46 @@ class DiagnosisFlowHandler {
         diagnosis: diagnosis,
       );
       await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
+      _runIntegrationObserver(
+        sessionId: sessionId,
+        messageId: messageId,
+        diagnosis: diagnosis,
+      );
     } catch (e, s) {
       _logSafeRun('诊断写入', e, s);
+    }
+  }
+
+  /// W-21-B：整合层观察者（commit 序列完成后的旁路调用）。
+  ///
+  /// 纪律（对齐 LlmCallLogSink）：失败静默不阻断主流程；纯内存快照（A 阶段
+  /// 不落表）；chapterId 以 sessionId 代理——写作面板按章建会话，同 session
+  /// 即同章上下文（代理假设已登记施工报告，跨会话聚合待 W-22 落表时修正）。
+  void _runIntegrationObserver({
+    required String sessionId,
+    required String messageId,
+    required ParsedDiagnosis diagnosis,
+  }) {
+    try {
+      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      buildIntegrationSnapshot(
+        entries: [
+          for (var i = 0; i < diagnosis.syndromes.length; i++)
+            DiagnosisEntryRef(
+              rowId: messageId,
+              entryIndex: i,
+              syndromeId: diagnosis.syndromes[i].syndromeId,
+              severity: diagnosis.syndromes[i].severity,
+              evidence: diagnosis.syndromes[i].evidence,
+              chapterId: sessionId,
+              createdAtSec: nowSec,
+              interventionValue: diagnosis.syndromes[i].interventionValue,
+            ),
+        ],
+        nowSec: nowSec,
+      );
+    } catch (_) {
+      // 观测失败静默（旁路纪律），不改变 commit 结果
     }
   }
 

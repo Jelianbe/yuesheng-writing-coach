@@ -12,7 +12,11 @@
 // ─────────────────────────────────────────────────────────────
 
 import '../types/teaching_types.dart';
+import 'diagnosis_validator.dart' show kMutexSyndromePairs;
 import 'merge_convergence.dart' show evidenceJaccard, kEvidenceJaccardThreshold;
+
+/// A2 系统性判定初值（设计稿 §六：拍初值，待 W-23 用 10–15 案例标定）。
+const int kSystematicChapterThreshold = 3;
 
 // ── 输入契约：诊断条目引用（来自 diagnosis_results 行，不复制原文）──
 
@@ -26,6 +30,9 @@ class DiagnosisEntryRef {
   final String chapterId; // 诊断发生时正在写的章节（跨章分组依据）
   final int createdAtSec; // epoch 秒（台账时间口径）
 
+  /// W-19-A 干预价值档位（'high'/'medium'/'low'/null），A3 评分消费。
+  final String? interventionValue;
+
   const DiagnosisEntryRef({
     required this.rowId,
     required this.entryIndex,
@@ -34,6 +41,7 @@ class DiagnosisEntryRef {
     required this.evidence,
     required this.chapterId,
     required this.createdAtSec,
+    this.interventionValue,
   });
 
   String get ref => '$rowId#$entryIndex';
@@ -64,6 +72,9 @@ class DiagnosisGroup {
   /// 同章高重叠被归并的条目数（归并不删引用，仅不重复计数章节）。
   final int duplicateMergedCount;
 
+  /// 组内出现过的最高干预价值档位（null = 组内全部未评定；A3 评分消费）。
+  final String? interventionValueMax;
+
   const DiagnosisGroup({
     required this.groupId,
     required this.syndromeId,
@@ -74,6 +85,7 @@ class DiagnosisGroup {
     required this.severityMax,
     required this.evidencePool,
     required this.duplicateMergedCount,
+    this.interventionValueMax,
   });
 }
 
@@ -215,7 +227,22 @@ DiagnosisGroup _buildGroup(String syndromeId, List<DiagnosisEntryRef> members) {
         .severity,
     evidencePool: evidencePool.toList()..sort(),
     duplicateMergedCount: duplicateMerged,
+    interventionValueMax: _maxInterventionValue(sorted),
   );
+}
+
+/// 组内最高干预价值档位（W-19-A rank 口径；全 null → null）。
+String? _maxInterventionValue(List<DiagnosisEntryRef> entries) {
+  String? best;
+  var bestRank = -1;
+  for (final e in entries) {
+    final r = interventionValueRank(e.interventionValue);
+    if (r > bestRank) {
+      bestRank = r;
+      best = e.interventionValue;
+    }
+  }
+  return best;
 }
 
 // ── A4：未决问题（显式收口）──
@@ -273,7 +300,103 @@ List<UnresolvedQuestion> collectUnresolvedQuestions(
   return out;
 }
 
-// ── 快照组装（A 批：hypotheses/candidates 恒空，B 批填充）──
+// ── A2：全局假设（规则触发；statement 模板生成；无置信度小数——设计稿 §二）──
+
+/// 系统性：组独立出现章节数 ≥ 阈值；结构性：互斥对两组同时存在
+/// （复用 validator 的互斥表真源，只引用不复制）。
+List<GlobalHypothesis> buildGlobalHypotheses(
+  List<DiagnosisGroup> groups, {
+  required int nowSec,
+}) {
+  final out = <GlobalHypothesis>[];
+  for (final g in groups) {
+    if (g.chapterCount < kSystematicChapterThreshold) continue;
+    out.add(
+      GlobalHypothesis(
+        hypothesisId: 'gh-sys-${g.syndromeId}-$nowSec',
+        kind: 'systematic',
+        statement:
+            '症候 ${g.syndromeId} 已在 ${g.chapterCount} 个章节独立出现'
+            '（严重度峰值 ${g.severityMax.value}）——疑似系统性习惯',
+        sourceGroupIds: [g.groupId],
+        ruleId: 'R-A2-systematic-n$kSystematicChapterThreshold',
+        status: 'active',
+      ),
+    );
+  }
+  out.addAll(_structuralHypotheses(groups, nowSec));
+  return out;
+}
+
+List<GlobalHypothesis> _structuralHypotheses(
+  List<DiagnosisGroup> groups,
+  int nowSec,
+) {
+  final idSet = groups.map((g) => g.syndromeId).toSet();
+  final out = <GlobalHypothesis>[];
+  for (final pair in kMutexSyndromePairs) {
+    if (!(idSet.contains(pair[0]) && idSet.contains(pair[1]))) continue;
+    out.add(
+      GlobalHypothesis(
+        hypothesisId: 'gh-mx-${pair[0]}-${pair[1]}-$nowSec',
+        kind: 'structural',
+        statement:
+            '互斥症候 ${pair[0]}/${pair[1]} 同时命中'
+            '——疑似结构性张力，需人裁决取舍',
+        sourceGroupIds: ['dg-${pair[0]}', 'dg-${pair[1]}'],
+        ruleId: 'R-A2-structural-mutex',
+        status: 'active',
+      ),
+    );
+  }
+  return out;
+}
+
+// ── A3：教学焦点候选（评分分解，只出候选不决定——决定权在用户/阶段二）──
+
+/// 等权起步（设计稿 §六：权重表待 W-23 实验调参）。
+/// 分量：severity(L1=1..L3=3) + intervention_value(null=0..high=3)
+///      + recurrence(独立章节数，封顶 = 系统性阈值)。
+List<TeachingFocusCandidate> buildTeachingFocusCandidates(
+  List<DiagnosisGroup> groups, {
+  required int nowSec,
+}) {
+  final cands = groups.map(_candidateFor).toList();
+  cands.sort((a, b) {
+    final byTotal = (b.scoreBreakdown['total'] ?? 0).compareTo(
+      a.scoreBreakdown['total'] ?? 0,
+    );
+    if (byTotal != 0) return byTotal;
+    return a.syndromeId.compareTo(b.syndromeId);
+  });
+  return cands;
+}
+
+TeachingFocusCandidate _candidateFor(DiagnosisGroup g) {
+  final severityScore = g.severityMax.index + 1;
+  final valueScore = interventionValueRank(g.interventionValueMax) + 1;
+  final recurrenceScore = g.chapterCount.clamp(0, kSystematicChapterThreshold);
+  final total = severityScore + valueScore + recurrenceScore;
+  final valueLabel = g.interventionValueMax ?? '未评定';
+  return TeachingFocusCandidate(
+    candidateId: 'tfc-${g.syndromeId}',
+    syndromeId: g.syndromeId,
+    groupId: g.groupId,
+    scoreBreakdown: {
+      'severity': severityScore,
+      'intervention_value': valueScore,
+      'recurrence': recurrenceScore,
+      'total': total,
+    },
+    rationale:
+        '${g.syndromeId}：严重度 ${g.severityMax.value}($severityScore)'
+        ' · 干预价值 $valueLabel($valueScore)'
+        ' · 跨 ${g.chapterCount} 章独立出现($recurrenceScore) ⇒ $total',
+    status: 'proposed',
+  );
+}
+
+// ── 快照组装（四契约全部就位）──
 
 IntegrationSnapshot buildIntegrationSnapshot({
   required List<DiagnosisEntryRef> entries,
@@ -290,8 +413,8 @@ IntegrationSnapshot buildIntegrationSnapshot({
   );
   return IntegrationSnapshot(
     groups: groups,
-    hypotheses: const [],
-    candidates: const [],
+    hypotheses: buildGlobalHypotheses(groups, nowSec: nowSec),
+    candidates: buildTeachingFocusCandidates(groups, nowSec: nowSec),
     questions: questions,
   );
 }

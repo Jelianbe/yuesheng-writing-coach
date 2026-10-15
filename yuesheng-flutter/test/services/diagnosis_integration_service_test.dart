@@ -20,6 +20,7 @@ DiagnosisEntryRef _e(
   List<String> evidence, {
   String chapter = 'ch-1',
   int at = 1000,
+  String? interventionValue,
 }) => DiagnosisEntryRef(
   rowId: rowId,
   entryIndex: idx,
@@ -28,6 +29,7 @@ DiagnosisEntryRef _e(
   evidence: evidence,
   chapterId: chapter,
   createdAtSec: at,
+  interventionValue: interventionValue,
 );
 
 void main() {
@@ -136,7 +138,7 @@ void main() {
   });
 
   group('buildIntegrationSnapshot', () {
-    test('四契约容器：groups/questions 实装，hypotheses/candidates 恒空（B 批）', () {
+    test('单章单条：组 1 · 无假设 · 候选 1 · 无未决', () {
       final snap = buildIntegrationSnapshot(
         entries: [
           _e('r1', 0, 'P001', Severity.l1, ['e']),
@@ -145,8 +147,8 @@ void main() {
       );
       expect(snap.groups.length, 1);
       expect(snap.questions, isEmpty);
-      expect(snap.hypotheses, isEmpty); // B 批
-      expect(snap.candidates, isEmpty); // B 批
+      expect(snap.hypotheses, isEmpty); // 单章不触发 systematic
+      expect(snap.candidates.length, 1); // B 批起恒有候选（不决定，仅排序）
     });
 
     test('纯函数：同输入两次调用结果一致（确定性）', () {
@@ -159,6 +161,158 @@ void main() {
       expect(a.groups.single.memberRefs, b.groups.single.memberRefs);
       expect(a.groups.single.severityMax, b.groups.single.severityMax);
       expect(a.groups.single.chapterCount, b.groups.single.chapterCount);
+    });
+  });
+
+  group('A2 · buildGlobalHypotheses', () {
+    test('跨 ≥3 章独立出现 → systematic 假设（statement 模板 + 规则可追溯）', () {
+      final groups = buildDiagnosisGroups([
+        _e('r1', 0, 'P001', Severity.l1, ['a'], chapter: 'ch-1'),
+        _e('r2', 0, 'P001', Severity.l2, ['b'], chapter: 'ch-2'),
+        _e('r3', 0, 'P001', Severity.l2, ['c'], chapter: 'ch-3'),
+      ]);
+      final hs = buildGlobalHypotheses(groups, nowSec: 500);
+      expect(hs.length, 1);
+      expect(hs.single.kind, 'systematic');
+      expect(hs.single.statement, contains('3 个章节'));
+      expect(hs.single.statement, contains('P001'));
+      expect(hs.single.ruleId, 'R-A2-systematic-n3');
+      expect(hs.single.status, 'active');
+    });
+
+    test('仅 2 章 → 不触发（阈值初值 N=3）', () {
+      final groups = buildDiagnosisGroups([
+        _e('r1', 0, 'P001', Severity.l1, ['a'], chapter: 'ch-1'),
+        _e('r2', 0, 'P001', Severity.l1, ['b'], chapter: 'ch-2'),
+      ]);
+      expect(buildGlobalHypotheses(groups, nowSec: 500), isEmpty);
+    });
+
+    test('互斥对两组同时存在 → structural 假设（复用 validator 真源）', () {
+      final groups = buildDiagnosisGroups([
+        _e('r1', 0, 'P004', Severity.l2, ['a'], chapter: 'ch-1'),
+        _e('r2', 0, 'P017', Severity.l2, ['b'], chapter: 'ch-1'),
+      ]);
+      final hs = buildGlobalHypotheses(groups, nowSec: 500);
+      expect(hs.single.kind, 'structural');
+      expect(hs.single.statement, contains('P004/P017'));
+      expect(hs.single.ruleId, 'R-A2-structural-mutex');
+    });
+
+    test('无假设条件 → 空列表', () {
+      final groups = buildDiagnosisGroups([
+        _e('r1', 0, 'P001', Severity.l1, ['a'], chapter: 'ch-1'),
+        _e('r2', 0, 'P002', Severity.l1, ['b'], chapter: 'ch-1'),
+      ]);
+      expect(buildGlobalHypotheses(groups, nowSec: 500), isEmpty);
+    });
+  });
+
+  group('A3 · buildTeachingFocusCandidates', () {
+    test('评分分解各分量独立可解释，等权求和', () {
+      // L2 + high(3) + 1 章 = 2+3+1 = 6
+      final groups = buildDiagnosisGroups([
+        _e(
+          'r1',
+          0,
+          'P001',
+          Severity.l2,
+          ['a'],
+          chapter: 'ch-1',
+          interventionValue: 'high',
+        ),
+      ]);
+      final c = buildTeachingFocusCandidates(groups, nowSec: 500).single;
+      expect(c.scoreBreakdown['severity'], 2);
+      expect(c.scoreBreakdown['intervention_value'], 3);
+      expect(c.scoreBreakdown['recurrence'], 1);
+      expect(c.scoreBreakdown['total'], 6);
+      expect(c.rationale, contains('P001'));
+      expect(c.rationale, contains('high'));
+      expect(c.status, 'proposed'); // 只出候选，不决定
+    });
+
+    test('null 干预价值 = 0 分（未评定不加分）', () {
+      final groups = buildDiagnosisGroups([
+        _e('r1', 0, 'P001', Severity.l1, ['a'], chapter: 'ch-1'),
+      ]);
+      final c = buildTeachingFocusCandidates(groups, nowSec: 500).single;
+      expect(c.scoreBreakdown['intervention_value'], 0);
+      expect(c.rationale, contains('未评定'));
+    });
+
+    test('排序：total 降序，同分按 syndromeId 升序（确定性）', () {
+      final groups = buildDiagnosisGroups([
+        _e('r1', 0, 'P002', Severity.l1, ['a'], chapter: 'ch-1'), // 1+0+1=2
+        _e(
+          'r2',
+          0,
+          'P001',
+          Severity.l3,
+          ['b'],
+          chapter: 'ch-1',
+          interventionValue: 'high', // 3+3+1=7
+        ),
+        _e('r3', 0, 'P003', Severity.l1, ['c'], chapter: 'ch-1'), // 1+0+1=2
+      ]);
+      final cands = buildTeachingFocusCandidates(groups, nowSec: 500);
+      expect(cands.map((c) => c.syndromeId).toList(), ['P001', 'P002', 'P003']);
+    });
+
+    test('recurrence 分量封顶 = 系统性阈值（防长篇单症候无界膨胀）', () {
+      final entries = [
+        for (var i = 1; i <= 6; i++)
+          _e('r$i', 0, 'P001', Severity.l1, ['e-$i'], chapter: 'ch-$i'),
+      ];
+      final groups = buildDiagnosisGroups(entries);
+      final c = buildTeachingFocusCandidates(groups, nowSec: 500).single;
+      expect(c.scoreBreakdown['recurrence'], kSystematicChapterThreshold);
+    });
+  });
+
+  group('B 批快照填充', () {
+    test('快照的 hypotheses/candidates 已实装（与独立函数一致）', () {
+      final snap = buildIntegrationSnapshot(
+        entries: [
+          _e('r1', 0, 'P001', Severity.l1, ['a'], chapter: 'ch-1'),
+          _e('r2', 0, 'P001', Severity.l2, ['b'], chapter: 'ch-2'),
+          _e('r3', 0, 'P001', Severity.l1, ['c'], chapter: 'ch-3'),
+        ],
+        nowSec: 500,
+      );
+      expect(snap.hypotheses.single.kind, 'systematic');
+      expect(snap.candidates.single.syndromeId, 'P001');
+      expect(
+        snap.candidates.single.scoreBreakdown['recurrence'],
+        kSystematicChapterThreshold,
+      );
+    });
+
+    test('组级干预价值取最高档（组内多条不同档位）', () {
+      final snap = buildIntegrationSnapshot(
+        entries: [
+          _e(
+            'r1',
+            0,
+            'P001',
+            Severity.l1,
+            ['a'],
+            chapter: 'ch-1',
+            interventionValue: 'low',
+          ),
+          _e(
+            'r2',
+            0,
+            'P001',
+            Severity.l2,
+            ['b'],
+            chapter: 'ch-1',
+            interventionValue: 'medium',
+          ),
+        ],
+        nowSec: 500,
+      );
+      expect(snap.groups.single.interventionValueMax, 'medium');
     });
   });
 }
