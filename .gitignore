@@ -140,6 +140,12 @@ historical-archive/
 /yuesheng-landing/_shots/
 /yuesheng-landing/_tmp_*.py
 /yuesheng-landing/*.log
+
+# ── C 类待辨项处置（2026-10-15，舰长授权「你自己来，找合适的就行」）──
+#   _wbtest*/  = APK 分发测试目录（36 MB / 88 MB，含 v0.5.2-arm64 与 multiabi 安装包）——产物不入库
+#   pages/     = 嵌套独立 git 仓（自带 .git/，GitHub Pages 源）——父仓不跟踪
+/yuesheng-landing/_wbtest*/
+/yuesheng-landing/pages/
 # assets/ 显式放行（1.47 MB / 5 个文件）：HTML 逐字引用这 5 张，缺一张就裂图。
 #   app_icon.png 875K · hero.jpg 456K · screens/*.jpg 44–72K。体积可接受，不再优化。
 
