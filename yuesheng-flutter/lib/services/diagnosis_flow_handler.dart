@@ -69,9 +69,9 @@ import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/diagnosis_signal_monitor.dart';
 import 'package:writingcoach/services/fact_parser.dart' show stripFactBlock;
 import 'package:writingcoach/services/genui_parser.dart' show stripGenuiBlock;
-import 'package:writingcoach/services/intervention_value.dart'
-    show sortSyndromesForDiagnosisCard;
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/merge_convergence.dart'
+    show mergeOutputConvergence;
 import 'package:writingcoach/services/message_card_service.dart'
     show
         DiagnosisResultCardPayload,
@@ -1261,10 +1261,10 @@ class DiagnosisFlowHandler {
         sessionId,
         DiagnosisResultCardPayload(
           syndromeCount: diagnosis.syndromes.length,
-          // W-19-A：展示排序（severity 主序 + 同档内干预价值降序）。
-          // 只排卡片展示顺序，不动 diagnosis.syndromes 本身——落库集合与
-          // 顺序不变（ADR-C67 全量落库）。
-          syndromes: sortSyndromesForDiagnosisCard(diagnosis.syndromes)
+          // W-15-A：机械收敛（去重→排序→截前 5）只作用**卡片展示集合**；
+          // syndromeCount 保持全量（「共诊断 N 条」），落库集合与顺序不变
+          // （ADR-C67 全量落库）。溢出条目进 ConvergenceReport（不丢弃）。
+          syndromes: mergeOutputConvergence(diagnosis.syndromes).displayed
               .map(
                 (s) => DiagnosisSyndromeCard(
                   syndromeId: s.syndromeId,

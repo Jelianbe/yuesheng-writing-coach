@@ -94,10 +94,14 @@ class ProgressiveResult {
   final int chunkCount;
   final int failedChunks;
 
+  /// W-15-A：各分块在原文中的覆盖区间（验收②）。空 = 旧调用方未传（兼容）。
+  final List<ChunkCoverage> chunkCoverage;
+
   const ProgressiveResult({
     required this.fullContent,
     required this.chunkCount,
     required this.failedChunks,
+    this.chunkCoverage = const [],
   });
 }
 
@@ -114,6 +118,51 @@ void _throwIfCancelled(CancelToken? token) {
   if (token != null && token.isCancelled) {
     throw const ProgressiveDiagnosisCancelled();
   }
+}
+
+// ── W-15-A：分块覆盖区间（验收②「分块路径记录每块覆盖范围」）──
+
+/// 单块在**原文**中的字符区间 [start, end)。
+///
+/// overlap 区间 = 相邻两块区间的交集；`located=false` 表示定位失败
+/// （防御位：分块文本按构造必是原文子串，理论不可达；失败时区间无意义，
+/// 消费方不得用它渲染「覆盖原文」标注）。
+class ChunkCoverage {
+  final int index;
+  final int start;
+  final int end;
+  final bool located;
+
+  const ChunkCoverage({
+    required this.index,
+    required this.start,
+    required this.end,
+    this.located = true,
+  });
+
+  bool get isValid => located && end > start;
+}
+
+/// 计算各分块在原文中的字符区间。
+///
+/// 算法：顺序 `indexOf` 定位（分块按构造是原文的**有序**子串，块间
+/// overlap 使下一块起点 ≥ 本块起点，故游标只前进不回退）。定位失败时
+/// 记 `located=false`（不抛错——覆盖记录是旁路观测，不阻断诊断主链）。
+List<ChunkCoverage> computeChunkCoverage(String content, List<String> chunks) {
+  final out = <ChunkCoverage>[];
+  var cursor = 0;
+  for (var i = 0; i < chunks.length; i++) {
+    final idx = content.indexOf(chunks[i], cursor);
+    if (idx < 0) {
+      out.add(
+        ChunkCoverage(index: i, start: cursor, end: cursor, located: false),
+      );
+    } else {
+      out.add(ChunkCoverage(index: i, start: idx, end: idx + chunks[i].length));
+      cursor = idx; // 下一块从本块起点起搜（overlap 可回退到块内）
+    }
+  }
+  return out;
 }
 
 // ── 分块：按段落 + overlap 回溯（对齐 RN splitContent）──
@@ -402,7 +451,20 @@ const String _kMergeRelevanceGate = '''叙事合理性判定（最终裁决步�
 /// 的文本拼装无关；原 buildMergePrompt 64 行里本块21 行，
 /// R-019（函数 ≤ 50 行）计的是函数体。
 /// 跳过 [ChunkAnalysisResult.success] 为 false 或 notes 为空的分片。
-List<String> _buildChunkNotesBlocks(List<ChunkAnalysisResult> chunkResults) {
+///
+/// W-15-A（验收②）：[chunkCoverage] 非空时，块头追加「覆盖原文 [s, e)」
+/// ——这是**机械元数据**（代码算出的字符区间），非 skill 话术，不触 R-027。
+List<String> _buildChunkNotesBlocks(
+  List<ChunkAnalysisResult> chunkResults, {
+  List<ChunkCoverage> chunkCoverage = const [],
+}) {
+  String header(int i) {
+    if (i >= chunkCoverage.length) return '## 分片 ${i + 1}';
+    final c = chunkCoverage[i];
+    if (!c.isValid) return '## 分片 ${i + 1}';
+    return '## 分片 ${i + 1}（覆盖原文 [${c.start}, ${c.end})）';
+  }
+
   final allNotesJson = <String>[];
 
   for (var i = 0; i < chunkResults.length; i++) {
@@ -421,7 +483,7 @@ List<String> _buildChunkNotesBlocks(List<ChunkAnalysisResult> chunkResults) {
       // 用自研 _encodeJson 序列化分片笔记（对齐 JSON.stringify 语义；
       // 不用 toString()——其对中文/引号/换行会产生非 JSON 输出）。
       final encoded = '{"notes": ${_encodeJson(notes)}}';
-      allNotesJson.add('## 分片 ${i + 1}\n```json\n$encoded\n```');
+      allNotesJson.add('${header(i)}\n```json\n$encoded\n```');
     }
   }
   return allNotesJson;
@@ -453,14 +515,20 @@ $_kMergeRelevanceGate
 /// 经 [buildStoryStructureProfileText] 构建——覆盖度不足/事件表空时返回
 /// 空串，此处照常工作，零耦合）。
 /// [disabledSyndromeIds] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
+///
+/// W-15-A：[chunkCoverage] 非空时分片块头带覆盖区间（验收②）。
 String buildMergePrompt(
   List<ChunkAnalysisResult> chunkResults, {
   String diagnosisContext = '',
   String structureProfile = '',
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
+  List<ChunkCoverage> chunkCoverage = const [],
 }) {
-  final allNotesJson = _buildChunkNotesBlocks(chunkResults);
+  final allNotesJson = _buildChunkNotesBlocks(
+    chunkResults,
+    chunkCoverage: chunkCoverage,
+  );
 
   final contextSection = diagnosisContext.isNotEmpty
       ? '$diagnosisContext\n---\n\n'
@@ -555,8 +623,9 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
     return null;
   }
 
-  // 1. 分块
+  // 1. 分块（W-15-A：同步计算覆盖区间，验收②）
   final chunks = splitContent(content);
+  final chunkCoverage = computeChunkCoverage(content, chunks);
   onProgress?.call('分块完成', 0, chunks.length);
 
   // 2. 逐块分析（非流式 chatCompletion；空内容分级降级见 ADR-C80）
@@ -589,6 +658,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
     structureProfile: structureProfile,
     disabledSyndromeIds: disabledSyndromeIds,
     teachingMode: teachingMode,
+    chunkCoverage: chunkCoverage,
   );
   var fullContent = '';
 
@@ -618,6 +688,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
     fullContent: fullContent,
     chunkCount: chunks.length,
     failedChunks: failedChunks,
+    chunkCoverage: chunkCoverage,
   );
 }
 
