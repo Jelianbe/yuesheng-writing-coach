@@ -1,18 +1,20 @@
 name: Flutter CI (yuesheng-flutter)
 
 # ---------------------------------------------------------------------------
-# ★ 本地十三道 vs 本 CI 实际覆盖（2026-10-05 口径收口 —— 事实登记，非待办）
+# ★ 本地十九道 vs 本 CI 实际覆盖（2026-10-05 口径收口；2026-10-14 按 19 道订正 —— 事实登记，非待办）
 #
-# 本地权威口径 = yuesheng-flutter/scripts/gate.sh（十三道，编号 0–12）。
+# 本地权威口径 = yuesheng-flutter/scripts/gate.sh（十九道，编号 0–18）。
 # 本 workflow 只跑其中一部分。这是**已知且被接受**的设计，不是遗漏。
 #
 #   CI 覆盖（6 道）：0 format · 1 analyze · 2 test · 3 circular · 4 secrets · 6 coverage
-#   CI 未跑（7 道）：5 R-019 函数行数 · 7 Prompt 反模式 · 8 内容元数据 ·
-#           9 交互回归 · 10 伪拆分形态 · 11 A 类豁免准入 · 12 Skill 公共库链接
-#   仅 CI 有：依赖健康（dart pub outdated）—— 本地十三道里**没有**这一道。
+#   CI 未跑（13 道）：5 R-019 函数行数 · 7 Prompt 反模式 · 8 内容元数据 ·
+#           9 交互回归 · 10 伪拆分形态 · 11 A 类豁免准入 · 12 Skill 公共库链接 ·
+#           13 extension 单块行数 · 14 flag 契约同步 · 15 ADR 悬空引用 ·
+#           16 hook 副本同步 · 17 台账新鲜度 · 18 prompt 体积红线
+#   仅 CI 有：依赖健康（dart pub outdated）—— 本地十九道里**没有**这一道。
 #
-# ⇒ 判据：**本地全绿才是收尾**；CI 全绿 ≠ 十三道全绿。
-# ⇒ 编号纪律：本地编号 0–12 见 gate.sh 头部注释（唯一真源）。写 CI step 名时
+# ⇒ 判据：**本地全绿才是收尾**；CI 全绿 ≠ 十九道全绿。
+# ⇒ 编号纪律：本地编号 0–18 见 gate.sh 头部注释（唯一真源）。写 CI step 名时
 #    不得把「本地没有的门禁」也标成某个本地编号（历史上 "Gate 5" 撞号过一次）。
 #
 # 【2026-10-05 成本审计补记 · 为什么「不接入」是有依据的选择，而非待办】
@@ -105,10 +107,10 @@ jobs:
         run: bash scripts/check_secrets.sh
 
       - name: Check dependency health (advisory, non-blocking for push/main)
-        # ⚠️ 本条**不是**本地十二道里的「门禁 5」——本地门禁 5 = R-019 函数行数
+        # ⚠️ 本条**不是**本地十九道里的「门禁 5」——本地门禁 5 = R-019 函数行数
         #    （tool/check_r019.py）。历史上这里写作 "Gate 5"，与本地编号体系撞号：
         #    两个「5」指两件完全不同的事。2026-09-17 收口时去掉该编号，避免歧义。
-        #    依赖健康在本地十二道里**没有**对应门禁，是 CI 独有的一道。
+        #    依赖健康在本地十九道里**没有**对应门禁，是 CI 独有的一道。
         # 宪法 §二.6 依赖审计：dart pub outdated --json 解析（CLI 更名）。
         # 分级：CRITICAL（命中官方安全公告 isCurrentAffectedByAdvisory）/ HIGH（停更/撤回）/ MEDIUM / LOW。
         # push/main 模式 = 仅告警不阻断（exit 0），CRITICAL/HIGH 通过 ::warning 注解在 Actions UI 标红。
