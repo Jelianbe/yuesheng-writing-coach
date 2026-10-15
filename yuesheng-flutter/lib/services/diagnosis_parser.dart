@@ -315,6 +315,19 @@ typedef _TeachingPlanFields = ({
   String? teachingPlanNextStep,
 });
 
+/// W-19-A：intervention_value 可选字段解析（抽出为顶层纯函数，R-019）。
+///
+/// 档位合法（high/medium/low）→ 透传；越界/非字符串 → null 并记 note
+/// （观测不拦截，对齐 N5「格式只观测不拦截」同款纪律）。
+String? _parseInterventionValue(Map<String, dynamic> s, List<String> notes) {
+  final raw = s['intervention_value'];
+  final normalized = normalizeInterventionValue(raw);
+  if (raw != null && normalized == null) {
+    notes.add('syndrome_intervention_value_invalid');
+  }
+  return normalized;
+}
+
 /// 校验 syndromes 数组，命中则填充 [out]，非阻断观测写入 [notes]。
 ///
 /// 返回原因码（null = 通过）。
@@ -365,6 +378,7 @@ String? _validateSyndromes(
         readerImpact: s['reader_impact'] is String
             ? s['reader_impact'] as String
             : null,
+        interventionValue: _parseInterventionValue(s, notes),
       ),
     );
   }

@@ -132,6 +132,11 @@ class DiagnosisSyndromeCard {
   /// null / 空串时该行不渲染（数据诚实：不编造理由）。
   final String? explanation;
 
+  /// W-19-A：干预价值档位（'high' | 'medium' | 'low'，null = 未评定）。
+  /// 由 Syndrome.interventionValue 透传，供卡片渲染「值得练」徽标与排序；
+  /// 语义（≠ severity）见 intervention_value.dart 头注。
+  final String? interventionValue;
+
   const DiagnosisSyndromeCard({
     required this.syndromeId,
     required this.name,
@@ -139,6 +144,7 @@ class DiagnosisSyndromeCard {
     required this.evidenceCount,
     this.evidence = const [],
     this.explanation,
+    this.interventionValue,
   });
 
   factory DiagnosisSyndromeCard.fromJson(Map<String, dynamic> json) {
@@ -160,6 +166,7 @@ class DiagnosisSyndromeCard {
               .toList() ??
           const [],
       explanation: (ex is String && ex.isNotEmpty) ? ex : null,
+      interventionValue: normalizeInterventionValue(json['intervention_value']),
     );
   }
 
@@ -173,6 +180,8 @@ class DiagnosisSyndromeCard {
     // 保证 toJson→fromJson 往返稳定）——与 focusReason 同一约定。
     if (explanation != null && explanation!.isNotEmpty)
       'explanation': explanation,
+    // W-19-A：同上约定，null 不落 key，往返稳定。
+    if (interventionValue != null) 'intervention_value': interventionValue,
   };
 }
 

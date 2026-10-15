@@ -151,6 +151,14 @@ class Syndrome {
   final String explanation;
   final String? readerImpact;
 
+  /// W-19-A：干预价值档位（'high' | 'medium' | 'low'，null = 未评定）。
+  ///
+  /// 语义见设计稿 docs/designs/2026-10-15-W19-干预价值门槛-四步原则-设计稿.md：
+  /// **≠ severity**（严重程度答「问题多重」，干预价值答「现在教它值不值」，
+  /// 两者正交——L3 可 low（需全书重构），L1 可 high（一次练习立竿见影））。
+  /// 可选字段：schema 不校验类型，fromJson 安全读取（先例：reader_impact）。
+  final String? interventionValue;
+
   const Syndrome({
     required this.syndromeId,
     required this.name,
@@ -158,6 +166,7 @@ class Syndrome {
     required this.evidence,
     required this.explanation,
     this.readerImpact,
+    this.interventionValue,
   });
 
   Map<String, dynamic> toJson() => {
@@ -167,6 +176,7 @@ class Syndrome {
     'evidence': evidence,
     'explanation': explanation,
     if (readerImpact != null) 'reader_impact': readerImpact,
+    if (interventionValue != null) 'intervention_value': interventionValue,
   };
 
   factory Syndrome.fromJson(Map<String, dynamic> json) {
@@ -193,8 +203,37 @@ class Syndrome {
           const [],
       explanation: json['explanation'] as String? ?? '',
       readerImpact: readerImpact is String ? readerImpact : null,
+      // W-19-A：intervention_value 同 reader_impact 口径——可选、类型不校验、
+      // 安全读取；档位越界（非 high/medium/low）按缺失处理（归一化为 null）。
+      interventionValue: normalizeInterventionValue(json['intervention_value']),
     );
   }
+}
+
+/// intervention_value 的合法档位（W-19-A）。
+const List<String> kInterventionValues = ['high', 'medium', 'low'];
+
+/// 归一化 intervention_value：合法档位原样返回；其余（越界/非字符串/null）
+/// 一律返回 null（= 未评定）。不做静默纠偏——模型输出越界值时由解析侧
+/// notes 留痕，字段本身按缺失处理。
+String? normalizeInterventionValue(Object? raw) {
+  if (raw is String && kInterventionValues.contains(raw)) {
+    return raw;
+  }
+  return null;
+}
+
+/// 干预价值排序权重（W-19-A 消费侧）：high > medium > low > null。
+/// 仅用于**同 severity 档内**的次序（主序仍是 severity，见
+/// intervention_value.dart 的 sortSyndromesForDiagnosisCard）。
+int interventionValueRank(String? value) {
+  if (value == null) return -1;
+  return switch (value) {
+    'high' => 2,
+    'medium' => 1,
+    'low' => 0,
+    _ => -1,
+  };
 }
 
 /// 整体判定（ADR-0006 顶层 `overall` 块的解析产物）。

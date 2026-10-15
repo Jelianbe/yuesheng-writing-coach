@@ -69,6 +69,8 @@ import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/diagnosis_signal_monitor.dart';
 import 'package:writingcoach/services/fact_parser.dart' show stripFactBlock;
 import 'package:writingcoach/services/genui_parser.dart' show stripGenuiBlock;
+import 'package:writingcoach/services/intervention_value.dart'
+    show sortSyndromesForDiagnosisCard;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/message_card_service.dart'
     show
@@ -1259,7 +1261,10 @@ class DiagnosisFlowHandler {
         sessionId,
         DiagnosisResultCardPayload(
           syndromeCount: diagnosis.syndromes.length,
-          syndromes: diagnosis.syndromes
+          // W-19-A：展示排序（severity 主序 + 同档内干预价值降序）。
+          // 只排卡片展示顺序，不动 diagnosis.syndromes 本身——落库集合与
+          // 顺序不变（ADR-C67 全量落库）。
+          syndromes: sortSyndromesForDiagnosisCard(diagnosis.syndromes)
               .map(
                 (s) => DiagnosisSyndromeCard(
                   syndromeId: s.syndromeId,
@@ -1270,6 +1275,8 @@ class DiagnosisFlowHandler {
                   // 批次 N10：透传症候教学解释。此前 payload 未接该字段，
                   // 导致「这条症候为什么被判定」用户侧完全不可见。
                   explanation: s.explanation,
+                  // W-19-A：透传干预价值档位（null = 未评定，渲染层可空缺）。
+                  interventionValue: s.interventionValue,
                 ),
               )
               .toList(),
