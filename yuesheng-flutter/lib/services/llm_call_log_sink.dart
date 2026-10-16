@@ -154,3 +154,40 @@ class LlmCallLogSink {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// merge prompt 发送快照通道（W-15-B B3，验收⑤）
+//
+// 复用本文件的通道纪律：info 级 / category='api' / 旁路（永不抛出，
+// 落库失败静默，不阻断主流程、不改返回值）。event='llm_prompt_snapshot'
+// 为查询锚点；A12 脱敏在 captureError 收口处天然生效（context 字符串值
+// 统一过 _redactSensitive）。
+// ─────────────────────────────────────────────────────────────
+
+/// merge prompt 快照出口签名（测试注入收集器用，不触碰 DB / 全局单例）。
+typedef MergePromptSnapshotWriter = void Function(Map<String, dynamic> payload);
+
+/// 快照缺省通道：写 error_logs（info 级、api 类）。
+void _defaultMergePromptSnapshotWriter(Map<String, dynamic> payload) {
+  ErrorHandler.instance.captureError(
+    level: 'info',
+    category: 'api',
+    message: "[llm_prompt_snapshot] ${payload['purpose']}",
+    context: payload,
+  );
+}
+
+/// 发射 merge prompt 发送快照（W-15-B B3）。
+///
+/// **永不抛出** —— 旁路纪律：写入失败静默，不影响诊断主流程。
+/// [writer] 缺省 = error_logs；测试注入收集器断言载荷与实际发送体一致。
+void emitMergePromptSnapshot(
+  Map<String, dynamic> payload, {
+  MergePromptSnapshotWriter? writer,
+}) {
+  try {
+    (writer ?? _defaultMergePromptSnapshotWriter)(payload);
+  } catch (_) {
+    // 观测失败静默（对齐 LlmCallLogSink.call 纪律）
+  }
+}

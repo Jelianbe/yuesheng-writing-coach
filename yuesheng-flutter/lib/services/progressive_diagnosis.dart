@@ -15,15 +15,18 @@
 
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/shared_constants.dart';
 import 'decode_guard.dart';
 import 'error_handler.dart';
+import 'llm_call_log_sink.dart';
 import 'llm_client.dart';
 import 'llm_usage.dart';
 import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
+import 'token_budget_guard.dart'; // W-15-B B1：merge 预算预检（estimate + 报告同构）
 import 'output_whitelist.dart'; // L3：severity 白名单归一化
 import '../types/teaching_types.dart';
 
@@ -111,6 +114,29 @@ class ProgressiveResult {
 /// 误走单次链路（再发一次请求，比不取消更糟），故用专用异常。
 class ProgressiveDiagnosisCancelled implements Exception {
   const ProgressiveDiagnosisCancelled();
+}
+
+/// W-15-B B1（验收①）：merge 预算预检三态之「拒发」——降级序列穷尽后
+/// 估算仍超上限，**不发送**（超限不得静默继续发送）。
+///
+/// 走既有取消/复位路径：调用方显式 catch 并以 [userMessage] 提示用户；
+/// 未捕获时沿异常链上抛（与 [ProgressiveDiagnosisCancelled] 同纪律）。
+class ProgressiveMergeOverBudget implements Exception {
+  /// 降级穷尽后的最终估算值（tokens）
+  final int estimatedTokens;
+
+  /// 预算上限（tokens，真源 [TokenEstimate.maxBudget]）
+  final int maxBudget;
+
+  const ProgressiveMergeOverBudget(this.estimatedTokens, this.maxBudget);
+
+  /// UI 显式提示文案（设计稿 §3.1：「估算 N > 上限 M」，不发送）。
+  String get userMessage => '本章过长，无法合并诊断（估算 $estimatedTokens > 上限 $maxBudget）';
+
+  @override
+  String toString() =>
+      'ProgressiveMergeOverBudget(estimated=$estimatedTokens, '
+      'maxBudget=$maxBudget)';
 }
 
 /// ADR-C87 延伸：检查取消令牌，已取消则抛 [ProgressiveDiagnosisCancelled]。
@@ -229,6 +255,15 @@ List<String> splitContent(String content) {
 }
 
 /// overlap 回溯：从 endIndex-1 向前累加，直到长度 ≥ OVERLAP。
+///
+/// ★ W-15-B 批修复的既有缺陷（e2e 测试实证 34GB 堆耗尽）：回溯失败时
+/// （前文段落合计不足 OVERLAP，或单段成块 endIndex==startIndex+1）旧实现
+/// 返回 startIndex ⇒ startIndex 不前进 ⇒ while 永真、同一 chunk 无限重复。
+/// 触发条件极普通：**任一 1499–2997 字符的段落**（含 2 字分隔）即可命中
+/// （pLen×2 ≥ SIZE ⇒ 恰一段成块；回溯窗口内无前文可退）。ADR-C73 当年
+/// 只修了 `endIndex == startIndex` 的原子分支，本退化分支漏网。
+/// 修复 = 回溯失败改从 endIndex 起（该边界不带 overlap），保证 startIndex
+/// 严格前移；代价仅是该边界损失一次 overlap 连续性（块内容覆盖不变）。
 int _overlapStartIndex(List<String> paragraphs, int endIndex, int startIndex) {
   var overlapLength = 0;
   var overlapStart = endIndex - 1;
@@ -239,7 +274,8 @@ int _overlapStartIndex(List<String> paragraphs, int endIndex, int startIndex) {
     }
     overlapStart--;
   }
-  return overlapStart > startIndex ? overlapStart : startIndex;
+  if (overlapStart > startIndex) return overlapStart;
+  return endIndex > startIndex ? endIndex : startIndex + 1;
 }
 
 /// 末块过小时合并到前一块（避免单句成块）。
@@ -490,7 +526,7 @@ List<String> _buildChunkNotesBlocks(
 }
 
 /// merge prompt 的静态指引块：合并注意事项 + 叙事合理性判定门 + 数量原则
-/// + 干预价值（S3）三判据（W-19-B，2026-10-16 舰长批 R-027）。
+/// + 跨片因果提示（W-15-B）+ 干预价值（S3）三判据（W-19-B，2026-10-16 舰长批 R-027）。
 ///
 /// 抽出为顶层常量（纯数据）：本块不依赖 buildMergePrompt 的任何参数，
 /// 只有 [_kMergeRelevanceGate] 一个 const 插值，故合并规则与判定门在
@@ -507,6 +543,8 @@ final String _kMergeGuidanceBlock =
 $_kMergeRelevanceGate
 
 数量原则（按判据收敛报出）：只有当某症候的成立条件能够逐条满足、且你能为它引用可指认的原文证据时，才报出该症候；判据未满足或证据不足时不报（宁缺勿滥，不凑数）。报出的条目按严重度与证据把握排序；若合格条目超过 5 条，保留排序最前的 5 条，其余在 feedback_summary 中一句话概括。
+
+跨片因果提示：若某条线索的成立与否依赖未包含在任何分片中的信息（如前文伏笔、后文解释、分片外的人物关系），该条须标记 pending_context=true，并把结论写为「暂时无法判断」——不得强行下结论。pending_context 缺省 false。
 
 干预价值（S3）三判据——对每条准备报出的症候依次自问，全「是」=high，两条「是」=medium，其余=low：
 1. 可教：存在一个作者现在就能做的具体训练动作（改写练习/重写某段/自查清单），而非「需要全书级重构才解决」；
@@ -565,6 +603,7 @@ syndrome 对象格式要求：
 - explanation (string): 诊断解释
 - reader_impact (string): 一句话说明"不改这段，读者会有什么体验影响"。须结合本条证据**具体**说明该段文本对读者的影响，**不得照抄示例措辞**。示例（仅示意句式）："这一段把结论直接摆出来，读者没有被说服的过程，情感落点会显得突兀"
 - intervention_value (high|medium|low): 按上述「干预价值（S3）三判据」评定的档位，缺省 low
+- pending_context (bool): 缺省 false；见「跨片因果提示」
 
 $_kMergeOutputRequirement$_kTeachingModeChunkInstruction(teachingMode)''';
 }
@@ -599,6 +638,291 @@ String _escapeJsonString(String s) {
       .replaceAll('\t', r'\t');
 }
 
+// ── W-15-B B1：merge 预算预检与三态（验收①「超限不得静默继续发送」）──
+//
+// 设计稿 docs/designs/2026-10-15-W15-超上下文策略与合并收敛-设计稿v2.md §3.1：
+// 原则 = 先预检、能降则降、降不动则拒发——三态显式，绝不静默。
+// 上限口径 = [TokenEstimate.maxBudget]（与 chat 单次链路闸门同源，禁手抄第二份）；
+// 降级级序（逐级尝试、每级重估）：
+//   a. 裁 structureProfile（画像可再生成，非事实数据）
+//   b. 裁 diagnosisContext 中非活跃症候部分（只留 active 集合；active 集合
+//      未传入时该级跳过——无判据不动刀，宁可落到 c/拒发也不私造语义）
+//   c. 分片笔记按块压缩：每块只保留 severity 最高前 3 条（块内代码选，非 LLM）
+// 每级落 [BudgetGuardReport] 同构记录（totalBefore/After、droppedStages），
+// 供 B3 快照（§3.5 budget_report）复用。
+
+/// 降级级名（进 BudgetGuardReport.droppedStages 与快照 budget_report）。
+const String kMergeBudgetStageProfile = 'merge_structure_profile';
+const String kMergeBudgetStageContext = 'merge_inactive_context';
+const String kMergeBudgetStageNotes = 'merge_chunk_notes_top3';
+
+/// B1 级序 c：每块只保留 severity 最高前 3 条（稳定排序：同severity保原序）。
+/// 纯函数：不改输入。无块超 3 条时返回原列表实例（调用方据此跳过该级）。
+List<ChunkAnalysisResult> compressChunkNotesBySeverity(
+  List<ChunkAnalysisResult> results,
+) {
+  const keep = 3;
+  final changed = results.any((r) => r.notes.length > keep);
+  if (!changed) return results;
+  int rank(String s) => switch (s) {
+    'L3' => 3,
+    'L2' => 2,
+    'L1' => 1,
+    _ => 0,
+  };
+  return [
+    for (final r in results)
+      r.notes.length <= keep
+          ? r
+          : ChunkAnalysisResult(
+              chunkIndex: r.chunkIndex,
+              success: r.success,
+              failureReason: r.failureReason,
+              notes:
+                  ([...r.notes]..sort(
+                        (a, b) => rank(b.severity).compareTo(rank(a.severity)),
+                      ))
+                      .take(keep)
+                      .toList(),
+            ),
+  ];
+}
+
+/// B1 级序 b：把 diagnosisContext（formatSyndromeHistory 产出的 Markdown 段）
+//  过滤到活跃症候集合——保留非列表行（标题/引言/收尾），列表行只留
+//  首个 token（症候 ID）∈ [activeSyndromeIds] 者。纯文本过滤，不解析语义。
+String filterDiagnosisContextToActive(
+  String context,
+  Set<String> activeSyndromeIds,
+) {
+  if (context.isEmpty || activeSyndromeIds.isEmpty) return context;
+  final lines = context.split('\n');
+  final kept = lines.where((line) {
+    final t = line.trimLeft();
+    if (!t.startsWith('- ')) return true; // 标题/引言/收尾行全保留
+    final id = t.substring(2).trim().split(RegExp(r'\s')).first;
+    return activeSyndromeIds.contains(id);
+  }).toList();
+  return kept.join('\n');
+}
+
+/// B1 预检结果：最终输入集 + 最终 mergePrompt + 逐级降级报告。
+class MergeBudgetPlan {
+  /// 降级后的 structureProfile（可能已被置空）
+  final String structureProfile;
+
+  /// 降级后的 diagnosisContext（可能已被过滤）
+  final String diagnosisContext;
+
+  /// 降级后的分片结果（笔记可能已被压缩）
+  final List<ChunkAnalysisResult> chunkResults;
+
+  /// 按最终输入重建的 merge prompt（= 实际发送体，B3 快照与逐字节对账的基准）
+  final String mergePrompt;
+
+  /// 最终估算值（tokens，口径 = [TokenBudgetGuard.estimate]）
+  final int estimatedTokens;
+
+  /// 逐级降级报告（仅实际发生的级；照发时为空）
+  final List<BudgetGuardReport> reports;
+
+  const MergeBudgetPlan({
+    required this.structureProfile,
+    required this.diagnosisContext,
+    required this.chunkResults,
+    required this.mergePrompt,
+    required this.estimatedTokens,
+    required this.reports,
+  });
+}
+
+/// B1：merge 预算预检三态（照发 / 降级 / 拒发）。
+///
+/// 纯函数（不发请求）。超 [limit]（缺省 = [TokenEstimate.maxBudget]，与
+/// chat 单次链路同源）时按级序 a→b→c 逐级降级、每级重估；穷尽后仍超限
+/// 抛 [ProgressiveMergeOverBudget]（**不发送**）。[limit] 参数仅为测试注入
+/// 小阈值，生产路径一律走缺省常量，不引第二套口径。
+MergeBudgetPlan planMergeBudget({
+  required List<ChunkAnalysisResult> chunkResults,
+  required List<ChunkCoverage> chunkCoverage,
+  required String diagnosisContext,
+  required String structureProfile,
+  required Set<String> disabledSyndromeIds,
+  required TeachingMode teachingMode,
+  Set<String> activeSyndromeIds = const {},
+  int limit = TokenEstimate.maxBudget,
+}) {
+  String build(String ctx, String profile, List<ChunkAnalysisResult> results) =>
+      buildMergePrompt(
+        results,
+        diagnosisContext: ctx,
+        structureProfile: profile,
+        disabledSyndromeIds: disabledSyndromeIds,
+        teachingMode: teachingMode,
+        chunkCoverage: chunkCoverage,
+      );
+
+  var ctx = diagnosisContext;
+  var profile = structureProfile;
+  var results = chunkResults;
+  final reports = <BudgetGuardReport>[];
+  var est = TokenBudgetGuard.estimate(build(ctx, profile, results));
+  if (est <= limit) {
+    return MergeBudgetPlan(
+      structureProfile: profile,
+      diagnosisContext: ctx,
+      chunkResults: results,
+      mergePrompt: build(ctx, profile, results),
+      estimatedTokens: est,
+      reports: reports,
+    );
+  }
+
+  // 降级序列：逐级尝试、每级重估（级序见本节头注）
+  void degrade(String stage, bool Function() apply) {
+    if (est <= limit) return;
+    final before = est;
+    if (!apply()) return; // 该级无可裁内容 → 跳过（不虚报 droppedStages）
+    final prompt = build(ctx, profile, results);
+    est = TokenBudgetGuard.estimate(prompt);
+    reports.add(
+      BudgetGuardReport(
+        overBudget: est > limit,
+        triggered: true,
+        overWarning: est > limit * TokenEstimate.warningRatio,
+        totalBefore: before,
+        totalAfter: est,
+        droppedStages: [stage],
+        droppedMessageCount: 0,
+      ),
+    );
+  }
+
+  degrade(kMergeBudgetStageProfile, () {
+    if (profile.isEmpty) return false;
+    profile = '';
+    return true;
+  });
+  degrade(kMergeBudgetStageContext, () {
+    if (ctx.isEmpty || activeSyndromeIds.isEmpty) return false;
+    final filtered = filterDiagnosisContextToActive(ctx, activeSyndromeIds);
+    if (filtered == ctx) return false;
+    ctx = filtered;
+    return true;
+  });
+  degrade(kMergeBudgetStageNotes, () {
+    final compressed = compressChunkNotesBySeverity(results);
+    if (identical(compressed, results)) return false;
+    results = compressed;
+    return true;
+  });
+
+  if (est > limit) {
+    throw ProgressiveMergeOverBudget(est, limit);
+  }
+  return MergeBudgetPlan(
+    structureProfile: profile,
+    diagnosisContext: ctx,
+    chunkResults: results,
+    mergePrompt: build(ctx, profile, results),
+    estimatedTokens: est,
+    reports: reports,
+  );
+}
+
+// ── W-15-B B3：发送快照落库（验收⑤「最终发送快照与日志可核对」）──
+//
+// 设计稿 §3.5：merge 调用前把最终 mergePrompt 全文落 error_logs（复用
+// LlmCallLogSink 通道纪律：info 级 / category='api' / event='llm_prompt_snapshot'；
+// A12 脱敏天然生效）。载荷含 convergence 为设计稿标注的「后补」项——收敛报告
+// 在卡片装配点（diagnosis_flow_handler）才产生，本快照发射点（发送前）不可得，
+// 本批不接（诚实登记，非缺口：发送体可核对性不依赖它）。
+// 旁路纪律：落库失败静默，不阻断主流程、不改返回值。
+
+/// 快照截断阈值（字节）：mergePrompt 超过即截断存哈希 + 头尾。
+const int kMergePromptSnapshotMaxBytes = 64 * 1024;
+
+/// 截断时保留的头/尾字节数（各 8 KB）。
+const int kMergePromptSnapshotKeepBytes = 8 * 1024;
+
+/// B3：mergePrompt 快照视图。≤64 KB 原文原样；>64 KB 截断存全文哈希
+/// （sha256 前 16 位）+ 头尾各 8 KB（按 UTF-8 字节切，边界字符容错解码），
+/// 截断事实显式记录。纯函数，不发请求。
+({bool truncated, String stored, String? sha256Prefix, int totalBytes})
+truncateMergePromptForSnapshot(String prompt) {
+  final bytes = utf8.encode(prompt);
+  if (bytes.length <= kMergePromptSnapshotMaxBytes) {
+    return (
+      truncated: false,
+      stored: prompt,
+      sha256Prefix: null,
+      totalBytes: bytes.length,
+    );
+  }
+  final head = utf8.decode(
+    bytes.sublist(0, kMergePromptSnapshotKeepBytes),
+    allowMalformed: true,
+  );
+  final tail = utf8.decode(
+    bytes.sublist(bytes.length - kMergePromptSnapshotKeepBytes),
+    allowMalformed: true,
+  );
+  final sha = crypto.sha256.convert(bytes).toString();
+  final shaPrefix = sha.substring(0, 16);
+  return (
+    truncated: true,
+    stored:
+        '$head\n…[截断：全文 ${bytes.length} 字节，sha256 前 16 位=$shaPrefix]…\n$tail',
+    sha256Prefix: shaPrefix,
+    totalBytes: bytes.length,
+  );
+}
+
+/// B3：组装快照载荷（event 名 = 查询锚点；budget_report 携带逐级降级记录）。
+Map<String, dynamic> buildMergePromptSnapshotPayload({
+  required int chunkCount,
+  required List<ChunkCoverage> chunkCoverage,
+  required String mergePrompt,
+  required List<BudgetGuardReport> degradationReports,
+  required int estimatedTokens,
+  required int budgetLimit,
+}) {
+  final view = truncateMergePromptForSnapshot(mergePrompt);
+  return {
+    'event': 'llm_prompt_snapshot',
+    'purpose': 'diagnosis_merge',
+    'chunk_count': chunkCount,
+    'chunk_coverage': [
+      for (final c in chunkCoverage)
+        {
+          'index': c.index,
+          'start': c.start,
+          'end': c.end,
+          'located': c.located,
+        },
+    ],
+    'merge_prompt': view.stored,
+    if (view.truncated) ...{
+      'merge_prompt_truncated': true,
+      'merge_prompt_sha256_16': view.sha256Prefix,
+      'merge_prompt_total_bytes': view.totalBytes,
+    },
+    'budget_report': {
+      'levels': [
+        for (final r in degradationReports)
+          if (r.droppedStages.isNotEmpty)
+            {
+              'stage': r.droppedStages.first,
+              'total_before': r.totalBefore,
+              'total_after': r.totalAfter,
+            },
+      ],
+      'final_estimate': estimatedTokens,
+      'limit': budgetLimit,
+    },
+  };
+}
+
 // ── 主入口：runProgressiveDiagnosis（对齐 RN，超长时分块，否则 null）──
 
 typedef ProgressCallback = void Function(String phase, int current, int total);
@@ -618,6 +942,12 @@ typedef ProgressCallback = void Function(String phase, int current, int total);
 /// [mergeTemperature]（W-18 用户温度档，真源 config/diagnosis_temperature.dart）：
 /// merge（流式）段请求体温度覆盖。null = 现网默认（不产 extraBody 键，
 /// 请求体逐字节不变）；仅作用于 merge 段——单块分析段与教学链路不受影响。
+///
+/// [activeSyndromeIds]（W-15-B B1 级序 b）：会话当前活跃症候 ID 集合，仅在
+/// merge 超预算降级时用于过滤 diagnosisContext；空集 = 无判据，级序 b 跳过。
+///
+/// [snapshotWriter]（W-15-B B3）：merge prompt 发送快照出口，缺省走
+/// error_logs（`emitMergePromptSnapshot`）；测试注入收集器断言载荷。
 Future<ProgressiveResult?> runProgressiveDiagnosis({
   required String content,
   required String title,
@@ -631,6 +961,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
   double? mergeTemperature,
+  Set<String> activeSyndromeIds = const {},
+  MergePromptSnapshotWriter? snapshotWriter,
 }) async {
   if (content.length <= kDiagnosisChunkThreshold) {
     return null;
@@ -662,19 +994,77 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
     chunkResults.add(result);
   }
 
-  // 3. 合并：用 streamChat 流式输出
+  // 3. 合并：预算预检三态（B1）→ 发送快照（B3）→ streamChat 流式输出
   // ADR-C87 延伸：合并前检查，取消时不发起最后一次调用
   _throwIfCancelled(cancelToken);
-  final mergePrompt = buildMergePrompt(
-    chunkResults,
+  final fullContent = await _runMergePhase(
+    chunkResults: chunkResults,
+    chunkCoverage: chunkCoverage,
     diagnosisContext: diagnosisContext,
     structureProfile: structureProfile,
     disabledSyndromeIds: disabledSyndromeIds,
     teachingMode: teachingMode,
+    activeSyndromeIds: activeSyndromeIds,
+    llmClient: llmClient,
+    onContent: onContent,
+    cancelToken: cancelToken,
+    mergeTemperature: mergeTemperature,
+    snapshotWriter: snapshotWriter,
+  );
+
+  return ProgressiveResult(
+    fullContent: fullContent,
+    chunkCount: chunks.length,
+    failedChunks: failedChunks,
     chunkCoverage: chunkCoverage,
   );
-  var fullContent = '';
+}
 
+/// W-15-B：merge 段执行（预算预检三态 → 发送快照 → 流式合并）。
+///
+/// 由 [runProgressiveDiagnosis] 抽出（R-019：主入口不因 B1/B3 继续膨胀）。
+/// 拒发路径：[planMergeBudget] 穷尽降级仍超限 ⇒ 抛
+/// [ProgressiveMergeOverBudget]，**不发起任何 LLM 调用**。
+Future<String> _runMergePhase({
+  required List<ChunkAnalysisResult> chunkResults,
+  required List<ChunkCoverage> chunkCoverage,
+  required String diagnosisContext,
+  required String structureProfile,
+  required Set<String> disabledSyndromeIds,
+  required TeachingMode teachingMode,
+  required Set<String> activeSyndromeIds,
+  required LlmClient llmClient,
+  required void Function(String content) onContent,
+  CancelToken? cancelToken,
+  double? mergeTemperature,
+  MergePromptSnapshotWriter? snapshotWriter,
+}) async {
+  // B1：merge 预算预检（照发 / 降级 / 拒发——超限不静默发送）
+  final plan = planMergeBudget(
+    chunkResults: chunkResults,
+    chunkCoverage: chunkCoverage,
+    diagnosisContext: diagnosisContext,
+    structureProfile: structureProfile,
+    disabledSyndromeIds: disabledSyndromeIds,
+    teachingMode: teachingMode,
+    activeSyndromeIds: activeSyndromeIds,
+  );
+  final mergePrompt = plan.mergePrompt;
+
+  // B3：发送快照（旁路；载荷含最终发送体全文与逐级降级记录）
+  emitMergePromptSnapshot(
+    buildMergePromptSnapshotPayload(
+      chunkCount: chunkResults.length,
+      chunkCoverage: chunkCoverage,
+      mergePrompt: mergePrompt,
+      degradationReports: plan.reports,
+      estimatedTokens: plan.estimatedTokens,
+      budgetLimit: TokenEstimate.maxBudget,
+    ),
+    writer: snapshotWriter,
+  );
+
+  var fullContent = '';
   try {
     // TH 九批：标注诊断链路（合流轮）。
     llmClient.markCallContext(_kDiagnosisCallContext);
@@ -702,13 +1092,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   } on LlmRequestCancelledException {
     throw const ProgressiveDiagnosisCancelled();
   }
-
-  return ProgressiveResult(
-    fullContent: fullContent,
-    chunkCount: chunks.length,
-    failedChunks: failedChunks,
-    chunkCoverage: chunkCoverage,
-  );
+  return fullContent;
 }
 
 /// 解析单块分析返回的 JSON 为 ChunkNote 列表

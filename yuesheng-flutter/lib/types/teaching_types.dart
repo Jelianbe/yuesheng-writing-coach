@@ -159,6 +159,15 @@ class Syndrome {
   /// 可选字段：schema 不校验类型，fromJson 安全读取（先例：reader_impact）。
   final String? interventionValue;
 
+  /// W-15-B：跨块因果缺口标记（merge prompt「跨片因果提示」引导 LLM 自标）。
+  ///
+  /// true = 该条线索的成立依赖未包含在任何分片中的信息（前文伏笔/后文解释/
+  /// 分片外人物关系），结论「暂时无法判断」，不得强行下结论。
+  /// **引导自标字段，不是代码判定**——禁止代码侧自动推断（会私造语义）；
+  /// LLM 未标的漏网场景由 W-21 A4 ②类（证据不足）与用户确认环（W-22）兜底。
+  /// 可选字段：schema 不校验类型，fromJson 安全读取（先例：reader_impact）。
+  final bool? pendingContext;
+
   const Syndrome({
     required this.syndromeId,
     required this.name,
@@ -167,6 +176,7 @@ class Syndrome {
     required this.explanation,
     this.readerImpact,
     this.interventionValue,
+    this.pendingContext,
   });
 
   Map<String, dynamic> toJson() => {
@@ -177,6 +187,8 @@ class Syndrome {
     'explanation': explanation,
     if (readerImpact != null) 'reader_impact': readerImpact,
     if (interventionValue != null) 'intervention_value': interventionValue,
+    // W-15-B：null 不落 key，fromJson→toJson 往返稳定（同 reader_impact 约定）。
+    if (pendingContext != null) 'pending_context': pendingContext,
   };
 
   factory Syndrome.fromJson(Map<String, dynamic> json) {
@@ -206,9 +218,16 @@ class Syndrome {
       // W-19-A：intervention_value 同 reader_impact 口径——可选、类型不校验、
       // 安全读取；档位越界（非 high/medium/low）按缺失处理（归一化为 null）。
       interventionValue: normalizeInterventionValue(json['intervention_value']),
+      // W-15-B：pending_context 同 reader_impact 口径——可选、类型不校验、
+      // 安全读取；非 bool 按缺失处理（归一化为 null）。
+      pendingContext: normalizePendingContext(json['pending_context']),
     );
   }
 }
+
+/// W-15-B：归一化 pending_context——bool 原样返回；其余（越界/非 bool/null）
+/// 一律返回 null（= 未标记）。不做静默纠偏（同 normalizeInterventionValue 口径）。
+bool? normalizePendingContext(Object? raw) => raw is bool ? raw : null;
 
 /// intervention_value 的合法档位（W-19-A）。
 const List<String> kInterventionValues = ['high', 'medium', 'low'];

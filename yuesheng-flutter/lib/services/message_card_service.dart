@@ -137,6 +137,11 @@ class DiagnosisSyndromeCard {
   /// 语义（≠ severity）见 intervention_value.dart 头注。
   final String? interventionValue;
 
+  /// W-15-B：跨块因果缺口标记（true = 结论「暂时无法判断」）。
+  /// 由 Syndrome.pendingContext 透传，供卡片渲染「暂时无法判断」徽标；
+  /// null/false 时不渲染（与「数据诚实：不编造」同一约定）。
+  final bool? pendingContext;
+
   const DiagnosisSyndromeCard({
     required this.syndromeId,
     required this.name,
@@ -145,6 +150,7 @@ class DiagnosisSyndromeCard {
     this.evidence = const [],
     this.explanation,
     this.interventionValue,
+    this.pendingContext,
   });
 
   factory DiagnosisSyndromeCard.fromJson(Map<String, dynamic> json) {
@@ -167,6 +173,8 @@ class DiagnosisSyndromeCard {
           const [],
       explanation: (ex is String && ex.isNotEmpty) ? ex : null,
       interventionValue: normalizeInterventionValue(json['intervention_value']),
+      // W-15-B：同 reader_impact 口径——安全读取，非 bool 按缺失处理。
+      pendingContext: normalizePendingContext(json['pending_context']),
     );
   }
 
@@ -182,6 +190,8 @@ class DiagnosisSyndromeCard {
       'explanation': explanation,
     // W-19-A：同上约定，null 不落 key，往返稳定。
     if (interventionValue != null) 'intervention_value': interventionValue,
+    // W-15-B：同上约定，null 不落 key，往返稳定。
+    if (pendingContext != null) 'pending_context': pendingContext,
   };
 }
 

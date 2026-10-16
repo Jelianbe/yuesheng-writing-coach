@@ -46,6 +46,9 @@ dependencies:
   uuid: ^4.5.1
   shared_preferences: ^2.3.2
   collection: ^1.18.0
+  # W-15-B：merge prompt 发送快照的全文哈希（sha256 前 16 位）。
+  # 本为 flutter_test 传递依赖（lock 已锁 3.0.7），任务书 §3.5 明确要求 ⇒ 升为直接依赖。
+  crypto: ^3.0.0
 
   # 数据模型（freezed + json_serializable）
   freezed_annotation: ^2.4.4

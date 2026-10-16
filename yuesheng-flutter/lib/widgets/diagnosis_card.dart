@@ -811,9 +811,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     TeachingState? teachingState,
   ) {
     final occurrence = _trends[s.syndromeId]?.occurrenceCount ?? 0;
-    // 教学状态标签真源：config/teaching_labels.dart。
-    // E-9 原行为保留：teachingState 为 null 或 identified（刚识别）时 chip 不标注——
-    // 只有已介入训练的状态才显式提示「训练中/趋稳中/已掌握」。
+    // 教学状态标签真源：config/teaching_labels.dart。E-9：仅已介入训练的
+    // 状态才标注（teachingState 为 null/identified 时 chip 不标注）。
     final stateLabel = switch (teachingState) {
       null || TeachingState.identified => null,
       final s => kTeachingStateLabels[s],
@@ -847,6 +846,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           const SizedBox(width: 4),
           _buildTeachingStateBadge(stateLabel, dotColor),
         ],
+        ..._buildPendingBadgeIfAny(s, dotColor),
         if (occurrence >= 2) ...[
           const SizedBox(width: 4),
           _buildOccurrenceBadge(occurrence, cfg.textColor),
@@ -854,6 +854,15 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       ],
     );
   }
+
+  /// W-15-B：跨块因果缺口徽标——该条结论「暂时无法判断」（依赖分片外
+  /// 信息）。复用既有徽标形态（同色系，不新造视觉语言）；非 pending 返空。
+  List<Widget> _buildPendingBadgeIfAny(
+    DiagnosisSyndromeCard s,
+    Color dotColor,
+  ) => s.pendingContext == true
+      ? [const SizedBox(width: 4), _buildTeachingStateBadge('暂时无法判断', dotColor)]
+      : const [];
 
   /// E-9：教学状态小徽标（训练中/趋稳中/已掌握）
   Widget _buildTeachingStateBadge(String label, Color color) {

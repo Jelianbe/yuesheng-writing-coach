@@ -65,7 +65,9 @@ double evidenceJaccard(List<String> a, List<String> b) {
 }
 
 /// 同 id 高重叠合并：severity 取最高，evidence 取并集，name/explanation
-/// 取先出现者（首个非空）。
+/// 取先出现者（首个非空）；pending_context 取「任一标记即保留」（W-15-B：
+/// 缺口标记是保守信号，合并不应抹掉——两份中任一份自标了跨块因果依赖，
+/// 合并后的条目仍须带「暂时无法判断」徽标排尾部）。
 Syndrome _mergeTwo(Syndrome keep, Syndrome other) {
   return Syndrome(
     syndromeId: keep.syndromeId,
@@ -80,6 +82,7 @@ Syndrome _mergeTwo(Syndrome keep, Syndrome other) {
       keep.interventionValue,
       other.interventionValue,
     ),
+    pendingContext: keep.pendingContext ?? other.pendingContext,
   );
 }
 
@@ -115,8 +118,15 @@ String? _higherValue(String? a, String? b) =>
     deduped.addAll(kept);
   }
 
-  // 2. 排序（severity 主序 + 同档内干预价值降序，复用 W-19-A）
-  final sorted = sortSyndromesForDiagnosisCard(deduped);
+  // 2. 排序：pending_context=true 条目**不参与严重度主序**（W-15-B 验收③：
+  //    跨块因果缺口——结论「暂时无法判断」，单独排尾部，不挤占可判断条目
+  //    的展示位）；其余复用 W-19-A 展示排序（severity 主序 + 同档内干预价值）
+  //    后，pending 条目按原相对顺序追加在尾部。
+  final normal = sortSyndromesForDiagnosisCard(
+    deduped.where((s) => s.pendingContext != true).toList(),
+  );
+  final pending = deduped.where((s) => s.pendingContext == true).toList();
+  final sorted = [...normal, ...pending];
 
   // 3. 截前 kMergeDisplayCap 条（溢出不丢弃，进报告）
   final displayed = sorted.take(kMergeDisplayCap).toList();

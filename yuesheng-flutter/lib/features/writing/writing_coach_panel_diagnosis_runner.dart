@@ -81,6 +81,10 @@ class WritingCoachDiagnosisRunner {
         diagPrompt: diagPrompt,
         cancelToken: cancelToken,
       );
+    } on ProgressiveMergeOverBudget catch (e) {
+      // W-15-B B1：merge 预算拒发——显式提示（设计稿 §3.1「UI 显式报」），
+      // 不落入下方通用 catch（「超限静默继续发送」是本批要消灭的形态）。
+      handleError(e.userMessage);
     } on ProgressiveDiagnosisCancelled {
       // 用户主动停止分块诊断：优雅复位（不标记失败、不弹红错）
       handleCancelled();

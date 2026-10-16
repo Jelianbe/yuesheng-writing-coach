@@ -1317,6 +1317,8 @@ class DiagnosisFlowHandler {
                   explanation: s.explanation,
                   // W-19-A：透传干预价值档位（null = 未评定，渲染层可空缺）。
                   interventionValue: s.interventionValue,
+                  // W-15-B：透传跨块因果缺口标记（true ⇒ 渲染「暂时无法判断」徽标）。
+                  pendingContext: s.pendingContext,
                 ),
               )
               .toList(),

@@ -59,6 +59,10 @@ class ChatDiagnosisController {
     if (bootstrap == null) return;
 
     final db = host.ref.read(appDatabaseProvider);
+    // W-15-B：messenger 在首个 await 前捕获——拒发提示发生在深异步之后，
+    // host.context 跨 async gap 会触发 use_build_context_synchronously；
+    // ScaffoldMessengerState 本体非 BuildContext，捕获后安全复用。
+    final messenger = ScaffoldMessenger.of(host.context);
     // 先上屏 loading：等待落盘期间用户看到「正在准备诊断内容…」而非无响应。
     host.ref
         .read(chatStoreProvider.notifier)
@@ -78,6 +82,13 @@ class ChatDiagnosisController {
         return;
       }
       await _runDiagnosis(chapter, bootstrap);
+    } on ProgressiveMergeOverBudget catch (e) {
+      // W-15-B B1：merge 预算拒发——显式提示（设计稿 §3.1「UI 显式报」），
+      // 不落入下方通用静默 catch（「超限静默继续发送」是本批要消灭的形态）。
+      if (host.mounted) {
+        host.ref.read(chatStoreProvider.notifier).cancelStreaming();
+        messenger.showSnackBar(SnackBar(content: Text(e.userMessage)));
+      }
     } catch (_) {
       // 诊断失败不打断页面，错误由 sendMessage 的 onError / finally 复位处理
     } finally {
@@ -126,6 +137,19 @@ class ChatDiagnosisController {
     return text ?? '';
   }
 
+  /// W-15-B B1 级序 b：会话当前活跃症候 ID 集（merge 超预算降级时的过滤
+  /// 判据；加载失败返空集 = 级序 b 跳过，不私造语义）。
+  Future<Set<String>> _activeSyndromeIds(String sessionId) async {
+    try {
+      final problems = await DiagnosisRepository(
+        host.ref.read(appDatabaseProvider),
+      ).listActiveProblems(sessionId);
+      return problems.map((p) => p.syndromeId).toSet();
+    } catch (_) {
+      return const {};
+    }
+  }
+
   /// W-18 用户温度档（merge 段；灵活档 ⇒ null ⇒ 请求体逐字节不变）。
   Future<double?> _mergeTemperature() async => mergeTemperatureFor(
     await AppStateRepository(
@@ -159,6 +183,7 @@ class ChatDiagnosisController {
       structureProfile: await _structureProfileText(chapter),
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
       mergeTemperature: await _mergeTemperature(),
+      activeSyndromeIds: await _activeSyndromeIds(bootstrap.sessionId),
       onContent: (delta) {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },

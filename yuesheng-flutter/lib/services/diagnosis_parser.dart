@@ -379,6 +379,8 @@ String? _validateSyndromes(
             ? s['reader_impact'] as String
             : null,
         interventionValue: _parseInterventionValue(s, notes),
+        // W-15-B：跨块因果缺口标记（引导 LLM 自标），此处只透传，非 bool 按缺失。
+        pendingContext: normalizePendingContext(s['pending_context']),
       ),
     );
   }
