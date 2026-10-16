@@ -489,7 +489,8 @@ List<String> _buildChunkNotesBlocks(
   return allNotesJson;
 }
 
-/// merge prompt 的静态指引块：合并注意事项 + 叙事合理性判定门 + 数量原则。
+/// merge prompt 的静态指引块：合并注意事项 + 叙事合理性判定门 + 数量原则
+/// + 干预价值（S3）三判据（W-19-B，2026-10-16 舰长批 R-027）。
 ///
 /// 抽出为顶层常量（纯数据）：本块不依赖 buildMergePrompt 的任何参数，
 /// 只有 [_kMergeRelevanceGate] 一个 const 插值，故合并规则与判定门在
@@ -506,6 +507,12 @@ final String _kMergeGuidanceBlock =
 $_kMergeRelevanceGate
 
 数量原则（按判据收敛报出）：只有当某症候的成立条件能够逐条满足、且你能为它引用可指认的原文证据时，才报出该症候；判据未满足或证据不足时不报（宁缺勿滥，不凑数）。报出的条目按严重度与证据把握排序；若合格条目超过 5 条，保留排序最前的 5 条，其余在 feedback_summary 中一句话概括。
+
+干预价值（S3）三判据——对每条准备报出的症候依次自问，全「是」=high，两条「是」=medium，其余=low：
+1. 可教：存在一个作者现在就能做的具体训练动作（改写练习/重写某段/自查清单），而非「需要全书级重构才解决」；
+2. 可感：干预效果作者自己当章可感知（读得下去/看得懂的变化），不依赖后续章节验证；
+3. 可测：有明确的复测口径（下轮诊断同一症候是否收敛），可进「诊断收敛」叙事。
+铁律：intervention_value 与 severity 相互独立，不得互为别名或函数——L3 严重但本轮干预不动它（如全文视角混乱需重写架构）应为 low；L1 轻微但一次改写练习立竿见影（如三连排比的情绪标签）应为 high。不得因「这段文本写得好」而豁免或抬升任何条目；写得好的部分不因此获得任何加分。
 ''';
 
 /// 构造跨分片合并的系统 prompt。
@@ -557,6 +564,7 @@ syndrome 对象格式要求：
 - evidence (string[]): 原文证据片段，每条症候至少 1 条证据
 - explanation (string): 诊断解释
 - reader_impact (string): 一句话说明"不改这段，读者会有什么体验影响"。须结合本条证据**具体**说明该段文本对读者的影响，**不得照抄示例措辞**。示例（仅示意句式）："这一段把结论直接摆出来，读者没有被说服的过程，情感落点会显得突兀"
+- intervention_value (high|medium|low): 按上述「干预价值（S3）三判据」评定的档位，缺省 low
 
 $_kMergeOutputRequirement$_kTeachingModeChunkInstruction(teachingMode)''';
 }
