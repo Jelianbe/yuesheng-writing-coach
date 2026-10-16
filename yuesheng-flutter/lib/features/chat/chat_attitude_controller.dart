@@ -25,6 +25,7 @@ import '../../services/attitude_advisor.dart';
 import '../../types/teaching_types.dart';
 import 'chat_diagnosis_controller.dart';
 import 'chat_page_host.dart';
+import '../../config/svc_copy.dart';
 
 /// 聊天页态度档位与建议动作
 class ChatAttitudeController {
@@ -55,7 +56,7 @@ class ChatAttitudeController {
       if (host.context.mounted) {
         ScaffoldMessenger.of(
           host.context,
-        ).showSnackBar(const SnackBar(content: Text('态度切换失败，请稍后再试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('态度切换'))));
       }
     }
   }

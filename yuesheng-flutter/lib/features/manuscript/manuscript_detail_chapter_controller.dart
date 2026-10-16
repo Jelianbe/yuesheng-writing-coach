@@ -28,6 +28,7 @@ import 'manuscript_detail_move_to_volume_sheet.dart';
 import '../../widgets/yue_input_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 作品详情页章节动作
 class ManuscriptDetailChapterController {
@@ -61,7 +62,7 @@ class ManuscriptDetailChapterController {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 章节移动失败: $e');
       if (!host.mounted) return;
-      host.showSnack('移动失败，请稍后再试');
+      host.showSnack(kOperationFailed('移动'));
     }
   }
 
@@ -99,7 +100,7 @@ class ManuscriptDetailChapterController {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 移动章节失败: $e');
       if (!host.mounted) return;
-      host.showSnack('移动失败，请稍后再试');
+      host.showSnack(kOperationFailed('移动'));
     }
   }
 
@@ -128,7 +129,7 @@ class ManuscriptDetailChapterController {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 重命名章节失败: $e');
       if (!host.mounted) return;
-      host.showSnack('重命名失败，请稍后再试');
+      host.showSnack(kOperationFailed('重命名'));
     }
   }
 
@@ -147,7 +148,7 @@ class ManuscriptDetailChapterController {
     if (id != null && host.mounted) {
       host.showSnack('已创建《$title》');
     } else if (host.mounted) {
-      host.showSnack('创建失败，请稍后再试');
+      host.showSnack(kOperationFailed('创建'));
     }
   }
 
@@ -219,9 +220,9 @@ class ManuscriptDetailChapterController {
         .read(chapterStoreProvider(host.manuscriptId).notifier)
         .softDeleteChapter(chapter.id);
     if (host.context.mounted) {
-      ScaffoldMessenger.of(
-        host.context,
-      ).showSnackBar(SnackBar(content: Text(ok ? '已移入回收站' : '删除失败，请稍后再试')));
+      ScaffoldMessenger.of(host.context).showSnackBar(
+        SnackBar(content: Text(ok ? '已移入回收站' : kOperationFailed('删除'))),
+      );
     }
   }
 }

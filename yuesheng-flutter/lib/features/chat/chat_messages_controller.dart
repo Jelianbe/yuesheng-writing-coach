@@ -26,6 +26,7 @@ import 'chat_teaching_controller.dart';
 import 'partial_agreement_card.dart';
 import '../writing/writing_coach_panel_interactions.dart';
 import '../../widgets/privacy_notice_dialog.dart';
+import '../../config/svc_copy.dart';
 
 /// 聊天页消息与画像相关动作
 class ChatMessagesController {
@@ -133,7 +134,7 @@ class ChatMessagesController {
       if (host.context.mounted) {
         ScaffoldMessenger.of(
           host.context,
-        ).showSnackBar(const SnackBar(content: Text('删除失败，请稍后再试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('删除'))));
       }
       return;
     }

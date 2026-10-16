@@ -19,6 +19,7 @@ import '../../services/export_service.dart';
 import 'manuscript_detail_host.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 作品详情页导出动作
 class ManuscriptDetailExporter {
@@ -57,7 +58,7 @@ class ManuscriptDetailExporter {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 整书导出失败: $e');
       if (!host.mounted) return;
-      host.showSnack('导出失败，请稍后再试');
+      host.showSnack(kOperationFailed('导出'));
     }
   }
 
@@ -78,7 +79,7 @@ class ManuscriptDetailExporter {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 单章导出失败: $e');
       if (!host.mounted) return;
-      host.showSnack('导出失败，请稍后再试');
+      host.showSnack(kOperationFailed('导出'));
     }
   }
 
@@ -102,7 +103,7 @@ class ManuscriptDetailExporter {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 卷导出失败: $e');
       if (!host.mounted) return;
-      host.showSnack('导出失败，请稍后再试');
+      host.showSnack(kOperationFailed('导出'));
     }
   }
 }

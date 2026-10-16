@@ -26,6 +26,7 @@ import 'bookshelf_long_press_sheet.dart';
 import 'bookshelf_page_host.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 书架页作品卡片动作（点按 / 长按菜单 / 置顶 / 删除 / 编辑）
 class BookshelfActionsController {
@@ -110,7 +111,7 @@ class BookshelfActionsController {
       if (!host.context.mounted) return;
       ScaffoldMessenger.of(host.context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('置顶失败，请稍后再试')));
+        ..showSnackBar(SnackBar(content: Text(kOperationFailed('置顶'))));
     }
   }
 

@@ -20,6 +20,7 @@ import 'manuscript_detail_host.dart';
 import '../../widgets/yue_input_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 作品详情页卷动作
 class ManuscriptDetailVolumeController {
@@ -58,7 +59,7 @@ class ManuscriptDetailVolumeController {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 新建卷失败: $e');
       if (!host.mounted) return;
-      host.showSnack('新建卷失败，请稍后再试');
+      host.showSnack(kOperationFailed('新建卷'));
     }
   }
 
@@ -86,7 +87,7 @@ class ManuscriptDetailVolumeController {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 重命名卷失败: $e');
       if (!host.mounted) return;
-      host.showSnack('重命名失败，请稍后再试');
+      host.showSnack(kOperationFailed('重命名'));
     }
   }
 
@@ -141,7 +142,7 @@ class ManuscriptDetailVolumeController {
     } catch (e) {
       debugPrint('[ManuscriptDetail] 删除卷失败: $e');
       if (!host.mounted) return;
-      host.showSnack('删除卷失败，请稍后再试');
+      host.showSnack(kOperationFailed('删除卷'));
     }
   }
 }

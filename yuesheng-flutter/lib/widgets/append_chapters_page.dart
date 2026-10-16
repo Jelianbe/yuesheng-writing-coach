@@ -25,6 +25,7 @@ import '../services/file_parser.dart';
 import '../features/chat/import_success_sheet.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
+import '../config/svc_copy.dart';
 
 /// 解析后的章节（title + content + volumeTitle）
 class AppendChapterItem {
@@ -111,7 +112,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e is StateError ? e.message : '文件读取失败，请稍后重试';
+          _error = e is StateError ? e.message : kOperationFailed('文件读取');
           _picking = false;
         });
       }
@@ -205,7 +206,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = '导入失败，请稍后重试';
+          _error = kOperationFailed('导入');
           _importing = false;
         });
       }

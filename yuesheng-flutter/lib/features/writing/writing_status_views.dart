@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/app_palette.dart';
+import '../../config/shared_constants.dart' show formatWordCount;
+import '../../config/svc_copy.dart';
 
 /// 千位分隔符格式化（如 3256 → "3,256"）
 String _formatNum(int n) {
@@ -21,13 +23,8 @@ String _formatNum(int n) {
   );
 }
 
-/// 字数格式化：>=10000 → "1.2万字"，否则 → "3,256字"（千位分隔符）
-String _formatWordCount(int count) {
-  if (count >= 10000) {
-    return '${(count / 10000).toStringAsFixed(1)}万字';
-  }
-  return '${_formatNum(count)}字';
-}
+/// 字数格式化：D7 族 4.11 收敛——真源 shared_constants.formatWordCount，
+/// 原私有 _formatWordCount 手写副本已删除（>=10000 → "1.2万字"，否则 "3,256字"）。
 
 /// HH:mm 格式化（保存状态条用）
 String _formatTime(DateTime t) {
@@ -123,7 +120,7 @@ class WritingSaveStatusBar extends StatelessWidget {
     } else if (saveError != null) {
       // 入档批次：连续失败 >= 3 暂停自动保存时给持续可见提示
       content = Text(
-        autosavePaused ? '自动保存已暂停，请手动保存' : '保存失败，请稍后重试',
+        autosavePaused ? '自动保存已暂停，请手动保存' : kOperationFailed('保存'),
         style: TextStyle(fontSize: 11, color: context.palette.warning),
       );
     } else if (lastSavedAt != null) {
@@ -210,7 +207,7 @@ class WritingWordCountIndicator extends StatelessWidget {
       text = '${_formatNum(wordCount)}/${_formatNum(goalWords)}';
       color = wordCount >= goalWords ? context.palette.primary : secondary;
     } else {
-      text = _formatWordCount(wordCount);
+      text = formatWordCount(wordCount);
       color = secondary;
     }
     return InkWell(

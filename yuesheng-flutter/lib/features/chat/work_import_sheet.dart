@@ -21,6 +21,7 @@ import '../../config/app_theme.dart';
 import '../../providers/work_import_providers.dart';
 import '../../services/file_parser.dart';
 import '../../services/work_import_service.dart';
+import '../../config/svc_copy.dart';
 
 class WorkImportSheet extends ConsumerStatefulWidget {
   final String sessionId;
@@ -128,7 +129,7 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
   /// release 静默：仅展示可读中文文案，不暴露技术细节
   String _friendlyError(Object e) {
     if (e is StateError) return e.message;
-    return '导入失败，请稍后重试';
+    return kOperationFailed('导入');
   }
 
   Future<void> _showPasteDialog() async {

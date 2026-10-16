@@ -42,6 +42,7 @@ import 'reference_picker.dart';
 import 'save_to_file_sheet.dart';
 import 'work_import_sheet.dart';
 import '../../widgets/yue_sheet.dart';
+import '../../config/svc_copy.dart';
 
 /// 聊天页引用与文件相关动作
 class ChatReferenceController {
@@ -236,7 +237,7 @@ class ChatReferenceController {
             if (host.context.mounted) {
               ScaffoldMessenger.of(
                 host.context,
-              ).showSnackBar(const SnackBar(content: Text('添加引用失败，请稍后再试')));
+              ).showSnackBar(SnackBar(content: Text(kOperationFailed('添加引用'))));
             }
           }
         },

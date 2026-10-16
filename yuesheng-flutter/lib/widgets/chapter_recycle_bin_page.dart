@@ -21,6 +21,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chapter_providers.dart';
 import '../theme/app_typography.dart';
+import '../config/svc_copy.dart';
 
 /// 章节回收站页
 class ChapterRecycleBinPage extends ConsumerStatefulWidget {
@@ -89,7 +90,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       _snack('已恢复《${chapter.title}》');
     } catch (e) {
       debugPrint('[RecycleBin] 恢复失败: $e');
-      if (mounted) _snack('恢复失败，请稍后再试');
+      if (mounted) _snack(kOperationFailed('恢复'));
     }
   }
 
@@ -131,7 +132,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       _snack('已永久删除');
     } catch (e) {
       debugPrint('[RecycleBin] 永久删除失败: $e');
-      if (mounted) _snack('删除失败，请稍后再试');
+      if (mounted) _snack(kOperationFailed('删除'));
     }
   }
 
@@ -172,7 +173,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
             color: context.palette.textTertiary,
           ),
           const SizedBox(height: 12),
-          const Text('加载失败，请稍后重试'),
+          Text(kOperationFailed('加载')),
           const SizedBox(height: 16),
           OutlinedButton(onPressed: _load, child: const Text('重试')),
         ],

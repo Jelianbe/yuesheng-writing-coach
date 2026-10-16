@@ -21,6 +21,7 @@ import 'manuscript_detail_host.dart';
 import 'manuscript_detail_menu.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 作品详情页导航动作
 class ManuscriptDetailNavigator {
@@ -123,7 +124,7 @@ class ManuscriptDetailNavigator {
       if (host.context.mounted) {
         ScaffoldMessenger.of(
           host.context,
-        ).showSnackBar(const SnackBar(content: Text('删除失败，请稍后重试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('删除'))));
       }
     }
   }

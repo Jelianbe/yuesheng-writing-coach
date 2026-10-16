@@ -30,6 +30,7 @@ import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
+import '../config/svc_copy.dart';
 
 /// 学习进度详情页
 class ProgressDetailPage extends ConsumerStatefulWidget {
@@ -86,7 +87,7 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = '加载失败，请稍后重试';
+          _error = kOperationFailed('加载');
         });
       }
     }
@@ -110,7 +111,7 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
         setState(() => _generating = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('生成失败，请稍后重试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('生成'))));
       }
     }
   }
@@ -686,7 +687,8 @@ class _ProblemRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  severityLabels[problem.severity] ?? problem.severity.value,
+                  kSeverityLabels[problem.severity.value] ??
+                      problem.severity.value,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,

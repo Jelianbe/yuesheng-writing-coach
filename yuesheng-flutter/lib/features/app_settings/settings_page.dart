@@ -47,6 +47,7 @@ import '../../widgets/privacy_notice_dialog.dart';
 import '../../theme/app_typography.dart';
 import 'coach_settings_page.dart';
 import 'widgets/settings_cards.dart';
+import '../../config/svc_copy.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
 const String _appVersion = '0.5.2';
@@ -268,7 +269,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       }
       _notify(deleted > 0 ? '缓存已清除（移除 $deleted 个空会话）' : '缓存已清除');
     } catch (_) {
-      _notify('清除失败，请稍后再试', error: true);
+      _notify(kOperationFailed('清除'), error: true);
     }
   }
 
@@ -350,7 +351,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         message: '会话导出失败: $e',
         stack: st.toString(),
       );
-      if (mounted) _notify('导出失败，请稍后再试', error: true);
+      if (mounted) _notify(kOperationFailed('导出'), error: true);
     }
   }
 
@@ -531,7 +532,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       await _reloadAccounts();
       _notify('已设为默认账号');
     } catch (_) {
-      _notify('操作失败，请稍后再试', error: true);
+      _notify(kOperationFailed('操作'), error: true);
     }
   }
 

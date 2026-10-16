@@ -21,6 +21,7 @@ import '../../utils/chapter_title.dart';
 import 'chapter_tree_drawer.dart';
 import 'outline_drawer.dart';
 import 'writing_page_host.dart';
+import '../../config/svc_copy.dart';
 
 class WritingPageChapterNavController {
   WritingPageChapterNavController(this._host);
@@ -205,7 +206,7 @@ class WritingPageChapterNavController {
       if (!_host.context.mounted) return;
       ScaffoldMessenger.of(_host.context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('新建章节失败，请稍后再试')));
+        ..showSnackBar(SnackBar(content: Text(kOperationFailed('新建章节'))));
     }
   }
 }

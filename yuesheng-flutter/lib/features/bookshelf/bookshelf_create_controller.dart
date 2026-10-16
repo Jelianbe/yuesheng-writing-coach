@@ -22,6 +22,7 @@ import 'bookshelf_create_modal.dart';
 import 'bookshelf_page_host.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 书架页新建作品 / 文本导入动作
 class BookshelfCreateController {
@@ -137,7 +138,7 @@ class BookshelfCreateController {
       // P2-5：创建失败时给用户明确反馈
       ScaffoldMessenger.of(
         host.context,
-      ).showSnackBar(const SnackBar(content: Text('创建失败，请稍后再试')));
+      ).showSnackBar(SnackBar(content: Text(kOperationFailed('创建'))));
     }
   }
 }

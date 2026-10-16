@@ -32,6 +32,7 @@ import '../theme/app_typography.dart';
 import '../data/repositories/edit_diff_event_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/decode_guard.dart';
+import '../config/svc_copy.dart';
 
 /// M2 复述交互条（挂在诊断卡每个症候块底部；无诊断上下文时父级不渲染）。
 class M2RecallBar extends ConsumerStatefulWidget {
@@ -123,7 +124,7 @@ class _M2RecallBarState extends ConsumerState<M2RecallBar> {
     } catch (e, st) {
       // 落库失败停在 picking（可重试）——留痕，不静默吞。
       logSilentDegrade(operation: 'recordM2Recall', error: e, stack: st);
-      _showFailure('复述记录失败，请稍后重试');
+      _showFailure(kOperationFailed('复述记录'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -22,6 +22,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 体裁选项（对齐 RN project-settings.tsx GENRES：长篇小说/中篇/短篇）
 const List<String> _genres = ['长篇小说', '中篇', '短篇'];
@@ -141,7 +142,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('保存失败，请稍后重试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('保存'))));
       }
     }
   }
@@ -187,7 +188,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         setState(() => _deleting = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('删除失败，请稍后重试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('删除'))));
       }
     }
   }

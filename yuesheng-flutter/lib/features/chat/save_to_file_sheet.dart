@@ -14,6 +14,7 @@ import '../../config/app_theme.dart';
 import '../../data/repositories/reference_repository.dart';
 import '../../providers/capability_providers.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 文件角色（对齐 RN FileRole：general/outline/material）
 const List<({String key, String label})> _fileRoles = [
@@ -110,7 +111,7 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
       setState(() => _saving = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('保存失败，请稍后重试')));
+      ).showSnackBar(SnackBar(content: Text(kOperationFailed('保存'))));
     }
   }
 

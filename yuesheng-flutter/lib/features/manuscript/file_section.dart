@@ -21,6 +21,7 @@ import '../../widgets/file_viewer_modal.dart';
 import '../../widgets/material_upload_sheet.dart';
 import '../../config/app_palette.dart';
 import '../../theme/app_typography.dart';
+import '../../config/svc_copy.dart';
 
 const Map<String, String> _roleLabels = {
   'outline': '大纲',
@@ -97,7 +98,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('删除失败，请稍后重试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('删除'))));
       }
     }
   }

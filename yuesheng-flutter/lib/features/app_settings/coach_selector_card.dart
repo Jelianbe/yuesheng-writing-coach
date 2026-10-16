@@ -27,6 +27,7 @@ import '../../services/persona_structured_constraints.dart';
 import '../../types/coach_persona.dart';
 import '../../types/coach_persona_seed.dart';
 import '../../types/teaching_types.dart';
+import '../../config/svc_copy.dart';
 
 class CoachSelectorCard extends ConsumerStatefulWidget {
   const CoachSelectorCard({super.key});
@@ -82,7 +83,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('教练切换失败，请稍后再试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('教练切换'))));
       }
     }
   }
@@ -101,7 +102,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('教学方式切换失败，请稍后再试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('教学方式切换'))));
       }
     }
   }
@@ -130,7 +131,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('保存失败，请稍后再试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('保存'))));
       }
     }
   }
@@ -155,7 +156,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('删除失败，请稍后再试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('删除'))));
       }
     }
   }
@@ -215,7 +216,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('保存失败，请稍后再试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('保存'))));
       }
     }
   }
@@ -858,7 +859,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       await _runPolish(name, tone);
     } catch (_) {
       if (!mounted) return;
-      _snack('AI 润色失败，请稍后重试或手动填写');
+      _snack(kOperationFailed('AI 润色', next: '或手动填写'));
     } finally {
       if (mounted) setState(() => _isPolishing = false);
     }
@@ -952,7 +953,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
       });
     } catch (_) {
       if (!mounted) return;
-      _snack('试听失败，请稍后重试或手动填写');
+      _snack(kOperationFailed('试听', next: '或手动填写'));
     } finally {
       if (mounted) setState(() => _isAuditioning = false);
     }

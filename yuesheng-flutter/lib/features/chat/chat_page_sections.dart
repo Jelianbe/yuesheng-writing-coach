@@ -26,6 +26,7 @@ import 'chat_welcome.dart';
 import 'message_list.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 消息列表分区（含练习卡 / 评估报告 / 空态欢迎）
 class ChatMessageSection extends ConsumerWidget {
@@ -166,7 +167,7 @@ class ChatErrorBar extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              kDebugMode ? chatState.error! : '发送失败，请稍后重试',
+              kDebugMode ? chatState.error! : kOperationFailed('发送'),
               style: TextStyle(fontSize: 13, color: context.palette.danger),
             ),
           ),

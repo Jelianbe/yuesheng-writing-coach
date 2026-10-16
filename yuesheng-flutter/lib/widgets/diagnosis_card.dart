@@ -44,6 +44,7 @@ import 'syndrome_detail_modal.dart';
 import 'm2_recall_bar.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
+import '../config/svc_copy.dart';
 
 /// 严重度 → 矿物色 + 文字色
 class _SeverityConfig {
@@ -1593,7 +1594,7 @@ class _SyndromeConfirmationBarState
       // 落库失败不切换状态（保持 pending，可重试）。R-028：静默降级必须留痕；
       // NN/g《Disabled/失败》判据：用户点了就要告诉他为什么没成——否则与「死按钮」不可分。
       logSilentDegrade(operation: 'confirmDiagnosis', error: e, stack: st);
-      _showFailureSnack('确认失败，请稍后重试');
+      _showFailureSnack(kOperationFailed('确认'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -1658,7 +1659,7 @@ class _SyndromeConfirmationBarState
     } catch (e, st) {
       // 质疑落库失败保持 pending（可重试）——留痕 + 用户可见失败反馈（同确认栏判据）。
       logSilentDegrade(operation: 'disputeDiagnosis', error: e, stack: st);
-      _showFailureSnack('提交异议失败，请稍后重试');
+      _showFailureSnack(kOperationFailed('提交异议'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -1720,7 +1721,7 @@ class _SyndromeConfirmationBarState
         error: e,
         stack: st,
       );
-      _showFailureSnack('操作失败，请稍后重试');
+      _showFailureSnack(kOperationFailed('操作'));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -17,6 +17,7 @@ import 'dart:math';
 import 'package:drift/drift.dart';
 
 import '../config/svc_copy.dart';
+import '../config/teaching_labels.dart';
 import '../data/database/database.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/teaching_state_repository.dart';
@@ -122,12 +123,8 @@ const Map<BeginnerLevel, String> beginnerLevelLabels = {
   BeginnerLevel.n4Independent: '独立创作',
 };
 
-/// 严重度中文名（对齐 RN severityLabels）
-const Map<Severity, String> severityLabels = {
-  Severity.l1: '轻微',
-  Severity.l2: '中等',
-  Severity.l3: '严重',
-};
+/// 严重度中文名（D7 族甲收敛：真源 config/teaching_labels.kSeverityLabels，
+/// 键为 'L1'/'L2'/'L3' = Severity.value；原本地手写表已删除）。
 
 /// 学习进度服务
 class ProgressService {
@@ -294,7 +291,7 @@ class ProgressService {
     for (var i = 0; i < active.length; i++) {
       final p = active[i];
       buffer.write(
-        '${i + 1}. ${p.syndromeName}（${severityLabels[p.severity] ?? p.severity.value}）\n',
+        '${i + 1}. ${p.syndromeName}（${kSeverityLabels[p.severity.value] ?? p.severity.value}）\n',
       );
       buffer.write('   发现时间：${_formatDate(p.firstDetectedAt)}\n\n');
     }
@@ -311,7 +308,7 @@ class ProgressService {
     for (var i = 0; i < resolved.length; i++) {
       final p = resolved[i];
       buffer.write(
-        '${i + 1}. ${p.syndromeName}（${severityLabels[p.severity] ?? p.severity.value}）\n',
+        '${i + 1}. ${p.syndromeName}（${kSeverityLabels[p.severity.value] ?? p.severity.value}）\n',
       );
       buffer.write('   发现：${_formatDate(p.firstDetectedAt)}\n');
       buffer.write('   解决：${_formatDate(p.resolvedAt)}\n\n');

@@ -35,6 +35,7 @@ import '../../services/llm_client.dart';
 import '../../services/llm_config_storage.dart';
 import '../../theme/app_typography.dart';
 import 'widgets/settings_cards.dart';
+import '../../config/svc_copy.dart';
 
 /// OpenAI 兼容供应商预设（ADR-C83：扩展多模型）。选中自动填 Base URL +
 /// Model 默认值；API Key 各供应商独立，仍需用户自行填写（R-029 零硬编码）。
@@ -225,7 +226,7 @@ class _ApiConfigPageState extends ConsumerState<ApiConfigPage> {
       await _reloadAccounts();
       _notify('API 配置已保存');
     } catch (_) {
-      _notify('保存失败，请稍后再试', error: true);
+      _notify(kOperationFailed('保存'), error: true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -383,7 +384,7 @@ class _ApiConfigPageState extends ConsumerState<ApiConfigPage> {
         _notify('API 配置已清空');
       }
     } catch (_) {
-      _notify('清空失败，请稍后再试', error: true);
+      _notify(kOperationFailed('清空'), error: true);
     }
   }
 
@@ -461,7 +462,7 @@ class _ApiConfigPageState extends ConsumerState<ApiConfigPage> {
       await _reloadAccounts();
       _notify('已设为默认账号');
     } catch (_) {
-      _notify('操作失败，请稍后再试', error: true);
+      _notify(kOperationFailed('操作'), error: true);
     }
   }
 

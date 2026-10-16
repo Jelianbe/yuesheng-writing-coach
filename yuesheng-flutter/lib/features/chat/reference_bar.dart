@@ -28,6 +28,7 @@ import '../../widgets/excerpt_picker_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 class ReferenceBar extends ConsumerStatefulWidget {
   /// 会话 ID（引用列表按会话隔离）
@@ -123,7 +124,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       widget.onReferencesChanged?.call('set_primary', ref.refType, ref.title);
       _notify('已切换到：${ref.title}');
     } catch (_) {
-      _notify('操作失败，请稍后再试');
+      _notify(kOperationFailed('操作'));
     }
   }
 
@@ -134,7 +135,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       widget.onReferencesChanged?.call('remove', ref.refType, ref.title);
       _notify('已移除引用：${ref.title}');
     } catch (_) {
-      _notify('操作失败，请稍后再试');
+      _notify(kOperationFailed('操作'));
     }
   }
 
@@ -183,7 +184,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
         _notify('已选段：第 ${anchor.startPara + 1}–${anchor.endPara + 1} 段');
       }
     } catch (_) {
-      _notify('操作失败，请稍后再试');
+      _notify(kOperationFailed('操作'));
     }
   }
 
@@ -220,7 +221,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       await _loadReferences();
       _notify('已批量删除 $count 项引用');
     } catch (_) {
-      _notify('操作失败，请稍后再试');
+      _notify(kOperationFailed('操作'));
     }
   }
 

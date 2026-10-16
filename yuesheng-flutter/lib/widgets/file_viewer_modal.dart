@@ -15,6 +15,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/capability_providers.dart';
 import '../config/app_palette.dart';
+import '../config/svc_copy.dart';
 
 const Map<String, String> _roleLabels = {
   'outline': '大纲',
@@ -107,7 +108,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('更新失败，请稍后重试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('更新'))));
       }
     }
   }
@@ -144,7 +145,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('删除失败，请稍后重试')));
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('删除'))));
       }
     }
   }

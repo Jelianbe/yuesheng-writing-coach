@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../providers/chat_store.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 /// 按钮行：快速观察 | 诊断本章（左）| 关闭 ✕（右）
 ///
@@ -111,7 +112,7 @@ class WritingCoachErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               // release 静默：不向用户展示异常技术细节（对齐 P2-7 铁律）
-              kDebugMode ? error : '发送失败，请稍后重试',
+              kDebugMode ? error : kOperationFailed('发送'),
               style: TextStyle(color: context.palette.danger, fontSize: 13),
             ),
           ),

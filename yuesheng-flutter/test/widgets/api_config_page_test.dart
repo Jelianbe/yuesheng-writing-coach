@@ -667,7 +667,9 @@ void main() {
   // 漏测 ⇒ 线上写库失败时界面**完全无反馈**（用户只会以为按钮坏了）。
   // ══════════════════════════════════════════════════════════════
 
-  testWidgets('#X3 保存配置写库失败 → 「保存失败，请稍后再试」（:227）', (tester) async {
+  testWidgets('#X3 保存配置写库失败 → 「保存失败，请稍后重试」（:228 kOperationFailed）', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
 
@@ -675,12 +677,14 @@ void main() {
     await breakAccountTable(); // DB 写路径真抛
     await scrollAndTap(tester, '保存配置');
 
-    expect(find.text('保存失败，请稍后再试'), findsOneWidget);
+    expect(find.text('保存失败，请稍后重试'), findsOneWidget);
     // 负例：不得同时报成功（否则用户以为已存）。
     expect(find.text('API 配置已保存'), findsNothing);
   });
 
-  testWidgets('#X4 设默认失败 → 「操作失败，请稍后再试」（:464）', (tester) async {
+  testWidgets('#X4 设默认失败 → 「操作失败，请稍后重试」（:465 kOperationFailed）', (
+    tester,
+  ) async {
     await seedAccounts(db);
     await tester.pumpWidget(buildPage());
     await tester.pumpAndSettle();
@@ -689,7 +693,7 @@ void main() {
     await tester.tap(find.text('设默认'));
     await tester.pumpAndSettle();
 
-    expect(find.text('操作失败，请稍后再试'), findsOneWidget);
+    expect(find.text('操作失败，请稍后重试'), findsOneWidget);
     expect(find.text('已设为默认账号'), findsNothing, reason: '失败不得报成功');
   });
 

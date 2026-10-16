@@ -14,6 +14,7 @@ import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../providers/work_import_providers.dart';
 import '../../services/work_import_service.dart';
+import '../../config/svc_copy.dart';
 
 class BookImportSheet extends ConsumerStatefulWidget {
   /// 导入成功回调（返回 WorkImportResult）
@@ -62,7 +63,7 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
   /// release 静默：仅展示可读中文文案，不暴露技术细节
   String _friendlyError(Object e) {
     if (e is StateError) return e.message;
-    return '导入失败，请稍后重试';
+    return kOperationFailed('导入');
   }
 
   @override

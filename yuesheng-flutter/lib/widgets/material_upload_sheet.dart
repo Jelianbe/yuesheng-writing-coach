@@ -18,6 +18,7 @@ import '../services/file_parser.dart';
 import 'yue_input_sheet.dart';
 import 'yue_sheet.dart';
 import '../config/app_palette.dart';
+import '../config/svc_copy.dart';
 
 /// 素材类型（对齐 RN FileRole：general/outline/material）
 const List<({String key, String label})> _fileRoles = [
@@ -154,7 +155,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = '保存失败，请稍后重试';
+        _error = kOperationFailed('保存');
         _uploading = false;
       });
     }

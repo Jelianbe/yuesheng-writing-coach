@@ -26,6 +26,7 @@ import '../../router/app_routes.dart';
 import '../../services/decode_guard.dart';
 import 'growth_detail_style_sheet.dart';
 import '../../widgets/yue_sheet.dart';
+import '../../config/svc_copy.dart';
 
 /// 学习进度入口的**唯一实现**（交互批 #6：原 growth_page._openProgressDetail 与
 /// 本类方法是逐字重复的两份 copy ⇒ 收敛；「改一处漏一处」正是 V-5 表重复同款根因）。
@@ -66,7 +67,7 @@ Future<void> openLatestSessionProgressDetail(
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('学习进度加载失败，请稍后重试')));
+      ).showSnackBar(SnackBar(content: Text(kOperationFailed('学习进度加载'))));
     }
   }
 }

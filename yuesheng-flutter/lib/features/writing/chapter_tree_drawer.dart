@@ -29,6 +29,7 @@ import '../../widgets/yue_input_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
+import '../../config/svc_copy.dart';
 
 // V-5：章节状态→配色收敛到**单一真源** `chapterStatusConfig`
 // （定义在 manuscript_detail_chapter_card.dart）。本文件曾自持一张与其 9 值
@@ -283,7 +284,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     } catch (e) {
       debugPrint('[ChapterTreeDrawer] 重命名章节失败: $e');
       if (!mounted) return;
-      _snack('重命名失败，请稍后再试');
+      _snack(kOperationFailed('重命名'));
     }
   }
 
@@ -372,7 +373,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     } catch (e) {
       debugPrint('[ChapterTreeDrawer] 新建卷失败: $e');
       if (!mounted) return;
-      _snack('新建卷失败，请稍后再试');
+      _snack(kOperationFailed('新建卷'));
     }
   }
 
@@ -474,7 +475,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     } catch (e) {
       debugPrint('[ChapterTreeDrawer] 重命名卷失败: $e');
       if (!mounted) return;
-      _snack('重命名失败，请稍后再试');
+      _snack(kOperationFailed('重命名'));
     }
   }
 
@@ -513,7 +514,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     } catch (e) {
       debugPrint('[ChapterTreeDrawer] 删除卷失败: $e');
       if (!mounted) return;
-      _snack('删除卷失败，请稍后再试');
+      _snack(kOperationFailed('删除卷'));
     }
   }
 
@@ -547,7 +548,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     } catch (e) {
       debugPrint('[ChapterTreeDrawer] 移动章节失败: $e');
       if (!mounted) return;
-      _snack('移动失败，请稍后再试');
+      _snack(kOperationFailed('移动'));
     }
   }
 

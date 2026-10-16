@@ -486,7 +486,7 @@ void main() {
       await tester.tap(find.text('导出'));
       await tester.pumpAndSettle();
 
-      expect(find.text('导出失败，请稍后再试'), findsOneWidget);
+      expect(find.text('导出失败，请稍后重试'), findsOneWidget);
     });
   });
 
