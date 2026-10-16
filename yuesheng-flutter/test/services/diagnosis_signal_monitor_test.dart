@@ -78,4 +78,83 @@ void main() {
     // 原累计器不受快照侧失败操作影响
     expect(kSharedDiagnosisSignalMonitor.totals.emittedBySyndrome['P005'], 1);
   });
+
+  // ── W-22 G2 档 A：disputeRateTopK（V3 判读口径的读尺出口）──────────
+  // 设计批验收 V5：回流探针读数正确。零持久化（ADR-0005 边界不变）。
+
+  test('#6 W22 topK 按质疑率降序（同率使出块多者优先）', () {
+    // P005：3 出块 2 质疑 = 0.667；P009：3 出块 1 质疑 = 0.333；
+    // P011：3 出块 2 质疑 = 0.667（与 P005 同率，出块数也同 3 ⇒ 并列任序，
+    // 但必须都排在 P009 前）。
+    for (final id in ['P005', 'P009', 'P011']) {
+      kSharedDiagnosisSignalMonitor.recordBlockEmitted(
+        itemCount: 3,
+        syndromeIds: [id, id, id],
+      );
+    }
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P005');
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P005');
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P011');
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P011');
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P009');
+
+    final top = kSharedDiagnosisSignalMonitor.totals.disputeRateTopK(3);
+    expect(top.length, 3);
+    expect(top[2].syndromeId, 'P009', reason: '质疑率最低者垫底');
+    expect(top[2].rate, closeTo(1 / 3, 1e-9));
+    expect({top[0].syndromeId, top[1].syndromeId}, {'P005', 'P011'});
+    expect(top[0].rate, closeTo(2 / 3, 1e-9));
+  });
+
+  test('#7 W22 minEmitted 过滤薄样本（1/1 的 100% 不得盖过 2/3）', () {
+    kSharedDiagnosisSignalMonitor.recordBlockEmitted(
+      itemCount: 3,
+      syndromeIds: ['P005', 'P005', 'P005'],
+    );
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P005');
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P005');
+    kSharedDiagnosisSignalMonitor.recordBlockEmitted(
+      itemCount: 1,
+      syndromeIds: ['P009'],
+    );
+    kSharedDiagnosisSignalMonitor.recordSyndromeDisputed('P009');
+
+    final t = kSharedDiagnosisSignalMonitor.totals;
+    // 无过滤：P009 的 1/1 = 100% 排第一（薄样本噪声原样呈现）
+    expect(t.disputeRateTopK(2)[0].syndromeId, 'P009');
+    // minEmitted=2：薄样本出局，P005 的 2/3 升第一
+    final filtered = t.disputeRateTopK(2, minEmitted: 2);
+    expect(filtered.length, 1);
+    expect(filtered[0].syndromeId, 'P005');
+    expect(filtered[0].rate, closeTo(2 / 3, 1e-9));
+    expect(filtered[0].emitted, 3);
+    expect(filtered[0].disputed, 2);
+  });
+
+  test('#8 W22 k<=0 返回空；空排行 format 返回空串（调用方据此不打日志）', () {
+    final t = kSharedDiagnosisSignalMonitor.totals;
+    expect(t.disputeRateTopK(0), isEmpty);
+    expect(t.disputeRateTopK(-1), isEmpty);
+    expect(t.formatDisputeRateTopK(3), isEmpty);
+    kSharedDiagnosisSignalMonitor.recordBlockEmitted(
+      itemCount: 1,
+      syndromeIds: ['P005'],
+    );
+    final line = kSharedDiagnosisSignalMonitor.totals.formatDisputeRateTopK(3);
+    expect(line, contains('P005'));
+    expect(line, contains('top-3'));
+  });
+
+  test('#9 W22 零质疑 ID 也进排行（率 0，排名垫底）——尺子要能量全貌', () {
+    kSharedDiagnosisSignalMonitor.recordBlockEmitted(
+      itemCount: 2,
+      syndromeIds: ['P005', 'P009'],
+    );
+    kSharedDiagnosisSignalMonitor.recordSyndromeConfirmed('P009');
+    final top = kSharedDiagnosisSignalMonitor.totals.disputeRateTopK(3);
+    expect(top.length, 2);
+    for (final r in top) {
+      expect(r.rate, 0.0, reason: '无质疑 ⇒ 率 0（不是缺席）');
+    }
+  });
 }

@@ -78,6 +78,7 @@ import 'package:writingcoach/services/message_card_service.dart'
     show
         DiagnosisResultCardPayload,
         DiagnosisSyndromeCard,
+        FocusCandidateCard,
         GenuiCardPayload,
         TeacherSuggestionCardPayload,
         insertDiagnosisFailedCard,
@@ -89,6 +90,8 @@ import 'package:writingcoach/services/outline_parser.dart'
     show stripOutlineBlock;
 import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/reply_receipt_guard.dart';
+import 'package:writingcoach/services/syndrome_registry.dart'
+    show syndromeNameOf;
 import 'package:writingcoach/services/teacher_service.dart'
     show TeacherDiagnosisInput, callTeacherStream;
 import 'package:writingcoach/services/teacher_validator.dart'
@@ -678,22 +681,13 @@ class DiagnosisFlowHandler {
     required ParsedDiagnosis diagnosis,
   }) {
     try {
-      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       buildIntegrationSnapshot(
-        entries: [
-          for (var i = 0; i < diagnosis.syndromes.length; i++)
-            DiagnosisEntryRef(
-              rowId: messageId,
-              entryIndex: i,
-              syndromeId: diagnosis.syndromes[i].syndromeId,
-              severity: diagnosis.syndromes[i].severity,
-              evidence: diagnosis.syndromes[i].evidence,
-              chapterId: sessionId,
-              createdAtSec: nowSec,
-              interventionValue: diagnosis.syndromes[i].interventionValue,
-            ),
-        ],
-        nowSec: nowSec,
+        entries: _diagnosisEntryRefs(
+          sessionId: sessionId,
+          messageId: messageId,
+          diagnosis: diagnosis,
+        ),
+        nowSec: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
     } catch (_) {
       // 观测失败静默（旁路纪律），不改变 commit 结果
@@ -1290,38 +1284,114 @@ class DiagnosisFlowHandler {
   }
 
   /// 私有 helper：插入诊断结果卡（保持 commitDiagnosisAndSuggestions ≤ 50 行）。
+  /// W-21-B/W-22 共用：整合层 entry refs（observer 与候选提取同一构造，
+  /// 消除两处漂移点）。chapterId 以 sessionId 代理（旁路纪律注释见 observer）。
+  List<DiagnosisEntryRef> _diagnosisEntryRefs({
+    required String sessionId,
+    required String messageId,
+    required ParsedDiagnosis diagnosis,
+  }) {
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    return [
+      for (var i = 0; i < diagnosis.syndromes.length; i++)
+        DiagnosisEntryRef(
+          rowId: messageId,
+          entryIndex: i,
+          syndromeId: diagnosis.syndromes[i].syndromeId,
+          severity: diagnosis.syndromes[i].severity,
+          evidence: diagnosis.syndromes[i].evidence,
+          chapterId: sessionId,
+          createdAtSec: nowSec,
+          interventionValue: diagnosis.syndromes[i].interventionValue,
+        ),
+    ];
+  }
+
+  /// W-22 G1：从整合层快照提取本轮焦点候选（payload 形态）。
+  ///
+  /// 修复对象：`buildIntegrationSnapshot(...)` 的 candidates 此前在
+  /// `_runIntegrationObserver` 里**产出即弃**（无赋值无消费）——W-21 A3
+  /// 的候选集从未到达用户侧。本函数是候选集的第一个消费者。
+  /// 旁路纪律：任何失败（含整合层异常）返回 null ⇒ 候选区不渲染，
+  /// 不阻断卡片插入主流程。
+  List<FocusCandidateCard>? _extractFocusCandidates({
+    required String sessionId,
+    required String messageId,
+    required ParsedDiagnosis diagnosis,
+  }) {
+    try {
+      final snapshot = buildIntegrationSnapshot(
+        entries: _diagnosisEntryRefs(
+          sessionId: sessionId,
+          messageId: messageId,
+          diagnosis: diagnosis,
+        ),
+        nowSec: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      if (snapshot.candidates.isEmpty) return null;
+      return snapshot.candidates
+          .map(
+            (c) => FocusCandidateCard(
+              syndromeId: c.syndromeId,
+              name: syndromeNameOf(c.syndromeId) ?? c.syndromeId,
+              total: c.scoreBreakdown['total']?.toInt() ?? 0,
+              rationale: c.rationale,
+            ),
+          )
+          .toList();
+    } catch (_) {
+      // 候选提取失败静默：候选区不渲染，诊断卡其余部分不受影响
+      return null;
+    }
+  }
+
+  /// 卡片展示用症候列表（R-019 清偿拆出：_insertDiagnosisResultCard）。
+  ///
+  /// W-15-A：机械收敛（去重→排序→截前 5）只作用**卡片展示集合**；
+  /// syndromeCount 保持全量（「共诊断 N 条」），落库集合与顺序不变
+  /// （ADR-C67 全量落库）。溢出条目进 ConvergenceReport（不丢弃）。
+  List<DiagnosisSyndromeCard> _displayedSyndromeCards(
+    ParsedDiagnosis diagnosis,
+  ) {
+    return mergeOutputConvergence(diagnosis.syndromes).displayed
+        .map(
+          (s) => DiagnosisSyndromeCard(
+            syndromeId: s.syndromeId,
+            name: s.name,
+            severity: s.severity.value,
+            evidenceCount: s.evidence.length,
+            evidence: s.evidence,
+            // 批次 N10：透传症候教学解释。此前 payload 未接该字段，
+            // 导致「这条症候为什么被判定」用户侧完全不可见。
+            explanation: s.explanation,
+            // W-19-A：透传干预价值档位（null = 未评定，渲染层可空缺）。
+            interventionValue: s.interventionValue,
+            // W-15-B：透传跨块因果缺口标记（true ⇒ 渲染「暂时无法判断」徽标）。
+            pendingContext: s.pendingContext,
+          ),
+        )
+        .toList();
+  }
+
   Future<void> _insertDiagnosisResultCard({
     required String sessionId,
     required ParsedDiagnosis diagnosis,
     required String messageId,
   }) async {
+    // W-22 G1：本轮焦点候选（整合层 A3 产物接用户侧；null ⇒ 候选区不渲染；
+    // 提取失败静默——候选区缺席不阻断卡片）。
+    final focusCandidates = _extractFocusCandidates(
+      sessionId: sessionId,
+      messageId: messageId,
+      diagnosis: diagnosis,
+    );
     try {
       await insertDiagnosisResultCard(
         _sessionRepo,
         sessionId,
         DiagnosisResultCardPayload(
           syndromeCount: diagnosis.syndromes.length,
-          // W-15-A：机械收敛（去重→排序→截前 5）只作用**卡片展示集合**；
-          // syndromeCount 保持全量（「共诊断 N 条」），落库集合与顺序不变
-          // （ADR-C67 全量落库）。溢出条目进 ConvergenceReport（不丢弃）。
-          syndromes: mergeOutputConvergence(diagnosis.syndromes).displayed
-              .map(
-                (s) => DiagnosisSyndromeCard(
-                  syndromeId: s.syndromeId,
-                  name: s.name,
-                  severity: s.severity.value,
-                  evidenceCount: s.evidence.length,
-                  evidence: s.evidence,
-                  // 批次 N10：透传症候教学解释。此前 payload 未接该字段，
-                  // 导致「这条症候为什么被判定」用户侧完全不可见。
-                  explanation: s.explanation,
-                  // W-19-A：透传干预价值档位（null = 未评定，渲染层可空缺）。
-                  interventionValue: s.interventionValue,
-                  // W-15-B：透传跨块因果缺口标记（true ⇒ 渲染「暂时无法判断」徽标）。
-                  pendingContext: s.pendingContext,
-                ),
-              )
-              .toList(),
+          syndromes: _displayedSyndromeCards(diagnosis),
           suggestedActions: diagnosis.suggestedActions,
           confidence: diagnosis.confidence,
           // 批次 D-B：把 teaching_plan.focus_reason 接入诊断卡 payload，
@@ -1330,6 +1400,7 @@ class DiagnosisFlowHandler {
           // ADR-0006：整体判定（null ⇒ 呈现区不渲染）。
           overall: diagnosis.overall,
           diagnosisId: messageId,
+          focusCandidates: focusCandidates,
         ),
       );
     } catch (e, s) {

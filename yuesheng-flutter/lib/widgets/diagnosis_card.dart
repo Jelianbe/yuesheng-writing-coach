@@ -123,6 +123,14 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   /// 呈现规则：verdict + 覆盖度 + reasons + keep + priority，**无分数**。
   final OverallDiagnosis? overall;
 
+  /// W-22 G1：本轮教学焦点候选（整合层 A3 产物接用户侧）。
+  ///
+  /// null/空 = 本轮无候选（评分全零/无分组/提取失败）⇒ 候选区不渲染
+  /// （不造空区）。操作落点见 `_switchFocusTo`（改选 = 对目标症候
+  /// confirmDiagnosis，severity 传该行现值 ⇒ 零升级；focus_resolver
+  /// fallback 优先级 1 下一轮即选中它）。
+  final List<FocusCandidateCard>? focusCandidates;
+
   const DiagnosisCard({
     super.key,
     required this.syndromeCount,
@@ -135,6 +143,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     this.chapterId,
     this.messageId,
     this.overall,
+    this.focusCandidates,
   });
 
   /// 便利构造：从 Message.content 的 JSON 解析 payload 渲染
@@ -159,6 +168,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         sessionId: sessionId,
         messageId: messageId,
         overall: payload.overall,
+        focusCandidates: payload.focusCandidates,
       );
     } catch (_) {
       // 兜底：空诊断卡
@@ -387,6 +397,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                 const SizedBox(height: 12),
                 _buildLogicChainHint(),
                 _buildSyndromesDetail(),
+                // W-22 G1/G3：候选焦点区（位置口径见 _focusCandidatesSlots）。
+                ..._focusCandidatesSlots(),
                 if (widget.suggestedActions.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _buildRewriteBlock(),
@@ -453,6 +465,164 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     final raw = widget.focusReason?.trim();
     if (raw == null || raw.isEmpty) return null;
     return raw.length <= 160 ? raw : '${raw.substring(0, 160)}…';
+  }
+
+  // ── W-22 G1/G3：候选焦点区（整合层 A3 候选的用户侧权力入口）──
+
+  /// 候选区插槽（R-019 清偿：_buildCardBody spread 化）。位置口径 =
+  /// 症候详情之后——学员先看到「诊断了什么」，再面对「系统建议把哪个
+  /// 设为焦点，你认不认/改不改」；无候选返回空列表（不造空区）。
+  List<Widget> _focusCandidatesSlots() {
+    final candidates = widget.focusCandidates;
+    if (candidates == null || candidates.isEmpty) return const [];
+    return [_buildFocusCandidatesSection()];
+  }
+
+  /// 已切换的候选 ID（防重复点击；本卡会话内有效，不跨轮次——与
+  /// `_acknowledgedEvidence` 同款会话级内存语义）。
+  String? _switchedFocusId;
+
+  /// 候选区：由调用方保证非空（build 处 `if` 门控），此处直接构造
+  /// （返回非空 Widget，免 spread 判空）。
+  Widget _buildFocusCandidatesSection() {
+    final candidates = widget.focusCandidates!;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '候选焦点',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textDeep,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '按 严重度 × 干预价值 × 跨章复现 加权排序的建议。'
+            '最终练哪个，由你定。',
+            style: context.text.caption,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          for (final c in candidates) _buildCandidateRow(c),
+        ],
+      ),
+    );
+  }
+
+  /// 单个候选行：名称 + 评分分解说明（截断不改写——R-009 不替用户/系统
+  /// 改写原文口径同 `_focusReasonText`）+「选为焦点」按钮。
+  Widget _buildCandidateRow(FocusCandidateCard candidate) {
+    final switched = _switchedFocusId == candidate.syndromeId;
+    final rationale = candidate.rationale.trim();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  candidate.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.palette.textDeep,
+                  ),
+                ),
+                if (rationale.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    rationale.length <= 120
+                        ? rationale
+                        : '${rationale.substring(0, 120)}…',
+                    style: context.text.caption,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          _buildCandidateSwitchButton(candidate, switched: switched),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCandidateSwitchButton(
+    FocusCandidateCard candidate, {
+    required bool switched,
+  }) {
+    return TextButton(
+      style: TextButton.styleFrom(
+        backgroundColor: switched
+            ? context.palette.primary
+            : context.palette.background,
+        foregroundColor: switched
+            ? context.palette.onPrimary
+            : context.palette.l2Text,
+        side: switched ? null : BorderSide(color: context.palette.l2),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        minimumSize: const Size(0, 32),
+      ),
+      onPressed: switched ? null : () => _switchFocusTo(candidate),
+      child: Text(
+        switched ? '已选为焦点' : '选为焦点',
+        style: const TextStyle(fontSize: 12),
+      ),
+    );
+  }
+
+  /// 改选落点（设计批 §6.2）：对目标症候 `confirmDiagnosis`，severity 传
+  /// **该行当前值** ⇒ repo 的 CASE WHEN 升级语句零变化（不借道升级）；
+  /// focus_resolver fallback 优先级 1（confirmed + active）下一轮即选中它。
+  ///
+  /// 施工期修正三（对照设计批 §6.2「按钮禁用」）：池状态改为**点击时校验**
+  /// ——预查需异步态且按钮态闪烁；点击校验同样无死按钮（不在池有明确
+  /// 反馈），且省一次 initState 异步加载。
+  Future<void> _switchFocusTo(FocusCandidateCard candidate) async {
+    final sid = widget.sessionId;
+    if (sid == null || sid.isEmpty) return;
+    setState(() => _switchedFocusId = candidate.syndromeId);
+    final service = ref.read(diagnosisServiceProvider);
+    try {
+      final row = await DiagnosisRepository(
+        ref.read(appDatabaseProvider),
+      ).getActiveProblem(sid, candidate.syndromeId);
+      if (row == null) {
+        // 不在活跃池（resolved/历史症候）⇒ 不可改选，明确反馈（不静默失败）。
+        if (mounted) {
+          setState(() => _switchedFocusId = null);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${candidate.name} 当前不在活跃问题列表，暂不能选为焦点')),
+          );
+        }
+        return;
+      }
+      await service.confirmDiagnosis(
+        sid,
+        candidate.syndromeId,
+        candidate.name,
+        Severity.fromString(row.severity) ?? Severity.l1,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已把焦点切换为 ${candidate.name}，下一轮对话起生效')),
+        );
+      }
+    } catch (e, st) {
+      logSilentDegrade(operation: 'switchFocusTo', error: e, stack: st);
+      if (mounted) {
+        setState(() => _switchedFocusId = null);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(kOperationFailed('切换焦点'))));
+      }
+    }
   }
 
   /// 依据链主干 4 步（全部派生自 payload 既有字段，R-019 拆出）。

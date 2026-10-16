@@ -66,6 +66,53 @@ class DiagnosisSignalTotals {
     return (disputedBySyndrome[syndromeId] ?? 0) / emitted;
   }
 
+  /// W-22 G2 档 A：质疑率 top-K 排行（V3 判读口径的「尺子被读」出口）。
+  ///
+  /// 口径：质疑率降序；同率使出块数降序（样本多者优先——同率时 1/1 与
+  /// 5/5 的证据强度不同）；仍过滤 [minEmitted]（默认 1）防零出块 ID 混入。
+  /// 只读聚合，**不持久化、不触发任何自动行为**（W-22 设计批 §2.3：
+  /// 队列只登记事实，不自动归因、不自动改判据、不自动调权重）。
+  ///
+  /// 典型用法：`kSharedDiagnosisSignalMonitor.totals.disputeRateTopK(3)`。
+  List<({String syndromeId, double rate, int emitted, int disputed})>
+  disputeRateTopK(int k, {int minEmitted = 1}) {
+    if (k <= 0) return const [];
+    final rows =
+        <({String syndromeId, double rate, int emitted, int disputed})>[];
+    for (final id in emittedBySyndrome.keys) {
+      final emitted = emittedBySyndrome[id] ?? 0;
+      if (emitted < minEmitted) continue;
+      final disputed = disputedBySyndrome[id] ?? 0;
+      rows.add((
+        syndromeId: id,
+        rate: disputeRate(id),
+        emitted: emitted,
+        disputed: disputed,
+      ));
+    }
+    rows.sort((a, b) {
+      final byRate = b.rate.compareTo(a.rate);
+      if (byRate != 0) return byRate;
+      return b.emitted.compareTo(a.emitted);
+    });
+    return rows.take(k).toList();
+  }
+
+  /// 调试态摘要行（kDebugMode 由调用方判断；本方法本身无副作用）。
+  /// 空排行返回空串（调用方可据此不打日志）。
+  String formatDisputeRateTopK(int k, {int minEmitted = 1}) {
+    final top = disputeRateTopK(k, minEmitted: minEmitted);
+    if (top.isEmpty) return '';
+    final parts = top
+        .map(
+          (r) =>
+              '${r.syndromeId} ${(r.rate * 100).toStringAsFixed(0)}%'
+              '(${r.disputed}/${r.emitted})',
+        )
+        .join(', ');
+    return 'top-$k 质疑率：$parts';
+  }
+
   @override
   String toString() =>
       'blocks: $blocksEmitted, items: $blockItems, '
@@ -132,6 +179,10 @@ class DiagnosisSignalMonitor {
           (_disputedBySyndrome[syndromeId] ?? 0) + 1;
       if (kDebugMode) {
         debugPrint('[V3 诊断信号] 学员质疑 $syndromeId（仅观测）');
+        // W-22 G2 档 A：质疑即读尺——把 V3 判读口径（质疑数/出块条数，
+        // top-3）从「有尺子没人看」变成调试态可见。只读聚合、零持久化。
+        final topK = totals.formatDisputeRateTopK(3);
+        if (topK.isNotEmpty) debugPrint('[V3 诊断信号] $topK');
       }
     } catch (_) {
       // 同上

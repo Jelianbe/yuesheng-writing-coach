@@ -45,6 +45,17 @@ class DiagnosisResultCardPayload {
 
   final String diagnosisId;
 
+  /// W-22 G1：本轮教学焦点候选（W-21 整合层 A3 产物的用户侧接线）。
+  ///
+  /// 此前 `buildIntegrationSnapshot(...)` 的 candidates 在
+  /// diagnosis_flow_handler 里**产出即弃**（无赋值无消费）——W-22 把候选集
+  /// 经本 payload（既有消息持久化通道）接到诊断卡「候选焦点」区。
+  /// null/空 = 本轮无候选（评分全零/无分组）⇒ 候选区不渲染（不造空区）。
+  ///
+  /// 语义（设计批 §6.1 修正一）：候选是**轮次快照**，不建表；学员操作
+  /// （确认/改选/拒绝）落既有 active_problem.confirmation_status。
+  final List<FocusCandidateCard>? focusCandidates;
+
   const DiagnosisResultCardPayload({
     required this.syndromeCount,
     required this.syndromes,
@@ -53,6 +64,7 @@ class DiagnosisResultCardPayload {
     required this.diagnosisId,
     this.focusReason,
     this.overall,
+    this.focusCandidates,
   });
 
   factory DiagnosisResultCardPayload.fromJson(Map<String, dynamic> json) {
@@ -81,6 +93,15 @@ class DiagnosisResultCardPayload {
           ? _parseCardOverall(Map<String, dynamic>.from(overallRaw))
           : null,
       diagnosisId: (json['diagnosisId'] as String?) ?? '',
+      // W-22 G1：同 syndromes 宽容写法（Map<String, dynamic> 与
+      // Map<String, Object> 都接受）；空列表归一为 null（候选区不渲染）。
+      focusCandidates: (json['focusCandidates'] as List<dynamic>?)
+          ?.map(
+            (e) => FocusCandidateCard.fromJson(
+              Map<String, dynamic>.from(e as Map),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -95,6 +116,46 @@ class DiagnosisResultCardPayload {
       'focusReason': focusReason,
     if (overall != null) 'overall': overall!.toJson(),
     'diagnosisId': diagnosisId,
+    // W-22 G1：空列表不落 key（与 focusReason 同款往返稳定约定；
+    // fromJson 侧 null 与空列表都归一为「不渲染」）。
+    if (focusCandidates != null && focusCandidates!.isNotEmpty)
+      'focusCandidates': focusCandidates!.map((c) => c.toJson()).toList(),
+  };
+}
+
+/// W-22 G1：诊断卡「候选焦点」区的一项（W-21 A3 候选的 payload 形态）。
+///
+/// 字段口径与 `TeachingFocusCandidate`（整合层）一一对应；
+/// `name` 由 syndrome registry 补（候选本身只有 ID）。
+/// `rationale` 是代码拼接的评分分解说明（非 LLM），直接展示给学员——
+/// 与 W-21 §四「分量可解释」同一约定。
+class FocusCandidateCard {
+  final String syndromeId;
+  final String name;
+  final int total;
+  final String rationale;
+
+  const FocusCandidateCard({
+    required this.syndromeId,
+    required this.name,
+    required this.total,
+    required this.rationale,
+  });
+
+  factory FocusCandidateCard.fromJson(Map<String, dynamic> json) {
+    return FocusCandidateCard(
+      syndromeId: (json['syndrome_id'] as String?) ?? '',
+      name: (json['name'] as String?) ?? '',
+      total: (json['total'] as num?)?.toInt() ?? 0,
+      rationale: (json['rationale'] as String?) ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'syndrome_id': syndromeId,
+    'name': name,
+    'total': total,
+    'rationale': rationale,
   };
 }
 
