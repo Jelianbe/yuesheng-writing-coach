@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import '../database/database.dart';
 import '../database/utils.dart';
 import '../../config/reasoning_tier.dart';
+import '../../config/diagnosis_temperature.dart';
 import '../../services/decode_guard.dart';
 import '../../services/error_handler.dart';
 import '../../types/coach_persona.dart';
@@ -457,6 +458,20 @@ class AppStateRepository {
   /// 保存推理档位（调用方保证 key 属于 [reasoningTierPresets]）
   Future<void> setReasoningTier(String tierKey) =>
       setValue(kReasoningTierKey, tierKey);
+
+  // ════════════ 诊断温度档位（W-18 用户可选「诊断风格」） ════════════
+  // key 规约：diagnosis_temperature → 档位 key 字符串
+  // （真源见 config/diagnosis_temperature.dart）。
+  // 无记录返回 null；消费方按灵活档（= 现网 0.7，不干预请求体）处理
+  // ⇒ 旧库零行为变更。
+
+  /// 读取诊断温度档位 key（无记录 → null）
+  Future<String?> getDiagnosisTemperature() =>
+      getValue(kDiagnosisTemperatureKey);
+
+  /// 保存诊断温度档位（调用方保证 key 属于 [diagnosisTemperaturePresets]）
+  Future<void> setDiagnosisTemperature(String tierKey) =>
+      setValue(kDiagnosisTemperatureKey, tierKey);
 
   // ════════════ 教练人格（全局默认 attitude） ════════════
   // key='coach_attitude' → 'gentle' | 'yuesheng' | 'sensei'

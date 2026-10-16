@@ -23,11 +23,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
+import '../../config/diagnosis_temperature.dart';
 import '../../config/reasoning_tier.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/ai_account_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/diagnosis_temperature_provider.dart';
 import '../../providers/reasoning_tier_provider.dart';
 import '../../providers/session_providers.dart';
 import '../../theme/theme_controller.dart';
@@ -102,6 +104,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _loadUsageReport();
     // 推理档位：读 app_state 水合到共享 provider（与聊天页同源，故不存本地副本）
     ref.read(reasoningTierProvider.notifier).hydrate();
+    // 诊断温度档位（W-18）：同上，读 app_state 水合
+    ref.read(diagnosisTemperatureProvider.notifier).hydrate();
   }
 
   /// `N7`：加载「本周调用统计」。
@@ -146,6 +150,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _handleSelectReasoningTier(String tierKey) async {
     final ok = await ref.read(reasoningTierProvider.notifier).setTier(tierKey);
     if (!ok) _notify('档位保存失败，已恢复原设置', error: true);
+  }
+
+  /// 切换诊断温度档位（W-18）：写共享 provider（乐观更新 + 落 app_state）。
+  Future<void> _handleSelectDiagnosisTemperature(String tierKey) async {
+    final ok = await ref
+        .read(diagnosisTemperatureProvider.notifier)
+        .setTier(tierKey);
+    if (!ok) _notify('保存失败，已恢复原设置', error: true);
   }
 
   /// 批次 38：点击进度区块 → 学习进度详情页
@@ -346,6 +358,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     // 思考档位读共享 provider（与聊天页同源；本页不持本地副本，避免双真源）
     final reasoningTier = ref.watch(reasoningTierProvider);
+    final diagTemp = ref.watch(diagnosisTemperatureProvider);
     final themeId = ref.watch(themeControllerProvider);
     return Scaffold(
       backgroundColor: context.palette.background,
@@ -380,6 +393,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           _buildAppearanceSection(themeId),
           const SizedBox(height: 12),
           _buildModelBehaviorSection(reasoningTier),
+          const SizedBox(height: 12),
+          _buildDiagnosisStyleSection(diagTemp),
           const SizedBox(height: 12),
           _buildCoachEntrySection(),
           const SizedBox(height: 12),
@@ -621,6 +636,142 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Text(
             reasoningTierOf(tier).hint,
             style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 诊断风格（W-18 用户温度档） ──
+
+  /// 诊断温度档位选择：0.3（保守）/ 0.7（灵活）二选一。
+  ///
+  /// 文案口径（舰长 2026-10-16 裁定）：只标「保守/灵活」的**形态区分**，
+  /// 不承诺哪档更好；只作用于诊断（教学对话不受影响）。
+  /// 刻度轴 = 0～10 视觉呈现：0.3 / 0.7 档位下方标「保守 / 灵活」，
+  /// 轴两端（0 / 10）同标语义端点。
+  Widget _buildDiagnosisStyleSection(String tier) {
+    return SectionCard(
+      title: '诊断风格',
+      description: '调整 AI 章节诊断的输出倾向（不影响教学对话）',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final preset in diagnosisTemperaturePresets)
+                ChoiceChip(
+                  label: Text(
+                    '${preset.label} ${preset.value.toStringAsFixed(1)}',
+                  ),
+                  selected: tier == preset.key,
+                  onSelected: (_) =>
+                      _handleSelectDiagnosisTemperature(preset.key),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          _buildTemperatureScale(tier),
+          const SizedBox(height: 8),
+          Text(
+            diagnosisTemperatureOf(tier).hint,
+            style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 0～10 刻度轴：两端 0/10 标语义端点，0.3/0.7 位置为可选档位，
+  /// 档位点下方标「保守 / 灵活」（舰长要求的标注位）。
+  Widget _buildTemperatureScale(String tier) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final palette = context.palette;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 52,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 20,
+                    left: 8,
+                    right: 8,
+                    child: Container(height: 1.5, color: palette.divider),
+                  ),
+                  _temperatureMark(
+                    0.3,
+                    '保守',
+                    tier == diagnosisTempSteady,
+                    palette,
+                    w,
+                  ),
+                  _temperatureMark(
+                    0.7,
+                    '灵活',
+                    tier == diagnosisTempFlexible,
+                    palette,
+                    w,
+                  ),
+                ],
+              ),
+            ),
+            _temperatureAxisEnds(palette),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 轴两端语义端点：0 = 保守端，10 = 灵活端（舰长要求的「两边」标注）。
+  Widget _temperatureAxisEnds(AppPalette palette) {
+    final style = TextStyle(fontSize: 10, color: palette.textTertiary);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('0 · 保守', style: style),
+        Text('10 · 灵活', style: style),
+      ],
+    );
+  }
+
+  /// 刻度轴上的单个档位标记：数值（上）→ 圆点（轴上）→ 语义标注（下）。
+  /// [axisWidth] 为轴全宽；按分数定位（0.3 → 轴 30% 处）。
+  Widget _temperatureMark(
+    double value,
+    String label,
+    bool active,
+    AppPalette palette,
+    double axisWidth,
+  ) {
+    final color = active ? palette.primary : palette.textTertiary;
+    final weight = active ? FontWeight.w600 : FontWeight.w400;
+    final left = (axisWidth * value).clamp(24.0, axisWidth - 24.0);
+    return Positioned(
+      left: left - 30,
+      width: 60,
+      top: 0,
+      child: Column(
+        children: [
+          Text(
+            value.toStringAsFixed(1),
+            style: TextStyle(fontSize: 10, color: color, fontWeight: weight),
+          ),
+          const SizedBox(height: 2),
+          Container(
+            width: active ? 10 : 8,
+            height: active ? 10 : 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: color, fontWeight: weight),
           ),
         ],
       ),

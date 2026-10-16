@@ -38,6 +38,9 @@ class _FakeLlmClient extends LlmClient {
   /// streamChat 收到的 messages（merge 阶段），供端到端断言 notes 进入合并。
   final List<List<ChatMessage>> streamMessages = [];
 
+  /// W-18 温度档：streamChat 收到的 extraBody（merge 阶段），供透传断言。
+  final List<Map<String, dynamic>?> streamExtraBodies = [];
+
   /// ADR-C87：每次 chatCompletion 调用后回调（测试注入中途取消时机）。
   final void Function(int callCount)? onChatCall;
   int _chatCallCount = 0;
@@ -84,6 +87,7 @@ class _FakeLlmClient extends LlmClient {
     Map<String, dynamic>? extraBody,
   }) async {
     streamMessages.add(messages);
+    streamExtraBodies.add(extraBody);
     if (streamThrowsCancelled) {
       throw LlmRequestCancelledException();
     }
@@ -309,6 +313,15 @@ void main() {
   });
 
   group('runProgressiveDiagnosis', () {
+    // >4000 字触发分块（与 ADR-C80 组同款构造）
+    String makeLongContent() {
+      final paragraphs = <String>[];
+      for (int i = 0; i < 15; i++) {
+        paragraphs.add('X' * 350 + '段落$i');
+      }
+      return paragraphs.join('\n\n');
+    }
+
     test('#5 短文本（<= THRESHOLD=4000）走 null（走单次链路）', () async {
       const short = '这是一段不足 4000 字的文本，应该直接返回 null，由外部走单次诊断。';
       final result = await runProgressiveDiagnosis(
@@ -347,6 +360,43 @@ void main() {
       expect(result.fullContent, isNotEmpty);
       expect(receivedContent, isNotEmpty);
       expect(result.fullContent, contains('[YS_DIAGNOSIS]'));
+    });
+
+    test('#7 W-18 温度档：null 不产 extraBody 键（请求体零变更护栏）', () async {
+      final fake = _FakeLlmClient(
+        streamResponse:
+            '诊断完成。[YS_DIAGNOSIS]{"syndromes":[],"suggested_actions":[],"confidence":0.8}[/YS_DIAGNOSIS]',
+      );
+      final result = await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: '温度护栏',
+        llmClient: fake,
+        onContent: (_) {},
+      );
+
+      expect(result, isNotNull);
+      expect(
+        fake.streamExtraBodies.single,
+        isNull,
+        reason: '灵活档（null）不产 extraBody ⇒ merge 请求体逐字节不变',
+      );
+    });
+
+    test('#7b W-18 温度档：0.3 经 extraBody 覆盖 merge 段 temperature', () async {
+      final fake = _FakeLlmClient(
+        streamResponse:
+            '诊断完成。[YS_DIAGNOSIS]{"syndromes":[],"suggested_actions":[],"confidence":0.8}[/YS_DIAGNOSIS]',
+      );
+      final result = await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: '温度保守档',
+        llmClient: fake,
+        onContent: (_) {},
+        mergeTemperature: 0.3,
+      );
+
+      expect(result, isNotNull);
+      expect(fake.streamExtraBodies.single, {'temperature': 0.3});
     });
   });
 

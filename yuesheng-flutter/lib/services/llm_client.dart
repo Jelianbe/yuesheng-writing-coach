@@ -463,7 +463,7 @@ class LlmClient {
       } on DioException catch (e) {
         if (e.type == DioExceptionType.cancel) rethrow;
         if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
-        throw Exception(_buildDioError(e));
+        throw Exception(await _buildDioError(e));
       }
     } finally {
       _activeCallContext = null;
@@ -648,7 +648,7 @@ class LlmClient {
         rethrow;
       } on DioException catch (e) {
         if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
-        throw Exception(_buildDioError(e));
+        throw Exception(await _buildDioError(e));
       }
     } finally {
       _activeCallContext = null;
@@ -1216,7 +1216,7 @@ class LlmClient {
     return null;
   }
 
-  String _buildDioError(DioException e) {
+  Future<String> _buildDioError(DioException e) async {
     // 批次 3：统一走错误分类（llm_error_codes.dart）——401/403/429/超时/
     // 连接等给用户可操作文案，替代裸 "HTTP N"。
     final kind = classifyLlmError(e);
@@ -1230,15 +1230,43 @@ class LlmClient {
     final status = e.response?.statusCode ?? 0;
     final data = e.response?.data;
     String? preview;
-    if (data is String && data.isNotEmpty) {
-      final raw = data.length > LlmConfig.errorPreviewLengthLong
-          ? data.substring(0, LlmConfig.errorPreviewLengthLong)
-          : data;
+    final dataStr = await _errorDataAsString(data);
+    if (dataStr.isNotEmpty) {
+      final raw = dataStr.length > LlmConfig.errorPreviewLengthLong
+          ? dataStr.substring(0, LlmConfig.errorPreviewLengthLong)
+          : dataStr;
       // B22/R-029：防御性脱敏——OpenAI 错误响应通常不含 Authorization，
       // 但代理/网关可能 echo 请求头到错误响应体；此层作为防御纵深。
       preview = _redactAuth(raw);
     }
     return llmErrorMessage(kind, status: status, preview: preview);
+  }
+
+  /// 错误响应体 → 字符串（W-18 调试增强，2026-10-15）。
+  ///
+  /// - dio 对 application/json 非流式响应自动解析成 Map ⇒ 原判
+  ///   `data is String` 恒 false，body 丢失；Map 时 jsonEncode 回字符串。
+  /// - 流式通道错误时 data 是 ResponseBody 原始流对象（既非 String 亦非
+  ///   Map），jsonEncode 会抛异常并吞掉原始 400 ⇒ 手动汇字节再 utf8 解码
+  ///   （dio 5.x 无 asString()；utf8.decoder 作 StreamTransformer 与
+  ///   `Stream<Uint8List>` 泛型不兼容）。读失败降级为空串，不吞原错误。
+  static Future<String> _errorDataAsString(Object? data) async {
+    if (data is ResponseBody) {
+      try {
+        final buf = <int>[];
+        await data.stream.forEach(buf.addAll);
+        return utf8.decode(buf, allowMalformed: true);
+      } catch (_) {
+        return '';
+      }
+    }
+    if (data is String) return data;
+    if (data == null) return '';
+    try {
+      return jsonEncode(data);
+    } catch (_) {
+      return data.toString();
+    }
   }
 
   /// R-029 安全：脱敏可能泄露的 Authorization / Bearer 凭证

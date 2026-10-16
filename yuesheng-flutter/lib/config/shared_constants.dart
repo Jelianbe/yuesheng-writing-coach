@@ -14,7 +14,17 @@ class LlmConfig {
   static const double chatTemperature = 0.3;
   static const int chatMaxTokens = 4096;
   static const int chatTimeoutMs = 60000;
-  static const double streamTemperature = 0.7;
+
+  /// 流式温度（诊断链请求体取此值）。
+  ///
+  /// W-18 稳定性实验参数通道（2026-10-15）：`--dart-define=YS_TEST_TEMP=<0~2>`
+  /// 存在且可解析时覆盖，否则恒为 0.7 —— 不传该 define 时请求体与改造前
+  /// **逐字节不变**（生产零影响）；0.7 档基线轮同样不传（与 run7 通道一致）。
+  /// 唯一引用点：llm_client.dart `_buildStreamRequestBody`。
+  static double get streamTemperature =>
+      const bool.hasEnvironment('YS_TEST_TEMP')
+      ? (double.tryParse(const String.fromEnvironment('YS_TEST_TEMP')) ?? 0.7)
+      : 0.7;
   static const int streamTimeoutMs =
       180000; // 流式 3 分钟兜底：SSE 大响应深求索服务器可能 40s+ 后主动断
   static const int streamConnectTimeoutMs =

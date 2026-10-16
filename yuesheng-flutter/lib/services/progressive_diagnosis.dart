@@ -606,6 +606,10 @@ typedef ProgressCallback = void Function(String phase, int current, int total);
 /// D4-A 真链路：通过注入 [llmClient] 实现完整分块链路——
 ///   - analyzeChunk（单块分析）走 LlmClient.chatCompletion（非流式）
 ///   - merge 阶段走 LlmClient.streamChat（流式）
+///
+/// [mergeTemperature]（W-18 用户温度档，真源 config/diagnosis_temperature.dart）：
+/// merge（流式）段请求体温度覆盖。null = 现网默认（不产 extraBody 键，
+/// 请求体逐字节不变）；仅作用于 merge 段——单块分析段与教学链路不受影响。
 Future<ProgressiveResult?> runProgressiveDiagnosis({
   required String content,
   required String title,
@@ -618,6 +622,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   CancelToken? cancelToken,
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
+  double? mergeTemperature,
 }) async {
   if (content.length <= kDiagnosisChunkThreshold) {
     return null;
@@ -679,6 +684,12 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
       // 中途停止；取消统一转 ProgressiveDiagnosisCancelled（调用方已有
       // 优雅复位），不落为「报错」。
       cancelToken: cancelToken,
+      // W-18 用户温度档：null 不产键 ⇒ 请求体逐字节不变（灵活档）；
+      // 保守档 0.3 经 extraBody 覆盖骨架 temperature（W-18 实验档复现，
+      // extraBody 合并在骨架 temperature 之后，可覆盖且不触碰其它键）。
+      extraBody: mergeTemperature == null
+          ? null
+          : {'temperature': mergeTemperature},
     );
   } on LlmRequestCancelledException {
     throw const ProgressiveDiagnosisCancelled();

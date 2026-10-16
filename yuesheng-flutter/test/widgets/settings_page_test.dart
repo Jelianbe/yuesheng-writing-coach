@@ -776,6 +776,57 @@ void main() {
     expect(await AppStateRepository(db).getValue(kThemeIdKey), 'dark');
   });
 
+  // ── W-18 诊断风格区块（用户温度档） ──
+
+  testWidgets('#W18-1 诊断风格区块：默认灵活档 + 刻度轴两端与档位下方标注', (tester) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('诊断风格'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    // 区块标题 + 作用域声明（不影响教学对话）
+    expect(find.text('诊断风格'), findsOneWidget);
+    expect(find.textContaining('不影响教学对话'), findsOneWidget);
+    // 两档芯片（label = 档位名 + 温度值）
+    expect(find.text('灵活 0.7'), findsOneWidget);
+    expect(find.text('保守 0.3'), findsOneWidget);
+    // 刻度轴：档位下方标注（保守/灵活）+ 两端语义（0·保守 / 10·灵活）
+    expect(find.text('保守'), findsOneWidget);
+    expect(find.text('灵活'), findsOneWidget);
+    expect(find.text('0 · 保守'), findsOneWidget);
+    expect(find.text('10 · 灵活'), findsOneWidget);
+    // 默认档 = 灵活（现网行为），hint 为灵活档形态说明
+    expect(find.textContaining('更发散'), findsOneWidget);
+  });
+
+  testWidgets('#W18-2 选「保守 0.3」⇒ diagnosis_temperature 落库 + 选中态与 hint 切换', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('保守 0.3'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('保守 0.3'));
+    await tester.pumpAndSettle();
+
+    // 落库断言：app_state 键 diagnosis_temperature = steady
+    expect(
+      await AppStateRepository(db).getValue('diagnosis_temperature'),
+      'steady',
+    );
+    // hint 切换为保守档形态说明
+    expect(find.textContaining('更一致'), findsOneWidget);
+  });
+
   // ── B5 第三批：API 配置子页入口 + 返回刷新（R-009）──
 
   /// 用真 router 启动（子页是 GoRoute 顶层路由，非go() 不可达）。

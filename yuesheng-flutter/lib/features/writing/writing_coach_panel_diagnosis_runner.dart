@@ -10,6 +10,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/diagnosis_temperature.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/diagnosis_repository.dart';
@@ -94,6 +95,13 @@ class WritingCoachDiagnosisRunner {
   /// ADR-0006：结构画像文本（失败/降级 ⇒ 空串）。
   Future<String> _profileText() async => (await _buildProfileText()) ?? '';
 
+  /// W-18 用户温度档（merge 段；灵活档 ⇒ null ⇒ 请求体逐字节不变）。
+  Future<double?> _mergeTemperature() async => mergeTemperatureFor(
+    await AppStateRepository(
+      _ref.read(appDatabaseProvider),
+    ).getDiagnosisTemperature(),
+  );
+
   /// 分块/单次链路共用的写入目标（store + chatService + 症候启用集下传）。
   ({ChatStore store, ChatService chatService}) _prepareTargets(
     DiagnosisPrefs? diagPrefs,
@@ -125,6 +133,7 @@ class WritingCoachDiagnosisRunner {
       teachingMode: _host.teachingMode,
       structureProfile: profileText,
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
+      mergeTemperature: await _mergeTemperature(),
       onContent: (delta) {
         _ref
             .read(writingCoachStoreProvider(_chapterId).notifier)

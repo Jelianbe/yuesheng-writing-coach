@@ -94,7 +94,11 @@ String llmErrorMessage(
     case LlmErrorKind.server:
       return kLlmServerMessage(status);
     case LlmErrorKind.invalidRequest:
-      return kLlmInvalidRequestMessage;
+      // W-18 调试增强（2026-10-15）：invalidRequest 的服务端 body 原被吞掉，
+      // 400 归因（哪个参数非法）只能靠猜。preview 非空时附上（已在上游脱敏）。
+      return preview != null && preview.isNotEmpty
+          ? '$kLlmInvalidRequestMessage · 服务端响应：$preview'
+          : kLlmInvalidRequestMessage;
     case LlmErrorKind.unknown:
       return preview != null && preview.isNotEmpty
           ? 'HTTP $status: $preview'

@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/diagnosis_temperature.dart';
 import '../../config/shared_constants.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/app_state_repository.dart';
@@ -125,6 +126,13 @@ class ChatDiagnosisController {
     return text ?? '';
   }
 
+  /// W-18 用户温度档（merge 段；灵活档 ⇒ null ⇒ 请求体逐字节不变）。
+  Future<double?> _mergeTemperature() async => mergeTemperatureFor(
+    await AppStateRepository(
+      host.ref.read(appDatabaseProvider),
+    ).getDiagnosisTemperature(),
+  );
+
   Future<void> _runDiagnosis(
     Chapter chapter,
     SessionBootstrapState bootstrap,
@@ -150,6 +158,7 @@ class ChatDiagnosisController {
       // ADR-0006：结构画像（覆盖度不足/事件表空 ⇒ 空串，零行为变更）
       structureProfile: await _structureProfileText(chapter),
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
+      mergeTemperature: await _mergeTemperature(),
       onContent: (delta) {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },
