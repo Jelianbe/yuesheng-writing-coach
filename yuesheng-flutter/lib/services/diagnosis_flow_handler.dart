@@ -38,7 +38,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, visibleForTesting;
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/svc_copy.dart';
 import 'package:writingcoach/contracts/genui_capability.dart'
@@ -71,7 +72,11 @@ import 'package:writingcoach/services/fact_parser.dart' show stripFactBlock;
 import 'package:writingcoach/services/genui_parser.dart' show stripGenuiBlock;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/diagnosis_integration_service.dart'
-    show DiagnosisEntryRef, buildIntegrationSnapshot;
+    show
+        DiagnosisEntryRef,
+        buildIntegrationSnapshot,
+        buildPendingContextSources,
+        formatIntegrationProbeSummary;
 import 'package:writingcoach/services/merge_convergence.dart'
     show mergeOutputConvergence;
 import 'package:writingcoach/services/message_card_service.dart'
@@ -84,14 +89,13 @@ import 'package:writingcoach/services/message_card_service.dart'
         insertDiagnosisFailedCard,
         insertDiagnosisResultCard,
         insertGenuiCard,
-        insertTeacherSuggestionCard;
+        insertTeacherSuggestionCard,
+        toFocusCandidateCards;
 import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/outline_parser.dart'
     show stripOutlineBlock;
 import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/reply_receipt_guard.dart';
-import 'package:writingcoach/services/syndrome_registry.dart'
-    show syndromeNameOf;
 import 'package:writingcoach/services/teacher_service.dart'
     show TeacherDiagnosisInput, callTeacherStream;
 import 'package:writingcoach/services/teacher_validator.dart'
@@ -660,37 +664,8 @@ class DiagnosisFlowHandler {
         diagnosis: diagnosis,
       );
       await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
-      _runIntegrationObserver(
-        sessionId: sessionId,
-        messageId: messageId,
-        diagnosis: diagnosis,
-      );
     } catch (e, s) {
       _logSafeRun('诊断写入', e, s);
-    }
-  }
-
-  /// W-21-B：整合层观察者（commit 序列完成后的旁路调用）。
-  ///
-  /// 纪律（对齐 LlmCallLogSink）：失败静默不阻断主流程；纯内存快照（A 阶段
-  /// 不落表）；chapterId 以 sessionId 代理——写作面板按章建会话，同 session
-  /// 即同章上下文（代理假设已登记施工报告，跨会话聚合待 W-22 落表时修正）。
-  void _runIntegrationObserver({
-    required String sessionId,
-    required String messageId,
-    required ParsedDiagnosis diagnosis,
-  }) {
-    try {
-      buildIntegrationSnapshot(
-        entries: _diagnosisEntryRefs(
-          sessionId: sessionId,
-          messageId: messageId,
-          diagnosis: diagnosis,
-        ),
-        nowSec: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      );
-    } catch (_) {
-      // 观测失败静默（旁路纪律），不改变 commit 结果
     }
   }
 
@@ -1307,13 +1282,13 @@ class DiagnosisFlowHandler {
     ];
   }
 
-  /// W-22 G1：从整合层快照提取本轮焦点候选（payload 形态）。
+  /// W-22 G1 / W-21 接线清偿：本轮焦点候选（payload 形态）。
   ///
-  /// 修复对象：`buildIntegrationSnapshot(...)` 的 candidates 此前在
-  /// `_runIntegrationObserver` 里**产出即弃**（无赋值无消费）——W-21 A3
-  /// 的候选集从未到达用户侧。本函数是候选集的第一个消费者。
-  /// 旁路纪律：任何失败（含整合层异常）返回 null ⇒ 候选区不渲染，
-  /// 不阻断卡片插入主流程。
+  /// 本函数同时是**整合层快照的唯一计算点**——W-21-B 登记的旁路观察者
+  /// （快照算完即弃、快照链为纯函数 ⇒ 可证明空转，且与本函数双算）已废，
+  /// 候选消费点即生产链路的快照激活点。原观察者注释中的代理假设迁此：
+  /// chapterId 以 sessionId 代理（写作面板按章建会话，跨会话聚合待落表批修正）。
+  /// 旁路纪律：任何失败返回 null ⇒ 候选区不渲染，不阻断卡片插入主流程。
   List<FocusCandidateCard>? _extractFocusCandidates({
     required String sessionId,
     required String messageId,
@@ -1326,19 +1301,22 @@ class DiagnosisFlowHandler {
           messageId: messageId,
           diagnosis: diagnosis,
         ),
+        // W-21 接线清偿：A4 ①类输入（W-15-B pending_context）传入快照
+        pendingContexts: buildPendingContextSources(
+          syndromes: diagnosis.syndromes,
+          messageId: messageId,
+        ),
         nowSec: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
+      // 档 A 探针：A2/A4 产物调试态可见（不落库、零自动行为）——设计稿
+      // A4「禁止静默丢弃」原则的当期满足形态；产品面消费属阶段三，
+      // prompt 向涉 R-027 须报批。
+      if (kDebugMode) {
+        final probe = formatIntegrationProbeSummary(snapshot);
+        if (probe.isNotEmpty) debugPrint(probe);
+      }
       if (snapshot.candidates.isEmpty) return null;
-      return snapshot.candidates
-          .map(
-            (c) => FocusCandidateCard(
-              syndromeId: c.syndromeId,
-              name: syndromeNameOf(c.syndromeId) ?? c.syndromeId,
-              total: c.scoreBreakdown['total']?.toInt() ?? 0,
-              rationale: c.rationale,
-            ),
-          )
-          .toList();
+      return toFocusCandidateCards(snapshot.candidates);
     } catch (_) {
       // 候选提取失败静默：候选区不渲染，诊断卡其余部分不受影响
       return null;

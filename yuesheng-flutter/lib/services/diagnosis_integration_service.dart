@@ -165,6 +165,24 @@ class IntegrationSnapshot {
   });
 }
 
+/// 档 A 探针摘要（W-21 接线清偿，2026-10-16）：把快照的 A2/A4 产物压成
+/// 一行调试摘要，使「全局假设/未决问题」不流成**静默丢弃**（设计稿 A4
+/// 原则明文禁止）。零持久化、零自动行为；两罐皆空 ⇒ 空串（调用方不打日志）。
+/// 产品面消费（UI / prompt）属阶段三范围，prompt 向涉 R-027 须报批。
+String formatIntegrationProbeSummary(IntegrationSnapshot snapshot) {
+  final h = snapshot.hypotheses.length;
+  final q = snapshot.questions.length;
+  if (h == 0 && q == 0) return '';
+  final buf = StringBuffer('[整合层探针] 假设 $h · 未决 $q');
+  for (final e in snapshot.questions.take(3)) {
+    final st = e.statement.length <= 60
+        ? e.statement
+        : '${e.statement.substring(0, 60)}…';
+    buf.write(' | ${e.kind}：$st');
+  }
+  return buf.toString();
+}
+
 // ── A4 输入：外部未决源（pending_context 由 W-15-B 产出；人裁冲突由调用方给）──
 
 /// 未决源条目（pending_context / needs_human 共用形态）。
@@ -296,6 +314,29 @@ List<UnresolvedQuestion> collectUnresolvedQuestions(
       ),
     );
     i++;
+  }
+  return out;
+}
+
+/// A4 ①类输入合成（W-21 接线清偿，2026-10-16）：调用方把 W-15-B 产出的
+/// `Syndrome.pendingContext` 标记转成未决源。仅 `pendingContext == true`
+/// 的症候产源；阻塞引用 = 该症候本轮诊断条目定位（`messageId#index`，
+/// 与 `DiagnosisEntryRef.ref` 同格式）。
+List<UnresolvedSource> buildPendingContextSources({
+  required List<Syndrome> syndromes,
+  required String messageId,
+}) {
+  final out = <UnresolvedSource>[];
+  for (var i = 0; i < syndromes.length; i++) {
+    final s = syndromes[i];
+    if (s.pendingContext != true) continue;
+    out.add(
+      UnresolvedSource(
+        '症候 ${s.syndromeId} 的判定带跨块因果缺口标记（pending_context）'
+        '——因果链证据待补，未收敛为确定性结论',
+        <String>['$messageId#$i'],
+      ),
+    );
   }
   return out;
 }

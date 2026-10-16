@@ -18,7 +18,11 @@
 import 'dart:convert';
 
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/services/diagnosis_integration_service.dart'
+    show TeachingFocusCandidate;
 import 'package:writingcoach/services/genui_parser.dart';
+import 'package:writingcoach/services/syndrome_registry.dart'
+    show syndromeNameOf;
 import 'package:writingcoach/types/teaching_types.dart';
 
 /// 诊断结果卡片 Payload
@@ -157,6 +161,23 @@ class FocusCandidateCard {
     'total': total,
     'rationale': rationale,
   };
+}
+
+/// W-21/W-22：整合层 A3 候选 → 卡片 DTO（纯映射，flow_handler 与测试共用）。
+/// 名称回退口径：注册表无记录 ⇒ 落 syndromeId 原文（数据诚实，不造名）。
+List<FocusCandidateCard> toFocusCandidateCards(
+  List<TeachingFocusCandidate> candidates,
+) {
+  return candidates
+      .map(
+        (c) => FocusCandidateCard(
+          syndromeId: c.syndromeId,
+          name: syndromeNameOf(c.syndromeId) ?? c.syndromeId,
+          total: c.scoreBreakdown['total']?.toInt() ?? 0,
+          rationale: c.rationale,
+        ),
+      )
+      .toList();
 }
 
 /// payload 侧的整体判定解析（H-3 防御性二次校验）。
