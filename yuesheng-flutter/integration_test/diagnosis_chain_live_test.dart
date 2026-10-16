@@ -160,7 +160,13 @@ void main() {
       () async => LlmConfigValues(
         apiKey: key,
         baseUrl: 'https://api.deepseek.com',
-        model: 'deepseek-chat',
+        // YS_TEST_MODEL（T-20261016 W-29 复测批）：2026-10-16 实测
+        // 'deepseek-chat' 对本 key 返回 400，'deepseek-v4-flash' 可用
+        //（host 版同款补丁）；缺省保持 deepseek-chat（W-18 基线可复现）。
+        model: const String.fromEnvironment(
+          'YS_TEST_MODEL',
+          defaultValue: 'deepseek-chat',
+        ),
       ),
     );
     container = ProviderContainer(
@@ -187,6 +193,18 @@ void main() {
     var keyDead = false; // HTTP 402 快速失败
 
     for (final sample in kD5Samples) {
+      // YS_TEST_ONLY（T-20261016 W-29 复测批）：单样本过滤，与 host 版同语义。
+      final only = const String.fromEnvironment('YS_TEST_ONLY');
+      if (only.isNotEmpty && sample.id != only) {
+        results.add(<String, dynamic>{
+          'sample': sample.id,
+          'type': sample.type,
+          'expect_label': sample.expect,
+          'status': 'SKIPPED',
+          'reason': 'YS_TEST_ONLY=$only 过滤',
+        });
+        continue;
+      }
       if (keyDead) {
         results.add(<String, dynamic>{
           'sample': sample.id,

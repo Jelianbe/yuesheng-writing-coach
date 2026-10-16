@@ -143,6 +143,10 @@ List<Map<String, dynamic>> trimSnap(List<ChatMessage> snap) =>
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized(); // 宿主绑定（无设备）
+  // T-20261016 W-29 复测批：flutter_test 默认把 HttpClient 换成「永远 400」
+  // （p029 负样本 live 组同款处置，其 setUpAll 注释实证）——清掉它真实 HTTP
+  // 才能出网。本批 X11 首跑 400 的真根因即此（此前误判为模型/参数被拒）。
+  HttpOverrides.global = null;
   // 宿主无 platform channel：mock connectivity_plus（llm_client 网络预检用）。
   // 纯测试侧 mock，生产零影响。
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -190,7 +194,14 @@ void main() {
           'YS_TEST_BASE_URL',
           defaultValue: 'https://api.deepseek.com',
         ),
-        model: 'deepseek-chat',
+        // YS_TEST_MODEL（T-20261016 W-29 复测批新增）：2026-10-16 实测
+        // 'deepseek-chat' 对本 key 返回 HTTP 400（W-18 基线 10-15 尚可用），
+        // 'deepseek-v4-flash' 可用（p029 live 组同款）⇒ 可经 define 覆盖，
+        // 缺省保持 deepseek-chat（W-18 基线可复现）。
+        model: const String.fromEnvironment(
+          'YS_TEST_MODEL',
+          defaultValue: 'deepseek-chat',
+        ),
       ),
     );
     container = ProviderContainer(
@@ -301,6 +312,8 @@ void main() {
       final tapAt = DateTime.now();
       // ★ 首点重试：run2/run3 实证首个面板挂载后的首次 tap 可能不触发流
       //   （无 sendMessage 日志）。每 20s 检查：无卡片且无调用 → 再点一次，≤3 次。
+      //   （T-20261016：tap 保持 FakeAsync 区——runAsync 内 tap 命中测试失效
+      //   实证；400 真根因是 HttpOverrides，见 main 头注，已清。）
       var taps = 0;
       const maxTaps = 3;
       const pollFor = Duration(seconds: 240);
