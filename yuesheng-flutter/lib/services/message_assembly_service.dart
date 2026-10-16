@@ -449,6 +449,9 @@ class MessageAssemblyService {
       options: options,
       activePersona: activePersona,
       content: content,
+      // W-17 首轮判据装配：「首轮」= 活跃症候为空（与 injectDiagnosisLock
+      // 的提前 return 同一判据源，同一 loaded 快照，无双读漂移）。
+      activeProblemsEmpty: loaded.activeProblems.isEmpty,
     );
     // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据）
     final stageIndexes = <String, List<int>>{};

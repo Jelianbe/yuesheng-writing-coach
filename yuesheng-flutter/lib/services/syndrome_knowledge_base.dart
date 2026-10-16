@@ -48,6 +48,43 @@ String getSyndromeContent(List<String> syndromeIds) {
   return header + sections.join('\n\n---\n\n');
 }
 
+/// W-17 首轮判据注入集：三巨头（W-18 实测 22-24/24 全勤误报源；设计批
+/// 2026-10-16 维度 1 选项 A，舰长批准）。后续按实测增删只改本常量一处，
+/// 装配机制不动。
+const List<String> kFirstRoundCriteriaIds = ['P001', 'P002', 'P003'];
+
+/// W-17：按 ID 提取 L3 判据段**原文**（不带 [getSyndromeContent] 的
+/// 「活跃症候详细定义」header —— 该句语义为「你当前锁定诊断的症候」，与
+/// 首轮语境错位，等于把判据伪装成既定结论，有先入为主锚定风险；设计批
+/// 文案策略 A1 案否决理由）。段体逐字不动（verbatim，不触 R-027）。
+String getSyndromeCriteriaSections(List<String> syndromeIds) {
+  final sections = syndromeIds
+      .map((id) => _extractSyndromeSection(kSyndromeManualContent, id))
+      .where((s) => s.isNotEmpty)
+      .toList();
+  return sections.join('\n\n---\n\n');
+}
+
+/// W-17 首轮判据块：已批一句 header（R-027 现场批复 2026-10-16，设计批 §三，
+/// 逐字 = 批文）+ 注入集判据原文 verbatim。纯装配函数，供
+/// prompt_assembly_service 在「diagnosis 模式且无活跃症候」时注入。
+/// [disabledSyndromeIds] = 用户永久关闭的症候（R-009 用户主权：关了就不注入）。
+String buildFirstRoundCriteriaBlock({
+  Set<String> disabledSyndromeIds = const {},
+}) {
+  const header =
+      '以下三条为高频症候的完整判据（判断原则与豁免条款在内）。'
+      '首轮判定时逐条核对：命中各判据所列豁免/比例原则的形态不判；'
+      '无判据支撑不得标 ID。';
+  final ids = disabledSyndromeIds.isEmpty
+      ? kFirstRoundCriteriaIds
+      : kFirstRoundCriteriaIds
+            .where((id) => !disabledSyndromeIds.contains(id))
+            .toList();
+  if (ids.isEmpty) return '';
+  return '$header\n\n${getSyndromeCriteriaSections(ids)}';
+}
+
 // ── b9 批次28：症候库表格行渲染（输出与手写逐字一致）──────────
 
 /// 索引表「映射表」行：| ID | 关键词 | 一句话描述 |

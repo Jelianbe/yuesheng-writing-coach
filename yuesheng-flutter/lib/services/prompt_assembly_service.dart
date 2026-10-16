@@ -21,6 +21,8 @@ import 'package:writingcoach/services/l2_route_hysteresis.dart';
 import 'package:writingcoach/services/llm_client.dart' show ChatMessage;
 import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/prompt_sanitizer.dart';
+import 'package:writingcoach/services/syndrome_knowledge_base.dart'
+    show buildFirstRoundCriteriaBlock;
 import 'package:writingcoach/services/token_budget_guard.dart';
 import 'package:writingcoach/types/coach_persona.dart';
 import 'package:writingcoach/types/coach_persona_seed.dart';
@@ -61,6 +63,10 @@ class PromptAssemblyService {
   // ── system prompt 组装 ───────────────────────────────────────────────
 
   /// 组装 system prompt（P1-4 诊断场景护栏 + L2 迟滞覆写）。
+  ///
+  /// [activeProblemsEmpty] = 本轮活跃症候是否为空（W-17 首轮判据装配的
+  /// 「首轮」判据，由调用方从 `loaded.activeProblems.isEmpty` 传入）。
+  /// 缺省 true：判据在场是诊断公平性的安全方向（漏注入 = 回到 W-31 盲区）。
   List<ChatMessage> buildSystemPrompt(
     TeachingPhase phase,
     AttitudeLevel attitude,
@@ -71,6 +77,7 @@ class PromptAssemblyService {
     required SendMessageOptions options,
     CoachPersona? activePersona,
     String? content,
+    bool activeProblemsEmpty = true,
   }) {
     // P1-4：当前消息措辞触发诊断协议但 l2Mode 非 diagnosis 阶段时，
     // 强制注入「先建现场」护栏（避免 P3 阶段裸奔诊断）。
@@ -90,21 +97,55 @@ class PromptAssemblyService {
     );
     final rawMode = _teaching.resolveL2Mode(skillCtx);
     final override = _routeHysteresis.overrideFor(sessionId, rawMode);
-    if (override != null) {
-      // R-022 过程可见：迟滞是**静默**的行为变更（L2 组被覆盖），
-      // 只在真正抑制时打一行（正常会话极少触发，不会刷屏）。
-      debugPrint(
-        '[ChatService] U2 迟滞：L2 组由 ${rawMode.name} 抑制为 ${override.name}'
-        '（session=$sessionId）',
-      );
-    }
+    _logOverrideIfSuppressed(rawMode, override, sessionId);
     final promptResult = _teaching.buildSystemPrompt(
       skillCtx,
       modeOverride: override,
     );
     return <ChatMessage>[
       ChatMessage(role: 'system', content: promptResult.systemPrompt),
+      // W-17 首轮判据装配（2026-10-16 舰长批准设计批：注入集 A 三巨头 +
+      // 文案 A2 已批一句）。判据正文 = L3 原文 verbatim，不触 R-027。
+      ..._firstRoundCriteriaMessages(
+        l2Mode: promptResult.l2Mode,
+        forceSceneFirst: forceSceneFirst,
+        activeProblemsEmpty: activeProblemsEmpty,
+        disabledSyndromeIds: skillCtx.disabledSyndromeIds,
+      ),
     ];
+  }
+
+  /// W-17 首轮判据消息（R-019 拆出，语义见设计批 §七）：diagnosis 模式（或
+  /// P1-4 force）且无活跃症候时返回单元素独立 system 消息，否则空列表。
+  /// 独立消息 ⇒ 主 system prompt 字节不变 ⇒ skill_prompt_anchor 零漂移；
+  /// 门禁 18 计量面不受影响，本通道增量按其头注纪律单独实测报批（施工报告）。
+  static List<ChatMessage> _firstRoundCriteriaMessages({
+    required L2Mode l2Mode,
+    required bool forceSceneFirst,
+    required bool activeProblemsEmpty,
+    required Set<String> disabledSyndromeIds,
+  }) {
+    final diagnosisLike = l2Mode == L2Mode.diagnosis || forceSceneFirst;
+    if (!diagnosisLike || !activeProblemsEmpty) return const [];
+    final criteriaBlock = buildFirstRoundCriteriaBlock(
+      disabledSyndromeIds: disabledSyndromeIds,
+    );
+    if (criteriaBlock.isEmpty) return const [];
+    return [ChatMessage(role: 'system', content: criteriaBlock)];
+  }
+
+  /// U2 迟滞过程可见（R-022，R-019 拆出）：迟滞是**静默**的行为变更
+  /// （L2 组被覆盖），只在真正抑制时打一行（正常会话极少触发，不会刷屏）。
+  void _logOverrideIfSuppressed(
+    L2Mode rawMode,
+    L2Mode? override,
+    String sessionId,
+  ) {
+    if (override == null) return;
+    debugPrint(
+      '[ChatService] U2 迟滞：L2 组由 ${rawMode.name} 抑制为 ${override.name}'
+      '（session=$sessionId）',
+    );
   }
 
   /// D1/D2 Phase 2：解析当前激活教练人格。
