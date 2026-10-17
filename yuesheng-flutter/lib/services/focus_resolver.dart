@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 
 import '../config/shared_constants.dart';
 import '../types/teaching_types.dart';
+import 'syndrome_registry.dart';
 import 'syndrome_skill_levels.dart';
 
 /// 批次6（6.4 O5）：静默跳过 debug 计数器——沉淀「断链」可见性，
@@ -91,6 +92,65 @@ const Map<Severity, int> _kSeverityRank = {
   Severity.l1: 1,
 };
 
+// ── ADR-0008 焦点资格闸（T-20261017-01）──────────────────────────
+//
+// 资级两档，由注册表现有 QuantityTag 派生（零新映射表）：
+//   档 A（直接教学类）= QuantityTag.wordChoice —— 基础语病/用词错，
+//        客观可验证、改了就见效 ⇒ 无条件焦点资格；
+//   档 B（其余一切）= underwritten / overwritten / 无标签 ——
+//        条件资格：仅 confirmed 态或 severity==L3 时可胜过档 A。
+//
+// 资格级只回答「该不该优先抢焦点位」，不是症候价值评级（R-009）。
+// 优先级 1（confirmed 池）不受资格闸约束：学员已确认 = 自愿学。
+//
+// W-23 实证动因（DECISIONS §4-209）：GT 的 L1 真病灶（X04 P018）
+// 检出 6/10、进候选 6/6，但 severity 单键排序下 0/6 胜出——
+// 全库 P018 进候选 86 次仅胜 1 次。
+
+/// 档 A 无条件资格的量维度集合（ADR-0008 §2.1）。
+const Set<QuantityTag> _kDirectTeachingTags = {QuantityTag.wordChoice};
+
+/// 资格级：档 A = 1，档 B = 0（首键降序 ⇒ 档 A 先于档 B）。
+int _eligibilityRank(FocusProblem p) {
+  final tag = quantityTagOf(p.syndromeId);
+  return tag != null && _kDirectTeachingTags.contains(tag) ? 1 : 0;
+}
+
+/// 档 B 是否获得本轮胜出资格（ADR-0008 §2.1：confirmed 态或 L3）。
+bool _tierBEligible(FocusProblem p) {
+  return p.confirmationStatus == ConfirmationStatus.confirmed ||
+      p.severity == Severity.l3;
+}
+
+/// 资格闸排序比较器（ADR-0008 §2.1 双键）：(资格级 DESC, severity DESC)。
+///
+/// 档 A 之间仍按 severity 断高下；档 B 对档 A 仅在获得资格时可比，
+/// 否则档 A 恒先。confirmed 态在优先级 2/3 中不会出现（优先级 1 已
+/// 截流），此处 _tierBEligible 的 confirmed 分支是对「fallback 池内
+/// 既有语义」的保守兼容，不改变既有层级路径。
+int _eligibilityCompare(FocusProblem a, FocusProblem b) {
+  final ra = _eligibilityRank(a);
+  final rb = _eligibilityRank(b);
+  if (ra != rb) {
+    // 异档：档 B 只有获资格时才可能压过档 A —— 但排序阶段逐对比较
+    // 无法感知「对方是谁」，故档 B 的资格判定看自身：未获资格的档 B
+    // 排在所有档 A 之后（ra>rb ⇒ a 先），获资格的档 B 保持 severity
+    // 语义（由下方 severity 次键统一裁决，行首键平局时自然回落）。
+    final aTierA = ra == 1;
+    final bTierA = rb == 1;
+    if (aTierA != bTierA) {
+      // 一 A 一 B：B 未获资格 ⇒ A 先；B 获资格 ⇒ 回落 severity 比较。
+      if (aTierA && !_tierBEligible(b)) return -1;
+      if (bTierA && !_tierBEligible(a)) return 1;
+      // B 获资格 ⇒ 与 A 平起，severity 次键裁决。
+    }
+  }
+  final sv = _kSeverityRank[b.severity]! - _kSeverityRank[a.severity]!;
+  if (sv != 0) return sv;
+  // severity 平局时资格级作稳定次序（档 A 先）。
+  return rb - ra;
+}
+
 /// 批次60：软引导——在已排序候选中优先选「层级 ≤ 学员当前层级+1」的症候。
 ///
 /// 全部越级时回退全候选（层级是引导不是拦截，AI 自主判断优先）。
@@ -107,6 +167,10 @@ FocusProblem _preferLevelAppropriate(
   }).toList();
   return (appropriate.isNotEmpty ? appropriate : sorted).first;
 }
+
+/// 资格闸 reason 片段（ADR-0008）：资格=直接教学/条件。
+String _eligibilityLabel(FocusProblem p) =>
+    _eligibilityRank(p) == 1 ? '直接教学' : '条件';
 
 /// Fallback 优先级表（5.4.2）
 /// rejected / ignored / resolved 症候永远不进入候选池
@@ -154,32 +218,48 @@ FocusProblem _preferLevelAppropriate(
     );
   }
 
-  // 优先级 2：suspected + active，按 severity DESC
+  // 优先级 2：suspected + active，按 (资格级, severity) DESC（ADR-0008 资格闸）
   final suspected = candidates
       .where((p) => p.confirmationStatus == ConfirmationStatus.suspected)
       .toList();
   if (suspected.isNotEmpty) {
-    suspected.sort(
-      (a, b) => _kSeverityRank[b.severity]! - _kSeverityRank[a.severity]!,
-    );
+    suspected.sort(_eligibilityCompare);
     final picked = _preferLevelAppropriate(suspected, studentSkillLevel);
     return (
       id: picked.syndromeId,
-      reason:
-          'fallback 优先级 2（suspected + active）：选 ${picked.syndromeId}（severity=${picked.severity.value}${studentSkillLevel != null ? '，层级≤学员当前+1' : ''}）',
+      reason: _fallbackReason(
+        2,
+        'suspected + active',
+        picked,
+        studentSkillLevel: studentSkillLevel,
+      ),
     );
   }
 
-  // 优先级 3：任意 active，按 severity DESC
-  candidates.sort(
-    (a, b) => _kSeverityRank[b.severity]! - _kSeverityRank[a.severity]!,
-  );
+  // 优先级 3：任意 active，按 (资格级, severity) DESC（ADR-0008 资格闸）
+  candidates.sort(_eligibilityCompare);
   final picked = _preferLevelAppropriate(candidates, studentSkillLevel);
   return (
     id: picked.syndromeId,
-    reason:
-        'fallback 优先级 3（active）：选 ${picked.syndromeId}（severity=${picked.severity.value}${studentSkillLevel != null ? '，层级≤学员当前+1' : ''}）',
+    reason: _fallbackReason(
+      3,
+      'active',
+      picked,
+      studentSkillLevel: studentSkillLevel,
+    ),
   );
+}
+
+/// 优先级 2/3 的 fallback reason（ADR-0008 资格闸文案，R-019 拆出）。
+String _fallbackReason(
+  int priority,
+  String scope,
+  FocusProblem picked, {
+  SkillLevel? studentSkillLevel,
+}) {
+  return 'fallback 优先级 $priority（$scope）：选 ${picked.syndromeId}'
+      '（severity=${picked.severity.value}，资格=${_eligibilityLabel(picked)}'
+      '${studentSkillLevel != null ? '，层级≤学员当前+1' : ''}）';
 }
 
 /// 频繁切换检测（5.7.3）
