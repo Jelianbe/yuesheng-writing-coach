@@ -14,6 +14,7 @@
 import '../types/teaching_types.dart';
 import 'diagnosis_validator.dart' show kMutexSyndromePairs;
 import 'merge_convergence.dart' show evidenceJaccard, kEvidenceJaccardThreshold;
+import 'syndrome_registry.dart' show QuantityTag, quantityTagOf;
 
 /// A2 系统性判定初值（设计稿 §六：拍初值，待 W-23 用 10–15 案例标定）。
 const int kSystematicChapterThreshold = 3;
@@ -413,12 +414,43 @@ List<TeachingFocusCandidate> buildTeachingFocusCandidates(
   return cands;
 }
 
+/// iv 断供格的注册表先验值（T-20261018-04 第一批 · 设计批 2026-10-18 已批）。
+///
+/// 经既有 [quantityTagOf] 派生（零新映射表，ADR-0008 负面清单 4）：
+///   - `wordChoice`（客观可验证的用词错误——基础语病/翻译腔）= 2，
+///     与 ADR-0008 §2.1 资格闸档 A 同一判断的另一处应用；
+///   - 其余（`overwritten` / `underwritten` / 无标签）= 1（不区分，
+///     最小语义增量——满映射 2/1/0 备选舰长未选，见设计批 §五待裁 1）。
+///
+/// 先验**不是** LLM 评定：呈现层 rationale 以「注册表先验」字样标注
+/// （R-009 同源纪律：不伪装数据来源）。
+int quantityPrior(String syndromeId) {
+  return quantityTagOf(syndromeId) == QuantityTag.wordChoice ? 2 : 1;
+}
+
 TeachingFocusCandidate _candidateFor(DiagnosisGroup g) {
   final severityScore = g.severityMax.index + 1;
-  final valueScore = interventionValueRank(g.interventionValueMax) + 1;
+  // A3 intervention_value 分量断供修复（T-20261018-04 第一批 · 设计批
+  // 2026-10-18 舰长「都批」）：单次链输出规范明文不产出 intervention_value
+  // （syndrome_kb_content.dart:62）⇒ 240/240 格 iv 全 null ⇒ 旧口径
+  // valueScore 恒 0、total = severity + 1 恒等（W-23 全库 1068 候选复算，
+  // ADR-0008 证据 4/6）。iv 为 null 时改由注册表既有 QuantityTag 派生先验
+  // （quantityTagOf，零新映射表，ADR-0008 负面清单 4）：wordChoice = 2
+  // ——与 ADR-0008 §2.1 资格闸档 A 同一判断的另一处应用；其余
+  // （overwritten/underwritten/无标签）= 1（最小语义增量）。iv 非空路径
+  // （merge 链产出）原样不动，一次只改一个变量（§4-192 范式）。
+  final iv = g.interventionValueMax;
+  final int valueScore;
+  final String valueLabel;
+  if (iv != null) {
+    valueScore = interventionValueRank(iv) + 1;
+    valueLabel = iv;
+  } else {
+    valueScore = quantityPrior(g.syndromeId) + 1;
+    valueLabel = '注册表先验';
+  }
   final recurrenceScore = g.chapterCount.clamp(0, kSystematicChapterThreshold);
   final total = severityScore + valueScore + recurrenceScore;
-  final valueLabel = g.interventionValueMax ?? '未评定';
   return TeachingFocusCandidate(
     candidateId: 'tfc-${g.syndromeId}',
     syndromeId: g.syndromeId,

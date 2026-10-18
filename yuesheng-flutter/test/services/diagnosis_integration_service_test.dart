@@ -232,18 +232,24 @@ void main() {
       expect(c.status, 'proposed'); // 只出候选，不决定
     });
 
-    test('null 干预价值 = 0 分（未评定不加分）', () {
+    test('null 干预价值 = 注册表先验（T-20261018-04：原「=0 分」口径已批改）', () {
+      // 修订依据：设计批 2026-10-18 舰长「都批」——iv 全 null 时 valueScore
+      // 恒 0 ⇒ total = severity + 1 恒等（240/240 格实证，ADR-0008 证据 4/6）。
+      // 新口径：null ⇒ 注册表 QuantityTag 先验；P001 = underwritten ⇒ 2。
       final groups = buildDiagnosisGroups([
         _e('r1', 0, 'P001', Severity.l1, ['a'], chapter: 'ch-1'),
       ]);
       final c = buildTeachingFocusCandidates(groups, nowSec: 500).single;
-      expect(c.scoreBreakdown['intervention_value'], 0);
-      expect(c.rationale, contains('未评定'));
+      expect(c.scoreBreakdown['intervention_value'], 2);
+      expect(c.rationale, contains('注册表先验'));
+      expect(c.rationale, isNot(contains('未评定')));
     });
 
     test('排序：total 降序，同分按 syndromeId 升序（确定性）', () {
       final groups = buildDiagnosisGroups([
-        _e('r1', 0, 'P002', Severity.l1, ['a'], chapter: 'ch-1'), // 1+0+1=2
+        _e('r1', 0, 'P002', Severity.l1, [
+          'a',
+        ], chapter: 'ch-1'), // 1+2+1=4（iv null ⇒ 先验 1）
         _e(
           'r2',
           0,
@@ -253,7 +259,9 @@ void main() {
           chapter: 'ch-1',
           interventionValue: 'high', // 3+3+1=7
         ),
-        _e('r3', 0, 'P003', Severity.l1, ['c'], chapter: 'ch-1'), // 1+0+1=2
+        _e('r3', 0, 'P003', Severity.l1, [
+          'c',
+        ], chapter: 'ch-1'), // 1+2+1=4（iv null ⇒ 先验 1）
       ]);
       final cands = buildTeachingFocusCandidates(groups, nowSec: 500);
       expect(cands.map((c) => c.syndromeId).toList(), ['P001', 'P002', 'P003']);
