@@ -24,6 +24,7 @@ import '../features/chat/partial_agreement_card.dart';
 import 'phase_summary_card.dart';
 import 'phase_upgrade_card.dart';
 import 'reference_change_card.dart';
+import 'session_harvest_card.dart';
 import 'teacher_suggestion_card.dart';
 import '../config/app_palette.dart';
 
@@ -132,6 +133,10 @@ Widget? _cardForMessageType(
       onContinueChat,
     ),
     'genui' => GenUICard.fromMessageContent(msg.content, messageId: msg.id),
+    'session_harvest' => SessionHarvestCard.tryFromMessageContent(
+      msg.content,
+      key: ValueKey('harvest-${msg.id}'),
+    ),
     _ => null,
   };
 }

@@ -6,6 +6,8 @@
 // 注入，不隐式依赖 State 私有成员，也不使用 part / extension。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,15 +16,19 @@ import '../../config/diagnosis_temperature.dart';
 import '../../data/repositories/app_state_repository.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/edit_diff_event_repository.dart';
 import '../../data/repositories/event_fact_repository.dart';
 import '../../data/repositories/session_repository.dart';
+import '../../data/repositories/training_result_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/session_providers.dart';
 import '../../services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import '../../services/chat_service.dart';
+import '../../services/chapter_completion_querier.dart';
 import '../../services/progressive_diagnosis.dart';
+import '../../services/session_harvest_assembler.dart';
 import '../../services/story_structure_profile.dart';
 import '../../types/teaching_types.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
@@ -212,7 +218,7 @@ class WritingCoachDiagnosisRunner {
     );
   }
 
-  /// 诊断完成：刷新消息 + 复位流式/诊断中 + 完成反馈。
+  /// 诊断完成：刷新消息 + 复位流式/诊断中 + 完成反馈 + 会话收口卡（T-20261018-02）。
   Future<void> handleComplete(String sid) async {
     final sessionRepo = SessionRepository(_ref.read(appDatabaseProvider));
     final messages = await sessionRepo.listMessages(sid);
@@ -226,6 +232,74 @@ class WritingCoachDiagnosisRunner {
       // 已由 _host.isMounted 守护（mounted 时 context 仍有效）。
       // ignore: use_build_context_synchronously
       showDiagnosisCompleteSnack(_host.context);
+    }
+    // T-20261018-02（A 议题）：会话收口卡——触发判定 + 装配在 assembler 内
+    // （三条件全不满足不出卡；失败静默不阻断主流程）。插入后刷新一次消息，
+    // 使收口卡即时出现在消息流（重开会话亦经消息持久化恢复）。
+    await _emitSessionHarvest(sid);
+    if (_host.isMounted) {
+      final refreshed = await sessionRepo.listMessages(sid);
+      _ref
+          .read(writingCoachStoreProvider(_chapterId).notifier)
+          .setMessages(refreshed);
+    }
+  }
+
+  /// 装配并插入会话收口卡（T-20261018-02）。
+  ///
+  /// 本次诊断症候集与焦点从落库行直读（history[0] = 本次），避免依赖
+  /// 诊断链中间态；assembler 内部自判触发条件。
+  Future<void> _emitSessionHarvest(String sid) async {
+    try {
+      final db = _ref.read(appDatabaseProvider);
+      final diagRepo = DiagnosisRepository(db);
+      final latest = await diagRepo.getLatestDiagnosis(sid);
+      if (latest == null) return;
+      final trainingRepo = TrainingResultRepository(db);
+      final chapterRepo = ChapterRepository(db);
+      final appStateRepo = AppStateRepository(db);
+      final editDiffRepo = EditDiffEventRepository(db);
+      final sessionRepo = SessionRepository(db);
+      final assembler = SessionHarvestAssembler(
+        diagRepo: diagRepo,
+        trainingRepo: trainingRepo,
+        completionQuerier: ChapterCompletionQuerier(
+          editDiffRepo,
+          appStateRepo,
+          chapterRepo,
+        ),
+        sessionRepo: sessionRepo,
+      );
+      final syndromes = _syndromePairsOf(latest.syndromes);
+      await assembler.assembleAndInsert(
+        sessionId: sid,
+        currentSyndromes: syndromes,
+        nextFocusId: latest.currentTeachingFocusId,
+      );
+    } catch (e) {
+      // 收口卡失败不阻断诊断完成主流程（对齐候选区失败静默先例）。
+      debugPrint('[DiagnosisRunner] 收口卡装配失败(不阻断): $e');
+    }
+  }
+
+  /// 诊断行 syndromes JSON → (id, severity) 轻量对（损坏降级空表）。
+  List<({String id, String severity})> _syndromePairsOf(String raw) {
+    try {
+      final list = raw.isEmpty ? <dynamic>[] : jsonDecode(raw) as List<dynamic>;
+      return list
+          .map(
+            (e) => e is Map<String, dynamic>
+                ? (
+                    id: e['syndrome_id'] as String? ?? '',
+                    severity: e['severity'] as String? ?? '',
+                  )
+                : null,
+          )
+          .whereType<({String id, String severity})>()
+          .where((s) => s.id.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
     }
   }
 

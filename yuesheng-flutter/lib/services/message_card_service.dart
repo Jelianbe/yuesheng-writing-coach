@@ -791,3 +791,146 @@ Future<String> insertGenuiCard(
     messageType: 'genui',
   );
 }
+
+/// 会话收口卡 Payload（T-20261018-02 · A 议题 · 2026-10-18 舰长批）
+///
+/// 「本次收获」——诊断完成后的会话级事实小结。全卡只陈述事实
+/// （计数/对比/快照），无任何评价语（R-009 红线，设计批 §二；
+/// 措辞形态对齐 EvaluationReportPanel E-1 复诊行先例）。
+/// 各节可空：null/空集合 ⇒ 该节不渲染（fromJson 归一、不落 key，往返稳定）。
+class SessionHarvestPayload {
+  /// 会话累计诊断次数（含本次）。
+  final int diagnosisCount;
+
+  /// 本次诊断报出的症候计数（按 severity 汇总）。
+  final int l1Count;
+  final int l2Count;
+  final int l3Count;
+
+  /// 与同章上一次诊断的症候集对比；null = 无历史（本节不渲染）。
+  final HarvestDiff? diff;
+
+  /// 本会话训练聚合；null = 无训练（本节不渲染）。
+  final HarvestTraining? training;
+
+  /// M4 完成候选事实快照（目标/当前字数）；null = 无候选（本节不渲染）。
+  /// ⚠️ 只陈述 goal/wordCount，无「达标/通过」语（对齐 M4 聚合器 R-009 红线）。
+  final HarvestCompletion? completion;
+
+  /// 下一轮教学焦点症候名；null/空 = 不渲染（只报名不评）。
+  final String? nextFocusName;
+
+  const SessionHarvestPayload({
+    required this.diagnosisCount,
+    required this.l1Count,
+    required this.l2Count,
+    required this.l3Count,
+    this.diff,
+    this.training,
+    this.completion,
+    this.nextFocusName,
+  });
+
+  factory SessionHarvestPayload.fromJson(Map<String, dynamic> json) {
+    final diffRaw = json['diff'] as Map<String, dynamic>?;
+    final trainRaw = json['training'] as Map<String, dynamic>?;
+    final compRaw = json['completion'] as Map<String, dynamic>?;
+    final nf = json['next_focus_name'];
+    return SessionHarvestPayload(
+      diagnosisCount: (json['diagnosis_count'] as num?)?.toInt() ?? 0,
+      l1Count: (json['l1_count'] as num?)?.toInt() ?? 0,
+      l2Count: (json['l2_count'] as num?)?.toInt() ?? 0,
+      l3Count: (json['l3_count'] as num?)?.toInt() ?? 0,
+      diff: diffRaw == null ? null : HarvestDiff.fromJson(diffRaw),
+      training: trainRaw == null ? null : HarvestTraining.fromJson(trainRaw),
+      completion: compRaw == null ? null : HarvestCompletion.fromJson(compRaw),
+      nextFocusName: nf is String && nf.isNotEmpty ? nf : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'diagnosis_count': diagnosisCount,
+    'l1_count': l1Count,
+    'l2_count': l2Count,
+    'l3_count': l3Count,
+    if (diff != null) 'diff': diff!.toJson(),
+    if (training != null) 'training': training!.toJson(),
+    if (completion != null) 'completion': completion!.toJson(),
+    if (nextFocusName != null && nextFocusName!.isNotEmpty)
+      'next_focus_name': nextFocusName,
+  };
+}
+
+/// 症候集对比（与同章上一次诊断）——只计数不评价。
+class HarvestDiff {
+  final int added;
+  final int removed;
+  final int recurring;
+  const HarvestDiff({
+    required this.added,
+    required this.removed,
+    required this.recurring,
+  });
+
+  factory HarvestDiff.fromJson(Map<String, dynamic> json) => HarvestDiff(
+    added: (json['added'] as num?)?.toInt() ?? 0,
+    removed: (json['removed'] as num?)?.toInt() ?? 0,
+    recurring: (json['recurring'] as num?)?.toInt() ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'added': added,
+    'removed': removed,
+    'recurring': recurring,
+  };
+}
+
+/// 训练聚合（本会话）。
+class HarvestTraining {
+  final int attempts;
+  final int passed;
+  const HarvestTraining({required this.attempts, required this.passed});
+
+  factory HarvestTraining.fromJson(Map<String, dynamic> json) =>
+      HarvestTraining(
+        attempts: (json['attempts'] as num?)?.toInt() ?? 0,
+        passed: (json['passed'] as num?)?.toInt() ?? 0,
+      );
+
+  Map<String, dynamic> toJson() => {'attempts': attempts, 'passed': passed};
+}
+
+/// M4 完成候选事实快照——只陈述数字，无成败语（R-009 红线）。
+class HarvestCompletion {
+  final int goalWords;
+  final int wordCount;
+  const HarvestCompletion({required this.goalWords, required this.wordCount});
+
+  factory HarvestCompletion.fromJson(Map<String, dynamic> json) =>
+      HarvestCompletion(
+        goalWords: (json['goal_words'] as num?)?.toInt() ?? 0,
+        wordCount: (json['word_count'] as num?)?.toInt() ?? 0,
+      );
+
+  Map<String, dynamic> toJson() => {
+    'goal_words': goalWords,
+    'word_count': wordCount,
+  };
+}
+
+/// 诊断完成后，确定性插入会话收口卡（T-20261018-02）。
+///
+/// 触发口径由调用方（handleComplete 装配层）判定；本函数只落卡。
+/// 卡片以 system 角色 + session_harvest 类型写入 messages 表。
+Future<String> insertSessionHarvestCard(
+  SessionRepository sessionRepo,
+  String sessionId,
+  SessionHarvestPayload payload,
+) async {
+  return sessionRepo.addMessage(
+    sessionId,
+    'system',
+    jsonEncode(payload.toJson()),
+    messageType: 'session_harvest',
+  );
+}
