@@ -31,17 +31,19 @@ import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
-/// 已批 header（逐字 = 设计批 §三批复文案；改动此串必须重走 R-027）。
+/// 已批 header（逐字 = 设计批 §三批复文案；T-20261017-02 批随注入集扩容
+/// 「三条→四条」同步更新，舰长「都修」= R-027 批准 2026-10-18；改动此串必须重走 R-027）。
 const String _kApprovedHeader =
-    '以下三条为高频症候的完整判据（判断原则与豁免条款在内）。'
+    '以下四条为高频症候的完整判据（判断原则与豁免条款在内）。'
     '首轮判定时逐条核对：命中各判据所列豁免/比例原则的形态不判；'
     '无判据支撑不得标 ID。';
 
-/// 三巨头判据段的独特锚串（取自 manual_1/2 各段正文，verbatim 校验用）。
+/// 三巨头 + P018 判据段的独特锚串（取自 manual 各段正文，verbatim 校验用）。
 const Map<String, String> _kSectionAnchors = {
   'P001': '### P001 情绪标签化',
   'P002': '### P002',
   'P003': '### P003',
+  'P018': '### P018 重复用词/基础语病',
 };
 
 PromptAssemblyService _buildService({Set<String> disabled = const {}}) {
@@ -87,7 +89,7 @@ void main() {
       expect(block.startsWith(_kApprovedHeader), isTrue);
     });
 
-    test('三巨头判据段全部在场（注入集 A）', () {
+    test('注入集判据段全部在场（三巨头 + P018，注入集 A + T-20261017-02 扩容）', () {
       final block = buildFirstRoundCriteriaBlock();
       for (final entry in _kSectionAnchors.entries) {
         expect(

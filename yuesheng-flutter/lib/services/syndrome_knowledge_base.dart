@@ -48,10 +48,11 @@ String getSyndromeContent(List<String> syndromeIds) {
   return header + sections.join('\n\n---\n\n');
 }
 
-/// W-17 首轮判据注入集：三巨头（W-18 实测 22-24/24 全勤误报源；设计批
-/// 2026-10-16 维度 1 选项 A，舰长批准）。后续按实测增删只改本常量一处，
-/// 装配机制不动。
-const List<String> kFirstRoundCriteriaIds = ['P001', 'P002', 'P003'];
+/// W-17 首轮判据注入集：三巨头 + P018（T-20261017-02 批，2026-10-18 舰长
+/// 「都修」：P018「误插结构助词」形态首轮零召回的根因 = 判据不在注入面。
+/// 原三巨头 = W-18 实测 22-24/24 全勤误报源（设计批 2026-10-16 维度 1
+/// 选项 A，舰长批准）。后续按实测增删只改本常量一处，装配机制不动。
+const List<String> kFirstRoundCriteriaIds = ['P001', 'P002', 'P003', 'P018'];
 
 /// W-17：按 ID 提取 L3 判据段**原文**（不带 [getSyndromeContent] 的
 /// 「活跃症候详细定义」header —— 该句语义为「你当前锁定诊断的症候」，与
@@ -73,7 +74,7 @@ String buildFirstRoundCriteriaBlock({
   Set<String> disabledSyndromeIds = const {},
 }) {
   const header =
-      '以下三条为高频症候的完整判据（判断原则与豁免条款在内）。'
+      '以下四条为高频症候的完整判据（判断原则与豁免条款在内）。'
       '首轮判定时逐条核对：命中各判据所列豁免/比例原则的形态不判；'
       '无判据支撑不得标 ID。';
   final ids = disabledSyndromeIds.isEmpty
