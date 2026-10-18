@@ -28,7 +28,9 @@ import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/growth_providers.dart';
 import '../../services/focus_card_builder.dart';
+import '../../services/growth_narrative.dart';
 import 'focus_card.dart';
+import 'growth_narrative_card.dart';
 import '../../router/app_routes.dart';
 import '../../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
@@ -255,17 +257,14 @@ class _GrowthContent extends StatelessWidget {
     final counts = _countSeverities(state.activeProblems);
 
     // 教学线 P1-4：当前焦点卡（profile + trainingStats 合成，无症候数据时隐藏）
-    final focus = profile == null
-        ? null
-        : buildFocusCardData(
-            profile: profile,
-            trainingStats: state.trainingStats,
-            phase: state.overview?.currentPhase,
-            beginnerLevel: state.beginnerLevel,
-          );
+    final focus = _buildFocusData(state);
+    // B 议题（T-20261018-03）：「与上次相比」进步叙事卡——纯函数装配
+    // （services/growth_narrative.dart），无主锚时返回空叙事 ⇒ 不渲染。
+    // 与 FocusCard（前瞻）形成「回望 → 前瞻」对偶，故置于列表首位。
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
+        ..._buildNarrativeSection(state),
         GrowthDiagnosisPrefsCard(
           onOpenSettings: () => _openCoachSettings(context),
         ),
@@ -287,6 +286,37 @@ class _GrowthContent extends StatelessWidget {
         // E-8：对话思考题回顾（间隔重复）
         const ReflectionQuestionsCard(),
       ],
+    );
+  }
+
+  /// B 议题（T-20261018-03）：「与上次相比」进步叙事卡段——纯函数装配
+  /// （services/growth_narrative.dart），置于列表首位，与 FocusCard（前瞻）
+  /// 形成「回望 → 前瞻」对偶。
+  ///
+  /// 无主锚（少于两次带能力快照的评估）时返回空列表 ⇒ 整段不渲染，
+  /// 对齐设计批 §二 显隐规则（全空不出卡，不造死卡）。
+  List<Widget> _buildNarrativeSection(GrowthState state) {
+    final narrative = buildGrowthNarrative(
+      evaluationHistory: state.evaluationHistory,
+      recurrences: state.syndromeRecurrences,
+    );
+    if (narrative.isEmpty) return const <Widget>[];
+    return <Widget>[
+      GrowthNarrativeCard(narrative: narrative),
+      const SizedBox(height: 12),
+    ];
+  }
+
+  /// 教学线 P1-4：当前焦点卡数据（profile + trainingStats 合成；
+  /// profile 缺失或无症候数据时 buildFocusCardData 返回 null ⇒ 不渲染）。
+  FocusCardData? _buildFocusData(GrowthState state) {
+    final profile = state.profile;
+    if (profile == null) return null;
+    return buildFocusCardData(
+      profile: profile,
+      trainingStats: state.trainingStats,
+      phase: state.overview?.currentPhase,
+      beginnerLevel: state.beginnerLevel,
     );
   }
 
