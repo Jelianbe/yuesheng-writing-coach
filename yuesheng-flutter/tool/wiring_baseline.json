@@ -1,0 +1,42 @@
+{
+  "schema": "wiring-baseline/1",
+  "note": "DB 列活性基线；豁免必带 reason（精核记录）。来源：2026-10-18 全链路活性审查 T-20261018-01（reports/2026-10-18-全链路活性审查-核心链.md）。裁决见 DECISIONS §4-214：isEnabled/弱证据门=登记按设计死；diagnosisSummary=挂起候选项（UI 批）；其余三列=登记待接线。",
+  "columns": {
+    "isEnabled": {
+      "verdict": "dead",
+      "hits": [],
+      "writes": [],
+      "reason": "ai_accounts.isEnabled（v28 ADR-C91 建列）——多账号启停只有列没有行为：零写入零过滤零 UI。舰长裁定登记按设计死（§4-214 裁1 选项②），tables.dart:764 建列处已加注释。功能真实需求出现时列已在。"
+    },
+    "attitudePreference": {
+      "verdict": "write_only",
+      "hits": ["data/repositories/teaching_state_repository.dart:91", "data/repositories/teaching_state_repository.dart:102"],
+      "writes": ["data/repositories/teaching_state_repository.dart:91", "data/repositories/teaching_state_repository.dart:102"],
+      "reason": "student_model 态度偏好——写入两处（teaching_state_repository upsert），读侧零命中。精核（lv2c）：.attitudePreference 全 lib 无读访问。登记待接线（读侧属学员画像 UI 批）。"
+    },
+    "decidedAt": {
+      "verdict": "write_only",
+      "hits": ["data/repositories/record_entry_repository.dart:84"],
+      "writes": ["data/repositories/record_entry_repository.dart:84"],
+      "reason": "record_entry 裁决时间戳——仅 kept 流程写一处（record_entry_repository:84），读侧零命中。精核（lv2c）：.decidedAt 全 lib 无读。登记待接线（收件箱排序候选）。"
+    },
+    "diagnosisSummary": {
+      "verdict": "write_only",
+      "hits": ["data/repositories/diagnosis_repository.dart:803", "data/repositories/session_repository.dart:39"],
+      "writes": ["data/repositories/diagnosis_repository.dart:803"],
+      "reason": "sessions 诊断摘要——每轮诊断 UPDATE（diagnosis_repository:803）却零读取。舰长裁定挂起不退役（§4-214 裁2 选项①）：session 详情页展示候选项，挂下一 UI 批；不为删列动 commitDiagnosis 事务热路径。"
+    },
+    "errorMessage": {
+      "verdict": "write_only",
+      "hits": ["services/database_backup_service.dart:360"],
+      "writes": ["services/database_backup_service.dart:360"],
+      "reason": "backup_history 错误信息——仅备份失败时写（database_backup_service:360），读侧零命中。登记待接线（备份历史页候选）。"
+    },
+    "sourceCredibility": {
+      "verdict": "write_only",
+      "hits": ["data/repositories/material_entry_repository.dart:62"],
+      "writes": ["data/repositories/material_entry_repository.dart:62"],
+      "reason": "material_entry 来源可信度——仅写入一处（material_entry_repository:62），读侧零命中。登记待接线（资料库展示候选）。"
+    }
+  }
+}

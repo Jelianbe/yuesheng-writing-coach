@@ -761,6 +761,12 @@ class AiAccounts extends Table {
   TextColumn get baseUrl => text()();
   TextColumn get model => text()();
   BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
+
+  /// ★ 2026-10-18 活性审查（T-20261018-01 / DECISIONS §4-214 裁1）：
+  /// 本列**按设计死**——v28（ADR-C91）建列后零写入、零过滤、零 UI 开关
+  /// （全 lib 实测；check_wiring.py 基线豁免在案，负向验证已做）。
+  /// 多账号启停功能只有列没有行为；真实需求出现时列已在，接线另批。
+  /// 改变此状态（补启停 UI）须先撤 tool/wiring_baseline.json 的豁免。
   BoolColumn get isEnabled => boolean().withDefault(const Constant(true))();
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();

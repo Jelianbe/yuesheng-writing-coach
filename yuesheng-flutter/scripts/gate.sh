@@ -126,6 +126,7 @@ ADR_DANGLING_LOG="$OUT_DIR/adr_dangling.txt"
 HOOK_SYNC_LOG="$OUT_DIR/hook_sync.txt"
 LEDGER_FRESH_LOG="$OUT_DIR/ledger_freshness.txt"
 PROMPT_VOLUME_LOG="$OUT_DIR/prompt_volume.txt"
+WIRING_LOG="$OUT_DIR/wiring.txt"
 
 pass=0
 fail=0
@@ -720,6 +721,30 @@ else
 fi
 log_result "prompt 体积红线" "$RC_PROMPT_VOLUME"
 
+# ---------- 约定层守卫（WARN 级 · 不计道数 · 不阻断）: DB 列活性 ----------
+# 背景（2026-10-18 T-20261018-01 全链路活性审查）：确证 6 死列——既有护栏
+#   全部验证「代码跑起来做什么」，没有护栏验证「生产有没有真的走到它」。
+#   coverage ≠ liveness。本守卫只报**新增**死列（基线豁免 tool/wiring_baseline.json，
+#   逐条带精核 reason）；负向验证已做（注入假列必报红 + 字节级恢复）。
+# 定性：**约定层守卫，非门禁**（与 check_extension_shape.py 首接形态同款）。
+#   报红 ⇒ 当场处置（补读侧或登记豁免），不阻断收尾；升阻断须用户裁定。
+echo "--> 约定层守卫: DB 列活性（只报新增死列；WARN 级，2026-10-18 审查批起接）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3/ python，跳过 DB 列活性守卫"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$WIRING_LOG"
+elif [ ! -f "$ROOT/tool/wiring_baseline.json" ]; then
+  echo "  [WARN] 基线缺失（tool/wiring_baseline.json），跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$WIRING_LOG"
+else
+  if "$PY_BIN" scripts/check_wiring.py --baseline tool/wiring_baseline.json > "$WIRING_LOG" 2>&1; then
+    echo "  [PASS] DB 列活性（无新增死列）"
+  else
+    # WARN 级：打印但不置 RC_ 变量、不进 pass/fail 计数
+    echo "  [WARN] 新增死列/基线异常——当场处置（补读侧或登记豁免），详见 $WIRING_LOG"
+    cat "$WIRING_LOG"
+  fi
+fi
+
 # ---------- 汇总报告 ----------
 #
 # 判定一律以**退出码**为准（2026-09-03 实证）：旧版对循环依赖用
@@ -795,6 +820,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - hook 副本同步: outputs/gate/hook_sync.txt
 - 台账新鲜度: outputs/gate/ledger_freshness.txt
 - Prompt 体积红线: outputs/gate/prompt_volume.txt
+- 约定层守卫·DB 列活性（WARN 级，不计道数）: outputs/gate/wiring.txt
 EOF
 
 echo "=================================================="
