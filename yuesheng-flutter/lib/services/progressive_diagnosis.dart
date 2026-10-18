@@ -374,7 +374,8 @@ const String _kMergeOutputRequirement = '''输出结构说明（下面两部分�
 [YS_DIAGNOSIS] 块顶层字段要求：
 - syndromes (object[]): 症候列表（格式见上），必填
 - suggested_actions (string[]): 建议动作编号数组（如 ["A009","A005"]），必填且必须为字符串数组
-- confidence (number): 0-1 置信度，必填
+- confidence (number): 0-1 置信度——★ §1-20：模型自报 confidence 已废除（禁止重新引入）；
+  本字段为协议兼容保留（活性审查 D1 / §4-215 裁7②），可省略；解析侧缺省 0.0
 - root_cause_analysis / next_focus / feedback_summary: 可选
 - overall (object): 整体判定（结构完整度诊断，非文学打分、不给分数），仅当已诊断章节覆盖度足够时输出：
   - verdict (string): 三档之一「结构完整」「基本完整」「存在结构性缺口」

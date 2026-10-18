@@ -86,6 +86,16 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   **被注入** diagnosis 组 prompt（len +63 实证）——注入场景下 B 案文案内容
   仍准确（单次路径确实不输出 intervention_value），已写入施工报告诚实边界。
 
+· 2026-10-18 第九次（活性审查 D1 裁7② · R-027 舰长批「都批」）：
+  **受控组 diagnosis 两组各 +107**（56,230→56,337 · 54,447→54,554）、
+  **对照组与 force 组均 +0**（实测逐键零增长）、l3_entry_anchor 0 处。
+  方向：confidence 废除字段降级**注释**两处（`syndrome_kb_content.dart:92`
+  协议模板内 + `progressive_diagnosis.dart:377` merge 必填行）——
+  §1-20 已废除的模型自报置信度自本批起解析降级可选（缺省 0.0，坏值仍拒）。
+  ⚠️ 注释进 prompt 模板即计费面（+107 为两处注释净增，锚点 fnv 三快照互证）；
+  本批同时把「必填」改为「可省略」= prompt 对模型的行为要求**收紧**（少要一个
+  废除字段），注释是给读代码者的一致性锚。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -155,8 +165,12 @@ ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'skill_prompt_anchor.json')
 REDLINE = {
     # ★ 2026-10-16 第八次重贴实测值（各 +63，逐键对账见头注「红线沿革」
     # 第八次；方向 = W-19-B B 案范围说明一行（舰长批 R-027），不是新增预算）。
-    'diagnosis_yuesheng': 56230,
-    'diagnosis_p1_yuesheng': 54447,
+    # ★ 2026-10-18 第九次重贴实测值（各 +107：56230→56337 / 54447→54554；
+    # 逐键对账 = 本批重冻 diff。方向 = §4-215 裁7② confidence 废除字段降级
+    # 注释两处（syndrome_kb_content +107 内 / progressive_diagnosis 合并计入），
+    # 舰长批 R-027「都批」——纯注释澄清，非新增预算）。
+    'diagnosis_yuesheng': 56337,
+    'diagnosis_p1_yuesheng': 54554,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。

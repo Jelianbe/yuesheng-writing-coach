@@ -411,10 +411,10 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   }
   final suggestedActions = suggestedActionsRaw.cast<String>();
 
-  // confidence 必填，number 0-1
-  final confidence = obj['confidence'];
-  if (confidence is! num || confidence < 0 || confidence > 1) {
-    return const _DiagnosisValidation.reject('confidence_invalid');
+  // ★ §1-20 / 活性审查 D1（§4-215 裁7②）：confidence 降级可选，校验拆出（R-019）。
+  final confidenceResult = _validateConfidence(obj['confidence']);
+  if (confidenceResult.err != null) {
+    return _DiagnosisValidation.reject(confidenceResult.err!);
   }
 
   // 可选字段（R-019 拆出：文本 / 白名单守卫 / teaching_plan / style_profile）
@@ -430,7 +430,7 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
     _buildParsedDiagnosis(
       syndromes,
       suggestedActions,
-      confidence,
+      confidenceResult.value,
       texts,
       finalNextFocus,
       whitelist,
@@ -440,6 +440,18 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
     ),
     notes,
   );
+}
+
+/// §1-20 / 活性审查 D1（§4-215 裁7②）：模型自报 confidence 已废除（禁止重新引入），
+/// 自 2026-10-18 起降级为**可选**：缺失 ⇒ 缺省 0.0（与 DB 列默认一致）；
+/// 给了但越界（<0 或 >1）/ 非数字仍拒（confidence_invalid）——
+/// 放宽只对「缺失」生效，不放过「坏值」；旧格式（带）与新格式（不带）均合法。
+({String? err, double value}) _validateConfidence(dynamic raw) {
+  if (raw == null) return (err: null, value: 0.0);
+  if (raw is! num || raw < 0 || raw > 1) {
+    return (err: 'confidence_invalid', value: 0.0);
+  }
+  return (err: null, value: raw.toDouble());
 }
 
 /// 组装 ParsedDiagnosis（R-019 拆出，纯装配无逻辑）。

@@ -89,6 +89,8 @@ const String _kIndexFooter = r'''
     }
   ],
   "suggested_actions": ["A0XX"],
+  // ★ §1-20：模型自报 confidence 已废除（禁止重新引入）；本字段为协议兼容保留
+  //   （活性审查 D1 / §4-215 裁7②）。解析侧已降级可选（缺省 0.0）——模型可省略。
   "confidence": 0.0-1.0,
   "feedback_summary": "可选：整体反馈摘要",
   "root_cause_analysis": "可选：根因分析",
