@@ -342,6 +342,61 @@ List<UnresolvedSource> buildPendingContextSources({
   return out;
 }
 
+/// A4 ③类输入：单症候的人裁状态快照（T-20261016-05）。
+///
+/// 调用方从两个既有仓储读出后转置（本服务不依赖 data 层类型，与
+/// [DiagnosisEntryRef] 同层——保持纯函数可测、零 DB 依赖）：
+///   - `confirmationStatus` = `active_problem.confirmation_status` 当前态；
+///   - `occurrenceCount` = 同章节会话内正式诊断次数（G15 口径，
+///     `DiagnosisRepository.countConfirmedDiagnosesBySyndrome`）。
+class HumanAdjudication {
+  final String syndromeId;
+  final String syndromeName;
+  final String confirmationStatus;
+  final int occurrenceCount;
+
+  const HumanAdjudication({
+    required this.syndromeId,
+    required this.syndromeName,
+    required this.confirmationStatus,
+    required this.occurrenceCount,
+  });
+}
+
+/// A4 ③类输入合成（T-20261016-05，口径 `DECISIONS §4-201` 项 4）：
+/// 人裁冲突 = 症候当前裁决态为 **rejected** 且同章节会话内正式诊断
+/// **再现 ≥ 2 次** ⇒ 未决源（落 kindNeedsHuman，由
+/// [collectUnresolvedQuestions] 登记）。**ignored 不计**（无主动信号）；
+/// suspected / confirmed 非冲突态同样不计。输出保序（调用方供数序）。
+///
+/// 判据精度如实登记（R-009 同源纪律：不伪装可观测性）——当前 schema
+/// **无裁决历史表**（active_problem 单行/(会话,症候)，无 rejectedAt、
+/// 无裁决事件流水）⇒ 口径中「学员再次拒绝」事件**不可逐次观测**。
+/// 本判据取**可观测近似**：「驳回过 + 会话内再现 ≥ 2」；误报方向 =
+/// 偏多（「驳回后对再现不作反应」也计入）——A4 暂无产品消费方（档 A
+/// 探针期）风险可接受。精确判据（≥ 2 次 rejected 事件）须裁决历史表
+/// ⇒ 另行立项，不在本批（零持久化边界）。
+List<UnresolvedSource> buildHumanConflictSources({
+  required List<HumanAdjudication> adjudications,
+  required String sessionId,
+}) {
+  final out = <UnresolvedSource>[];
+  for (final a in adjudications) {
+    if (a.confirmationStatus != 'rejected') continue;
+    if (a.occurrenceCount < 2) continue; // 无会话内再现 ⇒ 单次驳回非冲突
+    final namePart = a.syndromeName.isEmpty ? '' : '（${a.syndromeName}）';
+    out.add(
+      UnresolvedSource(
+        '症候 ${a.syndromeId}$namePart 已被学员驳回，'
+        '同章节会话内正式诊断再现 ${a.occurrenceCount} 次仍维持驳回态'
+        '——人裁冲突信号（系统复现 vs 学员驳回），待人工裁决',
+        <String>['$sessionId#${a.syndromeId}'],
+      ),
+    );
+  }
+  return out;
+}
+
 // ── A2：全局假设（规则触发；statement 模板生成；无置信度小数——设计稿 §二）──
 
 /// 系统性：组独立出现章节数 ≥ 阈值；结构性：互斥对两组同时存在

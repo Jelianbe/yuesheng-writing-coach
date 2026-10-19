@@ -482,6 +482,39 @@ class DiagnosisRepository {
         .toList();
   }
 
+  /// A4 ③类（T-20261016-05）：会话内被学员驳回的**活跃**症候——人裁冲突
+  /// 判据的「驳回过」事实源（口径 `DECISIONS §4-201` 项 4）。
+  ///
+  /// 与 [listActiveProblems]（注入面消费，带证据把握度过滤）不同：本方法
+  /// **零过滤**——只要 confirmation_status='rejected' 这一事实；ignored /
+  /// suspected / confirmed 不在结果内（ignored 无主动信号，口径明文不计）。
+  /// 仅取 status='active'：已 resolved 的驳回症候张力已消（毕业路径），
+  /// 不算未决冲突。跨 session 不串（session_id 等值条件）。
+  Future<List<ActiveProblemView>> listRejectedProblems(String sessionId) async {
+    final rows =
+        await (_db.select(_db.activeProblems)..where(
+              (t) =>
+                  t.sessionId.equals(sessionId) &
+                  t.status.equals('active') &
+                  t.confirmationStatus.equals('rejected'),
+            ))
+            .get();
+    return rows
+        .map(
+          (r) => ActiveProblemView(
+            syndromeId: r.syndromeId,
+            // D-W1：注册表按 id 反查 name（与 listActiveProblems 同一口径）
+            syndromeName: syndromeNameOf(r.syndromeId) ?? r.syndromeName,
+            severity: r.severity,
+            confirmationStatus: r.confirmationStatus,
+            teachingState: r.teachingState,
+            evidenceConfidence: r.evidenceConfidence,
+            confirmedAt: r.confirmedAt,
+          ),
+        )
+        .toList();
+  }
+
   /// 跨 session 聚合所有活跃问题（group by syndrome_id，取最新严重度）
   /// 用于成长页用户级视图
   ///

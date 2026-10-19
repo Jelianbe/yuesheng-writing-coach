@@ -74,6 +74,8 @@ import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/diagnosis_integration_service.dart'
     show
         DiagnosisEntryRef,
+        HumanAdjudication,
+        buildHumanConflictSources,
         buildIntegrationSnapshot,
         buildPendingContextSources,
         formatIntegrationProbeSummary;
@@ -1282,6 +1284,27 @@ class DiagnosisFlowHandler {
     ];
   }
 
+  /// T-20261016-05（A4 ③类接线）：人裁状态快照——两个既有仓储读出合并
+  /// （active_problem 驳回事实 + G15 口径同会话正式诊断次数）。失败上抛，
+  /// 由 `_extractFocusCandidates` 的 try/catch 吞掉（候选提取失败静默、
+  /// 不阻断卡片插入的纪律不变）。
+  Future<List<HumanAdjudication>> _humanAdjudications(String sessionId) async {
+    final rejected = await _diagnosisRepo.listRejectedProblems(sessionId);
+    if (rejected.isEmpty) return const [];
+    final counts = await _diagnosisRepo.countConfirmedDiagnosesBySyndrome(
+      sessionId,
+    );
+    return [
+      for (final v in rejected)
+        HumanAdjudication(
+          syndromeId: v.syndromeId,
+          syndromeName: v.syndromeName,
+          confirmationStatus: v.confirmationStatus,
+          occurrenceCount: counts[v.syndromeId] ?? 0,
+        ),
+    ];
+  }
+
   /// W-22 G1 / W-21 接线清偿：本轮焦点候选（payload 形态）。
   ///
   /// 本函数同时是**整合层快照的唯一计算点**——W-21-B 登记的旁路观察者
@@ -1289,11 +1312,11 @@ class DiagnosisFlowHandler {
   /// 候选消费点即生产链路的快照激活点。原观察者注释中的代理假设迁此：
   /// chapterId 以 sessionId 代理（写作面板按章建会话，跨会话聚合待落表批修正）。
   /// 旁路纪律：任何失败返回 null ⇒ 候选区不渲染，不阻断卡片插入主流程。
-  List<FocusCandidateCard>? _extractFocusCandidates({
+  Future<List<FocusCandidateCard>?> _extractFocusCandidates({
     required String sessionId,
     required String messageId,
     required ParsedDiagnosis diagnosis,
-  }) {
+  }) async {
     try {
       final snapshot = buildIntegrationSnapshot(
         entries: _diagnosisEntryRefs(
@@ -1305,6 +1328,11 @@ class DiagnosisFlowHandler {
         pendingContexts: buildPendingContextSources(
           syndromes: diagnosis.syndromes,
           messageId: messageId,
+        ),
+        // T-20261016-05：A4 ③类输入（人裁冲突，口径 §4-201 项 4）传入快照
+        humanConflicts: buildHumanConflictSources(
+          adjudications: await _humanAdjudications(sessionId),
+          sessionId: sessionId,
         ),
         nowSec: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
@@ -1358,7 +1386,7 @@ class DiagnosisFlowHandler {
   }) async {
     // W-22 G1：本轮焦点候选（整合层 A3 产物接用户侧；null ⇒ 候选区不渲染；
     // 提取失败静默——候选区缺席不阻断卡片）。
-    final focusCandidates = _extractFocusCandidates(
+    final focusCandidates = await _extractFocusCandidates(
       sessionId: sessionId,
       messageId: messageId,
       diagnosis: diagnosis,

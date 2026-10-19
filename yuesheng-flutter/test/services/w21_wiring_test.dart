@@ -198,4 +198,143 @@ void main() {
       expect(toFocusCandidateCards(const []), isEmpty);
     });
   });
+
+  group('⑤ buildHumanConflictSources（A4 ③输入合成 · T-20261016-05）', () {
+    test('rejected + 会话内再现 ≥2 ⇒ 产源（口径 §4-201 项 4）', () {
+      final sources = buildHumanConflictSources(
+        adjudications: const [
+          HumanAdjudication(
+            syndromeId: 'P001',
+            syndromeName: '视角跳跃',
+            confirmationStatus: 'rejected',
+            occurrenceCount: 3,
+          ),
+        ],
+        sessionId: 's-1',
+      );
+      expect(sources.length, 1);
+      expect(sources.single.statement, contains('P001'));
+      expect(sources.single.statement, contains('视角跳跃'));
+      expect(sources.single.statement, contains('驳回'));
+      expect(sources.single.statement, contains('再现 3 次'));
+      expect(sources.single.blockingRefs, ['s-1#P001']);
+    });
+
+    test('再现 = 2（口径下限）即产源；occurrenceCount = 1（无再现）不产', () {
+      expect(
+        buildHumanConflictSources(
+          adjudications: const [
+            HumanAdjudication(
+              syndromeId: 'P001',
+              syndromeName: '',
+              confirmationStatus: 'rejected',
+              occurrenceCount: 2,
+            ),
+          ],
+          sessionId: 's-1',
+        ).length,
+        1,
+      );
+      expect(
+        buildHumanConflictSources(
+          adjudications: const [
+            HumanAdjudication(
+              syndromeId: 'P001',
+              syndromeName: '',
+              confirmationStatus: 'rejected',
+              occurrenceCount: 1,
+            ),
+          ],
+          sessionId: 's-1',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('ignored 不计（无主动信号）；suspected / confirmed 非冲突态不计', () {
+      expect(
+        buildHumanConflictSources(
+          adjudications: const [
+            HumanAdjudication(
+              syndromeId: 'P001',
+              syndromeName: 'x',
+              confirmationStatus: 'ignored',
+              occurrenceCount: 5,
+            ),
+            HumanAdjudication(
+              syndromeId: 'P002',
+              syndromeName: 'y',
+              confirmationStatus: 'suspected',
+              occurrenceCount: 5,
+            ),
+            HumanAdjudication(
+              syndromeId: 'P003',
+              syndromeName: 'z',
+              confirmationStatus: 'confirmed',
+              occurrenceCount: 5,
+            ),
+          ],
+          sessionId: 's-1',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('多条并发：仅冲突症候产源且保序；空态 ⇒ 空', () {
+      final sources = buildHumanConflictSources(
+        adjudications: const [
+          HumanAdjudication(
+            syndromeId: 'P001',
+            syndromeName: '甲',
+            confirmationStatus: 'rejected',
+            occurrenceCount: 2,
+          ),
+          HumanAdjudication(
+            syndromeId: 'P002',
+            syndromeName: '乙',
+            confirmationStatus: 'confirmed',
+            occurrenceCount: 9,
+          ),
+          HumanAdjudication(
+            syndromeId: 'P003',
+            syndromeName: '丙',
+            confirmationStatus: 'rejected',
+            occurrenceCount: 4,
+          ),
+        ],
+        sessionId: 's-9',
+      );
+      expect(sources.map((s) => s.blockingRefs.single).toList(), [
+        's-9#P001',
+        's-9#P003',
+      ]);
+      expect(
+        buildHumanConflictSources(adjudications: const [], sessionId: 's'),
+        isEmpty,
+      );
+    });
+
+    test('端到端：冲突源经 buildIntegrationSnapshot 落 kindNeedsHuman', () {
+      final snapshot = buildIntegrationSnapshot(
+        entries: [_entry('P001')],
+        humanConflicts: buildHumanConflictSources(
+          adjudications: const [
+            HumanAdjudication(
+              syndromeId: 'P001',
+              syndromeName: '视角跳跃',
+              confirmationStatus: 'rejected',
+              occurrenceCount: 3,
+            ),
+          ],
+          sessionId: 's-1',
+        ),
+        nowSec: 1000,
+      );
+      final human = snapshot.questions
+          .where((e) => e.kind == UnresolvedQuestion.kindNeedsHuman)
+          .toList();
+      expect(human.length, 1);
+      expect(human.single.blockingRefs, ['s-1#P001']);
+    });
+  });
 }

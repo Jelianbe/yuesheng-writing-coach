@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
@@ -437,6 +438,89 @@ void main() {
 
       expect(top.first['syndrome_id'], 'P003');
       expect(top.first['name'], '视角漂移', reason: 'summary 也须走注册表反查');
+    });
+  });
+
+  group('listRejectedProblems（A4 ③类 · T-20261016-05 人裁冲突事实源）', () {
+    test('#1 rejected ⇒ 返回；跨 session 不串（等值条件）', () async {
+      final sidA = await sessionRepo.createBlankSession();
+      final sidB = await sessionRepo.createBlankSession();
+      for (final sid in [sidA, sidB]) {
+        await repo.commitDiagnosis(
+          DiagnosisInput(
+            sessionId: sid,
+            messageId: 'msg-$sid',
+            syndromes: [
+              {'syndrome_id': 'P003', 'name': '视角漂移', 'severity': 'L2'},
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+          ),
+        );
+      }
+      await repo.disputeDiagnosis(sidA, 'P003', '视角漂移');
+      await repo.disputeDiagnosis(sidB, 'P003', '视角漂移');
+
+      final a = await repo.listRejectedProblems(sidA);
+      expect(a.length, 1);
+      expect(a.single.syndromeId, 'P003');
+      expect(a.single.confirmationStatus, 'rejected');
+    });
+
+    test('#2 ignored / suspected / confirmed 不在结果内', () async {
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sid,
+          messageId: 'msg-1',
+          syndromes: [
+            {'syndrome_id': 'P003', 'name': '视角漂移', 'severity': 'L2'},
+          ],
+          suggestedActions: [],
+          confidence: 0.8,
+        ),
+      );
+      // ignored 态无仓储写入方（CHECK 预留态）⇒ 直插一行证过滤
+      await db
+          .into(db.activeProblems)
+          .insert(
+            ActiveProblemsCompanion.insert(
+              id: 'ap-ignored',
+              sessionId: sid,
+              syndromeId: 'P018',
+              syndromeName: const Value(' somebody '),
+              confirmationStatus: const Value('ignored'),
+            ),
+          );
+      // suspected = 未裁决的 P003 原态
+      final suspectedOnly = await repo.listRejectedProblems(sid);
+      expect(suspectedOnly, isEmpty);
+
+      await repo.confirmDiagnosis(sid, 'P003', '视角漂移', 'L2');
+      expect(await repo.listRejectedProblems(sid), isEmpty);
+    });
+
+    test('#3 resolved 的驳回症候不返回（张力已消，仅 active）', () async {
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sid,
+          messageId: 'msg-1',
+          syndromes: [
+            {'syndrome_id': 'P003', 'name': '视角漂移', 'severity': 'L2'},
+          ],
+          suggestedActions: [],
+          confidence: 0.8,
+        ),
+      );
+      await repo.disputeDiagnosis(sid, 'P003', '视角漂移');
+      expect((await repo.listRejectedProblems(sid)).length, 1);
+      await repo.resolveSyndromesBatch(sid, ['P003']);
+      expect(await repo.listRejectedProblems(sid), isEmpty);
+    });
+
+    test('#4 空 DB ⇒ 空列表', () async {
+      expect(await repo.listRejectedProblems('no-such-session'), isEmpty);
     });
   });
 }
