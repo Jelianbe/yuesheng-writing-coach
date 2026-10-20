@@ -97,6 +97,7 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/outline_parser.dart'
     show stripOutlineBlock;
 import 'package:writingcoach/services/outline_service.dart';
+import 'package:writingcoach/services/p0_verify/anchor_probe.dart';
 import 'package:writingcoach/services/reply_receipt_guard.dart';
 import 'package:writingcoach/services/teacher_service.dart'
     show TeacherDiagnosisInput, callTeacherStream;
@@ -387,6 +388,7 @@ class DiagnosisFlowHandler {
     // C103：长文链路补齐 GenUI 卡片（短链路在 commit 前插入，卡片顺序一致）。
     await _insertGenuiCardFromContent(sessionId, fullContent);
     if (diagnosis != null) {
+      _probeAnchors(sessionId, diagnosis, chapterContent);
       await _commitDiagnosisWithTeacher(
         sessionId: sessionId,
         messageId: messageId,
@@ -404,6 +406,35 @@ class DiagnosisFlowHandler {
       success: diagnosis != null,
     );
     return messageId;
+  }
+
+  /// P0-a 锚定探针（旁路观测，**零行为变更**）。
+  ///
+  /// 用**整章原文**锚定，而不是逐块锚定：合并后的诊断条目已不带块索引，
+  /// 逐块锚定得先在 merge 阶段保留来源块（改动深一层、且会动 merge 契约）。
+  /// 整章锚定对跨块引文更宽松，也更接近真实 —— 引文本来就该在原文某处。
+  ///
+  /// 失败静默（同 [applyPhaseMigration] 的旁路纪律）：观测设施不许把诊断链路带崩。
+  /// 也**不**上 `error_logs` —— 探针自身故障混进产品错误率，就是把两个指标搅在一起，
+  /// 之后谁也说不清错误率升的是哪一类。
+  void _probeAnchors(
+    String sessionId,
+    ParsedDiagnosis diagnosis,
+    String? chapterContent,
+  ) {
+    try {
+      final evidence = <String, List<String>>{};
+      for (final s in diagnosis.syndromes) {
+        // 同一症候 ID 出现两次时不覆盖（覆盖会让分母少算），改为合并。
+        (evidence[s.syndromeId] ??= <String>[]).addAll(s.evidence);
+      }
+      AnchorProbeLog.instance.record(
+        sessionId,
+        probeAnchors(sourceText: chapterContent, evidenceBySyndrome: evidence),
+      );
+    } catch (e) {
+      debugPrint('[AnchorProbe] probe failed: $e');
+    }
   }
 
   /// C103：长文（批处理）链路「诊断落库序列 + 教师建议」组合（短链路在
