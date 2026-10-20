@@ -117,6 +117,10 @@ historical-archive/
 /skills-lock.json
 /yuesheng-flutter/docs/*
 !/yuesheng-flutter/docs/发布-舰长手工步骤.md
+# ADR 决策记录放行（2026-10-20）。docs/ 其余内容是过程产物（研究稿 / 审计 / 对比清单），
+# 继续忽略；但 `ADR-*.md` 记的是「为什么这样定」，是决策的唯一真源，丢了无法从代码反推。
+# 此前 42 份 ADR 全部未被跟踪，换机即丢 —— 本次按类型整类放行，避免逐份 -f。
+!/yuesheng-flutter/docs/ADR-*.md
 /yuesheng-writing-coach/novel-chapters/
 /yuesheng-writing-coach/dev-docs/
 /yuesheng-writing-coach/docs/
