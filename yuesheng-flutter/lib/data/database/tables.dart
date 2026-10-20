@@ -710,6 +710,23 @@ class OutlineImpressions extends Table {
 /// 关联 teacher_suggestion（可空，SET NULL：删建议不删训练历史）
 /// 关联 syndrome_id（软引用，无外键，症候 ID 永不复用）
 /// 真源：PracticeStore.trainingResult 当前仅存内存 state，本表补全持久化路径
+///
+/// ★ 2026-10-20 读取链定性（T-20261019-02 / DECISIONS §4-224/§4-225）：
+/// 本表定位 = **审计存档表 + mastered 证据门的唯一数据源**，不承担判据计算。
+/// 与 teaching_history（功能轨）的写入顺序契约 = TH 先写、本表后写
+/// （diagnosis_flow_handler._recordTrainingFeedback）⇒ TH 训练记录 ⊇ 本表行；
+/// 判据消费（介入级别 / FSRS / FSM）一律走 TH 副本，本表仅两处行为出口：
+///   ① mastered 软门控（evaluation_service._masteryEvidenceSatisfied，latest 行）
+///   ② 展示旁路（成长页通过率 / 收口卡 / 导出 / 焦点卡，aggregateBySyndrome）
+/// 各列消费状态（全 lib 实测 @ e8f4b731）：
+///   - score：**预留未用**——insert 生产零传入，恒 null；feedbackJson 已承载
+///     AI 评分反馈。勿当活字段消费；删列须 migration，不删。
+///   - suggestionId：**已写待用**——写入值来自建议追溯，零读取；潜在用途 =
+///     同条建议多次训练聚合，消费前须先有误报率数据。
+///   - userRating：**双存储**——本列与 TH 副本各写各败、互不感知（不一致窗口
+///     登记在案不修）；FSRS 生效的是 TH 副本，本列无读取点。
+///   - 自评四列（confidenceRating/explanationText/transferText/userRating）：
+///      mastered 门控的唯一数据源（latest 行三列）+ FSRS 档位。
 /// ============================================================
 @DataClassName('TrainingResultRow')
 class TrainingResults extends Table {

@@ -1531,6 +1531,16 @@ class DiagnosisFlowHandler {
           activeProblems: activeProblems,
         );
       }
+      // ★ 2026-10-20 双写契约登记（T-20261019-02 / DECISIONS §4-224/§4-225）：
+      // 本段是 teaching_history（功能轨）与 training_results（记录轨）的
+      // 并行双写——**TH 先写（:1520）、TR 后写（:1536）**，互不读回。
+      // 覆盖契约：TH 写失败 ⇒ 外层 catch（:1544）触发 ⇒ TR 根本不被执行；
+      // TR 写失败 ⇒ _persistTrainingResult 内层 catch 留痕 ⇒ TH 记录保留。
+      // ⇒ **TH 训练记录 ⊇ TR 行（对同一 session 恒成立）**；TR 写失败时
+      // 功能轨无感（仅 error_logs 留痕），定性 = 记录缺失、非判据缺失。
+      // 判据消费一律读 TH 副本；TR = 审计存档 + mastered 门唯一数据源。
+      // 契约由护栏测试锁定（test/services/
+      // training_record_track_guard_test.dart T1），写入顺序被重构调换即红。
       // X-041c：training_results 落库
       if (_trainingResultRepo != null && trainingSyndromeId != null) {
         await _persistTrainingResult(

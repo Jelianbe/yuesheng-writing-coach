@@ -474,6 +474,18 @@ extension EvaluationDetailExtension on EvaluationService {
   /// P0-1 软门控：mastered 迁移前检查理解证据。
   /// 无自评数据（旧数据/学员跳过）→ 放行（渐进 + R-009）；
   /// 有自评→ mastery_evidence 三维门控，充分才放行。
+  ///
+  /// ★ 2026-10-20 契约登记（T-20261019-02 / DECISIONS §4-224/§4-225）：
+  /// 数据源 = training_results 的 **latest 行**（queryBySyndrome limit:1，
+  /// created_at 倒序首行）——本表是 mastered 证据门的唯一数据源；
+  /// 门控语义 = **只能拦截 mastered、不能迫使毕业**，四条放行路径：
+  ///   ① latest 行三自评列皆空 → 放行（旧数据/学员跳过，渐进 + R-009）
+  ///   ② _trainingResultRepo 为 null（未装配仓储）→ 放行
+  ///   ③ 查询抛错 → 留痕后放行（检查失败不阻断教学）
+  ///   ④ 行不存在（该症候无训练记录）→ 放行
+  /// 有自评时走 mastery_evidence 三维门（解释≥2 / 信心≥3 / 近迁移≥1）。
+  /// 四路径语义由护栏测试逐字锁定（test/services/
+  /// training_record_track_guard_test.dart T3），改动即红。
   Future<bool> _masteryEvidenceSatisfied(
     String sessionId,
     String syndromeId,

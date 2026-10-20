@@ -11,6 +11,19 @@
 // - suggestion_id 软关联：删建议 SET NULL 保留训练历史
 //
 // P0 边界：仅持久化，不接管 PracticeStore 调用链（不破坏现有内存态逻辑）
+//
+// ★ 2026-10-20 读取链定性（T-20261019-02 / DECISIONS §4-224/§4-225）：
+// 本表 = **审计存档表 + mastered 证据门的唯一数据源**；判据计算不走本表
+// （teaching_history 是功能轨，判据消费见 training_input_builder）。
+// 读取侧只有两类消费者，勿再扩：
+//   ① mastered 软门控（evaluation_service，queryBySyndrome limit:1 取 latest 行）
+//   ② 展示旁路（aggregateBySyndrome：成长页通过率 / 收口卡 / 导出 / 焦点卡）
+// 列级状态：score 预留未用（insert 零传入，恒 null）· suggestionId 已写待用
+// （零读取）· userRating 双存储（生效的是 TH 副本，本列无读取点）·
+// getById 公共 API 保留但生产零调用。写入侧唯一生产入口 =
+// diagnosis_flow_handler._persistTrainingResult；自评回写入口 =
+// updateSelfAssessment（chat_teaching_controller._persistSelfAssessment，
+// 先写本表四列、再补 TH 副本，任一方失败互不阻断）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
