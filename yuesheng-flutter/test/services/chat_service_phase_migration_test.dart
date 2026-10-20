@@ -40,6 +40,8 @@ import 'package:writingcoach/services/diagnosis_parser.dart'
 import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+import 'package:writingcoach/services/p0_verify/anchor.dart';
+import 'package:writingcoach/services/p0_verify/anchor_probe.dart';
 
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
@@ -1243,6 +1245,81 @@ void main() {
         TeachingPhase.p4Review.value,
         reason: '第4轮后应从 P3 迁移到 P4',
       );
+    });
+  });
+
+  // ── P0-a 锚定探针接线（`anchor_probe.dart` 的唯一生产调用点）──
+  //
+  // 这一组测的是**「有没有被调用」**，不是「锚定算得对不对」——
+  // 后者由 `test/anchor_probe_test.dart`（18 项）+ `test/p0_verify_test.dart`（40 项）负责。
+  // 分开的理由：`anchor.dart` 曾经 40 项全绿却全 `lib/` 零调用，
+  // 测试只证明函数对，不证明有人调。
+
+  group('P0-a 锚定探针接线', () {
+    setUp(() => AnchorProbeLog.instance.clear());
+
+    test('#9 不传 chapterContent ⇒ 记 skipped，不假装测过', () async {
+      final resp = buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING');
+      final chatService = buildChatService(FakeLlmClient(resp));
+
+      await chatService.commitDiagnosisFromContent(
+        sessionId: sessionId,
+        fullContent: resp,
+      );
+
+      final report = AnchorProbeLog.instance.latest;
+      expect(report, isNotNull, reason: '探针未被调用 ⇒ 接线丢失（本组唯一的守门项）');
+      expect(report!.measured, isFalse);
+      expect(report.skippedReason, kAnchorSkipNoSource);
+      // 未测时不许给出比率
+      expect(report.aer, isNull);
+    });
+
+    test('#10 传 chapterContent ⇒ 真引文锚上、编造引文判 fail', () async {
+      const src = '他握紧了青玉牌，指节发白。窗外的雪落了一夜，没有人说话。';
+      final resp =
+          '诊断完成。\n[YS_DIAGNOSIS]\n'
+          '{"syndromes":['
+          '{"syndrome_id":"P001","name":"a","severity":"L2",'
+          '"evidence":["他握紧了青玉牌，指节发白"],"explanation":"x"},'
+          '{"syndrome_id":"P002","name":"b","severity":"L2",'
+          '"evidence":["他曾把青玉牌摔在地上，碎了"],"explanation":"y"}'
+          '],"suggested_actions":[],"confidence":0.8}\n[/YS_DIAGNOSIS]';
+
+      final chatService = buildChatService(FakeLlmClient(resp));
+      await chatService.commitDiagnosisFromContent(
+        sessionId: sessionId,
+        fullContent: resp,
+        chapterContent: src,
+      );
+
+      final report = AnchorProbeLog.instance.latest!;
+      expect(report.measured, isTrue);
+      expect(report.evidenceCount, 2);
+      expect(report.aggregate.okCount, 1);
+      expect(report.aggregate.failCount, 1);
+      expect(report.aer, 0.5);
+      // 按症候归档，能回答「是哪一条的引文锚不上」
+      expect(report.bySyndrome['P002']!.single.status, AnchorStatus.fail);
+    });
+
+    test('#11 探针异常不阻断落库（旁路纪律）', () async {
+      // 用一条只含空白 evidence 的响应：探针应照常返回、不抛、不挡 commit。
+      final resp = buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING');
+      final chatService = buildChatService(FakeLlmClient(resp));
+
+      final messageId = await chatService.commitDiagnosisFromContent(
+        sessionId: sessionId,
+        fullContent: resp,
+        chapterContent: '他握紧了青玉牌，指节发白。',
+      );
+
+      expect(messageId, isNotEmpty, reason: '探针不得影响 commit 返回值');
+      // `evidence: []` ⇒ 已测但 0 条引文：AER 未测（分母 0），不是 0 分。
+      final report = AnchorProbeLog.instance.latest!;
+      expect(report.measured, isTrue);
+      expect(report.evidenceCount, 0);
+      expect(report.aer, isNull);
     });
   });
 }
