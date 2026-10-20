@@ -74,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 47;
+  int get schemaVersion => 48;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -1329,6 +1329,42 @@ class AppDatabase extends _$AppDatabase {
             created_at INTEGER NOT NULL DEFAULT (unixepoch())
           )
         ''');
+      }
+
+      // v48（治理续批第二批 · R-027 批准）：active_problem 加形态两列。
+      //
+      // form_fact_count  = 形态要素 (a) 成段事实条数（INTEGER，可空）
+      // form_structure   = 形态要素 (b) 结构标记（TEXT，可空，CHECK 三值）
+      //
+      // ⚠️ 两列**可空且无默认值** ⇒ 存量行恒为 NULL ⇒ 资格闸 v2 对存量行
+      //    逐分支等同 v1 行为（不回头放行、不回头拦截）。
+      // ⚠️ CHECK 约束与 tables.dart 的 column 定义逐字一致（否则 drift 生成的
+      //    schema 与手写迁移漂移）——改一处必须改另一处。
+      if (from < 48) {
+        // ⚠️ 幂等保底（范式同 v40 evidence_confidence / v42 status）：
+        //    ① 表存在性守卫——极老版本库（如 v12/v22/v23）根本没有 active_problem
+        //       表，直接 ALTER 会抛「no such table: active_problem」⇒ 升级链路断裂。
+        //       表不存在 ⇒ 该表由后续「建表」路径负责，本块跳过即可（行为等同 v1）。
+        //    ② 列存在性守卫——避免重复 ALTER 抛「duplicate column name」。
+        final apFormCols = await customSelect(
+          "SELECT name FROM pragma_table_info('active_problem')",
+        ).get();
+        final apFormNames = apFormCols
+            .map((r) => r.read<String>('name'))
+            .toSet();
+        if (apFormCols.isNotEmpty) {
+          if (!apFormNames.contains('form_fact_count')) {
+            await customStatement(
+              'ALTER TABLE active_problem ADD COLUMN form_fact_count INTEGER',
+            );
+          }
+          if (!apFormNames.contains('form_structure')) {
+            await customStatement(
+              "ALTER TABLE active_problem ADD COLUMN form_structure TEXT "
+              "CHECK (form_structure IN ('expository','interruption','narrative'))",
+            );
+          }
+        }
       }
     },
 

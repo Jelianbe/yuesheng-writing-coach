@@ -14,6 +14,9 @@ import '../../services/manuscript_scope.dart';
 import '../../services/syndrome_recurrence.dart';
 import '../../services/syndrome_registry.dart';
 import '../../services/teaching_state_cache.dart';
+// 治理续批第二批（2026-10-20 · R-027 批准）：形态两要素的归一化函数
+// （normalizeFormFactCount / normalizeFormStructure）。
+import '../../types/teaching_types.dart';
 import 'repository_write_guard.dart';
 
 /// 诊断落库入参（复刻 DiagnosisResult 类型）
@@ -69,6 +72,14 @@ class ActiveProblemView {
 
   /// Evidence confidence (Part B); weak + unconfirmed -> excluded from teaching injection/focus.
   final double? evidenceConfidence;
+
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (a) —— 成段事实条数。
+  /// null = 无形态证据（存量行 / 非量形式症候）⇒ 资格闸 v2 按 v1 行为处理。
+  final int? formFactCount;
+
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (b) —— 结构标记。
+  final String? formStructure;
+
   ActiveProblemView({
     required this.syndromeId,
     required this.syndromeName,
@@ -77,6 +88,8 @@ class ActiveProblemView {
     this.teachingState,
     this.confirmedAt,
     this.evidenceConfidence,
+    this.formFactCount,
+    this.formStructure,
   });
 }
 
@@ -196,6 +209,16 @@ class DiagnosisRepository {
         final syndromeId = syndrome['syndrome_id'] as String? ?? '';
         final syndromeName = syndrome['name'] as String? ?? '';
         final severity = syndrome['severity'] as String? ?? 'L2';
+        // ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态两要素从 raw map 读取。
+        // 键名与 Syndrome.toJson() 一致（snake_case）；越界/缺省 ⇒ null。
+        // ⚠️ latest-wins 语义：本轮无形态字段即写 NULL **清除**旧值
+        //    （与 severity 同语义——本轮诊断出的状态即当前真相）。
+        final formFactCount = normalizeFormFactCount(
+          syndrome['form_fact_count'],
+        );
+        final formStructure = normalizeFormStructure(
+          syndrome['form_structure'],
+        );
         final evidenceConfidence = _evidenceConfidenceFor(
           syndrome,
           occurrenceCount,
@@ -226,6 +249,9 @@ class DiagnosisRepository {
               severity: Value(severity),
               status: const Value('active'),
               evidenceConfidence: Value(evidenceConfidence),
+              // 治理续批第二批：latest-wins（本轮无形态字段 ⇒ 写 NULL 清除）。
+              formFactCount: Value(formFactCount),
+              formStructure: Value(formStructure),
               updatedAt: Value(nowSec()),
             ),
           );
@@ -251,6 +277,9 @@ class DiagnosisRepository {
                   status: const Value('active'),
                   confirmationStatus: const Value('suspected'),
                   evidenceConfidence: Value(evidenceConfidence),
+                  // 治理续批第二批：形态两要素（INSERT 首行即写入）。
+                  formFactCount: Value(formFactCount),
+                  formStructure: Value(formStructure),
                   createdAt: Value(now),
                   updatedAt: Value(now),
                 ),
@@ -477,6 +506,8 @@ class DiagnosisRepository {
             teachingState: r.teachingState,
             evidenceConfidence: r.evidenceConfidence,
             confirmedAt: r.confirmedAt,
+            formFactCount: r.formFactCount,
+            formStructure: r.formStructure,
           ),
         )
         .toList();
@@ -510,6 +541,8 @@ class DiagnosisRepository {
             teachingState: r.teachingState,
             evidenceConfidence: r.evidenceConfidence,
             confirmedAt: r.confirmedAt,
+            formFactCount: r.formFactCount,
+            formStructure: r.formStructure,
           ),
         )
         .toList();
@@ -682,6 +715,8 @@ class DiagnosisRepository {
             teachingState: r.teachingState,
             evidenceConfidence: r.evidenceConfidence,
             confirmedAt: r.confirmedAt,
+            formFactCount: r.formFactCount,
+            formStructure: r.formStructure,
           ),
         )
         .toList();
@@ -885,6 +920,8 @@ class DiagnosisRepository {
     teachingState: r.teachingState,
     evidenceConfidence: r.evidenceConfidence,
     confirmedAt: r.confirmedAt,
+    formFactCount: r.formFactCount,
+    formStructure: r.formStructure,
   );
 
   /// C126 §2.3：新 confirmed 行落库后，裁决同 session 旧 pending 行的终态。

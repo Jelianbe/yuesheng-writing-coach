@@ -1837,6 +1837,9 @@ class MessageInjector {
                 ConfirmationStatus.suspected,
             status: 'active',
             confirmedAt: p.confirmedAt,
+            // 治理续批第二批（2026-10-20 · R-027 批准）：形态两要素透传。
+            formFactCount: p.formFactCount,
+            formStructure: p.formStructure,
           ),
         )
         .toList();

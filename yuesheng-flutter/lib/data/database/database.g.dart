@@ -4394,6 +4394,30 @@ class $ActiveProblemsTable extends ActiveProblems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _formFactCountMeta = const VerificationMeta(
+    'formFactCount',
+  );
+  @override
+  late final GeneratedColumn<int> formFactCount = GeneratedColumn<int>(
+    'form_fact_count',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _formStructureMeta = const VerificationMeta(
+    'formStructure',
+  );
+  @override
+  late final GeneratedColumn<String> formStructure = GeneratedColumn<String>(
+    'form_structure',
+    aliasedName,
+    true,
+    check: () =>
+        formStructure.isIn(const ['expository', 'interruption', 'narrative']),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _evidenceConfidenceMeta =
       const VerificationMeta('evidenceConfidence');
   @override
@@ -4450,6 +4474,8 @@ class $ActiveProblemsTable extends ActiveProblems
     confirmationStatus,
     teachingState,
     confirmedAt,
+    formFactCount,
+    formStructure,
     evidenceConfidence,
     createdAt,
     resolvedAt,
@@ -4536,6 +4562,24 @@ class $ActiveProblemsTable extends ActiveProblems
         ),
       );
     }
+    if (data.containsKey('form_fact_count')) {
+      context.handle(
+        _formFactCountMeta,
+        formFactCount.isAcceptableOrUnknown(
+          data['form_fact_count']!,
+          _formFactCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('form_structure')) {
+      context.handle(
+        _formStructureMeta,
+        formStructure.isAcceptableOrUnknown(
+          data['form_structure']!,
+          _formStructureMeta,
+        ),
+      );
+    }
     if (data.containsKey('evidence_confidence')) {
       context.handle(
         _evidenceConfidenceMeta,
@@ -4612,6 +4656,14 @@ class $ActiveProblemsTable extends ActiveProblems
         DriftSqlType.int,
         data['${effectivePrefix}confirmed_at'],
       ),
+      formFactCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}form_fact_count'],
+      ),
+      formStructure: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}form_structure'],
+      ),
       evidenceConfidence: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}evidence_confidence'],
@@ -4648,6 +4700,18 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
   final String? teachingState;
   final int? confirmedAt;
 
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准，schema v48）：形态要素 (a) ——
+  /// 成段出现的设定/背景事实条数（单句带过 = 1）。
+  ///
+  /// 只量**形式**症候（信息倾泻类，如 P002），由 LLM 显式输出（组合⑤双要素同源）。
+  /// ⚠️ 存量行恒为 NULL ⇒ 资格闸 v2 按 v1 行为处理（不回头、不放行、不拦截）。
+  final int? formFactCount;
+
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准，schema v48）：形态要素 (b) ——
+  /// 结构标记：expository（论文式/说明书结构）/ interruption（读者关切时刻被打断）/
+  /// narrative（叙事流内、无结构标记）。
+  final String? formStructure;
+
   /// 证据把握度（信心系统 Part B）：本地计算（证据强度+复现），0-1。
   /// 弱把握（< kWeakEvidenceConfidence）且未确认 → 不进活跃症候注入/教学焦点。
   final double? evidenceConfidence;
@@ -4664,6 +4728,8 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     required this.confirmationStatus,
     this.teachingState,
     this.confirmedAt,
+    this.formFactCount,
+    this.formStructure,
     this.evidenceConfidence,
     required this.createdAt,
     this.resolvedAt,
@@ -4684,6 +4750,12 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     }
     if (!nullToAbsent || confirmedAt != null) {
       map['confirmed_at'] = Variable<int>(confirmedAt);
+    }
+    if (!nullToAbsent || formFactCount != null) {
+      map['form_fact_count'] = Variable<int>(formFactCount);
+    }
+    if (!nullToAbsent || formStructure != null) {
+      map['form_structure'] = Variable<String>(formStructure);
     }
     if (!nullToAbsent || evidenceConfidence != null) {
       map['evidence_confidence'] = Variable<double>(evidenceConfidence);
@@ -4713,6 +4785,12 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       confirmedAt: confirmedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedAt),
+      formFactCount: formFactCount == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formFactCount),
+      formStructure: formStructure == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formStructure),
       evidenceConfidence: evidenceConfidence == null && nullToAbsent
           ? const Value.absent()
           : Value(evidenceConfidence),
@@ -4743,6 +4821,8 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       ),
       teachingState: serializer.fromJson<String?>(json['teachingState']),
       confirmedAt: serializer.fromJson<int?>(json['confirmedAt']),
+      formFactCount: serializer.fromJson<int?>(json['formFactCount']),
+      formStructure: serializer.fromJson<String?>(json['formStructure']),
       evidenceConfidence: serializer.fromJson<double?>(
         json['evidenceConfidence'],
       ),
@@ -4764,6 +4844,8 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       'confirmationStatus': serializer.toJson<String>(confirmationStatus),
       'teachingState': serializer.toJson<String?>(teachingState),
       'confirmedAt': serializer.toJson<int?>(confirmedAt),
+      'formFactCount': serializer.toJson<int?>(formFactCount),
+      'formStructure': serializer.toJson<String?>(formStructure),
       'evidenceConfidence': serializer.toJson<double?>(evidenceConfidence),
       'createdAt': serializer.toJson<int>(createdAt),
       'resolvedAt': serializer.toJson<int?>(resolvedAt),
@@ -4781,6 +4863,8 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     String? confirmationStatus,
     Value<String?> teachingState = const Value.absent(),
     Value<int?> confirmedAt = const Value.absent(),
+    Value<int?> formFactCount = const Value.absent(),
+    Value<String?> formStructure = const Value.absent(),
     Value<double?> evidenceConfidence = const Value.absent(),
     int? createdAt,
     Value<int?> resolvedAt = const Value.absent(),
@@ -4797,6 +4881,12 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
         ? teachingState.value
         : this.teachingState,
     confirmedAt: confirmedAt.present ? confirmedAt.value : this.confirmedAt,
+    formFactCount: formFactCount.present
+        ? formFactCount.value
+        : this.formFactCount,
+    formStructure: formStructure.present
+        ? formStructure.value
+        : this.formStructure,
     evidenceConfidence: evidenceConfidence.present
         ? evidenceConfidence.value
         : this.evidenceConfidence,
@@ -4825,6 +4915,12 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
       confirmedAt: data.confirmedAt.present
           ? data.confirmedAt.value
           : this.confirmedAt,
+      formFactCount: data.formFactCount.present
+          ? data.formFactCount.value
+          : this.formFactCount,
+      formStructure: data.formStructure.present
+          ? data.formStructure.value
+          : this.formStructure,
       evidenceConfidence: data.evidenceConfidence.present
           ? data.evidenceConfidence.value
           : this.evidenceConfidence,
@@ -4848,6 +4944,8 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
           ..write('confirmationStatus: $confirmationStatus, ')
           ..write('teachingState: $teachingState, ')
           ..write('confirmedAt: $confirmedAt, ')
+          ..write('formFactCount: $formFactCount, ')
+          ..write('formStructure: $formStructure, ')
           ..write('evidenceConfidence: $evidenceConfidence, ')
           ..write('createdAt: $createdAt, ')
           ..write('resolvedAt: $resolvedAt, ')
@@ -4867,6 +4965,8 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
     confirmationStatus,
     teachingState,
     confirmedAt,
+    formFactCount,
+    formStructure,
     evidenceConfidence,
     createdAt,
     resolvedAt,
@@ -4885,6 +4985,8 @@ class ActiveProblem extends DataClass implements Insertable<ActiveProblem> {
           other.confirmationStatus == this.confirmationStatus &&
           other.teachingState == this.teachingState &&
           other.confirmedAt == this.confirmedAt &&
+          other.formFactCount == this.formFactCount &&
+          other.formStructure == this.formStructure &&
           other.evidenceConfidence == this.evidenceConfidence &&
           other.createdAt == this.createdAt &&
           other.resolvedAt == this.resolvedAt &&
@@ -4901,6 +5003,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
   final Value<String> confirmationStatus;
   final Value<String?> teachingState;
   final Value<int?> confirmedAt;
+  final Value<int?> formFactCount;
+  final Value<String?> formStructure;
   final Value<double?> evidenceConfidence;
   final Value<int> createdAt;
   final Value<int?> resolvedAt;
@@ -4916,6 +5020,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     this.confirmationStatus = const Value.absent(),
     this.teachingState = const Value.absent(),
     this.confirmedAt = const Value.absent(),
+    this.formFactCount = const Value.absent(),
+    this.formStructure = const Value.absent(),
     this.evidenceConfidence = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.resolvedAt = const Value.absent(),
@@ -4932,6 +5038,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     this.confirmationStatus = const Value.absent(),
     this.teachingState = const Value.absent(),
     this.confirmedAt = const Value.absent(),
+    this.formFactCount = const Value.absent(),
+    this.formStructure = const Value.absent(),
     this.evidenceConfidence = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.resolvedAt = const Value.absent(),
@@ -4950,6 +5058,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     Expression<String>? confirmationStatus,
     Expression<String>? teachingState,
     Expression<int>? confirmedAt,
+    Expression<int>? formFactCount,
+    Expression<String>? formStructure,
     Expression<double>? evidenceConfidence,
     Expression<int>? createdAt,
     Expression<int>? resolvedAt,
@@ -4966,6 +5076,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
       if (confirmationStatus != null) 'confirmation_status': confirmationStatus,
       if (teachingState != null) 'teaching_state': teachingState,
       if (confirmedAt != null) 'confirmed_at': confirmedAt,
+      if (formFactCount != null) 'form_fact_count': formFactCount,
+      if (formStructure != null) 'form_structure': formStructure,
       if (evidenceConfidence != null) 'evidence_confidence': evidenceConfidence,
       if (createdAt != null) 'created_at': createdAt,
       if (resolvedAt != null) 'resolved_at': resolvedAt,
@@ -4984,6 +5096,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     Value<String>? confirmationStatus,
     Value<String?>? teachingState,
     Value<int?>? confirmedAt,
+    Value<int?>? formFactCount,
+    Value<String?>? formStructure,
     Value<double?>? evidenceConfidence,
     Value<int>? createdAt,
     Value<int?>? resolvedAt,
@@ -5000,6 +5114,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
       confirmationStatus: confirmationStatus ?? this.confirmationStatus,
       teachingState: teachingState ?? this.teachingState,
       confirmedAt: confirmedAt ?? this.confirmedAt,
+      formFactCount: formFactCount ?? this.formFactCount,
+      formStructure: formStructure ?? this.formStructure,
       evidenceConfidence: evidenceConfidence ?? this.evidenceConfidence,
       createdAt: createdAt ?? this.createdAt,
       resolvedAt: resolvedAt ?? this.resolvedAt,
@@ -5038,6 +5154,12 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
     if (confirmedAt.present) {
       map['confirmed_at'] = Variable<int>(confirmedAt.value);
     }
+    if (formFactCount.present) {
+      map['form_fact_count'] = Variable<int>(formFactCount.value);
+    }
+    if (formStructure.present) {
+      map['form_structure'] = Variable<String>(formStructure.value);
+    }
     if (evidenceConfidence.present) {
       map['evidence_confidence'] = Variable<double>(evidenceConfidence.value);
     }
@@ -5068,6 +5190,8 @@ class ActiveProblemsCompanion extends UpdateCompanion<ActiveProblem> {
           ..write('confirmationStatus: $confirmationStatus, ')
           ..write('teachingState: $teachingState, ')
           ..write('confirmedAt: $confirmedAt, ')
+          ..write('formFactCount: $formFactCount, ')
+          ..write('formStructure: $formStructure, ')
           ..write('evidenceConfidence: $evidenceConfidence, ')
           ..write('createdAt: $createdAt, ')
           ..write('resolvedAt: $resolvedAt, ')
@@ -13798,6 +13922,12 @@ class AiAccountRow extends DataClass implements Insertable<AiAccountRow> {
   final String baseUrl;
   final String model;
   final bool isDefault;
+
+  /// ★ 2026-10-18 活性审查（T-20261018-01 / DECISIONS §4-214 裁1）：
+  /// 本列**按设计死**——v28（ADR-C91）建列后零写入、零过滤、零 UI 开关
+  /// （全 lib 实测；check_wiring.py 基线豁免在案，负向验证已做）。
+  /// 多账号启停功能只有列没有行为；真实需求出现时列已在，接线另批。
+  /// 改变此状态（补启停 UI）须先撤 tool/wiring_baseline.json 的豁免。
   final bool isEnabled;
   final int createdAt;
   const AiAccountRow({
@@ -25234,6 +25364,8 @@ typedef $$ActiveProblemsTableCreateCompanionBuilder =
       Value<String> confirmationStatus,
       Value<String?> teachingState,
       Value<int?> confirmedAt,
+      Value<int?> formFactCount,
+      Value<String?> formStructure,
       Value<double?> evidenceConfidence,
       Value<int> createdAt,
       Value<int?> resolvedAt,
@@ -25251,6 +25383,8 @@ typedef $$ActiveProblemsTableUpdateCompanionBuilder =
       Value<String> confirmationStatus,
       Value<String?> teachingState,
       Value<int?> confirmedAt,
+      Value<int?> formFactCount,
+      Value<String?> formStructure,
       Value<double?> evidenceConfidence,
       Value<int> createdAt,
       Value<int?> resolvedAt,
@@ -25332,6 +25466,16 @@ class $$ActiveProblemsTableFilterComposer
 
   ColumnFilters<int> get confirmedAt => $composableBuilder(
     column: $table.confirmedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get formFactCount => $composableBuilder(
+    column: $table.formFactCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get formStructure => $composableBuilder(
+    column: $table.formStructure,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25428,6 +25572,16 @@ class $$ActiveProblemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get formFactCount => $composableBuilder(
+    column: $table.formFactCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get formStructure => $composableBuilder(
+    column: $table.formStructure,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get evidenceConfidence => $composableBuilder(
     column: $table.evidenceConfidence,
     builder: (column) => ColumnOrderings(column),
@@ -25515,6 +25669,16 @@ class $$ActiveProblemsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get formFactCount => $composableBuilder(
+    column: $table.formFactCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get formStructure => $composableBuilder(
+    column: $table.formStructure,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get evidenceConfidence => $composableBuilder(
     column: $table.evidenceConfidence,
     builder: (column) => column,
@@ -25594,6 +25758,8 @@ class $$ActiveProblemsTableTableManager
                 Value<String> confirmationStatus = const Value.absent(),
                 Value<String?> teachingState = const Value.absent(),
                 Value<int?> confirmedAt = const Value.absent(),
+                Value<int?> formFactCount = const Value.absent(),
+                Value<String?> formStructure = const Value.absent(),
                 Value<double?> evidenceConfidence = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int?> resolvedAt = const Value.absent(),
@@ -25609,6 +25775,8 @@ class $$ActiveProblemsTableTableManager
                 confirmationStatus: confirmationStatus,
                 teachingState: teachingState,
                 confirmedAt: confirmedAt,
+                formFactCount: formFactCount,
+                formStructure: formStructure,
                 evidenceConfidence: evidenceConfidence,
                 createdAt: createdAt,
                 resolvedAt: resolvedAt,
@@ -25626,6 +25794,8 @@ class $$ActiveProblemsTableTableManager
                 Value<String> confirmationStatus = const Value.absent(),
                 Value<String?> teachingState = const Value.absent(),
                 Value<int?> confirmedAt = const Value.absent(),
+                Value<int?> formFactCount = const Value.absent(),
+                Value<String?> formStructure = const Value.absent(),
                 Value<double?> evidenceConfidence = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int?> resolvedAt = const Value.absent(),
@@ -25641,6 +25811,8 @@ class $$ActiveProblemsTableTableManager
                 confirmationStatus: confirmationStatus,
                 teachingState: teachingState,
                 confirmedAt: confirmedAt,
+                formFactCount: formFactCount,
+                formStructure: formStructure,
                 evidenceConfidence: evidenceConfidence,
                 createdAt: createdAt,
                 resolvedAt: resolvedAt,

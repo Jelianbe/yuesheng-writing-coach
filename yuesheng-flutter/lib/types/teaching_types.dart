@@ -168,6 +168,30 @@ class Syndrome {
   /// 可选字段：schema 不校验类型，fromJson 安全读取（先例：reader_impact）。
   final bool? pendingContext;
 
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (a) —— 成段事实条数。
+  ///
+  /// 语义与 T-20261014-12 组合⑤判据**逐字同源**：「成段出现的设定/背景事实条数；
+  /// 单句带过 = 1」。
+  ///
+  /// ★ 为什么必须是 **LLM 显式输出**（不得从 evidence.length / severity 派生）：
+  ///   W-23 数据实证（脚本实测 2026-10-20）——P002 全库 154 次检出的 evidence 条数
+  ///   分布 L2 {1:7,2:50,3:58,4:2} vs L1 {1:9,2:10,3:3} **高度重叠**；
+  ///   X01|t03|r2 与 X22|t03|r1 两锚点 P002 的 evidence **均为 3 条**而形态结论相反；
+  ///   X01|t07|r1 更是「3 事实旁白但无论文式结构」⇒ 连单值 fact_count 都分不开。
+  ///   ⇒ 派生实现必错，只能让 LLM 输出要素态。
+  ///
+  /// 可选字段：schema 不校验类型，fromJson 安全读取（先例：reader_impact）。
+  /// null = 无形态证据 ⇒ 资格闸按 v1 行为处理（存量安全，见 focus_resolver）。
+  final int? formFactCount;
+
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (b) —— 结构标记。
+  ///
+  /// 合法值：`expository`（论文式/说明书结构，「原因有二：其一……」）/
+  /// `interruption`（读者关切时刻被打断）/ `narrative`（嵌在叙事流中、无结构标记）。
+  /// 与 [formFactCount] **同批输出、缺一不可**（组合⑤双要素）。
+  /// 越界值按缺失处理（归一化为 null），不静默纠偏。
+  final String? formStructure;
+
   const Syndrome({
     required this.syndromeId,
     required this.name,
@@ -177,6 +201,8 @@ class Syndrome {
     this.readerImpact,
     this.interventionValue,
     this.pendingContext,
+    this.formFactCount,
+    this.formStructure,
   });
 
   Map<String, dynamic> toJson() => {
@@ -189,6 +215,9 @@ class Syndrome {
     if (interventionValue != null) 'intervention_value': interventionValue,
     // W-15-B：null 不落 key，fromJson→toJson 往返稳定（同 reader_impact 约定）。
     if (pendingContext != null) 'pending_context': pendingContext,
+    // 治理续批第二批：形态两要素同款约定（null 不落 key，往返稳定）。
+    if (formFactCount != null) 'form_fact_count': formFactCount,
+    if (formStructure != null) 'form_structure': formStructure,
   };
 
   factory Syndrome.fromJson(Map<String, dynamic> json) {
@@ -221,8 +250,41 @@ class Syndrome {
       // W-15-B：pending_context 同 reader_impact 口径——可选、类型不校验、
       // 安全读取；非 bool 按缺失处理（归一化为 null）。
       pendingContext: normalizePendingContext(json['pending_context']),
+      // 治理续批第二批：形态两要素同款口径——可选、类型不校验、安全读取。
+      formFactCount: normalizeFormFactCount(json['form_fact_count']),
+      formStructure: normalizeFormStructure(json['form_structure']),
     );
   }
+}
+
+/// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (a) 归一化。
+///
+/// 合法形态 = 非负整数（num→int 容差：JSON 里 3.0 读成 double 属正常）。
+/// 非法（负数 / 非数值 / null）一律返回 null（= 无形态证据），不静默纠偏。
+int? normalizeFormFactCount(Object? raw) {
+  if (raw is int) return raw >= 0 ? raw : null;
+  if (raw is num) {
+    if (raw.isNaN || raw.isInfinite) return null;
+    final v = raw.toInt();
+    return v >= 0 ? v : null;
+  }
+  return null;
+}
+
+/// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (b) 合法值集合。
+const List<String> kFormStructures = [
+  'expository',
+  'interruption',
+  'narrative',
+];
+
+/// 形态结构标记归一化：合法值原样返回；其余（越界/非字符串/null）返回 null。
+/// 与 [normalizeInterventionValue] 同款口径（不静默纠偏）。
+String? normalizeFormStructure(Object? raw) {
+  if (raw is String && kFormStructures.contains(raw)) {
+    return raw;
+  }
+  return null;
 }
 
 /// W-15-B：归一化 pending_context——bool 原样返回；其余（越界/非 bool/null）
@@ -356,6 +418,13 @@ class FocusProblem {
   final String status; // 'active' | 'resolved'
   final int? confirmedAt;
 
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (a) —— 成段事实条数。
+  /// null = 无形态证据（存量行 / 非量形式症候 / LLM 未输出）⇒ 资格闸按 v1 行为。
+  final int? formFactCount;
+
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态要素 (b) —— 结构标记。
+  final String? formStructure;
+
   const FocusProblem({
     required this.syndromeId,
     required this.syndromeName,
@@ -363,6 +432,8 @@ class FocusProblem {
     required this.confirmationStatus,
     required this.status,
     this.confirmedAt,
+    this.formFactCount,
+    this.formStructure,
   });
 }
 

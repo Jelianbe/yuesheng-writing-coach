@@ -117,10 +117,46 @@ int _eligibilityRank(FocusProblem p) {
 }
 
 /// 档 B 是否获得本轮胜出资格（ADR-0008 §2.1：confirmed 态或 L3）。
+///
+/// ★ 治理续批第二批（2026-10-20 · R-027 批准）增**第三通道**（v2 密度条件）：
+/// 形态证据 bulk（组合⑤双要素成立）⇒ 档 B 获资格。
+///
+/// ⚠️ **只加正向、不设负向**（一次一变量）：
+///   规格里「不设负向」不是措辞——本函数**不存在**任何撤销 confirmed / L3
+///   资格的分支（mention 形态不会撤既有资格），可由护栏 R8 逐分支断言。
 bool _tierBEligible(FocusProblem p) {
   return p.confirmationStatus == ConfirmationStatus.confirmed ||
-      p.severity == Severity.l3;
+      p.severity == Severity.l3 ||
+      _formEvidenceBulk(p);
 }
+
+/// ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态证据资格（v2 第三通道）。
+///
+/// 规则 = 组合⑤判据在**代码侧**的同一表达（双要素缺一不可）：
+///   要素 (a) form_fact_count ≥ [kFormBulkMinFacts]（成段多事实）
+///   要素 (b) form_structure ∈ [kFormStructureBulk]（论文式 / 被打断）
+///
+/// ★ 为什么阈值是 3（不是拍脑袋）：
+///   组合⑤判据正文（T-20261014-12 落 manual_1 P002 段）即「成段多事实 ≥3 条 +
+///   结构标记」；本常量是该既有判据的**代码转写**，不是新阈值。
+///   ⚠️ 严禁改成可派生量（如 evidence.length / severity）——W-23 数据已否证
+///   （两锚点 evidence 均为 3 条而形态相反；X01|t07|r1 = 3 事实但不成形）。
+///
+/// ★ null = 无证据 = v1 行为（存量行 / 非量形式症候 / LLM 未输出）：
+///   任一要素为 null ⇒ 直接 false ⇒ 闸行为与 v1 逐分支一致 ⇒ 上线初态零行为变更。
+bool _formEvidenceBulk(FocusProblem p) {
+  final fc = p.formFactCount;
+  final fs = p.formStructure;
+  if (fc == null || fs == null) return false;
+  return fc >= kFormBulkMinFacts && kFormStructureBulk.contains(fs);
+}
+
+/// 组合⑤要素 (a) 阈值：成段多事实 ≥ 3 条（判据正文既有数字，非新阈值）。
+const int kFormBulkMinFacts = 3;
+
+/// 组合⑤要素 (b) 的「可成倾泻」结构标记集合（论文式 / 读者关切处被打断）。
+/// ⚠️ `narrative`（叙事流内、无结构标记）**不在**此集合 ⇒ 旁白交代型不成形。
+const Set<String> kFormStructureBulk = {'expository', 'interruption'};
 
 /// 资格闸排序比较器（ADR-0008 §2.1 双键）：(资格级 DESC, severity DESC)。
 ///
@@ -169,8 +205,27 @@ FocusProblem _preferLevelAppropriate(
 }
 
 /// 资格闸 reason 片段（ADR-0008）：资格=直接教学/条件。
-String _eligibilityLabel(FocusProblem p) =>
-    _eligibilityRank(p) == 1 ? '直接教学' : '条件';
+///
+/// ★ 治理续批第二批（2026-10-20 · R-027 批准）：档 B 且走 v2 形态通道时
+/// 追加形态子句（如「条件(形态:成段多事实+论文式)」），
+/// 使 focus_reason 可解释（v1 同款纪律：判据要留痕）。
+/// ⚠️ 留痕必须含**所依据的两字段值**（条数 + 结构标记），
+/// 否则事后无法复核「凭什么判成 bulk」。
+String _eligibilityLabel(FocusProblem p) {
+  if (_eligibilityRank(p) == 1) return '直接教学';
+  if (_formEvidenceBulk(p)) {
+    return '条件(形态:成段多事实+${_formStructureLabel(p.formStructure)})';
+  }
+  return '条件';
+}
+
+/// 形态结构标记 → 中文标签（reason 留痕用；未知值原样透出，不静默兜底）。
+String _formStructureLabel(String? structure) => switch (structure) {
+  'expository' => '论文式',
+  'interruption' => '读者关切处被打断',
+  'narrative' => '叙事流内',
+  _ => structure ?? '未知',
+};
 
 /// Fallback 优先级表（5.4.2）
 /// rejected / ignored / resolved 症候永远不进入候选池

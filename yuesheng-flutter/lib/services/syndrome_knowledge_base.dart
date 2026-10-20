@@ -9,6 +9,10 @@
 
 import 'syndrome_registry.dart';
 import 'technique_knowledge_base.dart'; // techniqueNameOf
+// 治理续批第二批（2026-10-20 · 路 α · R-027 批准）：S3 三判据 + 形态字段段的**唯一定义源**
+// （与 merge 链同一常量 ⇒ 跨链判据逐字同一、零复制漂移）。
+import 'intervention_value.dart'
+    show kInterventionValueS3Criteria, kFormFieldCriteria;
 
 // ─── P3 数据分片（数据/逻辑分离；知识文本在 part 文件）───
 part 'syndrome_kb_content.dart';

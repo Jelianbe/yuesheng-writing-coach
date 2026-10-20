@@ -26,6 +26,10 @@ import 'llm_call_log_sink.dart';
 import 'llm_client.dart';
 import 'llm_usage.dart';
 import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
+// 治理续批第二批（2026-10-20 · 路 α · R-027 批准）：S3 三判据 + 形态字段段的**唯一定义源**。
+// 两宿主（merge 链 / 单次链）各插值引用 ⇒ 跨链判据逐字同一、零复制漂移。
+import 'intervention_value.dart'
+    show kInterventionValueS3Criteria, kFormFieldCriteria;
 import 'token_budget_guard.dart'; // W-15-B B1：merge 预算预检（estimate + 报告同构）
 import 'output_whitelist.dart'; // L3：severity 白名单归一化
 import '../types/teaching_types.dart';
@@ -547,11 +551,13 @@ $_kMergeRelevanceGate
 
 跨片因果提示：若某条线索的成立与否依赖未包含在任何分片中的信息（如前文伏笔、后文解释、分片外的人物关系），该条须标记 pending_context=true，并把结论写为「暂时无法判断」——不得强行下结论。pending_context 缺省 false。
 
-干预价值（S3）三判据——对每条准备报出的症候依次自问，全「是」=high，两条「是」=medium，其余=low：
-1. 可教：存在一个作者现在就能做的具体训练动作（改写练习/重写某段/自查清单），而非「需要全书级重构才解决」；
-2. 可感：干预效果作者自己当章可感知（读得下去/看得懂的变化），不依赖后续章节验证；
-3. 可测：有明确的复测口径（下轮诊断同一症候是否收敛），可进「诊断收敛」叙事。
-铁律：intervention_value 与 severity 相互独立，不得互为别名或函数——L3 严重但本轮干预不动它（如全文视角混乱需重写架构）应为 low；L1 轻微但一次改写练习立竿见影（如三连排比的情绪标签）应为 high。不得因「这段文本写得好」而豁免或抬升任何条目；写得好的部分不因此获得任何加分。
+## 干预价值（S3）三判据
+
+$kInterventionValueS3Criteria
+
+## 形态字段（仅量形式症候评定）
+
+$kFormFieldCriteria
 ''';
 
 /// 构造跨分片合并的系统 prompt。
@@ -604,6 +610,8 @@ syndrome 对象格式要求：
 - explanation (string): 诊断解释
 - reader_impact (string): 一句话说明"不改这段，读者会有什么体验影响"。须结合本条证据**具体**说明该段文本对读者的影响，**不得照抄示例措辞**。示例（仅示意句式）："这一段把结论直接摆出来，读者没有被说服的过程，情感落点会显得突兀"
 - intervention_value (high|medium|low): 按上述「干预价值（S3）三判据」评定的档位，缺省 low
+- form_fact_count (int): 可选；仅量形式症候——成段设定/背景事实条数（单句带过=1）
+- form_structure (string): 可选；仅量形式症候——expository=论文式/说明书结构 / interruption=读者关切时刻被打断 / narrative=叙事流内
 - pending_context (bool): 缺省 false；见「跨片因果提示」
 
 $_kMergeOutputRequirement$_kTeachingModeChunkInstruction(teachingMode)''';

@@ -602,6 +602,23 @@ Set<String> _collectSyndromeDrifts(
         '（${ri.runtimeType}），已按缺失处理',
       );
     }
+    // ★ 治理续批第二批（2026-10-20 · R-027 批准）：形态两要素的类型漂移留痕。
+    //   解析侧按缺失处理（归一化为 null）⇒ 该条无形态证据 ⇒ 资格闸按 v1 行为。
+    //   ⚠️ 「按缺失处理」若不留痕就成了静默丢弃（与 N3-a 同款纪律）。
+    final ffc = syndrome['form_fact_count'];
+    if (ffc != null && normalizeFormFactCount(ffc) == null) {
+      drifts.add(
+        '可选字段 syndromes[$i].form_fact_count 类型漂移'
+        '（${ffc.runtimeType}），已按缺失处理',
+      );
+    }
+    final fs = syndrome['form_structure'];
+    if (fs != null && normalizeFormStructure(fs) == null) {
+      drifts.add(
+        '可选字段 syndromes[$i].form_structure 类型漂移'
+        '（${fs.runtimeType}），已按缺失处理',
+      );
+    }
   }
   return syndromeIdSet;
 }

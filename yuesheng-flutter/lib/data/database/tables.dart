@@ -265,6 +265,20 @@ class ActiveProblems extends Table {
   )();
   IntColumn get confirmedAt => integer().nullable()();
 
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准，schema v48）：形态要素 (a) ——
+  /// 成段出现的设定/背景事实条数（单句带过 = 1）。
+  ///
+  /// 只量**形式**症候（信息倾泻类，如 P002），由 LLM 显式输出（组合⑤双要素同源）。
+  /// ⚠️ 存量行恒为 NULL ⇒ 资格闸 v2 按 v1 行为处理（不回头、不放行、不拦截）。
+  IntColumn get formFactCount => integer().nullable()();
+
+  /// ★ 治理续批第二批（2026-10-20 · R-027 批准，schema v48）：形态要素 (b) ——
+  /// 结构标记：expository（论文式/说明书结构）/ interruption（读者关切时刻被打断）/
+  /// narrative（叙事流内、无结构标记）。
+  TextColumn get formStructure => text().nullable().check(
+    formStructure.isIn(const ['expository', 'interruption', 'narrative']),
+  )();
+
   /// 证据把握度（信心系统 Part B）：本地计算（证据强度+复现），0-1。
   /// 弱把握（< kWeakEvidenceConfidence）且未确认 → 不进活跃症候注入/教学焦点。
   RealColumn get evidenceConfidence => real().nullable()();
