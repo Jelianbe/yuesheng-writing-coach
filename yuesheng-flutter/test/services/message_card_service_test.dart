@@ -188,4 +188,114 @@ void main() {
       expect(roundTrip.targetSyndromeName, '视角漂移');
     },
   );
+
+  // ───────────────────────────────────────────────────────────
+  // W-49：诊断话语三字段（rootCauseAnalysis / feedbackSummary / readerImpact）
+  // 验收 A1–A3：字段加齐、camel/snake 双写容错、空值不落 key、往返稳定。
+  // ───────────────────────────────────────────────────────────
+  group('W-49 诊断话语字段', () {
+    test('A1/A2 三字段往返稳定（非空值逐字段相等）', () {
+      const payload = DiagnosisResultCardPayload(
+        syndromeCount: 1,
+        syndromes: [
+          DiagnosisSyndromeCard(
+            syndromeId: 'P002',
+            name: '信息倾泻症',
+            severity: 'L2',
+            evidenceCount: 1,
+            readerImpact: '读者读到这里会失去画面，只剩概念在堆叠',
+          ),
+        ],
+        suggestedActions: ['删掉两句设定说明'],
+        confidence: 0.8,
+        diagnosisId: 'msg-1',
+        rootCauseAnalysis: '开篇把世界观一次性交代，缺少人物动作承载',
+        feedbackSummary: '本轮主要是信息密度问题，先处理开场两段',
+      );
+
+      final round = DiagnosisResultCardPayload.fromJson(payload.toJson());
+
+      expect(round.rootCauseAnalysis, payload.rootCauseAnalysis);
+      expect(round.feedbackSummary, payload.feedbackSummary);
+      expect(
+        round.syndromes.single.readerImpact,
+        payload.syndromes.single.readerImpact,
+      );
+      // 往返后 toJson 再次相等（幂等）
+      expect(round.toJson(), payload.toJson());
+    });
+
+    test('A1/A2 空值与 null 均不落 key（不得写成空串）', () {
+      const payload = DiagnosisResultCardPayload(
+        syndromeCount: 0,
+        syndromes: [],
+        suggestedActions: [],
+        confidence: 0.0,
+        diagnosisId: 'msg-2',
+        rootCauseAnalysis: '',
+        feedbackSummary: '',
+      );
+      final json = payload.toJson();
+      expect(json.containsKey('root_cause_analysis'), isFalse);
+      expect(json.containsKey('feedbackSummary'), isFalse);
+
+      const syndrome = DiagnosisSyndromeCard(
+        syndromeId: 'P001',
+        name: '情绪标签化',
+        severity: 'L1',
+        evidenceCount: 0,
+        readerImpact: '',
+      );
+      final sJson = syndrome.toJson();
+      expect(sJson.containsKey('reader_impact'), isFalse);
+
+      // 空串读入后归一为 null（不是 ''）⇒ 往返仍不落 key
+      final back = DiagnosisSyndromeCard.fromJson(sJson);
+      expect(back.readerImpact, isNull);
+    });
+
+    test('A1/A2 camel 与 snake 双写均接受（历史消息/手工 JSON 容错）', () {
+      final camel = DiagnosisResultCardPayload.fromJson({
+        'syndromeCount': 1,
+        'syndromes': [
+          {
+            'syndrome_id': 'P001',
+            'name': 'x',
+            'severity': 'L1',
+            'evidenceCount': 0,
+            'readerImpact': '读者会跳戏',
+          },
+        ],
+        'suggestedActions': <String>[],
+        'confidence': 0.5,
+        'diagnosisId': 'm',
+        'rootCauseAnalysis': '根因A',
+        'feedbackSummary': '小结A',
+      });
+      expect(camel.rootCauseAnalysis, '根因A');
+      expect(camel.feedbackSummary, '小结A');
+      expect(camel.syndromes.single.readerImpact, '读者会跳戏');
+
+      final snake = DiagnosisResultCardPayload.fromJson({
+        'syndromeCount': 1,
+        'syndromes': [
+          {
+            'syndrome_id': 'P001',
+            'name': 'x',
+            'severity': 'L1',
+            'evidence_count': 0,
+            'reader_impact': '读者会跳戏',
+          },
+        ],
+        'suggestedActions': <String>[],
+        'confidence': 0.5,
+        'diagnosisId': 'm',
+        'root_cause_analysis': '根因B',
+        'feedback_summary': '小结B',
+      });
+      expect(snake.rootCauseAnalysis, '根因B');
+      expect(snake.feedbackSummary, '小结B');
+      expect(snake.syndromes.single.readerImpact, '读者会跳戏');
+    });
+  });
 }

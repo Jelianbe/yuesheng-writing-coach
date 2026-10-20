@@ -1820,4 +1820,121 @@ void main() {
       expect(find.text('较上次诊断好转'), findsNothing);
     });
   });
+
+  // ───────────────────────────────────────────────────────────
+  // W-49：诊断话语三字段上产品面（C1–C3 / C5）
+  // 落点口径见 T-20261020-01 §三：readerImpact 在症候块「为什么」之后、
+  // rootCauseAnalysis 在「归因」之后「诊断依据」之前、feedbackSummary 在
+  // 「读者层提示」之前。
+  // ───────────────────────────────────────────────────────────
+  group('W-49 诊断话语接线', () {
+    const talkSyndromes = [
+      DiagnosisSyndromeCard(
+        syndromeId: 'P002',
+        name: '信息倾泻症',
+        severity: 'L2',
+        evidenceCount: 1,
+        explanation: '开篇连续三段交代设定',
+        readerImpact: '读者会失去画面感，只剩概念堆叠',
+      ),
+    ];
+
+    testWidgets('C1 三字段非空：标签与正文均可见（展开即见，不需二次点击）', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: talkSyndromes,
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+            rootCauseAnalysis: '开篇把世界观一次性交代，缺少动作承载',
+            feedbackSummary: '本轮主要是信息密度问题',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('根因'), findsOneWidget);
+      expect(find.textContaining('缺少动作承载'), findsOneWidget);
+      expect(find.text('本轮小结'), findsOneWidget);
+      expect(find.textContaining('信息密度问题'), findsOneWidget);
+      expect(find.text('对读者：'), findsOneWidget);
+      expect(find.textContaining('失去画面感'), findsOneWidget);
+    });
+
+    testWidgets('C2 三字段为 null：三个新标签零命中（空态不占位、不编造）', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P002',
+                name: '信息倾泻症',
+                severity: 'L2',
+                evidenceCount: 1,
+                explanation: '开篇连续三段交代设定',
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('根因'), findsNothing);
+      expect(find.text('本轮小结'), findsNothing);
+      expect(find.text('对读者：'), findsNothing);
+      // 既有标签仍在（证明不是整体没渲染）
+      expect(find.text('为什么：'), findsOneWidget);
+    });
+
+    testWidgets('C3 旧 payload（无三个新 key）可正常渲染且不显示新标签', (tester) async {
+      // 模拟历史消息：content 里根本没有 root_cause_analysis / feedbackSummary /
+      // reader_impact —— 这是线上存量数据的真实形态。
+      final legacy = jsonEncode({
+        'syndromeCount': 1,
+        'syndromes': [
+          {
+            'syndrome_id': 'P002',
+            'name': '信息倾泻症',
+            'severity': 'L2',
+            'evidence_count': 1,
+            'explanation': '开篇连续三段交代设定',
+          },
+        ],
+        'suggestedActions': <String>[],
+        'confidence': 0.8,
+        'diagnosisId': 'legacy-1',
+      });
+
+      await tester.pumpWidget(_wrap(DiagnosisCard.fromMessageContent(legacy)));
+      await tester.pumpAndSettle();
+
+      // 不抛、header 正常
+      expect(find.text('本次诊断'), findsOneWidget);
+      expect(find.text('1 个问题'), findsOneWidget);
+
+      // 展开后三个新标签仍不存在
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      expect(find.text('根因'), findsNothing);
+      expect(find.text('本轮小结'), findsNothing);
+      expect(find.text('对读者：'), findsNothing);
+    });
+
+    testWidgets('C5 三个新标签与既有标签两两不同（防止后续被改成同名词）', (tester) async {
+      // 标签常量在私有 _CardText 内，测试侧取渲染字面量核对；
+      // 任一重复都会让学员无法分辨哪句是哪个语义。
+      const labels = ['对读者：', '根因', '本轮小结', '为什么：', '证据：', '归因'];
+      expect(
+        labels.toSet().length,
+        labels.length,
+        reason: '诊断卡标签必须两两不同：$labels',
+      );
+    });
+  });
 }

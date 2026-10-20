@@ -89,6 +89,14 @@ class _CardText {
   static const String rewriteTitle = '改写建议';
   static const String emptyHint = '本次未发现显著问题';
   static const String noEvidence = '（无证据列表）';
+
+  // ── W-49：诊断话语三标签 ──
+  // 三条口径（不可违反）：① 与 whyLabel / evidenceLabel / 「归因」两两不同，
+  // 否则学员分不清哪句是哪个语义；② 不得硬编码在 widget 里；
+  // ③ 皆有对应断言（C5：两两 isNot）。
+  static const String readerImpactLabel = '对读者：';
+  static const String rootCauseLabel = '根因';
+  static const String feedbackSummaryLabel = '本轮小结';
   const _CardText._();
 }
 
@@ -131,6 +139,16 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   /// fallback 优先级 1 下一轮即选中它）。
   final List<FocusCandidateCard>? focusCandidates;
 
+  /// W-49：本轮问题的根因分析（轮次级，一段话）。
+  ///
+  /// 与单症候的 `explanation`（「为什么被判定存在」）**语义不同**——此处是
+  /// **整轮问题的成因**。两者并存，互不覆盖（见 `M2RecallBar.rootCauseText`
+  /// 仍在用 `explanation`）。null / 空串 ⇒ 不渲染。
+  final String? rootCauseAnalysis;
+
+  /// W-49：本轮反馈总结（轮次级，一段话）。null / 空串 ⇒ 不渲染。
+  final String? feedbackSummary;
+
   const DiagnosisCard({
     super.key,
     required this.syndromeCount,
@@ -144,6 +162,8 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     this.messageId,
     this.overall,
     this.focusCandidates,
+    this.rootCauseAnalysis,
+    this.feedbackSummary,
   });
 
   /// 便利构造：从 Message.content 的 JSON 解析 payload 渲染
@@ -169,6 +189,9 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         messageId: messageId,
         overall: payload.overall,
         focusCandidates: payload.focusCandidates,
+        // W-49：轮次级两字段（旧消息 JSON 无这两个 key ⇒ 为 null ⇒ 不渲染）。
+        rootCauseAnalysis: payload.rootCauseAnalysis,
+        feedbackSummary: payload.feedbackSummary,
       );
     } catch (_) {
       // 兜底：空诊断卡
@@ -403,14 +426,31 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                   const SizedBox(height: 16),
                   _buildRewriteBlock(),
                 ],
-                // 读者层弱提示：题材/受众/可读性超出文本诊断范围，恒显在详情末尾。
-                _buildReaderLayerHint(),
+                // W-49：本轮小结（轮次级收束话语）。置于展开区末尾、
+                // 读者层弱提示之前 —— 先看完「诊断了什么 / 为什么」，再读总结。
+                ..._buildTailSlots(),
               ],
             ),
           ),
         ),
       ],
     );
+  }
+
+  /// 展开区尾部插槽（R-019 清偿：W-49 加「本轮小结」后 [_buildCardBody] 逼近
+  /// 50 行阈值，故把尾部两段 spread 化）。
+  ///
+  /// 顺序口径：本轮小结（轮次级收束）在前，读者层弱提示（恒显）在后 ——
+  /// 先看完「诊断了什么 / 为什么」，再读总结，最后才是边界声明。
+  List<Widget> _buildTailSlots() {
+    return [
+      if (_feedbackSummaryText != null) ...[
+        const SizedBox(height: 12),
+        _buildFeedbackSummaryBlock(),
+      ],
+      // 读者层弱提示：题材/受众/可读性超出文本诊断范围，恒显在详情末尾。
+      _buildReaderLayerHint(),
+    ];
   }
 
   // ── 诊断依据区（批次 C：ConfidenceBar + ThinkingChain 竹青化接入）──
@@ -427,9 +467,43 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           _buildFocusReasonBlock(),
           const SizedBox(height: AppSpacing.md),
         ],
+        // W-49：根因（整轮问题的成因）。与上方「归因」（为什么选这个焦点）
+        // 及症候级「为什么：」（单症候为何被判定）**三者语义不同、并存不覆盖**。
+        if (_rootCauseText != null) ...[
+          _buildRootCauseBlock(),
+          const SizedBox(height: AppSpacing.md),
+        ],
         ThinkingChain(title: '诊断依据', steps: _buildDiagnosisSteps()),
       ],
     );
+  }
+
+  /// W-49：根因块（轮次级）。样式与 [_buildFocusReasonBlock] 同源但**标签不同**，
+  /// 免学员把「整轮成因」误读成「焦点选择理由」。
+  Widget _buildRootCauseBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _CardText.rootCauseLabel,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textDeep,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(_rootCauseText!, style: context.text.caption),
+      ],
+    );
+  }
+
+  /// W-49：根因展示文本（null = 不渲染）。200 字截断，理由同 [_focusReasonText]：
+  /// 截断而非改写（R-009 不替用户改写 AI 原话）。
+  String? get _rootCauseText {
+    final raw = widget.rootCauseAnalysis?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    return raw.length <= 200 ? raw : '${raw.substring(0, 200)}…';
   }
 
   /// 归因块：本轮教学焦点理由（`teaching_plan.focus_reason`）。
@@ -465,6 +539,33 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     final raw = widget.focusReason?.trim();
     if (raw == null || raw.isEmpty) return null;
     return raw.length <= 160 ? raw : '${raw.substring(0, 160)}…';
+  }
+
+  /// W-49：本轮小结块（轮次级反馈总结）。null / 空串 ⇒ 调用方不插入本块
+  /// （[_feedbackSummaryText] 已做空态归一）。
+  Widget _buildFeedbackSummaryBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _CardText.feedbackSummaryLabel,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textDeep,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(_feedbackSummaryText!, style: context.text.caption),
+      ],
+    );
+  }
+
+  /// W-49：本轮小结展示文本（null = 不渲染）。200 字截断，截断而非改写（R-009）。
+  String? get _feedbackSummaryText {
+    final raw = widget.feedbackSummary?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    return raw.length <= 200 ? raw : '${raw.substring(0, 200)}…';
   }
 
   // ── W-22 G1/G3：候选焦点区（整合层 A3 候选的用户侧权力入口）──
@@ -1332,6 +1433,9 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
               _buildNameChip(cfg),
               const SizedBox(height: 8),
               _buildWhyRow(),
+              // W-49：对读者的影响（症候级）。紧跟「为什么」——先讲问题为何成立，
+              // 再讲它让读者体验到什么，最后给证据原文。
+              _buildReaderImpactRow(),
               _buildTrendRow(),
               const SizedBox(height: 4),
               _buildEvidenceRow(),
@@ -1423,6 +1527,40 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
           const SizedBox(height: 2),
           Text(
             why,
+            style: context.text.subBody.copyWith(
+              color: context.palette.textDeep,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// W-49：该症候「对读者的影响」行。空 ⇒ [SizedBox.shrink]（不占位、不编造）。
+  ///
+  /// 80 字截断（比轮次级 200 更紧）：症候块里经常有 3–5 条，逐条长段落会把
+  /// 卡片撑高到需要滚动才能看完一轮诊断。截断而非改写（R-009）。
+  Widget _buildReaderImpactRow() {
+    final impact = widget.syndrome.readerImpact?.trim();
+    if (impact == null || impact.isEmpty) return const SizedBox.shrink();
+    final text = impact.length <= 80 ? impact : '${impact.substring(0, 80)}…';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _CardText.readerImpactLabel,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textDeep,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            text,
             style: context.text.subBody.copyWith(
               color: context.palette.textDeep,
               height: 1.5,

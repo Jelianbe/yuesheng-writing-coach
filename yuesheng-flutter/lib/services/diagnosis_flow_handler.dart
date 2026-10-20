@@ -1374,6 +1374,8 @@ class DiagnosisFlowHandler {
             interventionValue: s.interventionValue,
             // W-15-B：透传跨块因果缺口标记（true ⇒ 渲染「暂时无法判断」徽标）。
             pendingContext: s.pendingContext,
+            // W-49：透传「对读者的影响」（合并层已 merge，此处只往下传）。
+            readerImpact: s.readerImpact,
           ),
         )
         .toList();
@@ -1407,6 +1409,9 @@ class DiagnosisFlowHandler {
           overall: diagnosis.overall,
           diagnosisId: messageId,
           focusCandidates: focusCandidates,
+          // W-49：轮次级两字段透传（产出/落库/导出早已通，只是没进卡片）。
+          rootCauseAnalysis: diagnosis.rootCauseAnalysis,
+          feedbackSummary: diagnosis.feedbackSummary,
         ),
       );
     } catch (e, s) {

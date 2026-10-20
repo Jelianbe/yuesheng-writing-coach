@@ -60,6 +60,20 @@ class DiagnosisResultCardPayload {
   /// （确认/改选/拒绝）落既有 active_problem.confirmation_status。
   final List<FocusCandidateCard>? focusCandidates;
 
+  /// W-49：本轮问题的**根因分析**（整轮问题的成因，一段话）。
+  ///
+  /// 与 [DiagnosisSyndromeCard.explanation]（单症候「为什么被判定存在」）**语义不同**，
+  /// 两者并存、互不覆盖。此前只落 `diagnosis_results` + 导出，UI 零消费
+  /// （`.ai/reports/2026-10-20-W34-两头配重诊断.md` §三）。属**已有数据接线**。
+  /// null / 空串 ⇒ 该行不渲染（数据诚实：不编造根因）。
+  final String? rootCauseAnalysis;
+
+  /// W-49：本轮**反馈总结**（一段话，给学员的收束话语）。
+  ///
+  /// 同上：产出/落库/导出全通、UI 零消费，本卡只做透传。
+  /// null / 空串 ⇒ 不渲染。
+  final String? feedbackSummary;
+
   const DiagnosisResultCardPayload({
     required this.syndromeCount,
     required this.syndromes,
@@ -69,6 +83,8 @@ class DiagnosisResultCardPayload {
     this.focusReason,
     this.overall,
     this.focusCandidates,
+    this.rootCauseAnalysis,
+    this.feedbackSummary,
   });
 
   factory DiagnosisResultCardPayload.fromJson(Map<String, dynamic> json) {
@@ -106,6 +122,16 @@ class DiagnosisResultCardPayload {
             ),
           )
           .toList(),
+      // W-49：camel / snake 双写均接受（与 focusReason 同款容错）；
+      // 空串归一为 null，保证 toJson→fromJson 往返稳定。
+      rootCauseAnalysis: _firstNonEmpty(
+        json['root_cause_analysis'],
+        json['rootCauseAnalysis'],
+      ),
+      feedbackSummary: _firstNonEmpty(
+        json['feedbackSummary'],
+        json['feedback_summary'],
+      ),
     );
   }
 
@@ -124,6 +150,11 @@ class DiagnosisResultCardPayload {
     // fromJson 侧 null 与空列表都归一为「不渲染」）。
     if (focusCandidates != null && focusCandidates!.isNotEmpty)
       'focusCandidates': focusCandidates!.map((c) => c.toJson()).toList(),
+    // W-49：空串与 null 同等对待，都不落 key（往返稳定）。
+    if (rootCauseAnalysis != null && rootCauseAnalysis!.isNotEmpty)
+      'root_cause_analysis': rootCauseAnalysis,
+    if (feedbackSummary != null && feedbackSummary!.isNotEmpty)
+      'feedbackSummary': feedbackSummary,
   };
 }
 
@@ -180,6 +211,16 @@ List<FocusCandidateCard> toFocusCandidateCards(
       .toList();
 }
 
+/// W-49：双写 key 容错读取 —— 先 camel 后 snake（或反之），空串归一为 null。
+///
+/// 与 `focusReason` 的单 key 容错同源：历史消息、手工构造 JSON、测试直传
+/// `toJson` 产物三种来源的写法并不统一，读取侧统一吸收，写入侧只按一种输出。
+String? _firstNonEmpty(Object? primary, Object? fallback) {
+  if (primary is String && primary.isNotEmpty) return primary;
+  if (fallback is String && fallback.isNotEmpty) return fallback;
+  return null;
+}
+
 /// payload 侧的整体判定解析（H-3 防御性二次校验）。
 ///
 /// parser/validator 已拦过一道；此处防旧库数据/手工构造 JSON 绕过。
@@ -224,6 +265,14 @@ class DiagnosisSyndromeCard {
   /// null/false 时不渲染（与「数据诚实：不编造」同一约定）。
   final bool? pendingContext;
 
+  /// W-49：该症候**对读者的具体影响**（一句话）。
+  ///
+  /// 由 `Syndrome.readerImpact` 透传（症候合并层 `merge_convergence` 已显式 merge，
+  /// 见其 `keep.readerImpact ?? other.readerImpact`）。此前产出/落库/导出全通，
+  /// **UI 零消费**（`git grep reader_impact -- lib/features/ lib/widgets/` = 0 命中）。
+  /// null / 空串 ⇒ 该行不渲染（数据诚实：不编造读者影响）。
+  final String? readerImpact;
+
   const DiagnosisSyndromeCard({
     required this.syndromeId,
     required this.name,
@@ -233,6 +282,7 @@ class DiagnosisSyndromeCard {
     this.explanation,
     this.interventionValue,
     this.pendingContext,
+    this.readerImpact,
   });
 
   factory DiagnosisSyndromeCard.fromJson(Map<String, dynamic> json) {
@@ -257,6 +307,8 @@ class DiagnosisSyndromeCard {
       interventionValue: normalizeInterventionValue(json['intervention_value']),
       // W-15-B：同 reader_impact 口径——安全读取，非 bool 按缺失处理。
       pendingContext: normalizePendingContext(json['pending_context']),
+      // W-49：snake / camel 双写均接受，空串归一为 null。
+      readerImpact: _firstNonEmpty(json['reader_impact'], json['readerImpact']),
     );
   }
 
@@ -274,6 +326,9 @@ class DiagnosisSyndromeCard {
     if (interventionValue != null) 'intervention_value': interventionValue,
     // W-15-B：同上约定，null 不落 key，往返稳定。
     if (pendingContext != null) 'pending_context': pendingContext,
+    // W-49：同上约定，空串与 null 都不落 key，往返稳定。
+    if (readerImpact != null && readerImpact!.isNotEmpty)
+      'reader_impact': readerImpact,
   };
 }
 
