@@ -60,6 +60,27 @@ class SkillLoadContext {
   /// 却拿不到症候字典和现场引导）。
   final bool forceDiagnosisSceneFirst;
 
+  /// W-45 窄改①（2026-10-20 舰长批准，触 R-027）：**被诊断文本在全书中的真实位置**。
+  ///
+  /// 背景（实测见 `.ai/reports/2026-10-20-W45-抽核回执与位置维度调查.md`）：
+  /// 「位置敏感」四层实现早已在场，但位置是**猜**的 —— 位置块明写
+  /// 「内容过短（< 1000 字）难以判断 ⇒ 判【全局】」。240 格实测 P002 命中率
+  /// `<1000` 字组 **39.2%** vs `≥1000` 字组 **93.6%**，差 54pp **全部来自这条猜测规则**
+  /// 而非文本质量 ⇒ P002 在长文组失去区分力（恒报）。
+  ///
+  /// [chapterOrder] = 该章在全书中的**位次（1 基，含本章）**，不是 DB 的
+  /// `Chapters.sortOrder` —— 实测该列**0 基且 0/1 混用**
+  /// （`outputs/ev3.db` 中 `233efaae` 的「第一章 风起」存的是 `sort_order=1`），
+  /// 直接透传会把第一章说成第二章。调用方须先归一化。
+  ///
+  /// [totalChapters] = 全书总章数。用于让「开头/中段/结尾」可由位次直接判定。
+  ///
+  /// **两者皆 null ⇒ 位置块逐字节不变**（锚点零漂移的依据）；非 null 时
+  /// 在 [kPositionGuidanceConstSection] 之后追加一段「已知位置」，并**覆盖**
+  /// 原「过短 ⇒ 判全局」的兜底（真实位次是比字数更强的证据）。
+  final int? chapterOrder;
+  final int? totalChapters;
+
   const SkillLoadContext({
     required this.phase,
     required this.attitude,
@@ -70,6 +91,8 @@ class SkillLoadContext {
     this.disabledSyndromeIds = const {},
     this.activePersona,
     this.forceDiagnosisSceneFirst = false,
+    this.chapterOrder,
+    this.totalChapters,
   });
 }
 

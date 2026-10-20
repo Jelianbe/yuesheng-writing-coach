@@ -85,6 +85,15 @@ class SendMessageOptions {
   /// 的 contentBlocks（text 块 + image_url 块）。R-009：不夹带任何看图评判指令。
   final List<ChatContentBlock>? attachmentBlocks;
 
+  /// W-45 窄改①（2026-10-20 舰长批准，触 R-027）：被诊断章节在全书中的**位次
+  /// （1 基）与总章数**，供位置敏感症候按**真实位置**而非字数猜测筛选。
+  ///
+  /// **两者皆 null ⇒ system prompt 逐字节不变**（锚点零漂移的依据）。
+  /// 写入侧已归一化（DB 的 `Chapters.sortOrder` 是 0 基且 0/1 混用，不可直传）。
+  /// 本字段**不落库**：与 [chapterFullText] 同属运行时注入，不进消息历史。
+  final int? chapterOrder;
+  final int? totalChapters;
+
   const SendMessageOptions({
     required this.phase,
     required this.attitude,
@@ -95,5 +104,7 @@ class SendMessageOptions {
     this.chapterFullText,
     this.wholeChapterModeActive = false,
     this.attachmentBlocks,
+    this.chapterOrder,
+    this.totalChapters,
   });
 }

@@ -60,25 +60,18 @@ class ChatTeachingController {
     String? stageLabel,
     // 批次98：诊断场景待诊断全文——对话历史只落库简洁消息，全文运行时注入
     String? chapterFullText,
+    // W-45 窄改①：真实位次/总章数（打包 record：两字段同源、为 null 即整条注入链
+    // 逐字节不变）。归一化在诊断侧完成，见 chat_diagnosis_controller。
+    ({int order, int total})? chapterPosition,
   }) async {
     if (text.isEmpty) return;
-    // C2：首次在对话里发起真实请求且未配 API → 弹一次性「配置 API」引导。
-    await maybeShowApiConfigNudge(
-      host.context,
-      host.ref.read(appDatabaseProvider),
-    );
+    await _maybeShowApiNudge();
     final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
     if (bootstrap == null) return;
-
     final mention = await _mentions.resolve(text, bootstrap.sessionId);
     if (mention.text.trim().isEmpty) return;
     _mentions.showFeedback(mention);
-
-    host.ref
-        .read(chatStoreProvider.notifier)
-        .setStreaming(true, stageLabel: stageLabel);
-    // ADR-C84：发送即清空输入栏（消息已发出，输入栏立即可编辑下一条）
-    if (host.mounted) host.setInputText('');
+    _beginSendUi(stageLabel);
 
     final chatService = host.ref.read(chatServiceProvider);
     final cancelToken = CancelToken();
@@ -90,7 +83,12 @@ class ChatTeachingController {
         bootstrap.sessionId,
         mention.text,
         _buildCallbacks(bootstrap.sessionId, onTrainingResult, gen),
-        _buildOptions(cancelToken, chapterFullText, mention.referencesJson),
+        _buildOptions(
+          cancelToken,
+          chapterFullText,
+          mention.referencesJson,
+          chapterPosition,
+        ),
         subphase: subphase,
       );
     } catch (e) {
@@ -99,6 +97,23 @@ class ChatTeachingController {
       // 无论完成/失败/取消，令牌都一次性作废，下次发送新建
       _cancelToken = null;
     }
+  }
+
+  /// C2 引导（R-019 自 [handleSend] 拆出）：首次在对话里发起真实请求且未配 API
+  /// ⇒ 弹一次性「配置 API」引导。与发送流程本身无关，故独立成函数。
+  Future<void> _maybeShowApiNudge() =>
+      maybeShowApiConfigNudge(host.context, host.ref.read(appDatabaseProvider));
+
+  /// 发送前的 UI 切换（R-019 自 [handleSend] 拆出）：置流式标志 + 清空输入栏。
+  ///
+  /// - `setStreaming(true, stageLabel:)`：让输入栏进入发送中态并显示阶段标签。
+  /// - 清空输入栏（ADR-C84）：消息已发出，输入栏立即可编辑下一条；
+  ///   `mounted` 守卫防止跨 async gap 后宿主已卸载。
+  void _beginSendUi(String? stageLabel) {
+    host.ref
+        .read(chatStoreProvider.notifier)
+        .setStreaming(true, stageLabel: stageLabel);
+    if (host.mounted) host.setInputText('');
   }
 
   /// 装配流式回调（落库上屏 / 流式增量 / 完成复位 / 取消 / Teacher 两段式）。
@@ -175,6 +190,7 @@ class ChatTeachingController {
     CancelToken cancelToken,
     String? chapterFullText,
     String? referencesJson,
+    ({int order, int total})? chapterPosition,
   ) {
     // C147：发送前一次性取走待发图片附件（图片直读链，随 user 消息直送 LLM）。
     final attachmentBlocks = host.ref
@@ -192,6 +208,9 @@ class ChatTeachingController {
       referencesJson: referencesJson,
       // C147：图片附件（图片直读链，随 user 消息 contentBlocks 直送 LLM）
       attachmentBlocks: attachmentBlocks,
+      // W-45 窄改①：真实位次（运行时注入，不落库；null ⇒ 位置块不追加）
+      chapterOrder: chapterPosition?.order,
+      totalChapters: chapterPosition?.total,
       // 取消令牌：让用户在生成中可主动中止
       cancelToken: cancelToken,
     );

@@ -94,6 +94,9 @@ class PromptAssemblyService {
       disabledSyndromeIds: _readDisabledSyndromeIds(),
       activePersona: activePersona,
       forceDiagnosisSceneFirst: forceSceneFirst,
+      // W-45 窄改①：真实位次透传（两者皆 null ⇒ 位置块逐字节不变）。
+      chapterOrder: options.chapterOrder,
+      totalChapters: options.totalChapters,
     );
     final rawMode = _teaching.resolveL2Mode(skillCtx);
     final override = _routeHysteresis.overrideFor(sessionId, rawMode);

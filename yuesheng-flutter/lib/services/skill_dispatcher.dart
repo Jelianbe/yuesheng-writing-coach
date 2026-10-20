@@ -91,6 +91,61 @@ const String _kPositionGuidance = '''## 内容位置判断（必读）
 3. 不要对不适用于当前位置的症候进行诊断（如不要在中段诊断"开篇钩子"）
 4. ❌ 不要输出【位置判断：XXX】或任何类似的系统标记''';
 
+/// W-45 窄改①：[kPositionGuidanceConstSection] 的公开别名。
+///
+/// 原文是私有常量 [_kPositionGuidance]；W-45 窄改①新增的「已知位置」块需要在
+/// 测试里与它做**逐字节前缀比对**（判据 = 无位次时 prompt 不含任何新内容），
+/// 故公开只读别名。**常量本体一字未改** —— 改它才是 R-027 重冻事由。
+const String kPositionGuidanceConstSection = _kPositionGuidance;
+
+/// W-45 窄改①（2026-10-20 舰长批准，触 R-027）：**已知真实位次时的位置覆盖块**。
+///
+/// 只有 [SkillLoadContext.chapterOrder] / [totalChapters] 非 null 时才追加，
+/// 追加在 [kPositionGuidanceConstSection] 之后 —— 二者都在 system prompt 尾部，
+/// 后者覆盖前者。**两者皆 null ⇒ 整条 prompt 逐字节不变**（锚点零漂移）。
+///
+/// 三条设计约束（每条都对应一个能变红的判据，见 [test/w45_known_position_test.dart]）：
+/// 1. **覆盖「过短 ⇒ 判全局」**：原文把 `<1000 字` 当作「位置不可判」的证据；
+///    有了真实位次，字数不再是位置证据 —— 否则本次改动对短文本**完全无效**，
+///    而短文本正是 `<1000` 字那 130 格（命中率 39.2%）的主体。
+/// 2. **位次映射三档写死**：`第1章⇒开头`、`末章⇒结尾`、其余⇒中段。
+///    单章书（order==total==1）⇒ 全局（此时「开头」与「结尾」同真，无从区分）。
+/// 3. **不覆盖内容形态**：仅当本章**自身文本**明显是另一档时才允许改判，
+///    且必须写明理由。位次是章级事实，段级形态是更细的证据，允许后者细化前者。
+String buildKnownPositionBlock(int order, int total) {
+  final String band;
+  if (total <= 1) {
+    band = '**全局**（全书仅此一章，无「开头/结尾」之分）';
+  } else if (order <= 1) {
+    band = '**开头**';
+  } else if (order >= total) {
+    band = '**结尾**';
+  } else {
+    band = '**中段**';
+  }
+  return '''## 本次诊断对象的真实位置（系统已核对，优先于上文推测）
+
+本段文本取自全书第 **$order** 章，共 **$total** 章 ⇒ 位置 = $band。
+
+**这一判定比上文「内容过短（< 1000 字）难以判断 ⇒ 判全局」更可信，直接采用它。**
+文本长度不是位置证据：篇幅短的章节同样处在全书第 $order 章这个位置。
+
+**允许的唯一例外**：本段文本的**内容形态**明显属于另一档时（例如正文自身就是
+全书高潮收束处，而它出现在第 $order 章）。此时可改判，但必须在内部判断里写明
+「因本段形态为……，故改判为……」。**无此形态证据时不得改判，也不得再退回【全局】。**''';
+}
+
+/// W-45 窄改①：位次合法时返回覆盖块，否则返回 null（= 不注入）。
+///
+/// **fail-closed 三条**：两个字段任一为 null ⇒ 不注入（半截信息判不了结尾）；
+/// 任一 < 1 ⇒ 不注入（位次是 1 基索引，0/负数是脏数据，不得据此造出「第 0 章」）。
+String? _knownPositionBlockOrNull(SkillLoadContext ctx) {
+  final order = ctx.chapterOrder;
+  final total = ctx.totalChapters;
+  if (order == null || total == null || order < 1 || total < 1) return null;
+  return buildKnownPositionBlock(order, total);
+}
+
 /// 诊断前置引导（2026-09-29 反馈修复）：拦住"边读边分类"的惯性，
 /// 强制先做不分类的现场阅读，再进症候归类 —— 否则场景逻辑硬伤会被整段漏掉。
 /// 仅诊断模式注入；非注册 Skill（dispatcher const），不进 skill_prompt_anchor 的
@@ -152,7 +207,7 @@ const String _kD3DiagnosisGuidance = '''
 @visibleForTesting
 Map<String, String> getDiagnosisConstSections() => {
   'promptBoundary': _kPromptBoundary,
-  'positionGuidance': _kPositionGuidance,
+  'positionGuidance': kPositionGuidanceConstSection,
   'diagnosisSceneFirst': _kDiagnosisSceneFirst,
 };
 
@@ -197,7 +252,12 @@ SystemPromptResult buildSystemPromptV2(
   }
 
   // 位置判断引导语（L1 末尾，始终注入）
-  chunks.add(_kPositionGuidance);
+  chunks.add(kPositionGuidanceConstSection);
+
+  // W-45 窄改①：真实位次已知时追加「已知位置」覆盖块（零位次 ⇒ 不追加，
+  // 与改造前逐字节一致，锚点零漂移）。
+  final known = _knownPositionBlockOrNull(ctx);
+  if (known != null) chunks.add(known);
 
   // L1 注入纵深防御：静态边界声明（始终注入末尾；R-027 人工确认）
   chunks.add(_kPromptBoundary);

@@ -189,22 +189,56 @@ class ChatDiagnosisController {
       },
     );
     if (progressive != null) {
-      // 分块链路：解析 + 持久化 + 卡片插入
-      await host.ref
-          .read(chatServiceProvider)
-          .commitDiagnosisFromContent(
-            sessionId: bootstrap.sessionId,
-            fullContent: progressive.fullContent,
-            chapterContent: chapter.content,
-          );
+      await _commitChunkedDiagnosis(progressive, chapter, bootstrap.sessionId);
     } else {
       // 2. 回退：单次诊断 prompt。对话历史只展示简洁消息（「已发送章节」），
       // 全文由 chapterFullText 运行时注入（不落库，AI 仍收到全部内容）。
+      // W-45 窄改①：把真实位次一并传入，让位置敏感症候按真实位置筛选。
       await teaching.handleSend(
         '请诊断本章：《${chapter.title}》',
         stageLabel: '正在诊断本章…',
         chapterFullText: chapter.content,
+        chapterPosition: await _resolveChapterPosition(chapter),
       );
+    }
+  }
+
+  /// 分块链路收尾：解析合并结果 + 持久化 + 卡片插入（R-019 自 `_runDiagnosis` 拆出）。
+  Future<void> _commitChunkedDiagnosis(
+    ProgressiveResult progressive,
+    Chapter chapter,
+    String sessionId,
+  ) async {
+    await host.ref
+        .read(chatServiceProvider)
+        .commitDiagnosisFromContent(
+          sessionId: sessionId,
+          fullContent: progressive.fullContent,
+          chapterContent: chapter.content,
+        );
+  }
+
+  /// W-45 窄改①：算出被诊断章节在全书中的真实位次（1 基）与总章数。
+  ///
+  /// **不直传 `Chapters.sortOrder`** —— 实测该列 0 基且 0/1 混用
+  /// （`outputs/ev3.db` 中 `233efaae` 的「第一章 风起」存的是 `sort_order=1`），
+  /// 直传会把第一章说成第二章。这里改为按 [ChapterRepository.listChapters]
+  /// 的排序结果取索引 ⇒ 与存储基值无关。
+  ///
+  /// 返回 null（章不在列表中 / 查询失败）⇒ 调用方按 null 走「不注入」分支，
+  /// **不猜、不兜底造位次**。
+  Future<({int order, int total})?> _resolveChapterPosition(
+    Chapter chapter,
+  ) async {
+    try {
+      final all = await ChapterRepository(
+        host.ref.read(appDatabaseProvider),
+      ).listChapters(chapter.manuscriptId);
+      final idx = all.indexWhere((c) => c.id == chapter.id);
+      if (idx < 0 || all.isEmpty) return null;
+      return (order: idx + 1, total: all.length);
+    } catch (_) {
+      return null;
     }
   }
 
