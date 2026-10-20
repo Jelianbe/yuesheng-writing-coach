@@ -48,6 +48,56 @@ if printf '%s\n' "$staged" | grep -qE '^\.github/workflows/flutter_ci\.yaml$'; t
   hit=1
 fi
 
+# 【2026-10-20 并入仓内源】本段此前**只存在于 .git/hooks/pre-commit**（生效副本），
+#   未回写本文件。门禁 16（hook 副本同步）抓到 md5 不一致才暴露 —— 而它当时给出的
+#   修复建议是「重装副本」，照做会把这 45 行静默覆盖丢失。现已并入真源，副本由
+#   install-git-hooks.ps1 生成。**改 hook 一律改本文件，不要改 .git/hooks/ 下的副本。**
+
+# -------- eval 闸自检（W-43 · 仅当改动 tool/eval/ 时，约 1 秒）--------
+# 为什么放在快道之前：闸的价值是「廉价假设不必付生产代价」⇒ 它本身必须便宜
+#   （1 秒 vs 快道 40 秒 vs 全量 4~6 分钟）。快的才可能一直开着。
+# 拦什么：只拦「改了闸代码却没验证」—— 重跑闸并要求 reportable_variants 与上一条产物
+#   一致；变了就说明改动影响了判定或口径，必须显式确认，不能被当成普通重构提交。
+# 不拦什么：普通 lib/ 改动（闸只吃 trace，与实现无关）；缺 trace 的新克隆机（跳过并提示）。
+# ★ 已知局限（不要误以为已覆盖）：判据正文在 `.ai` 独立仓
+#   （.ai/reports/eval_gate.md / eval_gate.criteria.json），本钩子装在父仓，
+#   `git diff --cached` 看不到 `.ai` 的 staged ⇒ **改判据不会触发本段**，须手工跑闸。
+EVAL_FLUTTER="$REPO_ROOT/yuesheng-flutter"
+if printf '%s\n' "$staged" | grep -qE '^yuesheng-flutter/tool/eval/'; then
+  EVAL_TRACE="$EVAL_FLUTTER/outputs/gate/eval_trace.jsonl"
+  EVAL_OUT="$EVAL_FLUTTER/outputs/gate/promotion_gate.json"
+  if [ ! -f "$EVAL_TRACE" ]; then
+    echo "[pre-commit] ⚠  检测到 tool/eval/ 变更，但缺 trace（outputs 不入仓）⇒ 跳过闸自检"
+    echo "             重建：cd yuesheng-flutter && flutter test tool/eval/eval_runner.dart"
+  elif command -v dart >/dev/null 2>&1 && command -v python >/dev/null 2>&1; then
+    echo "[pre-commit] 🧪 tool/eval/ 有变更 ⇒ 跑 eval 闸自检（约 1 秒）..."
+    GATE_TMP="$(mktemp)"
+    PREV_LIST=""
+    if [ -f "$EVAL_OUT" ]; then
+      PREV_LIST="$(python -c "import json,sys;print(','.join(json.load(open(sys.argv[1],encoding='utf-8'))['reportable_variants']))" "$EVAL_OUT" 2>/dev/null || true)"
+    fi
+    if ( cd "$EVAL_FLUTTER" && dart run tool/eval/promotion_gate.dart ) >"$GATE_TMP" 2>&1; then
+      NEW_LIST="$(python -c "import json,sys;print(','.join(json.load(open(sys.argv[1],encoding='utf-8'))['reportable_variants']))" "$EVAL_OUT" 2>/dev/null || true)"
+      if [ -n "$PREV_LIST" ] && [ "$PREV_LIST" != "$NEW_LIST" ]; then
+        echo "[pre-commit] ❌ 闸自检：可提报变体变了（$PREV_LIST → $NEW_LIST）"
+        echo "             这不是形式问题 —— 说明本次改动动了判定或口径。"
+        echo "             确认是有意的：重跑闸并一并提交新产物；否则回退改动。"
+        rm -f "$GATE_TMP"
+        exit 1
+      fi
+      echo "[pre-commit] ✅ 闸自检通过（可提报 = ${NEW_LIST:-?}，与上一条一致）"
+    else
+      echo "[pre-commit] ❌ 闸自检失败（闸本身 exit≠0）："
+      tail -20 "$GATE_TMP"
+      rm -f "$GATE_TMP"
+      exit 1
+    fi
+    rm -f "$GATE_TMP"
+  else
+    echo "[pre-commit] ⚠  缺 dart 或 python，跳过 eval 闸自检（不阻断）"
+  fi
+fi
+
 if [ "$hit" -eq 0 ]; then
   # 本次改动不涉及 Flutter，快道跳过（省一次无谓等待）
   echo "[pre-commit] ⏭  未触及 yuesheng-flutter/ 或 flutter_ci.yaml，跳过快道"

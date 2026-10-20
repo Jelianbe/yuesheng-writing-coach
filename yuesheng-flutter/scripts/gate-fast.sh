@@ -99,6 +99,39 @@ degraded=0
 # 读起来像全绿。**「未执行」必须自己占一个数**，否则它就只能藏在差额里。
 notrun=0
 
+# ---------- 命中率流水（2026-10-20 新增 · 与 gate.sh 同一份账）----------
+# ★ 落点是 `outputs/gate/hits.jsonl`（**共用收尾道的目录**），不是 gate-fast/ 自己的目录。
+#   理由：若各记各的，快道与收尾道会分裂成两套互不可见的账，
+#   而「这道门禁历史上拦下过东西吗」必须是**一个口径**。用 profile 字段区分来源。
+# 其余语义（记什么 / 不记 dirty / 失败不影响结论）与 gate.sh 同处注释一致，此处不复述。
+HITS_LOG="$ROOT/outputs/gate/hits.jsonl"
+mkdir -p "$ROOT/outputs/gate"
+GATE_RUN_ID="$(date '+%Y%m%d-%H%M%S')-$$"
+# 默认 fast；经 gate-run.sh 调用时透传 quick（--no-test）或 fast（--all），
+# 使 hits.jsonl 与 runs.jsonl 同一套标签。
+GATE_PROFILE="fast"
+[ -n "${GATE_PROFILE_OVERRIDE:-}" ] && GATE_PROFILE="$GATE_PROFILE_OVERRIDE"
+GATE_SEQ=0
+GATE_T_LAST=$(date +%s)
+GATE_HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+record_hit() {
+  local name="$1"; local ok="$2"
+  local now; now=$(date +%s)
+  local dur=$((now - GATE_T_LAST)); GATE_T_LAST=$now
+  local result
+  case "$ok" in
+    0)    result="PASS" ;;
+    SKIP) result="SKIP" ;;
+    *)    result="FAIL" ;;
+  esac
+  GATE_SEQ=$((GATE_SEQ + 1))
+  local esc=${name//\\/\\\\}; esc=${esc//\"/\\\"}
+  printf '{"ts":"%s","run":"%s","profile":"%s","seq":%d,"name":"%s","result":"%s","dur_s":%d,"head":"%s"}\n' \
+    "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$GATE_RUN_ID" "$GATE_PROFILE" "$GATE_SEQ" \
+    "$esc" "$result" "$dur" "$GATE_HEAD" >> "$HITS_LOG" 2>/dev/null || true
+}
+
 emit() { printf '%s\n' "$1"; }
 log_result() {
   local name="$1"; local ok="$2"
@@ -112,6 +145,7 @@ log_result() {
     emit "[FAIL] $name"
     fail=$((fail + 1))
   fi
+  record_hit "$name" "$ok"
 }
 
 echo "=================================================="

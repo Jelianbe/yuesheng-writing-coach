@@ -90,12 +90,57 @@ def main() -> int:
             print(f"       副本 {dst}")
         return 0
 
-    print("[FAIL] hook 生效副本与仓内源不一致 —— 改了源文件不会生效（静默失效）")
+    # ★ 方向必须判（2026-10-20 实证补）：本检查只能证明「两个文件不同」，
+    #   但**谁才是新的它不知道**。旧文案只写「重装副本」——
+    #   若副本比源新（有人直接改了 `.git/hooks/`），照做会**静默覆盖丢失那些改动**。
+    #   实测：W-43 的 eval 闸自检 45 行只写在副本里，本检查报红后若按旧文案重装，
+    #   这段代码就没了。**报红是对的，但「怎么修」必须带方向。**
+    try:
+        with open(REPO_SRC, encoding="utf-8", errors="replace") as f:
+            _a = f.read().splitlines()
+        with open(dst, encoding="utf-8", errors="replace") as f:
+            _b = f.read().splitlines()
+    except OSError:
+        _a = _b = None
+
+    added = removed = 0
+    if _a is not None and _b is not None:
+        import difflib
+
+        # 用 get_opcodes 而非 unified_diff 文本：后者靠 `+`/`-` 前缀计数，
+        # 内容行本身以 `---` 开头时会被误当成 diff 头部而漏计。结构化判据无此歧义。
+        _sm = difflib.SequenceMatcher(None, _a, _b, autojunk=False)
+        for tag, i1, i2, j1, j2 in _sm.get_opcodes():
+            if tag == "delete":
+                removed += i2 - i1
+            elif tag == "insert":
+                added += j2 - j1
+            elif tag == "replace":
+                removed += i2 - i1
+                added += j2 - j1
+
+    print("[FAIL] hook 生效副本与仓内源不一致 —— 二者的改动都不会完整生效")
     print(f"       源   {REPO_SRC}")
     print(f"           md5={src_md5}")
     print(f"       副本 {dst}")
     print(f"           md5={dst_md5}")
-    print("       修复：运行 yuesheng-flutter/scripts/install-git-hooks.ps1 重装副本")
+
+    if _a is None or _b is None:
+        print("       方向：无法判定（读取失败）⇒ 先手工 diff 两个文件再决定")
+        print("       diff yuesheng-flutter/scripts/git-hooks/pre-commit .git/hooks/pre-commit")
+    elif added > 0 and removed == 0:
+        print(f"       方向：**副本更新**（副本多 {added} 行，源一行不缺）")
+        print("       ⚠️ 有人直接改了 .git/hooks/pre-commit，没有回源。")
+        print("       **不要直接重装** —— 重装会用旧源覆盖副本，那 " + str(added) + " 行会丢失。")
+        print("       修复：先把副本差异并入源，再重装：")
+        print("         diff yuesheng-flutter/scripts/git-hooks/pre-commit .git/hooks/pre-commit")
+        print("         pwsh yuesheng-flutter/scripts/install-git-hooks.ps1")
+    elif removed > 0 and added == 0:
+        print(f"       方向：源更新（源多 {removed} 行，副本是旧版）—— 常见的正常情形")
+        print("       修复：pwsh yuesheng-flutter/scripts/install-git-hooks.ps1")
+    else:
+        print(f"       方向：**双方分叉**（副本 +{added} / 源 +{removed}）—— 改动都还在，但各有各的")
+        print("       修复：逐段合并两边差异到源，**再**重装副本；不要直接二选一覆盖。")
     return 1
 
 

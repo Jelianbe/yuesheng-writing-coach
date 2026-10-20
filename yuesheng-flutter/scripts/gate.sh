@@ -2,6 +2,9 @@
 # ============================================================
 # 月笙写作教练 Flutter 端 — 十九道门禁 (R-027 + 宪法 §二)
 #
+# ★ 统一入口：`bash scripts/gate-run.sh`（默认即本脚本）。
+#   本文件仍是**判据真源**；gate-run.sh 只做选路 / 透传 / 记运行流水，**不含任何判据**。
+#
 # 【2026-10-05 新增·三档分组标注】——★ **只标注、不改调度逻辑**
 #   分档依据 = 2026-10-05 成本审计实测的逐道耗时
 #   （报告：.ai/reports/2026-10-05-门禁合并去重调研.md）
@@ -132,6 +135,58 @@ pass=0
 fail=0
 degraded=0   # 因环境缺失而**未真正执行**的门禁数（fail-closed：计入退出码）
 
+# ---------- 命中率流水（2026-10-20 新增 · 汇总见 scripts/gate_hits_report.py）----------
+#
+# 【要解决的问题】19 道门禁里，**没有任何一处记录「它上次真的失败是什么时候」**。
+#   于是「这道门重要」全靠记忆与感觉，而「这道门从没拦住过任何东西」这个事实
+#   **完全不可见** —— 零命中与一直很稳，在现有输出里长得一模一样。
+#   ⇒ 每道结果追加一行 JSONL，让「命中率」变成可查事实，而不是印象。
+#
+# 【落点与边界 · 必须如实知道】outputs/gate/hits.jsonl
+#   · `yuesheng-flutter/.gitignore` 有 `outputs/` 规则 ⇒ 本文件**不在版本控制内**：
+#     **本机累积、换机清零**。故任何报告都必须打印数据区间，不得当成全量历史。
+#   · gate-fast.sh **写入同一份文件**（用 profile 字段区分），否则快道与收尾道的
+#     命中率会分裂成两套互不可见的账。
+#
+# 【记录什么 / 不记录什么】
+#   · 记：ts / run / profile / seq / name / result / dur_s / head
+#     `dur_s` = 与**上一次 log_result** 的间隔 ⇒ 免去在 19 处门禁体内各插一次计时，
+#     且天然就是「本道耗时」（首道除外，它含 python 探测等前置开销，报告中会标注）。
+#   · 不记 `dirty`：需 `git status`（本机实测 111 ms），而门禁多数在**未提交的树**上跑
+#     ⇒ 该字段几乎恒为 1，信息量近零。`head` 用 `git rev-parse`（74 ms）保留，
+#     它能回答「这条 FAIL 对应哪个提交」。
+#   · `seq` 从 1 起、按调用序递增；**不是**门禁编号（编号在 echo 里，不在这里重复）。
+#
+# 【失败策略】记录装置**永不影响门禁结论**：写失败一律 `|| true`。
+#   记录坏了不该让门禁变红（那是假红），更不该让它变绿。
+HITS_LOG="$OUT_DIR/hits.jsonl"
+GATE_RUN_ID="$(date '+%Y%m%d-%H%M%S')-$$"
+# profile 默认 full；经 gate-run.sh 调用时由 GATE_PROFILE_OVERRIDE 透传（quick / fast），
+# 使 hits.jsonl 与 runs.jsonl **同一套标签**，否则两份流水的 profile 对不上、无法互相校验。
+GATE_PROFILE="full"
+[ -n "${GATE_PROFILE_OVERRIDE:-}" ] && GATE_PROFILE="$GATE_PROFILE_OVERRIDE"
+GATE_SEQ=0
+GATE_T_LAST=$(date +%s)
+GATE_HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+record_hit() {
+  local name="$1"; local ok="$2"
+  local now; now=$(date +%s)
+  local dur=$((now - GATE_T_LAST)); GATE_T_LAST=$now
+  local result
+  case "$ok" in
+    0)    result="PASS" ;;
+    SKIP) result="SKIP" ;;
+    *)    result="FAIL" ;;
+  esac
+  GATE_SEQ=$((GATE_SEQ + 1))
+  # 门禁名实测只含中文/空格/括号/加号/斜杠，均无需转义；仅防御双引号与反斜杠。
+  local esc=${name//\\/\\\\}; esc=${esc//\"/\\\"}
+  printf '{"ts":"%s","run":"%s","profile":"%s","seq":%d,"name":"%s","result":"%s","dur_s":%d,"head":"%s"}\n' \
+    "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$GATE_RUN_ID" "$GATE_PROFILE" "$GATE_SEQ" \
+    "$esc" "$result" "$dur" "$GATE_HEAD" >> "$HITS_LOG" 2>/dev/null || true
+}
+
 emit() { printf '%s\n' "$1"; }
 # 记录一道门禁的结果。
 #   ok=0    → PASS
@@ -149,6 +204,7 @@ log_result() {
     emit "[FAIL] $name"
     fail=$((fail + 1))
   fi
+  record_hit "$name" "$ok"
 }
 
 echo "=================================================="
