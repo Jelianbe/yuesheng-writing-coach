@@ -224,6 +224,10 @@ class SettingLinkRepository {
   ) => resolveSettingEntityName(manuscriptId, kind, id, includeArchived: true);
 
   /// 作品全部互链（后续批：标签 / 注入 / Progressions 用）。
+  ///
+  /// ★ W-41（2026-10-20）：**生产与测试均零调用** —— UI 按实体取链走 [listForEntity]。
+  /// 处置 = 保留待「标签 / Progressions」批接线；接线前不要删除（会与后续批冲突），
+  /// 但也不得把它当作已通链路引用。
   Future<List<SettingLink>> listAll(String manuscriptId) async {
     return (_db.select(_db.settingLinks)
           ..where((t) => t.manuscriptId.equals(manuscriptId))

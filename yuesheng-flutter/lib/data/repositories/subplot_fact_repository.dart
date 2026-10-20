@@ -146,6 +146,10 @@ class SubplotFactRepository {
   }
 
   /// 获取单条支线
+  ///
+  /// ★ W-41（2026-10-20）：**生产零调用，仅测试使用**（5 处）。生产侧按名称查支线
+  /// 走 [listSubplots] 后内存过滤。处置 = 保留（测试断言按名命中语义的入口），
+  /// 新增生产调用前先确认是否与 [listSubplots] 重复查询同表。
   Future<SubplotFact?> getSubplot(String manuscriptId, String name) async {
     return (_db.select(_db.subplotFacts)..where(
           (t) => t.manuscriptId.equals(manuscriptId) & t.name.equals(name),

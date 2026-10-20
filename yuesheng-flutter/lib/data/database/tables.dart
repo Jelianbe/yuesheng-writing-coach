@@ -227,7 +227,8 @@ class TeachingState extends Table {
 /// ============================================================
 /// 7. active_problem — 活跃症候（v10/v11 confirmation_status + confirmed_at）
 /// UNIQUE(session_id, syndrome_id)
-/// 注意：此表无 updated_at 字段（原项目 T-004 修复确认）
+/// 注意：`updated_at` **存在**（v20 批次5（5.3）加列，可空；见本类 `updatedAt`）。
+/// 旧注「此表无 updated_at（原项目 T-004 修复确认）」已随 v20 失效 —— 以字段定义为准。
 /// ============================================================
 @DataClassName('ActiveProblem')
 class ActiveProblems extends Table {

@@ -692,6 +692,10 @@ class DiagnosisRepository {
 
   /// M6 修复：跨 session 聚合已解决的症候（迁移环节源数据）
   /// 查 status='resolved' 的记录，按 syndrome_id 去重取最新
+  ///
+  /// ★ W-41（2026-10-20）：**生产与测试均零调用**（全仓仅本定义处命中）。
+  /// 原定消费方 = 「已解决症候」迁移环节，该环节未接线。处置 = 保留为预留，
+  /// 引用「迁移环节读已解决症候」前必须先把消费方接上。
   Future<List<ActiveProblemView>> listAllResolvedProblems() async {
     final rows = await (_db.select(
       _db.activeProblems,

@@ -79,6 +79,13 @@ class CharacterAssertion {
   final String status;
 
   /// C78 D-4：来源 ai | user（用户手动修正的断言为 user，不被 AI 覆写）
+  ///
+  /// ★ W-41（2026-10-20）卫生说明：外部框架的「observed / inferred」二值在本 schema 中
+  /// **无显式字段**，由本字段 + [evidence] + [status] 组合代理（不新造字段族，见 §4-222）：
+  /// - `observed`（观测到）≈ `source ∈ {ai, diagnosis}` 且 `evidence` 非空 且 `status == 'confirmed'`
+  /// - `inferred`（推断出）≈ `source == 'ai'` 且 `evidence == null`
+  /// ⇒ 两者唯一差别是 `evidence` 是否为空，**没有独立标志位**。任何消费方若要严格区分，
+  ///   必须按上式判定；不得假设存在 `inferred` 字段、枚举值或 `source == 'inferred'`。
   final String source;
 
   /// C78 D-3：正文原文摘录（非转述、非概括），供用户在角色标签页核对依据

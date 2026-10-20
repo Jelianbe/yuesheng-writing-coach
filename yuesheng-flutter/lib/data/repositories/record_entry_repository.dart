@@ -96,7 +96,12 @@ class RecordEntryRepository {
     _db.recordEntries,
   )..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  /// 待裁决列表（pending，按时间升序）——确认卡 UI 消费。
+  /// 待裁决列表（pending，按时间升序）。
+  ///
+  /// ★ W-41（2026-10-20）**订正旧注**：原注称「确认卡 UI 消费」，实测不成立 ——
+  /// 确认卡（`record_entry_inbox`）走 [listByManuscript] 后自行过滤 pending。
+  /// 本方法**生产零调用**，仅被 3 处测试使用（pending 语义的唯一断言入口）。
+  /// 处置 = 保留（删会红测试），并在接线 UI 时优先复用它而非再写一份过滤。
   Future<List<RecordEntry>> listPending(String manuscriptId) =>
       (_db.select(_db.recordEntries)
             ..where(
