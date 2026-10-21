@@ -61,11 +61,24 @@ class ChunkNote {
   final List<String> evidence;
   final String severity; // L1 / L2 / L3
 
+  /// ★ 分片阶段**判不了**这条（依赖片段外信息），交由 merge 裁决
+  /// （2026-10-21，ADR-C153 §2）。缺省 false。
+  ///
+  /// 为什么需要它：`_kChunkWindowBoundary` 让模型承认「看不到片段之外」，
+  /// 但承认之后必须**有地方放**。若只有文字声明没有结构化字段，merge 阶段读到的
+  /// 仍是一堆肯定结论 —— 声明 ≠ 生效（同族：例外写进手册但分块链不加载）。
+  ///
+  /// 与 merge 侧 `pending_context` 的关系：两者是**同一语义的两端**——
+  /// 本字段标「我现在判不了」，`pending_context` 标「我合并后仍判不了」。
+  /// 缺了本字段，后者就没有输入源。
+  final bool uncertain;
+
   const ChunkNote({
     required this.syndromeId,
     required this.description,
     required this.evidence,
     required this.severity,
+    this.uncertain = false,
   });
 }
 
@@ -378,10 +391,13 @@ const String _kChunkOutputFormat = '''请输出JSON格式的笔记，不要包�
       "syndromeId": "P001",
       "description": "简要描述观察到的问题，在原文中的位置",
       "evidence": ["具体例句1", "具体例句2"],
-      "severity": "L1"
+      "severity": "L1",
+      "uncertain": false
     }
   ]
-}''';
+}
+
+uncertain 字段说明：按上面「片段窗口边界」一节，该条判据的成立与否依赖片段外信息时置 true，并在 description 里简述缺哪类信息（缺前文铺垫 / 缺后文解释 / 缺片段外人物关系 / 缺全文节奏比例 / 缺角色长期状态）。缺省 false。''';
 
 /// FIX-1（2026-09-23）：分块合并输出约束——自然语言正文 + 顶层字段格式。
 /// 根因：旧 prompt 结尾只要求协议标记，模型可省略自然语言正文且 suggested_actions
@@ -404,6 +420,39 @@ const String _kMergeOutputRequirement = '''输出结构说明（下面两部分�
   - coverage (string): 复述覆盖度声明（如「基于已诊断 3/20 章」），必填；缺此项 overall 无效
 
 请输出标准诊断格式，包含 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 标记。''';
+
+/// ★ 窗口边界声明（2026-10-21，ADR-C153）：分片阶段的**前提**，不是例外清单。
+///
+/// 为什么不写成例外清单（逐条点名 P0xx「以下不判……」）：那 6 条高风险豁免
+/// （P019/P020/P022/P035/P036/P037）的成立条件**都不需要指认任何位置**——
+/// 类型自证、意图自证、跨片依赖。任何文本都能套用，列进清单等于给每个分片
+/// 发一张免责模板，最坏情况是剧情组真阳性掉一大截，掉的还是「章末无钩子、
+/// 长线无牵引」那批最该报的。
+///
+/// 为什么这么写能覆盖同 6 条 + P012/P037 跨章清单：
+/// 「跨片依赖类不可判」是**一条规则**，6 条例外是它的 6 个具体表现。按规则写 =
+/// 一次消解；按例外写 = 6 次重复且各有遗漏。规则还顺带覆盖将来新增的同类判据。
+///
+/// 与 merge 阶段的分工：分片阶段只做**块内可自证**的判定；跨片归并、交叉引用、
+/// 因果一律留给 merge（那里能看到全部分片 + 原文覆盖区间）。merge 侧对应机制
+/// 是既有的 `pending_context`（W-15-B，已有完整消费链），本块不重复发明，
+/// 只补 merge 侧没有的**前半段**：分片阶段不能因为看不到前文就把
+/// 「这里像是有问题」写成肯定结论。
+const String _kChunkWindowBoundary = '''## 片段窗口边界（判读前提，先读这一节）
+你读到的是全章的一个片段，**看不到片段之外的内容**。因此：
+- 只依据本片段内可指认的证据判定。看不到前文铺垫、后文解释、片段外人物关系时，
+  **既不得据此否定，也不得据此肯定**。
+- 若某条判据的成立与否依赖片段外信息（前文伏笔、后文解释、跨片段的人物关系、
+  全文节奏比例、角色的长期状态），本片段阶段**无法判定**：不要勉强给结论，
+  在该条 note 上标 `"uncertain": true` 并简述缺哪类信息，交由合并阶段裁决。
+- 「本片段看不出问题」不等于「本章没问题」，也不等于「本章有问题」。
+- 只有一条分片时（片段 1/1），本章即全文，跨片段前提不成立，按常规判定。
+''';
+
+/// 「块内可自证」的对照说明 —— 不新增判据，只举例说明上面的规则怎么用。
+const String _kChunkSelfContainedProbe =
+    '''- 可在片段内指认位置的（局部措辞、局部节奏、局部视角跳变、局部设定堆积）：照常判。
+- 可由片段自身自证的（类型通用件的辨识性、类型固有节奏、体裁约定）：照常判。''';
 
 /// 构造单块系统提示词：症候清单由注册表派生（ADR-C69）。
 ///
@@ -433,6 +482,9 @@ String _buildChunkSystemPrompt([
 
 症候类型参考（仅用于标注，不要强行匹配）：
 ${listBlock.join('\n')}
+
+$_kChunkWindowBoundary
+$_kChunkSelfContainedProbe
 
 $_kChunkExceptionGuide
 
@@ -533,6 +585,9 @@ List<String> _buildChunkNotesBlocks(
               'description': n.description,
               'evidence': n.evidence,
               'severity': n.severity,
+              // ★ 必须带进 merge（ADR-C153 §3）：不带则 merge 读到的仍是一堆
+              // 肯定结论，分片侧的「我判不了」就在这一步丢失 ⇒ 又一个声明≠生效。
+              'uncertain': n.uncertain,
             },
           )
           .toList();
@@ -565,6 +620,11 @@ $_kMergeRelevanceGate
 数量原则（按判据收敛报出）：只有当某症候的成立条件能够逐条满足、且你能为它引用可指认的原文证据时，才报出该症候；判据未满足或证据不足时不报（宁缺勿滥，不凑数）。报出的条目按严重度与证据把握排序；若合格条目超过 5 条，保留排序最前的 5 条，其余在 feedback_summary 中一句话概括。
 
 跨片因果提示：若某条线索的成立与否依赖未包含在任何分片中的信息（如前文伏笔、后文解释、分片外的人物关系），该条须标记 pending_context=true，并把结论写为「暂时无法判断」——不得强行下结论。pending_context 缺省 false。
+
+分片不确定标记的处置：上面每条笔记的 uncertain=true 表示**该分片阶段因看不到片段外信息而无法判定**。处置规则：
+- 你现在能看到**全部分片**，对该条重判：能靠跨片信息确认成立 → 输出该条并把 pending_context 置 false；确认不成立 → 丢弃；
+- 重判后**仍**需要片段外信息（本批分片之外的前文/后文）→ 输出该条并置 pending_context=true，结论写「暂时无法判断」，**不得**按 L1/L2/L3 给确定严重度；
+- 不得把 uncertain=true 的笔记原样当作已确认结论输出。
 
 ## 干预价值（S3）三判据
 
@@ -1119,6 +1179,25 @@ Future<String> _runMergePhase({
   return fullContent;
 }
 
+/// ★ 解析 `uncertain` 标记（ADR-C153 §2）。
+///
+/// 为什么不能写 `n['uncertain'] == true`：模型对该字段的类型不稳定 ——
+/// 实测常见三种形态 `true`（bool）/ `"true"`（String）/ `1`（num）。
+/// `== true` 会把后两种全判成 false ⇒ **窗口边界声明在最常见的两种输出下静默失效**，
+/// 而失效方向恰好是「把判不了的当成判得了」——正是要防的那一侧。
+///
+/// 只认肯定语义（true / "true" / "True" / "1" / 1）；其余一律 false（缺省）。
+/// 不抛异常：本函数在 `_parseChunkNotes` 的 try 内，抛异常会连带丢掉整块笔记。
+bool _parseUncertainFlag(Object? raw) {
+  if (raw is bool) return raw;
+  if (raw is num) return raw != 0;
+  if (raw is String) {
+    final v = raw.trim().toLowerCase();
+    return v == 'true' || v == '1' || v == 'yes';
+  }
+  return false;
+}
+
 /// 解析单块分析返回的 JSON 为 ChunkNote 列表
 List<ChunkNote> _parseChunkNotes(String jsonStr) {
   try {
@@ -1134,6 +1213,7 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
                   (n['evidence'] as List?)?.map((e) => e.toString()).toList() ??
                   const [],
               severity: n['severity'] as String? ?? 'L1',
+              uncertain: _parseUncertainFlag(n['uncertain']),
             ),
           )
           // L3 白名单：severity 越界（非 L1/L2/L3）→ 剔除该条并留痕。

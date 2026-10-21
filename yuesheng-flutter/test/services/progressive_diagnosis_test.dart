@@ -100,6 +100,18 @@ class _FakeLlmClient extends LlmClient {
   }
 }
 
+/// >4000 字触发分块的正文（15 段 × 351 字 ≈ 5265 字）。
+///
+/// ADR-C153：提到顶层共享 —— 原为 `runProgressiveDiagnosis` group 内的局部函数，
+/// 导致窗口语义组无法复用（局部函数不是 API，但也不该被同一文件另一组逼着复制）。
+String makeLongContent() {
+  final paragraphs = <String>[];
+  for (int i = 0; i < 15; i++) {
+    paragraphs.add('${'X' * 350}段落$i');
+  }
+  return paragraphs.join('\n\n');
+}
+
 void main() {
   group('splitContent', () {
     test('#1 短文本不分块（<= CHUNK_SIZE 返回单块）', () {
@@ -313,14 +325,7 @@ void main() {
   });
 
   group('runProgressiveDiagnosis', () {
-    // >4000 字触发分块（与 ADR-C80 组同款构造）
-    String makeLongContent() {
-      final paragraphs = <String>[];
-      for (int i = 0; i < 15; i++) {
-        paragraphs.add('X' * 350 + '段落$i');
-      }
-      return paragraphs.join('\n\n');
-    }
+    // >4000 字触发分块（makeLongContent 已提至文件顶层，ADR-C153）
 
     test('#5 短文本（<= THRESHOLD=4000）走 null（走单次链路）', () async {
       const short = '这是一段不足 4000 字的文本，应该直接返回 null，由外部走单次诊断。';
@@ -589,6 +594,125 @@ void main() {
       expect(mergeText, contains('P001'));
       expect(mergeText, isNot(contains('P999')));
       expect(mergeText, isNot(contains('L4')));
+    });
+  });
+
+  // ── ADR-C153窗口语义：分片阶段「我判不了」的可表达与可贯通 ──
+  group('窗口边界（ADR-C153）', () {
+    test('#W-1 分片 prompt 含窗口边界声明与 uncertain 输出约定', () {
+      // 守门项：这两段是本 ADR 的全部产物。prompt 一旦被重构掉，
+      // 分片阶段就退回「看不到前文也照样下肯定结论」。
+      expect(kChunkSystemPrompt, contains('片段窗口边界'));
+      expect(kChunkSystemPrompt, contains('uncertain'));
+      // 边界声明须在例外清单**之前**读到：例外是「不要判」，边界是「凭什么不能判」。
+      expect(
+        kChunkSystemPrompt.indexOf('片段窗口边界'),
+        lessThan(kChunkSystemPrompt.indexOf('例外情况指引')),
+      );
+    });
+
+    test('#W-2 边界声明用「规则」而非「逐条点名」，一次覆盖 6 条例外', () {
+      // 若日后有人把它改回逐条点名 P0xx 的例外清单，本条会红：
+      // 6 条豁免（类型自证/意图自证/跨片依赖）都不需要指认位置，
+      // 列成清单 = 给每个分片发免责模板，剧情组真阳性会掉一大截。
+      expect(kChunkSystemPrompt, contains('依赖片段外信息'));
+      expect(kChunkSystemPrompt, contains('片段 1/1'));
+      // 单块时跨片前提不成立，必须写明，否则「只有一段」会被误当跨片处理。
+    });
+
+    test('#W-3 uncertain=true 的笔记带进 merge prompt', () {
+      // 不带 = merge 读到的仍是一堆肯定结论 ⇒ 声明≠生效（本项目同族第五例）。
+      final prompt = buildMergePrompt([
+        ChunkAnalysisResult(
+          chunkIndex: 0,
+          notes: [
+            ChunkNote(
+              syndromeId: 'P022',
+              description: '节奏比例疑似失衡，缺全文节奏基线',
+              evidence: ['这一段写得很长'],
+              severity: 'L1',
+              uncertain: true,
+            ),
+          ],
+          success: true,
+        ),
+      ]);
+      // 断言语义而非序列化格式：`_encodeJson` 产出 `"k": v`（冒号后有空格），
+      // 锁死无空格的写法会让测试绑死在编码器格式上，改编码器就假红。
+      expect(prompt, contains('"uncertain": true'));
+      // merge 侧须有处置规则，否则带标记的笔记会被当已确认结论原样输出。
+      expect(prompt, contains('分片不确定标记的处置'));
+      expect(prompt, contains('pending_context=true'));
+    });
+
+    test('#W-4 merge prompt 里 uncertain 与 pending_context 是同一语义两端', () {
+      // 分片标「我现在判不了」，merge 标「我合并后仍判不了」。
+      // 缺了前者，后者没有输入源 ⇒ pending_context 机制在分块链上是空转的。
+      final prompt = buildMergePrompt([
+        ChunkAnalysisResult(
+          chunkIndex: 0,
+          notes: [
+            const ChunkNote(
+              syndromeId: 'P001',
+              description: 'd',
+              evidence: ['e'],
+              severity: 'L1',
+            ),
+          ],
+          success: true,
+        ),
+      ]);
+      // 缺省 false 也须显式出现：merge 侧要能区分「没标」与「标了不成立」。
+      expect(prompt, contains('"uncertain": false'));
+    });
+
+    test('#W-5 uncertain 的解析语义（覆盖 _parseUncertainFlag 的容错面）', () {
+      // ★ 诚实范围声明（ADR-C153 §6 留口）：本条**只**覆盖序列化层 ——
+      // `ChunkNote.uncertain` 是否进 merge prompt。分片侧的**解析**
+      // （`_parseUncertainFlag` 对 true / "true" / 1 / "True" / "yes" 的容错）
+      // 在 `flutter test` 下未能构造出稳定复现的断言，见下方说明。
+      //
+      // 为什么不并进端到端：`runProgressiveDiagnosis` 的分片结果
+      // **不对外暴露**（`ProgressiveResult` 无 `chunkResults` 字段），
+      // 唯一出口是 merge prompt；而该出口在测试里取到的内容与单点
+      // `buildMergePrompt` 不一致，根因未查明（已排除：extractJson、
+      // _parseChunkNotes 白名单、planMergeBudget 降级、快照截断）。
+      // ★ 按纪律「给不出的是印象不是发现」，此处如实留口而非硬凑一个绿。
+      //
+      // 解封条件：给 `ProgressiveResult` 增加一个仅测试可见的
+      // `chunkResults` 出口（或把 `_parseUncertainFlag` 提到公开 API），
+      // 使解析结果可断言。
+      const note = ChunkNote(
+        syndromeId: 'P022',
+        description: '缺全文节奏基线',
+        evidence: ['e'],
+        severity: 'L1',
+        uncertain: true,
+      );
+      final prompt = buildMergePrompt([
+        const ChunkAnalysisResult(chunkIndex: 0, notes: [note], success: true),
+      ]);
+      expect(
+        RegExp(r'"uncertain"\s*:\s*true').hasMatch(prompt),
+        isTrue,
+        reason: 'uncertain=true 必须序列化进 merge prompt',
+      );
+
+      // 缺省 false 也须显式出现：merge 侧要能区分「没标」与「标了不成立」。
+      const plain = ChunkNote(
+        syndromeId: 'P001',
+        description: 'd',
+        evidence: ['e'],
+        severity: 'L1',
+      );
+      final prompt2 = buildMergePrompt([
+        const ChunkAnalysisResult(chunkIndex: 0, notes: [plain], success: true),
+      ]);
+      expect(
+        RegExp(r'"uncertain"\s*:\s*false').hasMatch(prompt2),
+        isTrue,
+        reason: '缺省须显式落 false，不能省略字段',
+      );
     });
   });
 }
