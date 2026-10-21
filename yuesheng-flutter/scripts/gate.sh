@@ -130,6 +130,7 @@ HOOK_SYNC_LOG="$OUT_DIR/hook_sync.txt"
 LEDGER_FRESH_LOG="$OUT_DIR/ledger_freshness.txt"
 PROMPT_VOLUME_LOG="$OUT_DIR/prompt_volume.txt"
 WIRING_LOG="$OUT_DIR/wiring.txt"
+SURFACE_LOG="$OUT_DIR/surface_visibility.txt"
 
 pass=0
 fail=0
@@ -798,6 +799,32 @@ else
     # WARN 级：打印但不置 RC_ 变量、不进 pass/fail 计数
     echo "  [WARN] 新增死列/基线异常——当场处置（补读侧或登记豁免），详见 $WIRING_LOG"
     cat "$WIRING_LOG"
+  fi
+fi
+
+# ---------- 约定层守卫：造物主侧 ↔ 产品面可见性（S1 · 2026-10-21 起接）----------
+# 定性：**约定层守卫，非门禁**（与 check_wiring.py 同款）。
+#   报红 ⇒ 当场处置（补产品面消费或登记带到期日的豁免），不阻断收尾；升阻断须用户裁定。
+# ★ 为什么要有这一道（层二的补位）：
+#   既有守卫与审查全部落在「链路内部自洽」层（生产有没有真的走到它 / 列死没死），
+#   **没有一条验「造物主侧做出来的东西，用户在产品面上看得见吗」**。
+#   ⇒ 判据手册 1889 行 + 技法真源 867 行，诊断卡里判据语言渲染命中 0 —— 全门禁全绿也看不见。
+#   ★ 与 check_wiring 的分工：wiring 判「有人消费吗」（是 ⇒ 活）；S1 判「用户看得见吗」（否 ⇒ 死）。
+#   同一字段可同时「活」与「死」⇒ 两道必须都跑。
+echo "--> 约定层守卫: 造物主侧↔产品面可见性（WARN 级，2026-10-21 起接）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3/ python，跳过可见性守卫"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$SURFACE_LOG"
+elif [ ! -f "$ROOT/tool/surface_baseline.json" ]; then
+  echo "  [WARN] 基线缺失（tool/surface_baseline.json），跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$SURFACE_LOG"
+else
+  if "$PY_BIN" scripts/check_surface_visibility.py --baseline tool/surface_baseline.json > "$SURFACE_LOG" 2>&1; then
+    echo "  [PASS] 造物主侧↔产品面可见性（在阈值内或豁免期内）"
+  else
+    # WARN 级：打印但不置 RC_ 变量、不进 pass/fail 计数
+    echo "  [WARN] 造物主侧做厚但产品面零消费（或豁免到期）——当场处置，详见 $SURFACE_LOG"
+    cat "$SURFACE_LOG"
   fi
 fi
 
