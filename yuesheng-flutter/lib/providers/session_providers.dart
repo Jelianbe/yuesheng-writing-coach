@@ -216,6 +216,10 @@ final diagnosisFlowHandlerProvider = Provider<DiagnosisFlowHandler>((ref) {
     trainingResultRepo: TrainingResultRepository(db),
     // 大纲记忆仓储装配，K-9 单独使用；与其他 K-x provider 模式一致
     outlineRepo: OutlineRepository(db),
+    // P0-a 锚定率（AER）明细落库。`evidence` 在设计上不持久化（active_problem
+    // 无该列 / diagnosis_summary 只有聚合 / messages 已剥协议块），不落则每次
+    // 诊断的样本永久丢失。落点用既有埋点表，不新增表、不改 schema。
+    pilotMetricsRepo: ref.watch(pilotMetricsRepositoryProvider),
     // C78 批次3（FR-10）：批次沉淀登记到内存态注册表（ADR-C78 冲突 C，
     // 不落库；重启后提示卡消失——如实标注语义在卡片/角色页横幅）
     onFactBatch: ({required messageId, required count, required manuscriptId}) {

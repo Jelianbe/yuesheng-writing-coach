@@ -12,6 +12,16 @@
 //
 // ⚠️ 本层**不产生能力读数**。它给出的只是「模型引的句子有多少真在原文里」的
 //    分布；那是不是「诊断对不对」的证明，取决于标注集（06-P002标注语料）。
+//
+// ★ 它为什么必须存在（而不是「报告里多一个数」）：
+//   `evidence_confidence.dart` 判「引文具体度」用的是
+//   `evidence.first.trim().length >= 6` —— 只看第一条、只看长度、**不接触原文**。
+//   1 条 ≥6 字即 0.55，阈值 `kWeakEvidenceConfidence = 0.4`，直接过线；
+//   而 `listActiveProblems` 正是按 `>= 0.4` 放行。⇒ 编一条够长的假引文，
+//   收益是「让错误症候进入用户的教学焦点」。在那个函数里编造与真实同价。
+//   本层的 `AER` 是它唯一可能的反证通道 —— 因为只有这里手上有原文。
+
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 
@@ -19,6 +29,18 @@ import 'anchor.dart';
 
 /// 读不到原文时的跳过原因（具名常量，不许空串 —— 空串无法被日志检索）。
 const String kAnchorSkipNoSource = 'no_source_text';
+
+/// 落库 payload 的版本号。**口径一变就进位**。
+///
+/// 没有版本号，两批记录的 `aer` 用不同算法算出来会被读成「指标变了」，
+/// 而不是「算法变了」——判据自己会腐，历史也得标清楚自己是哪一代。
+const int kAnchorPayloadVersion = 1;
+
+/// 引文 head 截断长度。
+///
+/// 引文是用户的正文。本地库虽不上传，也没有理由把整段小说复制进观测日志：
+/// 定位「是哪句」24 字足够，复算交给 `l`（原始长度）与症候 ID。
+const int kAnchorHeadChars = 24;
 
 /// 一次诊断的锚定观测报告。
 class AnchorProbeReport {
@@ -122,6 +144,51 @@ class AnchorProbeReport {
   }
 
   static String _fmt(double? v) => v == null ? 'n/a' : v.toStringAsFixed(3);
+
+  /// 落库用**明细** payload（JSON）。
+  ///
+  /// 为什么不存 `AER`：比率是明细的函数，存比率而丢原料，口径一改历史就
+  /// 再也算不出来（本项目纪律：凡计数须可复算）。这里只存每一条引文的
+  /// 裁决结果，`AER` 由消费方按 [items] 现算。
+  ///
+  /// 未测时**不写任何比率字段**，只写 `skip` —— 与 [summary] 同一条纪律：
+  /// `aer: null` 和 `aer: 0` 是两件事，落库后更容易被读混，干脆不落。
+  String toPayload() {
+    final base = <String, Object?>{
+      'v': kAnchorPayloadVersion,
+      'src': sourceChars,
+      'syn': syndromeCount,
+      'emp': emptyEvidenceCount,
+    };
+    if (!measured) {
+      base['skip'] = skippedReason;
+      return jsonEncode(base);
+    }
+    // 按 bySyndrome 展开而不是 items：items 是扁平列表，丢了「哪条症候」，
+    // 而「谁在编造」正是要回答的问题。
+    base['n'] = items.length;
+    base['items'] = [
+      for (final entry in bySyndrome.entries)
+        for (final e in entry.value)
+          {
+            's': entry.key,
+            'k': e.status.code,
+            'o': e.occurrences,
+            'l': e.raw.trim().length,
+            'h': _head(e.raw),
+          },
+    ];
+    return jsonEncode(base);
+  }
+
+  /// 截断到 [kAnchorHeadChars]，截断时补 `…`。
+  ///
+  /// `…` 只做视觉提示：真实长度在 `l` 里，所以补了也不丢信息。
+  static String _head(String raw) {
+    final t = raw.trim();
+    if (t.length <= kAnchorHeadChars) return t;
+    return '${t.substring(0, kAnchorHeadChars)}…';
+  }
 }
 
 /// 锚定一次诊断的全部 evidence（纯函数：零 IO / 零 LLM / 不改输入）。
@@ -189,10 +256,12 @@ class AnchorProbeRecord {
   final int atSec;
 }
 
-/// 会话级环形缓冲 + 日志。**不落库、不加表**：这是观测设施，不是台账。
+/// 会话级环形缓冲 + 日志。**进程内、重启即丢**：只用于当场看。
 ///
-/// 容量只够看「同一会话连续几次诊断的走向」；要长期读数须另建落库
-/// （那一步会新增表，不属本层）。
+/// 长期读数走 `pilot_metric_event`（`PilotEventTypes.anchorProbe`），
+/// 接线点在 `diagnosis_flow_handler.dart` 的 `_probeAnchors`。
+/// 为什么不用 `error_logs`：那里的语义是「出错了」，`AER` 不是错误，
+/// 混进去会污染错误率口径 —— 两个指标搅在一起，之后谁也说不清升的是哪一类。
 class AnchorProbeLog {
   AnchorProbeLog._();
 

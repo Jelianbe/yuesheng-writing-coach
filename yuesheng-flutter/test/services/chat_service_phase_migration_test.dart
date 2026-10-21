@@ -12,6 +12,8 @@
 
 // ignore_for_file: prefer_initializing_formals, unnecessary_underscores
 
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +23,8 @@ import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
+import 'package:writingcoach/data/repositories/pilot_metrics_repository.dart'
+    show PilotEventTypes, PilotMetricsRepository;
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
@@ -104,7 +108,13 @@ void main() {
   ///
   /// ADR-C74 K-2：阶段迁移已迁至 DiagnosisCommitter.applyPhaseMigration，
   /// 构造时必须装 DiagnosisCommitter 否则 sendMessage 链路退化为不调迁移。
-  ChatService buildChatService(LlmClient llmClient) {
+  ChatService buildChatService(
+    LlmClient llmClient, {
+
+    /// 仅为 P0-a 落库测试注入；默认 null ⇒ 既有用例行为一字不变
+    /// （可选依赖语义：不装配就跳过落库）。
+    PilotMetricsRepository? pilotMetricsRepo,
+  }) {
     return ChatService(
       sessionRepo: sessionRepo,
       stateRepo: stateRepo,
@@ -194,6 +204,7 @@ void main() {
         ),
         diagnosis: const DiagnosisCapabilityImpl(),
         genUi: const GenUiParser(),
+        pilotMetricsRepo: pilotMetricsRepo,
       ),
     );
   }
@@ -1320,6 +1331,68 @@ void main() {
       expect(report.measured, isTrue);
       expect(report.evidenceCount, 0);
       expect(report.aer, isNull);
+    });
+
+    // ⚠️ 为什么必须有这两条：`evidence` 在设计上不落库（active_problem 无该列 /
+    //    diagnosis_summary 只有聚合 / messages 已剥协议块）⇒ 不落这一条，样本
+    //    就是**永久**丢失。而「能序列化」不等于「写进去了」—— 上一轮我刚在
+    //    「函数对 ≠ 有人调」上栽过一次，这一层不能再靠推理。
+    test('#12 注入埋点仓储 ⇒ 明细真的落库，且不含比率', () async {
+      const src = '他握紧了青玉牌，指节发白。窗外的雪落了一夜，没有人说话。';
+      final resp =
+          '诊断完成。\n[YS_DIAGNOSIS]\n'
+          '{"syndromes":['
+          '{"syndrome_id":"P001","name":"a","severity":"L2",'
+          '"evidence":["他握紧了青玉牌，指节发白"],"explanation":"x"},'
+          '{"syndrome_id":"P002","name":"b","severity":"L2",'
+          '"evidence":["他曾把青玉牌摔在地上，碎了"],"explanation":"y"}'
+          '],"suggested_actions":[],"confidence":0.8}\n[/YS_DIAGNOSIS]';
+      final pilotRepo = PilotMetricsRepository(db);
+      final chatService = buildChatService(
+        FakeLlmClient(resp),
+        pilotMetricsRepo: pilotRepo,
+      );
+
+      await chatService.commitDiagnosisFromContent(
+        sessionId: sessionId,
+        fullContent: resp,
+        chapterContent: src,
+      );
+
+      final rows = await pilotRepo.listByType(PilotEventTypes.anchorProbe);
+      expect(rows.length, 1, reason: '一次诊断落一条明细，不是每条引文一条');
+      final payload = jsonDecode(rows.single.payload) as Map<String, dynamic>;
+      expect(payload['v'], kAnchorPayloadVersion);
+      // 明细齐全：两条引文都在，且能看出哪条锚不上
+      final items = (payload['items'] as List).cast<Map<String, dynamic>>();
+      expect(items.length, 2);
+      expect(payload['n'], 2);
+      expect(items.map((e) => e['s']), containsAll(<String>['P001', 'P002']));
+      expect(items.map((e) => e['k']).toSet().length, 2, reason: '一真一假应给出不同裁决');
+      // ★ 比率不入库：凭证是明细，比率由明细现算
+      expect(payload.containsKey('aer'), isFalse);
+    });
+
+    test('#13 未测也落库（skip 行是「没拿到原文」的唯一证据）', () async {
+      final resp = buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING');
+      final pilotRepo = PilotMetricsRepository(db);
+      final chatService = buildChatService(
+        FakeLlmClient(resp),
+        pilotMetricsRepo: pilotRepo,
+      );
+
+      await chatService.commitDiagnosisFromContent(
+        sessionId: sessionId,
+        fullContent: resp,
+      );
+
+      final rows = await pilotRepo.listByType(PilotEventTypes.anchorProbe);
+      expect(rows.length, 1);
+      final payload = jsonDecode(rows.single.payload) as Map<String, dynamic>;
+      expect(payload['skip'], kAnchorSkipNoSource);
+      expect(payload.containsKey('items'), isFalse);
+      // 未测不得落成 0 分
+      expect(payload.containsKey('aer'), isFalse);
     });
   });
 }

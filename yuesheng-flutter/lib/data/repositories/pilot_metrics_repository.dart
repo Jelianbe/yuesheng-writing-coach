@@ -9,12 +9,16 @@
 //   - card_wall_entered    学员打开卡片墙（ADR-C122 起停写，历史数据保留）
 //   - micro_task_submitted 提交微任务产出（ADR-C122 起停写，历史数据保留）
 //   - app_opened           每次冷启动（session_id 记 ''，用户级）
+//   - anchor_probe         P0-a 锚定率（AER）明细（2026-10-20 起）——
+//                          ⚠️ 见下方「去留」一节的例外条款
 //
 // 可诊断率不在此表：由 diagnosis_results（message_id/session_id 维度）
 // 按「提交消息 → 诊断落库」关联计算（复用既有诊断链路，见 chat_service
 // _applyDiagnosisInjection → _runDiagnosisFlow）。
 //
 // ⚠️ 试点专用表，正式设计批评估后决定去留；本批不承诺长期保留。
+//    **例外**：`anchor_probe` 不受此约束。AER 要做跨批次纵向比较，退役本表前
+//    须先把该类型的行归档进实验报告（见 `PilotEventTypes.anchorProbe`）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/drift.dart';
@@ -28,6 +32,18 @@ class PilotEventTypes {
   static const String cardWallEntered = 'card_wall_entered';
   static const String microTaskSubmitted = 'micro_task_submitted';
   static const String appOpened = 'app_opened';
+
+  /// ★ P0-a 锚定率（`AER`）明细（2026-10-20）。
+  ///
+  /// payload 是 `AnchorProbeReport.toPayload()` 的 JSON 明细，**不含比率**：
+  /// 比率由明细现算，存比率而丢原料则口径一改历史再也算不出来。
+  ///
+  /// ⚠️ **本类型不受「试点退役」约束。** 本表头注写着「试点专用…不承诺长期
+  /// 保留」，但 `AER` 需要跨批次纵向比较（裁注入面 / 窗口语义 / `I10` 都靠它）。
+  /// 将来若退役本表，**必须先把 `anchor_probe` 行归档进实验报告**，
+  /// 不得按注释连表一起删 —— 那会把 AER 历史一起抹掉。
+  static const String anchorProbe = 'anchor_probe';
+
   const PilotEventTypes._();
 }
 

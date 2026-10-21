@@ -5,6 +5,8 @@
 // ⚠️ 本文件只证明「探针把三态分对了」，**不产生能力读数**。
 //    `fail` 的比例高不高、是不是模型在编，要靠 06-P002标注语料 与真实诊断日志。
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/p0_verify/anchor.dart';
 import 'package:writingcoach/services/p0_verify/anchor_probe.dart';
@@ -239,6 +241,92 @@ void main() {
 
     test('空队列 latest 为 null（不是抛异常）', () {
       expect(AnchorProbeLog.instance.latest, isNull);
+    });
+  });
+
+  group('落库 payload（明细，非比率）', () {
+    test('未测 ⇒ 只有 skip，没有任何比率字段', () {
+      final r = probeAnchors(
+        sourceText: null,
+        evidenceBySyndrome: {
+          'P002': ['假引文'],
+        },
+      );
+      final p = jsonDecode(r.toPayload()) as Map<String, dynamic>;
+      expect(p['v'], kAnchorPayloadVersion);
+      expect(p['skip'], kAnchorSkipNoSource);
+      expect(p.containsKey('items'), isFalse);
+      // ★ 守门：落库不得出现比率。存了比率而丢原料，口径一改历史就算不出来了。
+      expect(p.containsKey('aer'), isFalse);
+      expect(p.containsKey('shortRate'), isFalse);
+    });
+
+    test('已测 ⇒ 逐条明细，带症候 ID 与真实长度', () {
+      final r = probeAnchors(
+        sourceText: _src,
+        evidenceBySyndrome: {
+          'P002': ['他握紧了青玉牌', '这句原文里没有'],
+          'P017': ['窗外的雪落了一夜'],
+        },
+      );
+      final p = jsonDecode(r.toPayload()) as Map<String, dynamic>;
+      final items = (p['items'] as List).cast<Map<String, dynamic>>();
+
+      // n 必须与明细条数一致 —— 计数字段和明细对不上就是假数。
+      expect(p['n'], items.length);
+      expect(items.length, 3);
+      expect(p['emp'], 0);
+      expect(p['src'], _src.length);
+
+      // 症候归位：前两条属于 P002（一条真一条假），第三条属于 P017。
+      expect(items[0]['s'], 'P002');
+      expect(items[1]['s'], 'P002');
+      expect(items[2]['s'], 'P017');
+      expect(items[0]['k'], isNot(items[1]['k'])); // 一条锚上、一条锚不上
+      expect(items[0]['l'], '他握紧了青玉牌'.length);
+      expect(items[0]['o'], greaterThanOrEqualTo(1));
+    });
+
+    test('head 只留前 24 字并标记截断，不复刻整段正文', () {
+      final long = '${'雪' * 60}。';
+      final r = probeAnchors(
+        sourceText: long,
+        evidenceBySyndrome: {
+          'P002': [long],
+        },
+      );
+      final items =
+          (jsonDecode(r.toPayload()) as Map<String, dynamic>)['items'] as List;
+      final head = (items.single as Map<String, dynamic>)['h'] as String;
+
+      expect(head.length, kAnchorHeadChars + 1); // 24 字 + 省略号
+      expect(head.endsWith('…'), isTrue);
+      // 真实长度另存 l，所以截断不丢信息。
+      expect((items.single as Map<String, dynamic>)['l'], long.length);
+    });
+
+    test('短引文不补省略号', () {
+      final r = probeAnchors(
+        sourceText: _src,
+        evidenceBySyndrome: {
+          'P002': ['窗外的雪'],
+        },
+      );
+      final items =
+          (jsonDecode(r.toPayload()) as Map<String, dynamic>)['items'] as List;
+      expect((items.single as Map<String, dynamic>)['h'], '窗外的雪');
+    });
+
+    test('空白 evidence 进 emp，不产生明细行', () {
+      final r = probeAnchors(
+        sourceText: _src,
+        evidenceBySyndrome: {
+          'P002': ['   ', '窗外的雪'],
+        },
+      );
+      final p = jsonDecode(r.toPayload()) as Map<String, dynamic>;
+      expect(p['emp'], 1);
+      expect((p['items'] as List).length, 1);
     });
   });
 }

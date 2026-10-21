@@ -49,6 +49,8 @@ import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart'
     show ActiveProblemView, DiagnosisInput, DiagnosisRepository;
 import 'package:writingcoach/data/repositories/outline_repository.dart';
+import 'package:writingcoach/data/repositories/pilot_metrics_repository.dart'
+    show PilotEventTypes, PilotMetricsRepository;
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
@@ -193,6 +195,14 @@ class DiagnosisFlowHandler {
   // ─── 可选仓储：装配后启用大纲服务懒加载 ───
   final OutlineRepository? _outlineRepo;
 
+  /// X-041c 可选依赖：未装配则跳过 `AER` 明细落库（不破坏现有测试构造）。
+  ///
+  /// 为什么必须落库而不是只留环形缓冲：`evidence` 在设计上**不持久化**
+  /// （`active_problem` 无该列、`diagnosis_summary` 只有聚合、`messages.content`
+  /// 已被 `_stripDisplayBlocks` 剥掉协议块）。所以每次诊断错过的样本是**永久**
+  /// 丢失的 —— 不是「指标不好看」，是原料拿不回来。
+  final PilotMetricsRepository? _pilotMetricsRepo;
+
   /// 大纲服务懒加载缓存（K-9 从 ChatService._ensureOutlineService 迁出）
   OutlineService? _outlineService;
 
@@ -227,6 +237,7 @@ class DiagnosisFlowHandler {
     required GenUiCapability genUi,
     TrainingResultRepository? trainingResultRepo,
     OutlineRepository? outlineRepo,
+    PilotMetricsRepository? pilotMetricsRepo,
     void Function({
       required String messageId,
       required int count,
@@ -251,6 +262,7 @@ class DiagnosisFlowHandler {
        _genUi = genUi,
        _trainingResultRepo = trainingResultRepo,
        _outlineRepo = outlineRepo,
+       _pilotMetricsRepo = pilotMetricsRepo,
        _onFactBatch = onFactBatch;
 
   /// SafeRun 降级统一留痕（CR-51）。
@@ -388,7 +400,10 @@ class DiagnosisFlowHandler {
     // C103：长文链路补齐 GenUI 卡片（短链路在 commit 前插入，卡片顺序一致）。
     await _insertGenuiCardFromContent(sessionId, fullContent);
     if (diagnosis != null) {
-      _probeAnchors(sessionId, diagnosis, chapterContent);
+      // 顺序保持在 commit 之前：commit 若抛错，探针记录已经落下。
+      // 锚定结果只依赖诊断对象与原文，与落库成败无关 —— 观测数据不该
+      // 因为 commit 失败而一起丢（那正好是最需要看的那一次）。
+      await _probeAnchors(sessionId, diagnosis, chapterContent);
       await _commitDiagnosisWithTeacher(
         sessionId: sessionId,
         messageId: messageId,
@@ -417,20 +432,31 @@ class DiagnosisFlowHandler {
   /// 失败静默（同 [applyPhaseMigration] 的旁路纪律）：观测设施不许把诊断链路带崩。
   /// 也**不**上 `error_logs` —— 探针自身故障混进产品错误率，就是把两个指标搅在一起，
   /// 之后谁也说不清错误率升的是哪一类。
-  void _probeAnchors(
+  ///
+  /// **未测也落库**：`skip` 行是「这条链路没拿到原文」的唯一证据。只落已测会让
+  /// 「一直没测」永远看不见 —— 与「未测 ≠ 0 命中」是同一条纪律。
+  Future<void> _probeAnchors(
     String sessionId,
     ParsedDiagnosis diagnosis,
     String? chapterContent,
-  ) {
+  ) async {
     try {
       final evidence = <String, List<String>>{};
       for (final s in diagnosis.syndromes) {
         // 同一症候 ID 出现两次时不覆盖（覆盖会让分母少算），改为合并。
         (evidence[s.syndromeId] ??= <String>[]).addAll(s.evidence);
       }
-      AnchorProbeLog.instance.record(
-        sessionId,
-        probeAnchors(sourceText: chapterContent, evidenceBySyndrome: evidence),
+      final report = probeAnchors(
+        sourceText: chapterContent,
+        evidenceBySyndrome: evidence,
+      );
+      AnchorProbeLog.instance.record(sessionId, report);
+      // await 而非 fire-and-forget：异步异常逃不出这里（上面的 catch 抓不到），
+      // 探针故障会冒到 Zone 层。一条本地 insert 的延迟可忽略。
+      await _pilotMetricsRepo?.recordEvent(
+        sessionId: sessionId,
+        eventType: PilotEventTypes.anchorProbe,
+        payload: report.toPayload(),
       );
     } catch (e) {
       debugPrint('[AnchorProbe] probe failed: $e');
