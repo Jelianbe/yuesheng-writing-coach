@@ -1,12 +1,50 @@
 {
- "schema": "surface-baseline/1",
- "note": "造物主侧↔产品面可见性基线。来源：2026-10-21 舰长「看不到立体功能」批判性复核（.ai/reports/2026-10-21-长文语料-施工.md 同批 · .ai/LEDGER §一.70）。裁决：判据手册 1889 行 + 技法真源 867 行 = 2756 行造物主侧，诊断卡产品面判据语言渲染命中 0。",
+ "schema": "surface-baseline/2",
+ "note": "诊断链字段可见性基线（v2 格式 · 2026-10-21 S1 守卫 v4 判据对象修正后重建）。判据对象 = 「诊断链字段的三级贯通链」：L1 产出（真源 prompt schema，自动派生）→ L2 诊断卡 payload（卡片 DTO 类）→ L3 呈现面有效读点（X.field 形态，宿主非 payload/this）。字段族不硬编码（清单腐化 = 恒绿 = 静音）。本文件只登记「例外」，不登记「正常」。",
+ "registered_fields": [
+  "syndromes",
+  "suggestedActions",
+  "confidence",
+  "rootCauseAnalysis",
+  "nextFocus",
+  "feedbackSummary",
+  "focusReason",
+  "syndromeId",
+  "overall",
+  "verdict",
+  "reasons",
+  "keep",
+  "priority",
+  "coverage",
+  "name",
+  "severity",
+  "evidence",
+  "explanation",
+  "readerImpact",
+  "interventionValue",
+  "formFactCount",
+  "formStructure",
+  "pendingContext"
+ ],
  "exemptions": [
   {
-   "id": "S1-造物主侧判据语言未进产品面",
+   "id": "S1-诊断链字段未贯通",
    "owner_card": "T-20261021-01 / T-20261021-04",
    "due": "2026-11-04",
-   "reason": "★ 缺口已确证（2026-10-21 实测）：造物主侧 2756 行（syndrome_kb_content_manual_1..6 = 1889 行 + technique_kb_content_lib_1..3 = 867 行）；产品面 diagnosis_card.dart 剥离注释后判据语言（判据/豁免/例外/未命中/不报/原则/为什么不是/排除/反例）渲染命中数 = 0（注释内 4 处已剥离，不计）。根因 = 造物主侧做厚了、产品面零消费，且『否决记录』在架构里无数据结构承载。豁免期 = 14 天，到期未修则恢复报红。责任路径：T-20261021-01（iv+形态两字段上卡，零 R-027）→ T-20261021-04（排除说明字段，触 R-027 须报批）→ 技法侧 T-20261021-05。"
+   "fields": [
+    "interventionValue",
+    "formFactCount",
+    "formStructure",
+    "nextFocus"
+   ],
+   "reason": "★ 缺口已确证（2026-10-21 S1 守卫 v4 实测，逐级读数可复算：`python scripts/check_surface_visibility.py --list`）。四个断点分两类断法：① **L3 呈现断**（进卡了但呈现面零有效读点）= `interventionValue`（干预价值档位，DTO 有 `DiagnosisSyndromeCard.interventionValue`，呈现面 `diagnosis_card.dart` 零读点）⇒ 责任卡 T-20261021-01（iv 上卡，零 R-027）。② **L2 卡片断**（产出了但没进诊断卡 payload）= `formFactCount` / `formStructure`（形态两要素，落 `active_problem` 表两列，但任何 DTO 类都没有这两个字段）⇒ 责任卡 T-20261021-01（形态两字段上卡）；`nextFocus`（`next_focus` 顶层字段，落 `diagnosis_results.next_focus` 列，但未进 `DiagnosisResultCardPayload`）⇒ 责任卡 T-20261021-04（协议层改动，须报批 R-027）。豁免期 = 14 天，到期未修则恢复报红。"
+  }
+ ],
+ "design_non_visible": [
+  {
+   "field": "confidence",
+   "authority": ".ai/DECISIONS.md §1-20 / §4-214 裁5（2026-10-18 舰长裁定「都批」）",
+   "reason": "★ **不是缺口，是正确设计**——判定依据是台账正典而非印象：模型自报 0-1 confidence 已被「信心系统重构 Part B」删除（`lib/services/evidence_confidence.dart:4-14` 理由：不校准 / 纯展示无作用 / 消耗输出 token），现行替代 = 本地计算的证据把握度（`evidence_confidence`）。§1-20 明文「**禁止以任何形式重新引入模型自报 confidence**」；§4-214 裁5 已把它降级为协议兼容字段（解析侧缺省 0.0，prompt 已删该字段）。故「诊断卡不渲染 confidence」= **符合正典**。若某天本字段被渲染出来，那才是违反 §1-20 ⇒ 守卫应报红（见 design_non_visible 双向判据）。"
   }
  ]
 }

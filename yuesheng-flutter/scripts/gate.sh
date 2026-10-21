@@ -131,6 +131,7 @@ LEDGER_FRESH_LOG="$OUT_DIR/ledger_freshness.txt"
 PROMPT_VOLUME_LOG="$OUT_DIR/prompt_volume.txt"
 WIRING_LOG="$OUT_DIR/wiring.txt"
 SURFACE_LOG="$OUT_DIR/surface_visibility.txt"
+SURFACE_SELFTEST_LOG="$OUT_DIR/surface_visibility_selftest.txt"
 SOURCE_EXIT_LOG="$OUT_DIR/source_exit.txt"
 
 pass=0
@@ -803,16 +804,20 @@ else
   fi
 fi
 
-# ---------- 约定层守卫：造物主侧 ↔ 产品面可见性（S1 · 2026-10-21 起接）----------
+# ---------- 约定层守卫：诊断链字段三级贯通（S1 · 2026-10-21 起接）----------
 # 定性：**约定层守卫，非门禁**（与 check_wiring.py 同款）。
-#   报红 ⇒ 当场处置（补产品面消费或登记带到期日的豁免），不阻断收尾；升阻断须用户裁定。
-# ★ 为什么要有这一道（层二的补位）：
-#   既有守卫与审查全部落在「链路内部自洽」层（生产有没有真的走到它 / 列死没死），
-#   **没有一条验「造物主侧做出来的东西，用户在产品面上看得见吗」**。
-#   ⇒ 判据手册 1889 行 + 技法真源 867 行，诊断卡里判据语言渲染命中 0 —— 全门禁全绿也看不见。
-#   ★ 与 check_wiring 的分工：wiring 判「有人消费吗」（是 ⇒ 活）；S1 判「用户看得见吗」（否 ⇒ 死）。
-#   同一字段可同时「活」与「死」⇒ 两道必须都跑。
-echo "--> 约定层守卫: 造物主侧↔产品面可见性（WARN 级，2026-10-21 起接）"
+#   报红 ⇒ 当场处置（补读侧或登记带到期日的豁免），不阻断收尾；升阻断须用户裁定。
+# ★ 判据对象（2026-10-21 修正至 v4，此前经四次实测推翻）：
+#   L1 产出（真源 prompt schema，**自动派生**不硬编码）
+#     → L2 诊断卡 payload（卡片 DTO 类）
+#     → L3 呈现面**有效读点**（X.field 形态，宿主非 payload/this ⇒ 排除「搬运即露出」）
+#   字段族**从真源派生** ⇒ 真源加字段守卫自动多判一行 ⇒ 清单不会腐化。
+# ★ 为什么是「链」：用户看不见一个字段，断在 L2（没上卡）与断在 L3（上了卡没渲染）
+#   **责任卡不同、补救方式不同** ⇒ 必须报出断在哪一级。
+# ★ 与 check_wiring / S4 的分工：wiring 判「有人消费吗」· S4 判「真源有没有出口」
+#   · S1 判「造出来的东西用户在诊断卡上看得见吗」⇒ 三道互补，都不可互相替代。
+#   同一字段可同时「活」（被评分端消费）与「死」（UI 零引用）⇒ 三道必须都跑。
+echo "--> 约定层守卫: 诊断链字段三级贯通（S1，WARN 级，2026-10-21 起接）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3/ python，跳过可见性守卫"
   echo "SKIP: (NOT EXECUTED) python not available" > "$SURFACE_LOG"
@@ -821,11 +826,21 @@ elif [ ! -f "$ROOT/tool/surface_baseline.json" ]; then
   echo "SKIP: (NOT EXECUTED) baseline missing" > "$SURFACE_LOG"
 else
   if "$PY_BIN" scripts/check_surface_visibility.py --baseline tool/surface_baseline.json > "$SURFACE_LOG" 2>&1; then
-    echo "  [PASS] 造物主侧↔产品面可见性（在阈值内或豁免期内）"
+    echo "  [PASS] 诊断链字段三级贯通（在阈值内或豁免期内）"
   else
     # WARN 级：打印但不置 RC_ 变量、不进 pass/fail 计数
-    echo "  [WARN] 造物主侧做厚但产品面零消费（或豁免到期）——当场处置，详见 $SURFACE_LOG"
+    echo "  [WARN] 诊断链字段断链（没上卡 / 上了卡没渲染）或豁免到期——当场处置，详见 $SURFACE_LOG"
     cat "$SURFACE_LOG"
+  fi
+  # ★ 自测探针同批跑：证明本守卫**非恒绿**（恒绿 = 静音 = 守卫头号死法）。
+  #   6 探针覆盖「真源加字段 / DTO 加字段 / 呈现面接上 / 渲染被禁字段 / 豁免到期 / 复原」。
+  if [ -f "$ROOT/scripts/_selftest_surface_visibility.py" ]; then
+    if "$PY_BIN" scripts/_selftest_surface_visibility.py > "$SURFACE_SELFTEST_LOG" 2>&1; then
+      echo "  [PASS] S1 守卫负向验证（6 探针：非恒绿非恒红）"
+    else
+      echo "  [WARN] S1 守卫负向验证失败——守卫可能已恒绿或恒红，详见 $SURFACE_SELFTEST_LOG"
+      cat "$SURFACE_SELFTEST_LOG"
+    fi
   fi
 fi
 
