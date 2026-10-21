@@ -1,0 +1,85 @@
+{
+ "schema": "source-exit-baseline/1",
+ "note": "造物主侧真源 → 出口对账基线。装置 = scripts/check_source_exit.py。判据对象是「关系」（真源是否至少有一条出口通向 prompt 或产品面），不是词频 —— 这是 S1(check_surface_visibility.py) 的补：S1 的 MAKER_SOURCES 硬编码 9 个文件，2026-10-21 实测已静默漏掉 training_kb_content_1..4 + training_few_shot_library 共 1279 代码行。2026-10-21 首次登记，17 个真源全部在册。",
+ "sources": {
+  "lib/services/syndrome_kb_content.dart": {
+   "kind": "判据库装配层",
+   "holder": "lib/services/syndrome_knowledge_base.dart",
+   "prompt_exit": ["buildFirstRoundCriteriaBlock", "getSyndromeContent", "getSyndromeCriteriaSections"],
+   "surface_exit": [],
+   "note": "进 prompt（短链 L2 index + 首轮判据块）。产品面零引用。"
+  },
+  "lib/services/syndrome_kb_content_manual_1.dart": {
+   "kind": "判据手册卷 1", "holder": "lib/services/syndrome_knowledge_base.dart",
+   "prompt_exit": ["buildFirstRoundCriteriaBlock"], "surface_exit": [],
+   "note": "造物主侧 241 代码行；产品面判据语言渲染命中 0（见 surface_baseline.json S1 豁免）"
+  },
+  "lib/services/syndrome_kb_content_manual_2.dart": {
+   "kind": "判据手册卷 2", "holder": "lib/services/syndrome_knowledge_base.dart",
+   "prompt_exit": ["buildFirstRoundCriteriaBlock"], "surface_exit": []
+  },
+  "lib/services/syndrome_kb_content_manual_3.dart": {
+   "kind": "判据手册卷 3", "holder": "lib/services/syndrome_knowledge_base.dart",
+   "prompt_exit": ["buildFirstRoundCriteriaBlock"], "surface_exit": []
+  },
+  "lib/services/syndrome_kb_content_manual_4.dart": {
+   "kind": "判据手册卷 4", "holder": "lib/services/syndrome_knowledge_base.dart",
+   "prompt_exit": ["buildFirstRoundCriteriaBlock"], "surface_exit": []
+  },
+  "lib/services/syndrome_kb_content_manual_5.dart": {
+   "kind": "判据手册卷 5", "holder": "lib/services/syndrome_knowledge_base.dart",
+   "prompt_exit": ["buildFirstRoundCriteriaBlock"], "surface_exit": []
+  },
+  "lib/services/syndrome_kb_content_manual_6.dart": {
+   "kind": "判据手册卷 6", "holder": "lib/services/syndrome_knowledge_base.dart",
+   "prompt_exit": ["buildFirstRoundCriteriaBlock"], "surface_exit": []
+  },
+  "lib/services/technique_kb_content.dart": {
+   "kind": "技法库装配层", "holder": "lib/services/technique_knowledge_base.dart",
+   "prompt_exit": ["getTechniqueContent", "getTechniquesBySyndrome"], "surface_exit": []
+  },
+  "lib/services/technique_kb_content_lib_1.dart": {
+   "kind": "技法真源卷 1", "holder": "lib/services/technique_knowledge_base.dart",
+   "prompt_exit": ["getTechniqueContent"], "surface_exit": [],
+   "note": "进 prompt 的只是一行映射（syndrome_kb_content.dart:274-281），完整技法内容不进诊断链"
+  },
+  "lib/services/technique_kb_content_lib_2.dart": {
+   "kind": "技法真源卷 2", "holder": "lib/services/technique_knowledge_base.dart",
+   "prompt_exit": ["getTechniqueContent"], "surface_exit": []
+  },
+  "lib/services/technique_kb_content_lib_3.dart": {
+   "kind": "技法真源卷 3", "holder": "lib/services/technique_knowledge_base.dart",
+   "prompt_exit": ["getTechniqueContent"], "surface_exit": []
+  },
+  "lib/services/training_kb_content.dart": {
+   "kind": "训练库装配层", "holder": "lib/services/training_knowledge_base.dart",
+   "prompt_exit": ["getTrainingContent"], "surface_exit": [],
+   "note": "★ 本真源族此前从未进入任何审查视野（S1 硬编码清单漏掉）"
+  },
+  "lib/services/training_kb_content_1.dart": {
+   "kind": "训练教学知识卷 1", "holder": "lib/services/training_knowledge_base.dart",
+   "prompt_exit": ["getTrainingContent"], "surface_exit": [],
+   "note": "出口 = message_injector._injectTrainingKnowledge（教学链 L3 检索）；教学链产品面 features/widgets 零消费"
+  },
+  "lib/services/training_kb_content_2.dart": {
+   "kind": "训练教学知识卷 2", "holder": "lib/services/training_knowledge_base.dart",
+   "prompt_exit": ["getTrainingContent"], "surface_exit": []
+  },
+  "lib/services/training_kb_content_3.dart": {
+   "kind": "训练教学知识卷 3", "holder": "lib/services/training_knowledge_base.dart",
+   "prompt_exit": ["getTrainingContent"], "surface_exit": []
+  },
+  "lib/services/training_kb_content_4.dart": {
+   "kind": "训练教学知识卷 4", "holder": "lib/services/training_knowledge_base.dart",
+   "prompt_exit": ["getTrainingContent"], "surface_exit": []
+  },
+  "lib/services/training_few_shot_library.dart": {
+   "kind": "few-shot 好/坏写作对比示例库",
+   "holder": "lib/services/message_injector.dart",
+   "prompt_exit": ["getTrainingFewShot", "kTrainingFewShotLibrary"],
+   "surface_exit": [],
+   "note": "★ 出口符号定义在真源自身而非 holder ⇒ guard 必须同时扫 holder 与真源自身，否则出口错报为 holder 的 parseSyndromeOrdinalList。产品面「问题版/改善版/few_shot」命中 0"
+  }
+ },
+ "exemptions": []
+}

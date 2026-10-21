@@ -131,6 +131,7 @@ LEDGER_FRESH_LOG="$OUT_DIR/ledger_freshness.txt"
 PROMPT_VOLUME_LOG="$OUT_DIR/prompt_volume.txt"
 WIRING_LOG="$OUT_DIR/wiring.txt"
 SURFACE_LOG="$OUT_DIR/surface_visibility.txt"
+SOURCE_EXIT_LOG="$OUT_DIR/source_exit.txt"
 
 pass=0
 fail=0
@@ -825,6 +826,31 @@ else
     # WARN 级：打印但不置 RC_ 变量、不进 pass/fail 计数
     echo "  [WARN] 造物主侧做厚但产品面零消费（或豁免到期）——当场处置，详见 $SURFACE_LOG"
     cat "$SURFACE_LOG"
+  fi
+fi
+
+# ---------- 约定层守卫：真源 → 出口对账（S4 · 2026-10-21 起接）----------
+# 定性：**约定层守卫，非门禁**（与 S1 同级）。
+# ★ 为什么要单独一道（2026-10-21 实测逼出来的）：
+#   S1 的 MAKER_SOURCES 是**硬编码 9 个文件** ⇒ 第 10 个真源出现时它天然看不见。
+#   实测：training_kb_content_1..4 + training_few_shot_library 共 **1279 代码行**
+#   从未进入 S1 视野 ⇒ **守卫的判据集合本身静默腐化，且腐化时零输出**。
+#   S4 判据对象是**关系**（真源是否至少有一条出口通向 prompt 或产品面），
+#   且真源**自动发现** ⇒ 新增真源未登记即报红（防清单腐化）。
+#   分工：S1 量「判据语言词频」· S4 验「真源→出口关系」。两道都要跑。
+echo "--> 约定层守卫: 真源→出口对账（S4，WARN 级，2026-10-21 起接）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3/ python，跳过真源出口守卫"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$SOURCE_EXIT_LOG"
+elif [ ! -f "$ROOT/tool/source_exit_baseline.json" ]; then
+  echo "  [WARN] 基线缺失（tool/source_exit_baseline.json），跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$SOURCE_EXIT_LOG"
+else
+  if "$PY_BIN" scripts/check_source_exit.py --baseline tool/source_exit_baseline.json > "$SOURCE_EXIT_LOG" 2>&1; then
+    echo "  [PASS] 真源→出口关系自洽（全部登记在册）"
+  else
+    echo "  [WARN] 真源出口断裂 / 新真源未登记 / 基线腐烂——当场处置，详见 $SOURCE_EXIT_LOG"
+    cat "$SOURCE_EXIT_LOG"
   fi
 fi
 
