@@ -54,31 +54,34 @@
   "lib/services/training_kb_content.dart": {
    "kind": "训练库装配层", "holder": "lib/services/training_knowledge_base.dart",
    "prompt_exit": ["getTrainingContent"], "surface_exit": [],
-   "note": "★ 本真源族此前从未进入任何审查视野（S1 硬编码清单漏掉）"
+   "note": "★ 本真源族此前从未进入任何审查视野（S1 硬编码清单漏掉）。★ 受众判定（T-20261021-07 · 2026-10-22 登记）：model-side——族内各卷头注明证「为 AI 提供……领域知识」，注入 role:'system' ⇒ 产品面不露是设计正确、非缺口；owner_card=T-20261021-07；due=2027-01-22（受众判定定期复核点，非待办豁免）"
   },
   "lib/services/training_kb_content_1.dart": {
    "kind": "训练教学知识卷 1", "holder": "lib/services/training_knowledge_base.dart",
    "prompt_exit": ["getTrainingContent"], "surface_exit": [],
-   "note": "出口 = message_injector._injectTrainingKnowledge（教学链 L3 检索）；教学链产品面 features/widgets 零消费"
+   "note": "出口 = message_injector._injectTrainingKnowledge（教学链 L3 检索）；教学链产品面 features/widgets 零消费。★ 受众判定（T-20261021-07 · 2026-10-22 登记）：model-side——头注明证「为 AI 提供每个写作问题的领域知识……AI 根据这些知识自主组织教学语言」，注入 role:'system' ⇒ 产品面不露是设计正确、非缺口；owner_card=T-20261021-07；due=2027-01-22（受众判定定期复核点，非待办豁免）"
   },
   "lib/services/training_kb_content_2.dart": {
    "kind": "训练教学知识卷 2", "holder": "lib/services/training_knowledge_base.dart",
-   "prompt_exit": ["getTrainingContent"], "surface_exit": []
+   "prompt_exit": ["getTrainingContent"], "surface_exit": [],
+   "note": "★ 受众判定（T-20261021-07 · 2026-10-22 登记）：model-side——同卷 1 头注明证「为 AI 提供……领域知识」，注入 role:'system' ⇒ 产品面不露是设计正确、非缺口；owner_card=T-20261021-07；due=2027-01-22（受众判定定期复核点，非待办豁免）"
   },
   "lib/services/training_kb_content_3.dart": {
    "kind": "训练教学知识卷 3", "holder": "lib/services/training_knowledge_base.dart",
-   "prompt_exit": ["getTrainingContent"], "surface_exit": []
+   "prompt_exit": ["getTrainingContent"], "surface_exit": [],
+   "note": "★ 受众判定（T-20261021-07 · 2026-10-22 登记）：model-side——同卷 1 头注明证「为 AI 提供……领域知识」，注入 role:'system' ⇒ 产品面不露是设计正确、非缺口；owner_card=T-20261021-07；due=2027-01-22（受众判定定期复核点，非待办豁免）"
   },
   "lib/services/training_kb_content_4.dart": {
    "kind": "训练教学知识卷 4", "holder": "lib/services/training_knowledge_base.dart",
-   "prompt_exit": ["getTrainingContent"], "surface_exit": []
+   "prompt_exit": ["getTrainingContent"], "surface_exit": [],
+   "note": "★ 受众判定（T-20261021-07 · 2026-10-22 登记）：model-side——同卷 1 头注明证「为 AI 提供……领域知识」，注入 role:'system' ⇒ 产品面不露是设计正确、非缺口；owner_card=T-20261021-07；due=2027-01-22（受众判定定期复核点，非待办豁免）"
   },
   "lib/services/training_few_shot_library.dart": {
    "kind": "few-shot 好/坏写作对比示例库",
    "holder": "lib/services/message_injector.dart",
    "prompt_exit": ["getTrainingFewShot", "kTrainingFewShotLibrary"],
    "surface_exit": [],
-   "note": "★ 出口符号定义在真源自身而非 holder ⇒ guard 必须同时扫 holder 与真源自身，否则出口错报为 holder 的 parseSyndromeOrdinalList。产品面「问题版/改善版/few_shot」命中 0"
+   "note": "★ 出口符号定义在真源自身而非 holder ⇒ guard 必须同时扫 holder 与真源自身，否则出口错报为 holder 的 parseSyndromeOrdinalList。产品面「问题版/改善版/few_shot」命中 0。★ 受众判定（T-20261021-07 · 2026-10-22 登记）：model-side——头注明证「让 LLM 在组织教学语言时有可参考的真实片段」，注入 role:'system' ⇒ 产品面不露是设计正确、非缺口；owner_card=T-20261021-07；due=2027-01-22（受众判定定期复核点，非待办豁免）"
   }
  },
  "exemptions": []
