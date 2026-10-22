@@ -14,6 +14,11 @@
 //   6. 技能注册表 reader-awareness 含「读者反应复述的忠实性自查」
 //   7. 守卫：P018 oneLine/trainingLine 不含「指代混乱/指代不清」，
 //      P034 name 仍为「代词指代不清/零回指过载症」（防回归/防误删）
+//   8. C125 项 7/8 延后项施工（2026-10-22 · T-20261014-16 序 6）：
+//      P023 训练知识含「时间线自查」+ 节点漏/边漏/跨轴混淆三信号；
+//      P027 训练知识含「事件显著性删句测试」+ 承重墙双向判读。
+//      两条诚实标注（不自动判矛盾 / 不自动评分）同步断言——
+//      防「补内容时把 R-009 边界注记删掉」。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +90,25 @@ void main() {
       final p034 = syndromeRecordOf('P034');
       expect(p034, isNotNull);
       expect(p034!.name, '代词指代不清/零回指过载症');
+    });
+  });
+
+  group('C125 项 7/8 延后项施工 · 训练知识标记存在性（T-20261014-16 序 6）', () {
+    test('#10 P023 训练知识含时间线自查 + 三类信号 + 不自动判矛盾标注', () {
+      final content = getTrainingContent(['P023']);
+      expect(content, contains('时间线自查'));
+      expect(content, contains('节点漏'));
+      expect(content, contains('边漏'));
+      expect(content, contains('跨轴混淆'));
+      expect(content, contains('不自动判矛盾'));
+    });
+
+    test('#11 P027 训练知识含事件显著性删句测试 + 承重墙双向判读 + 不自动评分标注', () {
+      final content = getTrainingContent(['P027']);
+      expect(content, contains('事件显著性删句测试'));
+      expect(content, contains('承重墙'));
+      expect(content, contains('P039 删段测试'));
+      expect(content, contains('不自动评分'));
     });
   });
 }
