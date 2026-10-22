@@ -12,6 +12,8 @@ import '../data/repositories/error_log_repository.dart';
 import '../data/repositories/pilot_metrics_repository.dart';
 import '../data/repositories/world_fact_repository.dart';
 import '../services/error_handler.dart';
+import '../services/pilot_metrics_summary.dart';
+import '../services/p0_verify/anchor_probe.dart' show kAnchorPayloadVersion;
 import '../services/setting_library_service.dart';
 
 /// 全局 AppDatabase provider（单例）
@@ -43,6 +45,38 @@ final settingLibraryServiceProvider = Provider<SettingLibraryService>((ref) {
 final pilotMetricsRepositoryProvider = Provider<PilotMetricsRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
   return PilotMetricsRepository(db);
+});
+
+/// 「引文锚定」卡聚合读数（T-20261018-06 · D 议题 · 设计批 2026-10-22 已批）。
+///
+/// 只读 anchor_probe 事件（停写两类与 app_opened 不读——DECISIONS §4-232
+/// 裁定④「停写类不呈」+ 文案待裁 A「删」启动次数行）；payload 明细经纯函数
+/// 现算 AER（`buildPilotMetricsSummary`，services/pilot_metrics_summary.dart）。
+///
+/// R-028 容错（设计批 §五）：DB 读失败 ⇒ ErrorHandler 留痕后返回 null
+/// ⇒ 卡不渲染、growth 页不崩；loading/error 态消费方一律不出卡。
+/// R-029（口径③）：数据零外发——本 provider 不接入任何 prompt 构造路径
+/// （守卫 P3 机器判据，scripts/check_pilot_surface.py）。
+final pilotMetricsSummaryProvider = FutureProvider<PilotMetricsSummary?>((
+  ref,
+) async {
+  final repo = ref.watch(pilotMetricsRepositoryProvider);
+  try {
+    final events = await repo.listByType(PilotEventTypes.anchorProbe);
+    return buildPilotMetricsSummary(
+      events.map((e) => e.payload).toList(),
+      version: kAnchorPayloadVersion,
+    );
+  } catch (e, st) {
+    ErrorHandler.instance.captureError(
+      level: 'warn',
+      category: 'database',
+      message: 'anchor_probe 读取失败，「引文锚定」卡不渲染',
+      context: {'error': '$e'},
+      stack: '$st',
+    );
+    return null;
+  }
 });
 
 /// C129（断点 A）：全局教练人格变更 revision 信号。

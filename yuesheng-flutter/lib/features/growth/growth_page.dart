@@ -31,6 +31,7 @@ import '../../services/focus_card_builder.dart';
 import '../../services/growth_narrative.dart';
 import 'focus_card.dart';
 import 'growth_narrative_card.dart';
+import 'pilot_metrics_card.dart';
 import '../../router/app_routes.dart';
 import '../../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
@@ -265,6 +266,7 @@ class _GrowthContent extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         ..._buildNarrativeSection(state),
+        _buildPilotSection(),
         GrowthDiagnosisPrefsCard(
           onOpenSettings: () => _openCoachSettings(context),
         ),
@@ -305,6 +307,31 @@ class _GrowthContent extends StatelessWidget {
       GrowthNarrativeCard(narrative: narrative),
       const SizedBox(height: 12),
     ];
+  }
+
+  /// D 议题（T-20261018-06）：「引文锚定」卡段——anchor_probe 聚合读数
+  /// （services/pilot_metrics_summary.dart 经 pilotMetricsSummaryProvider）。
+  ///
+  /// 显隐规则（设计批 §二）：零 anchor_probe 记录 / loading / 读失败
+  /// （R-028 降级返回 null）⇒ 不渲染；有记录零引文由卡内出空态文案。
+  /// 置于叙事卡（回望）之后，不破坏「回望 → 前瞻」对偶。
+  /// `_GrowthContent` 是 StatelessWidget ⇒ 用 Consumer 局部 watch
+  /// （不为此改类形态，最小侵入）。
+  Widget _buildPilotSection() {
+    return Consumer(
+      builder: (context, ref, _) {
+        final summary = ref.watch(pilotMetricsSummaryProvider).valueOrNull;
+        if (summary == null) return const SizedBox.shrink();
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PilotMetricsCard(summary: summary),
+            const SizedBox(height: 12),
+          ],
+        );
+      },
+    );
   }
 
   /// 教学线 P1-4：当前焦点卡数据（profile + trainingStats 合成；
