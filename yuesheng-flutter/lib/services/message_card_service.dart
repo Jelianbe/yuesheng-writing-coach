@@ -273,6 +273,20 @@ class DiagnosisSyndromeCard {
   /// null / 空串 ⇒ 该行不渲染（数据诚实：不编造读者影响）。
   final String? readerImpact;
 
+  /// T-20261021-01：成段事实条数（单句带过 = 1；形式类症候专有）。
+  ///
+  /// 由 `Syndrome.formFactCount` 透传（parser 已归一化）。与 [formStructure]
+  /// **同批输出、缺一不可**（组合⑤双要素）⇒ 渲染层两字段均非空才显示
+  /// 「形态：」行。null = 无形态证据（prompt 规格：其余症候省略）。
+  final int? formFactCount;
+
+  /// T-20261021-01：结构标记 `expository`/`interruption`/`narrative`。
+  ///
+  /// 中文映射在卡片侧常量（`diagnosis_card.dart` 的 `_kFormStructureLabels`）
+  /// ——英文真源（`kFormStructures` / `normalizeFormStructure`）与 DB CHECK
+  /// 约束不动 ⇒ 零 R-027。null = 无形态证据。
+  final String? formStructure;
+
   const DiagnosisSyndromeCard({
     required this.syndromeId,
     required this.name,
@@ -283,6 +297,8 @@ class DiagnosisSyndromeCard {
     this.interventionValue,
     this.pendingContext,
     this.readerImpact,
+    this.formFactCount,
+    this.formStructure,
   });
 
   factory DiagnosisSyndromeCard.fromJson(Map<String, dynamic> json) {
@@ -309,6 +325,15 @@ class DiagnosisSyndromeCard {
       pendingContext: normalizePendingContext(json['pending_context']),
       // W-49：snake / camel 双写均接受，空串归一为 null。
       readerImpact: _firstNonEmpty(json['reader_impact'], json['readerImpact']),
+      // T-20261021-01：形态两要素同款口径——snake / camel 双写均接受；
+      // 归一化复用 teaching_types.dart 既有函数（非法值 ⇒ null，不抛），
+      // 与 interventionValue 同一处理路径。
+      formFactCount: normalizeFormFactCount(
+        json['form_fact_count'] ?? json['formFactCount'],
+      ),
+      formStructure: normalizeFormStructure(
+        json['form_structure'] ?? json['formStructure'],
+      ),
     );
   }
 
@@ -329,6 +354,9 @@ class DiagnosisSyndromeCard {
     // W-49：同上约定，空串与 null 都不落 key，往返稳定。
     if (readerImpact != null && readerImpact!.isNotEmpty)
       'reader_impact': readerImpact,
+    // T-20261021-01：同上约定，null 不落 key，往返稳定。
+    if (formFactCount != null) 'form_fact_count': formFactCount,
+    if (formStructure != null) 'form_structure': formStructure,
   };
 }
 

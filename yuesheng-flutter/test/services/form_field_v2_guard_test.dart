@@ -30,6 +30,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/focus_resolver.dart';
 import 'package:writingcoach/services/intervention_value.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -745,6 +746,64 @@ void main() {
       );
       expect(trapOut.activatedFocusId, 'P018');
       expect(bulkOut.activatedFocusId, 'P002');
+    });
+  });
+
+  // ── T-20261021-01 补漏：parser 手写构造路径（生产链断点回归） ──
+  //
+  // R1 声声称「解析 → DB → DTO」透传保真，但组内既有三条只走
+  // `Syndrome.fromJson` / `commitDiagnosis`（两者均不经 `parseDiagnosis`
+  // 的 `_validateSyndromes` 手写构造）⇒ **生产链断点零覆盖**：
+  // `_validateSyndromes` 构造 Syndrome 时未传形态两字段 ⇒ 恒为 null
+  // （2026-10-21 实测，卡 T-20261021-01 §2.2）。本组补 parser 路径，
+  // 并锁 A5 的「非法值归一为 null、条目不丢、不抛」。
+  group('T-20261021-01 补漏：parser 手写构造路径（生产链断点回归）', () {
+    String wrapDiag(String syndromeJson) =>
+        '前导[YS_DIAGNOSIS]\n{"syndromes":[$syndromeJson],'
+        '"suggested_actions":["A002"],"confidence":0.75,'
+        '"feedback_summary":"ok","root_cause_analysis":"r",'
+        '"next_focus":"P001","teaching_plan":{"current_teaching_focus_id":'
+        '"P001","focus_reason":"a","next_step":"b"}}\n[/YS_DIAGNOSIS]';
+
+    test('A1 合法形态值经 parseDiagnosis 透传到 Syndrome（手写构造不断字段）', () {
+      final r = parseDiagnosis(
+        wrapDiag(
+          '{"syndrome_id":"P002","name":"信息倾泻","severity":"L2",'
+          '"evidence":["x"],"explanation":"y",'
+          '"form_fact_count":4,"form_structure":"expository"}',
+        ),
+      );
+      expect(r.diagnosis, isNotNull);
+      final s = r.diagnosis!.syndromes.first;
+      expect(s.formFactCount, 4, reason: 'parser 手写构造必须透传（修复前恒 null）');
+      expect(s.formStructure, 'expository');
+    });
+
+    test('A5 非法形态值 ⇒ 归一为 null、条目不丢、不抛', () {
+      final r = parseDiagnosis(
+        wrapDiag(
+          '{"syndrome_id":"P002","name":"信息倾泻","severity":"L2",'
+          '"evidence":["x"],"explanation":"y",'
+          '"form_fact_count":-1,"form_structure":"poetic"}',
+        ),
+      );
+      expect(r.diagnosis, isNotNull, reason: '条目不丢（观测不拦截）');
+      final s = r.diagnosis!.syndromes.first;
+      expect(s.formFactCount, isNull, reason: '负数按缺失处理');
+      expect(s.formStructure, isNull, reason: '越界枚举按缺失处理');
+    });
+
+    test('缺失形态字段 ⇒ null（旧 payload / 非形式类症候）', () {
+      final r = parseDiagnosis(
+        wrapDiag(
+          '{"syndrome_id":"P001","name":"情绪标签化","severity":"L1",'
+          '"evidence":["x"],"explanation":"y"}',
+        ),
+      );
+      expect(r.diagnosis, isNotNull);
+      final s = r.diagnosis!.syndromes.first;
+      expect(s.formFactCount, isNull);
+      expect(s.formStructure, isNull);
     });
   });
 }

@@ -29,15 +29,12 @@
  "exemptions": [
   {
    "id": "S1-诊断链字段未贯通",
-   "owner_card": "T-20261021-01 / T-20261021-04",
+   "owner_card": "T-20261021-04",
    "due": "2026-11-04",
    "fields": [
-    "interventionValue",
-    "formFactCount",
-    "formStructure",
     "nextFocus"
    ],
-   "reason": "★ 缺口已确证（2026-10-21 S1 守卫 v4 实测，逐级读数可复算：`python scripts/check_surface_visibility.py --list`）。四个断点分两类断法：① **L3 呈现断**（进卡了但呈现面零有效读点）= `interventionValue`（干预价值档位，DTO 有 `DiagnosisSyndromeCard.interventionValue`，呈现面 `diagnosis_card.dart` 零读点）⇒ 责任卡 T-20261021-01（iv 上卡，零 R-027）。② **L2 卡片断**（产出了但没进诊断卡 payload）= `formFactCount` / `formStructure`（形态两要素，落 `active_problem` 表两列，但任何 DTO 类都没有这两个字段）⇒ 责任卡 T-20261021-01（形态两字段上卡）；`nextFocus`（`next_focus` 顶层字段，落 `diagnosis_results.next_focus` 列，但未进 `DiagnosisResultCardPayload`）⇒ 责任卡 T-20261021-04（协议层改动，须报批 R-027）。豁免期 = 14 天，到期未修则恢复报红。"
+   "reason": "★ 收窄记录（2026-10-22）：原豁免 4 字段中的 interventionValue / formFactCount / formStructure 已由 T-20261021-01（诊断卡接线第二批，主仓施工）销账——`python scripts/check_surface_visibility.py --list` 三行由「★断」转「全通」（各 1 个 L3 有效读点）。剩余 nextFocus：L2 卡片断（落 `diagnosis_results.next_focus` 列，未进 `DiagnosisResultCardPayload`）⇒ 责任卡 T-20261021-04（L2 协议改动，触 R-027 须报批）。豁免期 = 14 天，到期未修则恢复报红（S1-5 会抓「豁免名存实亡」：若 nextFocus 也贯通而本登记未收窄，守卫报红）。"
   }
  ],
  "design_non_visible": [

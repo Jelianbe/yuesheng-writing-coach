@@ -97,8 +97,32 @@ class _CardText {
   static const String readerImpactLabel = '对读者：';
   static const String rootCauseLabel = '根因';
   static const String feedbackSummaryLabel = '本轮小结';
+
+  // ── T-20261021-01：干预价值徽标 + 形态行标签 ──
+  // 同族口径：与上述标签及「暂时无法判断」徽标两两不同（C5 断言）。
+  static const String formLabel = '形态：';
   const _CardText._();
 }
+
+/// T-20261021-01：干预价值档位 → 徽标文案（卡片侧映射）。
+///
+/// high=值得练 / medium=可练；**low 与 null 不渲染**（low = 无信息量，
+/// 渲染反而稀释诊断信号）。语义 ≠ severity：severity 答「问题多严重」，
+/// iv 答「练了有没有用」（`intervention_value.dart` 头注）⇒ 徽标色系与
+/// severity 矿物色分开（C7：不同色系），形态复用 [_buildTeachingStateBadge]
+/// 同款视觉参数。
+const Map<String, String> _kIvLabels = {'high': '值得练', 'medium': '可练'};
+
+/// T-20261021-01：形态结构标记 → 中文名（卡片侧映射，卡 §三规则 3）。
+///
+/// 英文真源在 `teaching_types.dart` 的 `kFormStructures` /
+/// `normalizeFormStructure`（DB CHECK 约束与归一化口径）——**不动真源**，
+/// 只在此加展示层中文名 ⇒ 零 R-027。
+const Map<String, String> _kFormStructureLabels = {
+  'expository': '论文式',
+  'interruption': '打断',
+  'narrative': '叙事流内',
+};
 
 class DiagnosisCard extends ConsumerStatefulWidget {
   final int syndromeCount;
@@ -1073,7 +1097,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
-  /// chip 内容：色点 + 症候名 + 严重度 + 教学状态标注 + 第 N 次出现角标。
+  /// chip 内容：色点 + 症候名 + 严重度 + 干预价值徽标 + 教学状态标注
+  /// + 跨块因果缺口徽标 + 第 N 次出现角标。
   /// E-9：教学状态非 identified 时标注「训练中/趋稳中/已掌握」，
   /// 显式提示该症候已有对应训练介入（与训练建议卡互引）。
   Widget _buildChipLabel(
@@ -1082,13 +1107,6 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     DiagnosisSyndromeCard s,
     TeachingState? teachingState,
   ) {
-    final occurrence = _trends[s.syndromeId]?.occurrenceCount ?? 0;
-    // 教学状态标签真源：config/teaching_labels.dart。E-9：仅已介入训练的
-    // 状态才标注（teachingState 为 null/identified 时 chip 不标注）。
-    final stateLabel = switch (teachingState) {
-      null || TeachingState.identified => null,
-      final s => kTeachingStateLabels[s],
-    };
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1114,17 +1132,62 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             color: cfg.textColor.withValues(alpha: 0.85),
           ),
         ),
-        if (stateLabel != null) ...[
-          const SizedBox(width: 4),
-          _buildTeachingStateBadge(stateLabel, dotColor),
-        ],
-        ..._buildPendingBadgeIfAny(s, dotColor),
-        if (occurrence >= 2) ...[
-          const SizedBox(width: 4),
-          _buildOccurrenceBadge(occurrence, cfg.textColor),
-        ],
+        // T-20261021-01：干预价值徽标——severity 标签之后（卡 §三落点）。
+        // high=值得练 / medium=可练；low 与 null 不渲染。
+        ..._buildIvBadgeIfAny(s),
+        ..._buildChipTrailingBadges(
+          teachingState: teachingState,
+          dotColor: dotColor,
+          severityTextColor: cfg.textColor,
+          s: s,
+        ),
       ],
     );
+  }
+
+  /// chip 尾部徽标槽位（R-019 清偿：T-20261021-01 插入 iv 徽标后
+  /// [_buildChipLabel] 会超 50 行阈值，故把尾部徽标族 spread 化；
+  /// 顺序口径不变）。
+  ///
+  /// 顺序：教学状态 → 跨块因果缺口 → 第 N 次出现。
+  List<Widget> _buildChipTrailingBadges({
+    required TeachingState? teachingState,
+    required Color dotColor,
+    required Color severityTextColor,
+    required DiagnosisSyndromeCard s,
+  }) {
+    // 教学状态标签真源：config/teaching_labels.dart。E-9：仅已介入训练的
+    // 状态才标注（teachingState 为 null/identified 时 chip 不标注）。
+    final stateLabel = switch (teachingState) {
+      null || TeachingState.identified => null,
+      final s => kTeachingStateLabels[s],
+    };
+    final occurrence = _trends[s.syndromeId]?.occurrenceCount ?? 0;
+    return [
+      if (stateLabel != null) ...[
+        const SizedBox(width: 4),
+        _buildTeachingStateBadge(stateLabel, dotColor),
+      ],
+      ..._buildPendingBadgeIfAny(s, dotColor),
+      if (occurrence >= 2) ...[
+        const SizedBox(width: 4),
+        _buildOccurrenceBadge(occurrence, severityTextColor),
+      ],
+    ];
+  }
+
+  /// T-20261021-01：干预价值徽标（high=值得练 / medium=可练）。
+  ///
+  /// low 与 null **不渲染**（low = 无信息量，渲染反而稀释诊断信号）。
+  /// 色系与 severity 矿物色分开（C7：不同色系、不得同形）；徽标形态复用
+  /// [_buildTeachingStateBadge] 同款视觉参数（10px/w600/12% alpha 底）。
+  List<Widget> _buildIvBadgeIfAny(DiagnosisSyndromeCard s) {
+    final label = _kIvLabels[s.interventionValue];
+    if (label == null) return const [];
+    return [
+      const SizedBox(width: 4),
+      _buildTeachingStateBadge(label, context.palette.success),
+    ];
   }
 
   /// W-15-B：跨块因果缺口徽标——该条结论「暂时无法判断」（依赖分片外
@@ -1433,7 +1496,12 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
               _buildNameChip(cfg),
               const SizedBox(height: 8),
               _buildWhyRow(),
-              // W-49：对读者的影响（症候级）。紧跟「为什么」——先讲问题为何成立，
+              // T-20261021-01：形态行（症候级）。置于「为什么」之后、
+              // 「对读者」之前——先讲为何判定，再讲它成什么形态，
+              // 最后讲读者体验（卡 §三落点）。
+              _buildFormRow(),
+              // W-49：对读者的影响（症候级）。紧跟「为什么 / 形态」——
+              // 先讲问题为何成立、成什么形态，
               // 再讲它让读者体验到什么，最后给证据原文。
               _buildReaderImpactRow(),
               _buildTrendRow(),
@@ -1530,6 +1598,54 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
             style: context.text.subBody.copyWith(
               color: context.palette.textDeep,
               height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// T-20261021-01：形态行（症候级）——成段事实条数 + 结构标记。
+  ///
+  /// 两字段**均非空**才渲染：形态是双要素（组合⑤），缺一即无形态证据
+  /// （数据诚实：不编造）。位置口径（卡 §三）：「为什么」之后、
+  /// 「对读者」之前——先讲为何判定，再讲它成什么形态，最后讲读者体验。
+  ///
+  /// 中文映射见 [_kFormStructureLabels]（卡片侧常量）：英文真源
+  /// （`kFormStructures` / `normalizeFormStructure`）与 DB CHECK 约束不动
+  /// ⇒ 零 R-027。两字段是**结构化数据**（int + 枚举），不是 AI 的话
+  /// ⇒ 可渲染为结构化标签，不适用 R-009「不替用户改写」。
+  Widget _buildFormRow() {
+    final count = widget.syndrome.formFactCount;
+    final structure = widget.syndrome.formStructure;
+    if (count == null || structure == null) return const SizedBox.shrink();
+    final structureLabel = _kFormStructureLabels[structure];
+    // 兜底：越界枚举（理论上游已归一，此处防直接构造的未归一 DTO）
+    // ⇒ 不渲染、不抛、不编造。
+    if (structureLabel == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _CardText.formLabel,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textDeep,
+            ),
+          ),
+          const SizedBox(width: 4),
+          // Flexible：长结构名 + 大计数在窄屏可换行，不溢出。
+          Flexible(
+            child: Text(
+              '$structureLabel · $count 条成段事实',
+              style: context.text.subBody.copyWith(
+                color: context.palette.textDeep,
+              ),
             ),
           ),
         ],

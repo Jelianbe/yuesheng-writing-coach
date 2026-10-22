@@ -1433,6 +1433,10 @@ class DiagnosisFlowHandler {
             pendingContext: s.pendingContext,
             // W-49：透传「对读者的影响」（合并层已 merge，此处只往下传）。
             readerImpact: s.readerImpact,
+            // T-20261021-01：透传形态两要素（parser 已归一化；
+            // null = 无形态证据 ⇒ 渲染层不显示「形态：」行）。
+            formFactCount: s.formFactCount,
+            formStructure: s.formStructure,
           ),
         )
         .toList();

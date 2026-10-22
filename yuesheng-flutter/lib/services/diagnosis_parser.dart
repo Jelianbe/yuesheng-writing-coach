@@ -366,25 +366,43 @@ String? _validateSyndromes(
       notes.add('syndrome_id_format');
     }
 
-    out.add(
-      Syndrome(
-        syndromeId: syndromeId,
-        name: name,
-        severity: Severity.fromString(severity)!,
-        evidence: evidence.cast<String>(),
-        explanation: explanation,
-        // N40：原为 `as String?` 硬 cast，模型填非字符串即抛 TypeError。
-        // 改成安全读取——非 String 一律当缺失，与其余可选字段的处理一致。
-        readerImpact: s['reader_impact'] is String
-            ? s['reader_impact'] as String
-            : null,
-        interventionValue: _parseInterventionValue(s, notes),
-        // W-15-B：跨块因果缺口标记（引导 LLM 自标），此处只透传，非 bool 按缺失。
-        pendingContext: normalizePendingContext(s['pending_context']),
-      ),
-    );
+    out.add(_syndromeFromValidated(s, notes));
   }
   return null;
+}
+
+/// 已通过 [_validateSyndromes] 校验的 syndrome map → [Syndrome]。
+///
+/// R-019 清偿（T-20261021-01）：形态两字段透传接入后
+/// [_validateSyndromes] 从 50 行涨到 57 行超阈值 ⇒ 构造段内聚拆出
+/// （与 W-49 `_buildTailSlots` 同型的 spread 化清偿，非伪拆分）。
+///
+/// 前置保证（调用方已逐字段校验，故此处 cast 安全）：
+/// `syndrome_id`/`name`/`explanation` 为 String、`severity` ∈
+/// `_kValidSeverities`、`evidence` 为 `List<String>`。
+Syndrome _syndromeFromValidated(Map<String, dynamic> s, List<String> notes) {
+  return Syndrome(
+    syndromeId: s['syndrome_id'] as String,
+    name: s['name'] as String,
+    severity: Severity.fromString(s['severity'] as String)!,
+    evidence: (s['evidence'] as List).cast<String>(),
+    explanation: s['explanation'] as String,
+    // N40：原为 `as String?` 硬 cast，模型填非字符串即抛 TypeError。
+    // 改成安全读取——非 String 一律当缺失，与其余可选字段的处理一致。
+    readerImpact: s['reader_impact'] is String
+        ? s['reader_impact'] as String
+        : null,
+    interventionValue: _parseInterventionValue(s, notes),
+    // W-15-B：跨块因果缺口标记（引导 LLM 自标），此处只透传，非 bool 按缺失。
+    pendingContext: normalizePendingContext(s['pending_context']),
+    // T-20261021-01（治理续批第二批）：形态两要素透传。此前手写构造
+    // 未传这两字段 ⇒ 恒为 null——Syndrome.fromJson 其实读得到，但生产链
+    // 走本构造不走 fromJson ⇒ 字段被静默丢弃（卡 §2.2 断点）。
+    // 归一化复用 teaching_types.dart 既有函数（唯一定义源纪律，不新建
+    // 逻辑）；非法值（负数/非数值/越界枚举）按缺失处理，不静默纠偏。
+    formFactCount: normalizeFormFactCount(s['form_fact_count']),
+    formStructure: normalizeFormStructure(s['form_structure']),
+  );
 }
 
 /// 字段白名单校验。

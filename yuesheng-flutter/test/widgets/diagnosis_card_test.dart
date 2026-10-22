@@ -1937,4 +1937,248 @@ void main() {
       );
     });
   });
+
+  // ───────────────────────────────────────────────────────────
+  // T-20261021-01 诊断卡接线第二批：干预价值徽标 + 形态行
+  // 落点口径见 .ai/tasks/backlog/T-20261021-01.md §三：
+  //   iv 徽标 —— 标签行 chip 内、severity 标签之后（与教学状态徽标同排）；
+  //   形态行 —— 症候块「为什么」之后、「对读者」之前。
+  // 验收可机器复算：S1 守卫 check_surface_visibility.py 读数
+  //   「19 贯通 + 4 豁免」⇒「23 全通」（nextFocus 归 T-20261021-04）。
+  // ───────────────────────────────────────────────────────────
+  group('T-20261021-01 诊断卡接线第二批', () {
+    DiagnosisCard cardWith({
+      String? interventionValue,
+      int? formFactCount,
+      String? formStructure,
+      bool expanded = false,
+    }) {
+      return DiagnosisCard(
+        syndromeCount: 1,
+        syndromes: [
+          DiagnosisSyndromeCard(
+            syndromeId: 'P002',
+            name: '信息倾泻症',
+            severity: 'L2',
+            evidenceCount: 1,
+            explanation: '开篇连续三段交代设定',
+            interventionValue: interventionValue,
+            formFactCount: formFactCount,
+            formStructure: formStructure,
+          ),
+        ],
+        suggestedActions: const [],
+        confidence: 0.8,
+        defaultExpanded: expanded,
+      );
+    }
+
+    testWidgets('C1a iv=high ⇒ 「值得练」徽标可见（收起态即见，不需展开）', (tester) async {
+      await tester.pumpWidget(_wrap(cardWith(interventionValue: 'high')));
+      await tester.pumpAndSettle();
+      expect(find.text('值得练'), findsOneWidget);
+    });
+
+    testWidgets('C1b iv=medium ⇒ 「可练」徽标可见', (tester) async {
+      await tester.pumpWidget(_wrap(cardWith(interventionValue: 'medium')));
+      await tester.pumpAndSettle();
+      expect(find.text('可练'), findsOneWidget);
+      expect(find.text('值得练'), findsNothing);
+    });
+
+    testWidgets('C2 iv=low ⇒ 两个徽标零命中（low 不渲染；芯片仍在，证明非整体未渲染）', (tester) async {
+      await tester.pumpWidget(_wrap(cardWith(interventionValue: 'low')));
+      await tester.pumpAndSettle();
+      expect(find.text('值得练'), findsNothing);
+      expect(find.text('可练'), findsNothing);
+      // 控制断言用 severity 标签（只属于标签行芯片；症候块不渲染 severity
+      // 文本，且收起态子节点虽在树内也不含它）⇒ 证明芯片确实渲染了。
+      expect(find.text('中等'), findsOneWidget);
+    });
+
+    testWidgets('C3 形态两字段齐备 ⇒ 「形态：」+ 中文结构名 + 事实条数均可见', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          cardWith(
+            formFactCount: 3,
+            formStructure: 'expository',
+            expanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('形态：'), findsOneWidget);
+      expect(find.textContaining('论文式'), findsOneWidget);
+      expect(find.textContaining('3 条成段事实'), findsOneWidget);
+    });
+
+    testWidgets('C4a 只给 form_fact_count（无 form_structure）⇒ 「形态：」零命中', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(cardWith(formFactCount: 3, expanded: true)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('形态：'), findsNothing);
+      // 既有行仍在（证明不是整体没渲染）
+      expect(find.text('为什么：'), findsOneWidget);
+    });
+
+    testWidgets('C4b 只给 form_structure（无 form_fact_count）⇒ 「形态：」零命中', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(cardWith(formStructure: 'narrative', expanded: true)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('形态：'), findsNothing);
+    });
+
+    testWidgets('C5 新标签与既有 7 标签两两不同（防后续被改成同名词）', (tester) async {
+      // 卡 §三规则 2 点名的既有 7 个：为什么：/证据：/对读者：/归因/根因/
+      // 本轮小结/暂时无法判断（徽标）。本批新增 3 个：形态：/值得练/可练。
+      const labels = [
+        '为什么：',
+        '证据：',
+        '对读者：',
+        '归因',
+        '根因',
+        '本轮小结',
+        '暂时无法判断',
+        '改写建议',
+        '形态：',
+        '值得练',
+        '可练',
+      ];
+      expect(
+        labels.toSet().length,
+        labels.length,
+        reason: '诊断卡标签必须两两不同：$labels',
+      );
+    });
+
+    testWidgets('C7 iv 徽标与 severity 标签视觉可区分（色值 + 徽标形态双判据）', (tester) async {
+      // L2 症候 + iv=high：徽标与 severity 标签同排（卡 §五.5 小屏挤压关注点）
+      await tester.pumpWidget(_wrap(cardWith(interventionValue: 'high')));
+      await tester.pumpAndSettle();
+
+      // ① 色值判据：徽标色 = success（正向绿），不在三档 severity 矿物色
+      //    集合内，且与同排 severity 标签（L2=中等）不同色。
+      final ivColor = tester.widget<Text>(find.text('值得练')).style?.color;
+      expect(ivColor, AppColors.success, reason: 'iv 徽标用正向色 success');
+      expect(ivColor, isNot(AppColors.l1Text));
+      expect(ivColor, isNot(AppColors.l2Text));
+      expect(ivColor, isNot(AppColors.l3Text));
+      expect(
+        ivColor,
+        isNot(tester.widget<Text>(find.text('中等')).style?.color),
+        reason: '与同排 severity 标签不同色',
+      );
+
+      // ② 形态判据：iv 徽标是「12% alpha 底的小 Container + 10px 文本」，
+      //    severity 标签是芯片内裸文本（11px、无徽标底）⇒ 不同形。
+      final badgeContainer = find.ancestor(
+        of: find.text('值得练'),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              (w.decoration as BoxDecoration?)?.color ==
+                  AppColors.success.withValues(alpha: 0.12),
+        ),
+      );
+      expect(badgeContainer, findsOneWidget);
+      expect(tester.widget<Text>(find.text('值得练')).style?.fontSize, 10);
+      expect(tester.widget<Text>(find.text('中等')).style?.fontSize, 11);
+    });
+
+    test('A3 形态两字段 toJson→fromJson 字段级相等（含空值用例）', () {
+      const full = DiagnosisSyndromeCard(
+        syndromeId: 'P002',
+        name: '信息倾泻症',
+        severity: 'L2',
+        evidenceCount: 1,
+        formFactCount: 3,
+        formStructure: 'expository',
+      );
+      final back = DiagnosisSyndromeCard.fromJson(full.toJson());
+      expect(back.formFactCount, 3);
+      expect(back.formStructure, 'expository');
+      // 其余字段不因新增字段丢失
+      expect(back.syndromeId, 'P002');
+      expect(back.name, '信息倾泻症');
+
+      // 空值用例：不落 key ⇒ 读回 null（不变成 0 / 空串）
+      const empty = DiagnosisSyndromeCard(
+        syndromeId: 'P002',
+        name: '信息倾泻症',
+        severity: 'L2',
+        evidenceCount: 1,
+      );
+      expect(empty.toJson().containsKey('form_fact_count'), isFalse);
+      expect(empty.toJson().containsKey('form_structure'), isFalse);
+      final back2 = DiagnosisSyndromeCard.fromJson(empty.toJson());
+      expect(back2.formFactCount, matcher.isNull, reason: '空值读回 null，不变 0');
+      expect(back2.formStructure, matcher.isNull, reason: '空值读回 null，不变空串');
+    });
+
+    test('A5 非法形态值归一为 null 且不抛（负数 / 非数值 / 越界枚举）', () {
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {
+          'form_fact_count': -1,
+        }).formFactCount,
+        matcher.isNull,
+        reason: '负数按缺失处理',
+      );
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {
+          'form_fact_count': 'abc',
+        }).formFactCount,
+        matcher.isNull,
+        reason: '非数值按缺失处理',
+      );
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {
+          'form_fact_count': 3.0,
+        }).formFactCount,
+        3,
+        reason: 'num→int 容差（JSON 里 3.0 读成 double 属正常）',
+      );
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {
+          'form_fact_count': 0,
+        }).formFactCount,
+        0,
+        reason: '0 是合法值（非负整数），不按缺失处理',
+      );
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {
+          'form_structure': 'abc',
+        }).formStructure,
+        matcher.isNull,
+        reason: '越界枚举按缺失处理',
+      );
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {
+          'form_structure': 'EXPOSITORY',
+        }).formStructure,
+        matcher.isNull,
+        reason: '大小写不容错（不静默纠偏）',
+      );
+    });
+
+    test('A2 snake / camel 双写均接受', () {
+      final snake = DiagnosisSyndromeCard.fromJson(const {
+        'form_fact_count': 2,
+        'form_structure': 'narrative',
+      });
+      expect(snake.formFactCount, 2);
+      expect(snake.formStructure, 'narrative');
+      final camel = DiagnosisSyndromeCard.fromJson(const {
+        'formFactCount': 2,
+        'formStructure': 'narrative',
+      });
+      expect(camel.formFactCount, 2);
+      expect(camel.formStructure, 'narrative');
+    });
+  });
 }
