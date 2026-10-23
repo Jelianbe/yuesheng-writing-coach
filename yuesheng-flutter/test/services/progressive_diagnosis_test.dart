@@ -13,6 +13,12 @@
 //   #4 buildMergePrompt 注入 SYNDROME_DIAGNOSIS_SKILL 引用 + 跨片段合并规则
 //   #5 runProgressiveDiagnosis 短文本走 null（走单次链路）
 //   #8 ADR-C80 空内容分级降级（换参重试 / 仍空显式失败 / 合法零症候不误伤）
+//   #12 ADR-C155 乙形态：分块 prompt 注入判定要点（ID+关键词+一句话），
+//      不含 6 条退化判据（T-20261021-03 读数批裁定）
+//   #13 ADR-C155 丙为先：6 条退化判据在「跨章依赖判据」节点名留痕 +
+//      uncertain 指引（防静默不选，B4）
+//   #14 ADR-C155 联动：disabled 剔除同步作用于两节（R-009 用户主权）
+//   #15 ADR-C155 成本上限：prompt 字符数在乙形态预算内（防未来改动失控）
 // ─────────────────────────────────────────────────────────────
 
 // ignore_for_file: prefer_initializing_formals
@@ -22,6 +28,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/progressive_diagnosis.dart';
+import 'package:writingcoach/services/syndrome_registry.dart';
 
 /// Fake LLM 客户端：预设 chatCompletion 和 streamChat 响应
 class _FakeLlmClient extends LlmClient {
@@ -813,6 +820,114 @@ void main() {
         RegExp(r'"uncertain"\s*:\s*false').hasMatch(prompt2),
         isTrue,
         reason: '缺省须显式落 false，不能省略字段',
+      );
+    });
+  });
+
+  group('分块 prompt 判据注入面（ADR-C155 · T-20261021-03 读数批裁定）', () {
+    test('#12 乙形态：判定要点行含 ID+关键词+一句话，不含 6 条退化判据', () {
+      final prompt = kChunkSystemPrompt;
+      expect(prompt.contains('症候判定要点'), isTrue, reason: '缺「症候判定要点」小节');
+      // 要点行形态（乙）：'- P001 情绪标签化（关键词）：一句话判定要点'
+      expect(
+        RegExp(r'- P001 情绪标签化（[^）]+）：\S').hasMatch(prompt),
+        isTrue,
+        reason: 'P001 要点行须含「（关键词）：一句话」两段——乙形态（原则+条目）',
+      );
+      final block = prompt.substring(
+        prompt.indexOf('症候判定要点'),
+        prompt.indexOf('跨章依赖判据'),
+      );
+      for (final id in kChunkDegradedCriteriaIds) {
+        expect(
+          block.contains(id),
+          isFalse,
+          reason: '$id 不应出现在要点块（ADR-C155 收窄：片内不可自证）',
+        );
+      }
+      // 要点条数 = 注册表活跃 − 6（派生断言，不写死数字：注册表扩容后仍成立）
+      final expected = kSyndromeRegistry
+          .where((s) => !kChunkDegradedCriteriaIds.contains(s.id))
+          .length;
+      final actual = RegExp(
+        r'^- P\d{3} ',
+        multiLine: true,
+      ).allMatches(block).length;
+      expect(
+        actual,
+        expected,
+        reason: '要点行数应 = 注册表活跃(${kSyndromeRegistry.length}) − 6',
+      );
+    });
+
+    test('#13 丙为先：6 条退化判据在留痕节点名 + uncertain 指引句', () {
+      final prompt = kChunkSystemPrompt;
+      expect(prompt.contains('跨章依赖判据'), isTrue, reason: '缺「跨章依赖判据」小节');
+      // 节边界截到「片段窗口边界」：例外指引里 P011 等也有条目，不截会误算
+      final tail = prompt.substring(
+        prompt.indexOf('跨章依赖判据'),
+        prompt.indexOf('片段窗口边界'),
+      );
+      for (final id in kChunkDegradedCriteriaIds) {
+        expect(tail.contains(id), isTrue, reason: '$id 未在留痕节点名（B4：排除而非静默不选）');
+      }
+      expect(
+        tail.contains('"uncertain": true'),
+        isTrue,
+        reason: '留痕节须含 uncertain 指引句（明示片内不可判时直接标 uncertain）',
+      );
+    });
+
+    test('#14 联动：disabled 同步剔除两节（R-009 用户主权）', () async {
+      final fake = _FakeLlmClient(
+        streamResponse:
+            '诊断完成。[YS_DIAGNOSIS]{"syndromes":[],"suggested_actions":[],"confidence":0.8}[/YS_DIAGNOSIS]',
+      );
+      await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: 'disabled 联动',
+        llmClient: fake,
+        onContent: (_) {},
+        disabledSyndromeIds: const {'P001', 'P011'},
+      );
+      final system = fake.chatMessages
+          .firstWhere((m) => m.role == 'system')
+          .content;
+      // P001 非退化 ⇒ 从要点块消失；P011 退化 ⇒ 从留痕节消失
+      expect(
+        system.contains('- P001 情绪标签化'),
+        isFalse,
+        reason: 'disabled 的 P001 不应出现在要点块',
+      );
+      // 留痕节截到「片段窗口边界」：例外指引静态不随 disabled 变，
+      // 其中「- P011例外：…」会污染不截边界的断言
+      final degradedTail = system.substring(
+        system.indexOf('跨章依赖判据'),
+        system.indexOf('片段窗口边界'),
+      );
+      expect(
+        degradedTail.contains('P011'),
+        isFalse,
+        reason: 'disabled 的 P011 不应出现在留痕节',
+      );
+      // 未禁用的退化者仍在留痕节（只禁了 P011 一条）
+      expect(degradedTail.contains('P022'), isTrue);
+    });
+
+    test('#15 成本上限：乙形态 prompt 字符数在预算内（丙形态否决的量化护栏）', () {
+      // 读数批实测：39 条判据原文 61514 字符 ⇒ 丙形态（原文 verbatim）按
+      // 33 条折算 ≈52000 字符/片，token 成本随片数爆炸 ⇒ ADR-C155 否。
+      // 上限 20000 = 现状(4053) + 要点行的宽松上限；若有人改回注入原文，
+      // 字符数将逼近 65000 ⇒ 本断言变红，强制重新走 ADR。
+      expect(
+        kChunkSystemPrompt.length,
+        lessThan(20000),
+        reason: 'prompt 超预算——疑似注入判据原文（丙形态，ADR-C155 已否）',
+      );
+      expect(
+        kChunkSystemPrompt.length,
+        greaterThan(4500),
+        reason: 'prompt 应比现状(4053) 更长（要点行确实注入，非空转）',
       );
     });
   });

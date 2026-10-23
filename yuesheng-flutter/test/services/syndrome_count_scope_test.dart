@@ -222,4 +222,58 @@ void main() {
       expect(idxNoteFake, greaterThan(idxManualFake)); // 应被 ⑤ 判为失败
     });
   });
+
+  group('⑥ 动作编号域：manual 自称域 = 动作库真源（2026-10-23）', () {
+    /// 动作库真源的全部 ID（skill_registry.dart 的 Map 键）。
+    Set<String> _actionIds() {
+      final src = _readSrc('lib/services/skill_registry.dart');
+      return RegExp(
+        r"'(A\d{3})':",
+      ).allMatches(src).map((m) => m.group(1)!).toSet();
+    }
+
+    test('manual 输出规范段的编号域上界与动作库一致', () {
+      final actions = _actionIds();
+      expect(actions, isNotEmpty, reason: '动作库为空——真源读取失败');
+      final expectedMax = actions.reduce((a, b) => a.compareTo(b) > 0 ? a : b);
+      // manual 文案：「suggested_actions 中写 A001-A016 编号」
+      final manualSrc = _readSrc('lib/services/syndrome_kb_content.dart');
+      final m = RegExp(r'写 (A\d{3})-(A\d{3}) 编号').firstMatch(manualSrc);
+      expect(m, isNotNull, reason: 'manual 输出规范段找不到「写 A0XX-A0XX 编号」文案');
+      expect(
+        m!.group(2),
+        expectedMax,
+        reason:
+            'manual 自称的动作编号域上界(${m.group(2)}) ≠ 动作库真源上界($expectedMax)。\n'
+            '（T-20261021-05 核查：文案曾写 A001-A015 而真源为 A001-A016）',
+      );
+      // 下界也须一致（A001）
+      expect(m.group(1), 'A001');
+    });
+
+    test('护栏自身有效（变异 F/G 回归）', () {
+      // 变异 F：文案上界写窄 ⇒ 判据必须能红
+      final actions = _actionIds();
+      final expectedMax = actions.reduce((a, b) => a.compareTo(b) > 0 ? a : b);
+      const fakeManual = '写 A001-A015 编号';
+      final m = RegExp(r'写 (A\d{3})-(A\d{3}) 编号').firstMatch(fakeManual);
+      expect(m!.group(2), isNot(expectedMax)); // 旧文案应被判失败
+    });
+  });
 }
+
+// ═══ 附：动作编号域一致性（2026-10-23 · T-20261021-05 核查发现的低危真缺陷修复）═══
+//
+// 病因：manual「诊断输出规范」节写「suggested_actions 中写 A001-A015 编号」，
+//   而动作库真源（skill_registry.dart）实为 A001-A016（validator 全含故
+//   功能不裂——#R5 已绿灯；但 prompt 自称域比真域窄 1，属文案漂移）。
+//   同类漂移历史上出过三次（P001-P020 硬编码 / 「31 条技法」注释 / 本处），
+//   根因都是「prompt 文案声称的编号域与真源各写各的」。
+//
+// 本护栏守一条不变量：
+//   ⑥ manual 输出规范段的动作编号域上界 = 动作库真实上界（派生，不写死）
+//
+// 变异验证（预期）：
+//   F 文案写回 A001-A015            → ⑥ 失败
+//   G 动作库新增 A017 而文案没同步   → ⑥ 失败（防再次漂移）
+// ─────────────────────────────────────────────────────────────

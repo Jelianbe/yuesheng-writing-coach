@@ -262,7 +262,11 @@ void main() {
       expect(out.activatedFocusId, 'P018');
     });
 
-    test('fact 3 + interruption ⇒ 获资格（读者关切处被打断也是 bulk 形态）', () {
+    test('fact 3 + interruption ⇒ 不获资格（2026-10-23 方案 A 收窄后）', () {
+      // ★ T-20261018-05 X01 零放大 · 方案 A（舰长「都批」）：
+      // interruption 移出 kFormStructureBulk ⇒ 单凭「被打断」不再获 bulk 资格。
+      // 实测依据：.ai/reports/2026-10-20-X01零放大-方案寻优实测.md
+      // （X01|t07|r1 的 GT=P018 曾被 interruption 通道让 P002 抢占）。
       final out = resolveTeachingFocus(
         _input([
           _fp(
@@ -271,6 +275,23 @@ void main() {
             ConfirmationStatus.suspected,
             formFactCount: 3,
             formStructure: 'interruption',
+          ),
+          _fp('P018', Severity.l1, ConfirmationStatus.suspected),
+        ]),
+      );
+      expect(out.activatedFocusId, 'P018');
+    });
+
+    test('fact 3 + expository ⇒ 获资格（收窄后唯一 bulk 形态）', () {
+      // 方案 A 后 expository 是 kFormStructureBulk 唯一成员 ⇒ 仍获资格。
+      final out = resolveTeachingFocus(
+        _input([
+          _fp(
+            'P002',
+            Severity.l2,
+            ConfirmationStatus.suspected,
+            formFactCount: 3,
+            formStructure: 'expository',
           ),
           _fp('P018', Severity.l1, ConfirmationStatus.suspected),
         ]),
@@ -709,13 +730,23 @@ void main() {
   group('护栏自身有效（变异回归）', () {
     test('形态阈值与结构集合是常量且与设计稿一致', () {
       expect(kFormBulkMinFacts, 3);
+      // ★ 2026-10-23 方案 A（T-20261018-05 · 舰长「都批」）：interruption
+      // 移出集合 ⇒ 此处由 contains(isTrue) 翻转为 contains(isFalse)。
+      // 依据：.ai/reports/2026-10-20-X01零放大-方案寻优实测.md §三/§五
+      // （interruption 通道放大 P002 焦点 41→77 格，抢占 GT=P018 的 X01|t07|r1）。
       expect(kFormStructureBulk.contains('expository'), isTrue);
-      expect(kFormStructureBulk.contains('interruption'), isTrue);
+      expect(
+        kFormStructureBulk.contains('interruption'),
+        isFalse,
+        reason: 'interruption 已移出（方案 A 收窄）——「被打断」是叙事位置属性，非结构形态',
+      );
       expect(
         kFormStructureBulk.contains('narrative'),
         isFalse,
         reason: 'narrative（叙事流内、无结构标记）不构成倾泻形态',
       );
+      // 收窄后集合恰 1 个成员（防将来误加回）
+      expect(kFormStructureBulk.length, 1);
     });
 
     test('★ 组合⑤双要素：缺任一 ⇒ 不成形（判据自身有效）', () {

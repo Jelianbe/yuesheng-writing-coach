@@ -154,9 +154,19 @@ bool _formEvidenceBulk(FocusProblem p) {
 /// 组合⑤要素 (a) 阈值：成段多事实 ≥ 3 条（判据正文既有数字，非新阈值）。
 const int kFormBulkMinFacts = 3;
 
-/// 组合⑤要素 (b) 的「可成倾泻」结构标记集合（论文式 / 读者关切处被打断）。
+/// 组合⑤要素 (b) 的「可成倾泻」结构标记集合（论文式）。
 /// ⚠️ `narrative`（叙事流内、无结构标记）**不在**此集合 ⇒ 旁白交代型不成形。
-const Set<String> kFormStructureBulk = {'expository', 'interruption'};
+///
+/// ★ 2026-10-23 收窄（T-20261018-05 X01 零放大 · 舰长「都批」· 方案 A）：
+/// `interruption`（读者关切处被打断）**移出本集合**。实测依据
+/// （`.ai/reports/2026-10-20-X01零放大-方案寻优实测.md`）：interruption
+/// 通道把 P002 焦点从 v1 的 41 格放大到 77 格，其中 X01|t07|r1 的 GT
+/// 焦点 = P018（多数 confirmed）却被 P002 抢占（红线违规）；收窄后
+/// X01 归 0、X22 保 9 格、焦点丢失格 0、+7 真收益 / −1 真损失
+/// （唯一真损失格 X18|t07|r5，GT=P002，已登记于该报告 §五）。
+/// 组合⑤正文「≥3 条 + 结构标记」的「结构标记」以论文式（expository）
+/// 为唯一形态——「被打断」是叙事位置属性，非结构形态，不构成倾泻表征。
+const Set<String> kFormStructureBulk = {'expository'};
 
 /// 资格闸排序比较器（ADR-0008 §2.1 双键）：(资格级 DESC, severity DESC)。
 ///

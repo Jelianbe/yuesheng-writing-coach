@@ -10,9 +10,12 @@
 //   而 four_libraries_consistency_test 覆盖的正是那批库，本文件不在「四库」
 //   之内 → 扩容后既没同步、也没护栏兜住。
 //
-// 本护栏守四条不变量：
+// 本护栏守四条不变量（★ 2026-10-23 ADR-C155 起 ① 升级为两节结构）：
 //   ① 覆盖一致性：kChunkSystemPrompt 必须含注册表**全部**非退役症候 ID
 //      ——逐条断言，不求和（V4.8）；总数判据允许「少一个、多一个重复的」蒙混
+//      ★ ADR-C155：全覆盖现由**两节**共同完成——「症候判定要点」（27 条可片内
+//        判定）+「跨章依赖判据」（6 条读数批实测退化者，点名留痕 + uncertain
+//        指引）。两节各自守「恰 1 次、不重复、不静默不选」（B4）。
 //   ② 范围说明派生：buildMergePrompt 的范围串必须由同一真源算出
 //   ③ 无硬编码回退：源码中不得再现 P001-P020 / 硬编码清单行
 //   ④ 兜底句存在：例外指引末条覆盖「未列出的症候」
@@ -24,6 +27,7 @@
 //   C 删掉兜底句                      → ④ 失败
 //   D 给 analyzeChunk 换成别的 prompt → ⑤ 失败
 //   E 注册表新增一个症候后不改代码     → ①②③ 应**仍通过**（派生的意义）
+//   F（C155 新增）把 6 条退化者从留痕节删掉 → ① 留痕节断言失败（防静默不选）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -102,26 +106,77 @@ void main() {
       );
     });
 
-    test('派生清单的行数与注册表规模一致（防多出重复行）', () {
-      // 只取「症候类型参考」与「例外情况指引」之间的清单块。
+    test('派生要点清单的行数与注册表规模一致（防多出重复行）', () {
+      // 只取「症候判定要点」与「跨章依赖判据」之间的清单块。
       // 首版把 prompt 里所有 `- ` 开头的行都算了进来，把 16 条例外指引
       // （形如 `- P001例外：…`）也算成清单行，于是每个 ID 都被判为「出现 2 次」
       // ——与 V4.7 同类的判据过宽问题。
-      final startIdx = kChunkSystemPrompt.indexOf('症候类型参考');
-      final endIdx = kChunkSystemPrompt.indexOf('例外情况指引');
-      expect(startIdx, isNot(-1), reason: '找不到「症候类型参考」小节');
+      // ★ ADR-C155（2026-10-23）：标题由「症候类型参考」改为「症候判定要点」，
+      //   且清单收窄为「注册表 − kChunkDegradedCriteriaIds」——6 条退化者
+      //   移入「跨章依赖判据」节（仍点名，见下一组断言）。
+      final startIdx = kChunkSystemPrompt.indexOf('症候判定要点');
+      final endIdx = kChunkSystemPrompt.indexOf('跨章依赖判据');
+      expect(startIdx, isNot(-1), reason: '找不到「症候判定要点」小节');
       expect(endIdx, greaterThan(startIdx), reason: '清单块边界异常');
       final block = kChunkSystemPrompt.substring(startIdx, endIdx);
 
-      // 每个 ID 在清单块里**恰好**出现 1 次
-      final dup = ids.where((id) => _count(block, id) > 1).toList();
-      expect(dup, isEmpty, reason: '以下症候在清单块中重复出现：${dup.join(', ')}');
-      // 且清单块非空（防止派生函数返回空串却「零重复」）
-      final missingInBlock = ids.where((id) => !block.contains(id)).toList();
+      // 每个**非退化**症候 ID 在要点块里恰好出现 1 次
+      final dup = ids
+          .where((id) => !kChunkDegradedCriteriaIds.contains(id))
+          .where((id) => _count(block, id) > 1)
+          .toList();
+      expect(dup, isEmpty, reason: '以下症候在要点块中重复出现：${dup.join(', ')}');
+      // 且非退化症候全部在块内（防「收窄」被误做成「静默漏同步」）
+      final missingInBlock = ids
+          .where((id) => !kChunkDegradedCriteriaIds.contains(id))
+          .where((id) => !block.contains(id))
+          .toList();
       expect(
         missingInBlock,
         isEmpty,
-        reason: '清单块缺少：${missingInBlock.join(', ')}',
+        reason: '要点块缺少：${missingInBlock.join(', ')}',
+      );
+    });
+
+    test('ADR-C155：6 条退化判据在「跨章依赖判据」节点名留痕（防静默不选）', () {
+      // 读数批（.ai/reports/2026-10-23-分块链读数.md §三）：P011/P012/P019/
+      // P020/P022/P033 分块下 uncertain 率 33%–100% ⇒ 从要点清单排除，但必须
+      // **显式留痕**（B4：不能静默不选）。留痕节 = 点名 + uncertain 指引。
+      // ⚠️ 节边界截到「片段窗口边界」：其后的例外指引里 P011 等也有条目
+      // （「- P011例外：…」），不截会把例外指引的点名算成留痕节重复。
+      final degradedIdx = kChunkSystemPrompt.indexOf('跨章依赖判据');
+      expect(
+        degradedIdx,
+        isNot(-1),
+        reason: '「跨章依赖判据」节缺失——6 条退化判据被静默排除了（违反 B4）',
+      );
+      final boundaryIdx = kChunkSystemPrompt.indexOf('片段窗口边界');
+      expect(boundaryIdx, greaterThan(degradedIdx), reason: '留痕节边界异常');
+      final tail = kChunkSystemPrompt.substring(degradedIdx, boundaryIdx);
+      for (final id in kChunkDegradedCriteriaIds) {
+        expect(tail.contains(id), isTrue, reason: '退化判据 $id 未在留痕节点名');
+        expect(_count(tail, id), 1, reason: '退化判据 $id 在留痕节重复出现');
+      }
+      expect(
+        tail.contains('"uncertain": true'),
+        isTrue,
+        reason: '留痕节缺 uncertain 指引句（丙为先：明示片内不可判时直接标 uncertain）',
+      );
+    });
+
+    test('ADR-C155：退化判据不得出现在要点块（收窄的实质）', () {
+      final startIdx = kChunkSystemPrompt.indexOf('症候判定要点');
+      final endIdx = kChunkSystemPrompt.indexOf('跨章依赖判据');
+      final block = kChunkSystemPrompt.substring(startIdx, endIdx);
+      final leaked = kChunkDegradedCriteriaIds
+          .where((id) => block.contains(id))
+          .toList();
+      expect(
+        leaked,
+        isEmpty,
+        reason:
+            '以下退化判据仍出现在要点块：${leaked.join(', ')}\n'
+            '（ADR-C155 裁定 = 乙形态收窄：片内不可自证的判据不注入判定要点）',
       );
     });
   });

@@ -357,25 +357,37 @@ void _mergeSmallLastChunk(
 // 文件（不在 skill_registry 内），缺陷潜伏至今。现改由注册表派生，扩容自动
 // 跟随；一致性由 progressive_chunk_syndrome_coverage_test.dart 兜底。
 
-/// 注册表内全部未退役症候，按 ID 升序，形如 `P001 情绪标签化`。
+/// ★ T-20261021-03 读数批（ADR-C155）：分块下系统性退化为 uncertain 的判据集。
 ///
-/// [disabled] 为用户永久关闭（「不适用于我」）的症候 ID 集合，从中剔除。
-/// 空集 = 全启用（与历史行为一致）。
-List<String> _activeSyndromeLabels([Set<String> disabled = const {}]) {
-  final rows =
-      kSyndromeRegistry
-          .where((s) => !disabled.contains(s.id))
-          .map((s) => '${s.id} ${s.name}')
-          .toList()
-        ..sort();
-  return rows;
-}
+/// 读数依据（`.ai/reports/2026-10-23-分块链读数.md` §三）：干净名家语料
+/// 18 块 × 39 判据 = 701 条判定中，这 6 条 uncertain 率 33%–100%
+/// （P022 18/18 全退化 · P020 16/18 · P019 10/18 · P012 8/18 ·
+/// P011 7/18 · P033 6/18），其余 33 条 18/18 判定稳定（全 miss）。
+/// 形态一致：全部是**跨章/跨片依赖判据**（全文节奏比例 / 跨章长线 /
+/// 章末收束 / 章首开篇 / 冲突场次前史）——窗口边界纪律下无法在片内自证。
+///
+/// 处置（ADR-C155 裁定 = 乙形态 + 丙为先）：
+/// - 从分块 prompt 的「判定要点清单」**排除**这 6 条（不注入判定要点）；
+/// - 但在「跨章依赖判据」节**显式留痕**（点名 + uncertain 指引）——
+///   排除而非静默不选（B4），且是 ADR-C153 窗口边界规则的具体化
+///   （规则早已存在，本清单把实测退化者点名，零结构改动）。
+///
+/// ⚠️ 注册表新增症候时：若其成立依赖片段外信息（跨章比例 / 前史 /
+/// 后文解释 / 角色长期状态），须同步加入本常量——否则会自动进入要点
+/// 清单（默认假设「片内可判定」），重蹈「注入只会制造噪声」。
+const Set<String> kChunkDegradedCriteriaIds = {
+  'P011',
+  'P012',
+  'P019',
+  'P020',
+  'P022',
+  'P033',
+};
 
 /// 症候 ID 的连续范围说明，形如 `P001-P029`。
 ///
 /// ADR-C69：merge prompt 原硬编码「P001-P020」，与注册表（P001-P029）不符，
 /// 会压制后段症候的输出。改由同一真源派生，杜绝两套范围。
-/// [disabled] 同 [_activeSyndromeLabels]。
 String _syndromeIdRange([Set<String> disabled = const {}]) {
   final ids =
       kSyndromeRegistry
@@ -499,6 +511,46 @@ const String _kChunkSelfContainedProbe =
     '''- 可在片段内指认位置的（局部措辞、局部节奏、局部视角跳变、局部设定堆积）：照常判。
 - 可由片段自身自证的（类型通用件的辨识性、类型固有节奏、体裁约定）：照常判。''';
 
+/// 「跨章依赖判据」节：点名 [kChunkDegradedCriteriaIds] + uncertain 指引。
+///
+/// ADR-C155（T-20261021-03 读数批）：这 6 条在分块形态下 uncertain 率
+/// 33%–100%（P022 18/18 全退化），成立与否依赖片段外信息 ⇒ 片内原理上
+/// 判不了。**不是豁免**（ADR-C153 已否决例外清单路线），是把窗口边界
+/// 规则应用到实测退化者：遇到疑似形态直接标 uncertain 交合并阶段，
+/// 勿在片内推测。用户禁用某条时同步剔除（R-009 用户主权）。
+String _chunkDegradedCriteriaBlock([Set<String> disabled = const {}]) {
+  final rows =
+      kSyndromeRegistry
+          .where((s) => kChunkDegradedCriteriaIds.contains(s.id))
+          .where((s) => !disabled.contains(s.id))
+          .map((s) => '- ${s.id} ${s.name}')
+          .toList()
+        ..sort();
+  if (rows.isEmpty) return '';
+  return '''跨章依赖判据（片段内不可判定，直接标 uncertain）：
+以下症候的成立与否依赖片段之外的信息（全文节奏比例、跨章长线、章末收束、章首开篇、冲突场次前史），在本片段阶段无法自证：
+${rows.join('\n')}
+遇到以上形态的可疑迹象时，不要勉强给结论：在该条 note 上标 "uncertain": true 并简述缺哪类信息，交由合并阶段裁决。''';
+}
+
+/// 分块 prompt 的「判定要点」行：`- <ID> <病名>（<关键词>）：<一句话判定要点>`。
+///
+/// ADR-C155 裁定 = **乙形态**（原则 + 判据条目，不注入负例 few-shot）：
+/// 读数批的判读依据是 39 条判据**原文**（61514 字符）；原文 verbatim
+/// （丙形态）按 33 条折算 ≈52000 字符/片，token 成本随片数爆炸 ⇒ 否。
+/// 乙形态从注册表现成字段（keyword + oneLine）派生，零新内容维护面。
+/// 排除 [kChunkDegradedCriteriaIds]（那些走「跨章依赖判据」节）。
+List<String> _activeSyndromeCriteriaLines([Set<String> disabled = const {}]) {
+  final rows =
+      kSyndromeRegistry
+          .where((s) => !disabled.contains(s.id))
+          .where((s) => !kChunkDegradedCriteriaIds.contains(s.id))
+          .map((s) => '- ${s.id} ${s.name}（${s.keyword}）：${s.oneLine}')
+          .toList()
+        ..sort();
+  return rows;
+}
+
 /// 构造单块系统提示词：症候清单由注册表派生（ADR-C69）。
 ///
 /// 每行 4 个，沿用 RN 逐字移植时的紧凑排布，避免 39 条摊成 39 行。
@@ -517,18 +569,14 @@ String _buildChunkSystemPrompt([
   Set<String> disabled = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
 ]) {
-  final labels = _activeSyndromeLabels(disabled);
-  final listBlock = <String>[];
-  for (var i = 0; i < labels.length; i += 4) {
-    final end = i + 4 > labels.length ? labels.length : i + 4;
-    listBlock.add('- ${labels.sublist(i, end).join(' / ')}');
-  }
+  final criteriaLines = _activeSyndromeCriteriaLines(disabled);
+  final degradedBlock = _chunkDegradedCriteriaBlock(disabled);
   return '''你是一个专业的写作诊断助手。请阅读以下文本片段，识别其中存在的写作问题。
 
-症候类型参考（仅用于标注，不要强行匹配）：
-${listBlock.join('\n')}
+症候判定要点（逐条核对，不要强行匹配）：
+${criteriaLines.join('\n')}
 
-$_kChunkWindowBoundary
+${degradedBlock == '' ? '' : '$degradedBlock\n\n'}$_kChunkWindowBoundary
 $_kChunkSelfContainedProbe
 
 $_kChunkExceptionGuide
