@@ -13,6 +13,9 @@
     P1-5 业务动作方法体无防抖守卫关键词候选（调用方已有守卫则豁免）
 
 退出码：P0 命中 → 1；仅 P1 → 0。
+行号口径：全部读数的 line 均为**源文件行号**（去注释文本保行数；方法级读数 =
+方法体起始行 + 去注释体内匹配前的换行数）。早期版本 P0-2/P1-4 输出去注释文本
+行号、P0-3/P1-1 混合坐标，均非源文件行号（T-20261024-01 修复）。
 用法：
   python scripts/check_interaction_regression.py [--lib <路径>] [--quiet] [--json <out>]
 """
@@ -51,8 +54,12 @@ DEBOUNCE_GUARDS = (
 
 
 def _strip_comments(src):
-    """去整行注释（不剥行内 //，避免切掉字符串/代码尾注——V4.13/4.25）。"""
-    return re.sub(r"(?m)^\s*//[^\n]*", "", src)
+    r"""去整行注释（不剥行内 //，避免切掉字符串/代码尾注——V4.13/4.25）。
+
+    行首空白限 [ \t]（不含 \n）：否则 `^\s*//` 会把注释行前面的空行一起吞掉，
+    去注释文本行号系统性左移（T-20261024-01：P1-4 实测 19/19 项左移 1–22 行）。
+    """
+    return re.sub(r"(?m)^[ \t]*//[^\n]*", "", src)
 
 
 def _method_bodies(src):
@@ -97,8 +104,10 @@ def _scan_file(path, rel, findings):
             has_mounted = "mounted" in code_body or "context.mounted" in code_body
             if not has_mounted:
                 nav_m = CONTEXT_NAV_PATTERN.search(code_body)
-                rel_off = src.find(body) + nav_m.start()
-                ln = src[: rel_off].count("\n") + 1
+                # 源文件坐标：方法体起始行 + 去注释体内匹配前的换行数
+                # （去注释保行数；不得把 code_body 字符偏移加到 src 位置上——混合坐标会位移）
+                body_off = src.find(body)
+                ln = src[:body_off].count("\n") + 1 + code_body[: nav_m.start()].count("\n")
                 findings.append(("P0-3", rel, ln, nav_m.group(0).strip(), "await 后 context 导航无 mounted 候选（IR-P0-3）"))
 
         # P1-1：Navigator.pop 无保护候选（弹层多数合法，标记复核）
@@ -106,8 +115,8 @@ def _scan_file(path, rel, findings):
             ctx = code_body[max(0, pop_m.start() - 200): pop_m.end() + 30]
             if "canPop" in ctx or "mounted" in ctx:
                 continue
-            rel_off = src.find(body) + pop_m.start()
-            ln = src[: rel_off].count("\n") + 1
+            body_off = src.find(body)
+            ln = src[:body_off].count("\n") + 1 + code_body[: pop_m.start()].count("\n")
             findings.append(("P1-1", rel, ln, pop_m.group(0).strip(), "Navigator.pop 无 canPop/mounted 上下文候选（弹层合法则忽略）"))
 
         # P1-5：业务动作无防抖守卫
