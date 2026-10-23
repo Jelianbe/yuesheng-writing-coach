@@ -216,7 +216,8 @@ List<ChunkCoverage> computeChunkCoverage(String content, List<String> chunks) {
 ///   1. 按 '\n\n' 切段落
 ///   2. 从 startIndex 累加段落，总长度接近 SIZE 时切块
 ///   3. overlap 从本块末尾段落向前回溯，累计长度 ≥ OVERLAP 停
-///   4. 末块 < MIN_LAST_CHUNK 时合并到前一块
+///   4. 末块 < MIN_LAST_CHUNK 时合并到前一块（合并时按 overlap 段索引
+///      去重，见 [_mergeSmallLastChunk]——T-20261021-03 读数批实锤修复）
 ///
 /// 原子性：单段超长（首段即 ≥ SIZE）时**整段成块**，不再按字符硬切——
 /// 段落是分块算法的边界，段内不再切。修复批次 H 侦察的同步死循环缺陷
@@ -227,7 +228,26 @@ List<String> splitContent(String content) {
   }
 
   final paragraphs = content.split('\n\n');
+  final (chunks, spans) = _chunkParagraphs(paragraphs);
+  _mergeSmallLastChunk(chunks, spans, paragraphs.length);
+  return chunks;
+}
+
+/// 按段落 + overlap 切块，返回 (块文本列表, 每块段索引区间 [start, end))。
+///
+/// 区间（end 独占）供 [_mergeSmallLastChunk] 的 overlap 去重使用——末块
+/// 头部本就是 overlap 设计语义下前块尾部的逐字重复，字符串比对分不开
+/// 「设计内 overlap」与「合并后块内重复」，只能靠索引。
+///
+/// 单段原子性：首段即超阈值时**整段成块并跳过 overlap**——段落是不可再分
+/// 的原子单元（按 '\n\n' 分块，段内不再切）。修复批次 H 侦察的同步死循环
+/// 缺陷（ADR-C73 §2）：若只推进 endIndex 而不推进 startIndex，overlap
+/// 回溯后会让 startIndex 不变 ⇒ while 永真。
+(List<String>, List<({int start, int end})>) _chunkParagraphs(
+  List<String> paragraphs,
+) {
   final chunks = <String>[];
+  final spans = <({int start, int end})>[];
   var startIndex = 0;
 
   while (startIndex < paragraphs.length) {
@@ -247,28 +267,25 @@ List<String> splitContent(String content) {
 
     if (!reachedThreshold) {
       chunks.add(paragraphs.sublist(startIndex).join('\n\n'));
+      spans.add((start: startIndex, end: paragraphs.length));
       break;
     }
 
-    // 单段原子性：首段即超阈值时**整段成块并跳过 overlap**——
-    // 段落是不可再分的原子单元（按 '\n\n' 分块，段内不再切）。
-    // 修复批次 H 侦察的同步死循环缺陷（ADR-C73 §2）：
-    // 若只推进 endIndex 而不推进 startIndex，overlap 回溯后会
-    // 让 startIndex 不变 → while 永真。
     if (endIndex == startIndex) {
       chunks.add(paragraphs[startIndex]);
+      spans.add((start: startIndex, end: startIndex + 1));
       startIndex = startIndex + 1;
       continue;
     }
 
     final chunk = paragraphs.sublist(startIndex, endIndex).join('\n\n');
     chunks.add(chunk);
+    spans.add((start: startIndex, end: endIndex));
 
     startIndex = _overlapStartIndex(paragraphs, endIndex, startIndex);
   }
 
-  _mergeSmallLastChunk(chunks);
-  return chunks;
+  return (chunks, spans);
 }
 
 /// overlap 回溯：从 endIndex-1 向前累加，直到长度 ≥ OVERLAP。
@@ -296,13 +313,41 @@ int _overlapStartIndex(List<String> paragraphs, int endIndex, int startIndex) {
 }
 
 /// 末块过小时合并到前一块（避免单句成块）。
-void _mergeSmallLastChunk(List<String> chunks) {
+///
+/// ★ T-20261021-03 读数批实锤缺陷修复（2026-10-23，报告《分块链读数》§四）：
+/// 旧实现原样拼接 `chunks[n-2] + '\n\n' + last`。而末块的头部段落正是
+/// overlap 回溯（splitContent 第 3 步）从「前块末尾」带回来的——与倒数第二
+/// 块尾部逐字相同。合并后这些段落在**同一块内**二次出现：L03c2 实测
+/// 1/18 块命中（段[27]=段[29]、段[28]=段[30] 一字不差），该批唯一 hit
+/// （P018 段落重复）即其假症候、已作废。污染诊断质量（重复判症 / token
+/// 浪费）与未来任何读数。
+///
+/// 修复 = 按块间 overlap 的段索引**精确去重**：末块中落在
+/// `[lastStart, min(prevEnd, paragraphCount))` 的段落是前块已收内容，
+/// 跳过再拼。overlap 语义保留在**块间**，不在块内二次出现。
+/// （overlap 兜底分支令 lastStart == prevEnd 时 dupCount ≤ 0，走原样拼接。）
+void _mergeSmallLastChunk(
+  List<String> chunks,
+  List<({int start, int end})> spans,
+  int paragraphCount,
+) {
   if (chunks.length < 2) return;
   final last = chunks.last;
-  if (last.length < kDiagnosisMinLastChunk) {
+  if (last.length >= kDiagnosisMinLastChunk) return;
+
+  final lastStart = spans.last.start;
+  final prevEnd = spans[spans.length - 2].end;
+  final dupCount =
+      (prevEnd < paragraphCount ? prevEnd : paragraphCount) - lastStart;
+  if (dupCount <= 0) {
     chunks[chunks.length - 2] = '${chunks[chunks.length - 2]}\n\n$last';
-    chunks.removeLast();
+  } else {
+    final kept = last.split('\n\n').skip(dupCount).join('\n\n');
+    chunks[chunks.length - 2] = kept.isEmpty
+        ? chunks[chunks.length - 2]
+        : '${chunks[chunks.length - 2]}\n\n$kept';
   }
+  chunks.removeLast();
 }
 
 // ── 单块系统提示词（对齐 RN CHUNK_SYSTEM_PROMPT）──

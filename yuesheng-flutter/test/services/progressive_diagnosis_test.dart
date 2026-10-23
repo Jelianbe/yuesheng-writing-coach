@@ -6,6 +6,10 @@
 //   #1 splitContent 短文本不分块（<= CHUNK_SIZE 返单块）
 //   #2 splitContent 按段落拆分，块间含 overlap 回溯
 //   #3 splitContent 末块过小时与前块合并
+//   #9 splitContent 末块合并 overlap 去重——正向：合并块内无重复段
+//      （T-20261021-03 读数批实锤修复，报告《分块链读数》§四）
+//   #10 负向自测：旧拼接逻辑在同 overlap 结构下必现重复段（证 #9 非空转）
+//   #11 无 overlap 合并路径（dupCount=0）：精确保全、不误删
 //   #4 buildMergePrompt 注入 SYNDROME_DIAGNOSIS_SKILL 引用 + 跨片段合并规则
 //   #5 runProgressiveDiagnosis 短文本走 null（走单次链路）
 //   #8 ADR-C80 空内容分级降级（换参重试 / 仍空显式失败 / 合法零症候不误伤）
@@ -225,6 +229,103 @@ void main() {
       // 至少 2 块：第一块含首段（整段或部分），后续按段落合并
       expect(chunks.length, greaterThanOrEqualTo(2));
       expect(chunks.first, contains(first)); // 首段必在前块
+    });
+
+    test('#9 末块<500 且 overlap 跨段边界 → 合并块内无重复段'
+        '（T-20261021-03 读数批实锤修复）', () {
+      // 构造算尺（段索引口径，pLen = 段长 + 2）：
+      //   段[0..9] = 'P00'..'P09' + 'X'×272 = 275 字/段（pLen 277）
+      //   段[10]   = 'P10' + 'X'×197 = 200 字（pLen 202）
+      //   段[11]   = 'P11' + 'X'×247 = 250 字（pLen 252）
+      //   总长 3222 > SIZE 3000 ⇒ 进分块循环
+      // 迭代1：i=10 时累计 2970 <3000 收入；i=11 时 2970+252=3222 ≥3000
+      //   ⇒ 切块 endIndex=11，块1 = 段[0..10]；overlap 回溯段[10]（202
+      //   字 ≥ OVERLAP 200）⇒ startIndex=10
+      // 迭代2：段[10..11] 累计 454 <3000 ⇒ !reachedThreshold ⇒ 末块
+      //   = 段[10..11] = 452 字 < MIN_LAST_CHUNK 500 ⇒ 触发合并
+      // 旧实现原样拼接 ⇒ 段[10]（200 字）在合并块内二次出现（L03c2 同款
+      //   缺陷：段[27]=段[29] 一字不差，该批唯一 hit 即其假症候已作废）；
+      // 修复后 dupCount = min(prevEnd=11, N=12) - lastStart=10 = 1
+      //   ⇒ 跳过段[10] 再拼 ⇒ 合并块与原文逐字一致。
+      final paragraphs = <String>[];
+      for (var i = 0; i < 10; i++) {
+        paragraphs.add('P${i.toString().padLeft(2, '0')}${'X' * 272}');
+      }
+      paragraphs.add('P10${'X' * 197}'); // 200 字
+      paragraphs.add('P11${'X' * 247}'); // 250 字
+      final content = paragraphs.join('\n\n');
+      expect(content.length, 3222, reason: '算尺锚：总长必须 >3000 才进分块循环');
+
+      final chunks = splitContent(content);
+
+      // 合并必须发生（构造成立性双锚：总长 3222 + 末块 452<500）
+      expect(chunks, hasLength(1), reason: '末块 452<500 ⇒ 必须合并成 1 块');
+      // 精确还原 = 无重复 + 无丢失的最强形式
+      expect(chunks.single, content, reason: '合并块与原文逐字一致');
+      // 段落级扫描（报告 §4.4 要求的判据）：12 段互不相同
+      final merged = chunks.single.split('\n\n');
+      expect(merged, hasLength(12));
+      expect(merged.toSet(), hasLength(12), reason: '任一段落不得在合并块内出现两次');
+      for (var i = 0; i < 12; i++) {
+        expect(chunks.single, contains('P${i.toString().padLeft(2, '0')}'));
+      }
+    });
+
+    test('#10 负向自测：旧拼接逻辑在同 overlap 结构下必现重复段'
+        '（证明 #9 非 vacuous 通过）', () {
+      // 与 #9 同切点构造：段[0..11] 完全相同（切块 endIndex=11 与 overlap
+      // 点 startIndex=10 只由前 12 段决定——迭代1 的 break 条件在 i=11
+      // 即已触发，够不到段[12]），仅追加段[12]（400 字）使末块
+      // = 段[10..12] = 854 ≥ 500 ⇒ 合并不触发，从而**观测到真实的
+      // (前块, 末块) 对**。该对的重复段（段[10]）与 #9 输入的前块尾/
+      // 末块头逐字相同（同切点、同 overlap 点，仅末块多一段新内容），
+      // 故负向结论覆盖 #9 的确切输入。
+      final paragraphs = <String>[];
+      for (var i = 0; i < 10; i++) {
+        paragraphs.add('P${i.toString().padLeft(2, '0')}${'X' * 272}');
+      }
+      paragraphs.add('P10${'X' * 197}'); // 200 字
+      paragraphs.add('P11${'X' * 247}'); // 250 字
+      paragraphs.add('P12${'X' * 397}'); // 400 字 ⇒ 末块 854，不合并
+      final content = paragraphs.join('\n\n');
+
+      final chunks = splitContent(content);
+      expect(chunks, hasLength(2), reason: '末块 854 ≥500 ⇒ 不合并，露出 overlap 结构');
+
+      // overlap 设计语义：末块头部 == 前块尾部（逐段同一，跨块上下文连续）
+      final prevParas = chunks[0].split('\n\n');
+      final lastParas = chunks[1].split('\n\n');
+      expect(
+        lastParas.first,
+        prevParas.last,
+        reason: '末块首段必须与前块末段逐字相同（overlap 回溯的设计语义）',
+      );
+
+      // 负向自测：把观测到的真实 (前块, 末块) 喂给旧实现的拼接公式
+      // （修复前 _mergeSmallLastChunk 的行为），重复必现——证明 #9 的
+      // 输入是真触发条件，不是空转通过。
+      final legacyMerged = '${chunks[0]}\n\n${chunks[1]}';
+      final legacyParas = legacyMerged.split('\n\n');
+      final dupCount = legacyParas.where((p) => p == prevParas.last).length;
+      expect(dupCount, 2, reason: '旧拼接公式下重叠段必现两次（与 L03c2 实测同款缺陷）');
+
+      // 对照：块间 overlap 是设计，块内重复是缺陷——修复后两块内部
+      // 各自仍无重复段。
+      expect(prevParas.toSet(), hasLength(prevParas.length));
+      expect(lastParas.toSet(), hasLength(lastParas.length));
+    });
+
+    test('#11 无 overlap 的合并路径（dupCount=0）：精确保全、不误删', () {
+      // 构造：单段 2998 字（pLen 3000 ≥ SIZE ⇒ 原子成块、跳 overlap）
+      //   + 尾段 100 字 < 500 ⇒ 触发合并，但两块间无 overlap（原子分支
+      //   后 startIndex 直接 +1，不回溯）。
+      // 算尺：dupCount = min(prevEnd=1, N=2) - lastStart=1 = 0 ⇒ 走原样
+      // 拼接分支。断言合并块与原文逐字一致——防修复自身误删（dupCount
+      // 算错会把尾段当重复段吞掉）。
+      final content = '${'A' * 2998}\n\n${'B' * 100}';
+      final chunks = splitContent(content);
+      expect(chunks, hasLength(1), reason: '尾段 100 <500 ⇒ 必须合并');
+      expect(chunks.single, content, reason: '无 overlap 合并必须逐字保全原文（不误删）');
     });
   });
 
