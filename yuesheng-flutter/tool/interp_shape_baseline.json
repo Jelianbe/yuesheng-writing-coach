@@ -1,0 +1,5 @@
+{
+ "schema": "interp-shape-baseline/1",
+ "note": "字符串插值 tear-off 形态基线；豁免必带 reason（逐条精核记录）",
+ "violations": {}
+}

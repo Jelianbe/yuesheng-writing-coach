@@ -596,7 +596,7 @@ extension ChatServiceSendRun on ChatService {
         fullContent = fullContent.substring(overflow);
         displayLength = (displayLength - overflow).clamp(0, fullContent.length);
         debugPrint(
-          '[ChatService] 步骤8: fullContent 超上限截断头部 $overflow 字符（上限 $ChatService._kFullContentMaxLen）',
+          '[ChatService] 步骤8: fullContent 超上限截断头部 $overflow 字符（上限 ${ChatService._kFullContentMaxLen}）',
         );
       }
       if (streamChunkCount <= 3 || streamChunkCount % 10 == 0) {
