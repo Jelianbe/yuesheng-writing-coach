@@ -29,10 +29,15 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/progressive_diagnosis.dart';
 
-const String kSimBase =
-    'D:/ai-teacher/.ai/research/cross-validation/data/chunk_sim';
-const String kCorpus = 'D:/ai-teacher/.ai/reports/2026-10-21-长文语料/corpus.jsonl';
-const String kOut = '$kSimBase/chunks_para_c1553.json';
+/// 项目库根目录（`.ai`）。默认值只是**本机回退**，不是唯一真相 ——
+/// 换机 / CI 用环境变量 `YUESHENG_AI_DIR` 覆盖（T-20261024-14 D 块）。
+/// 判据：设 `YUESHENG_AI_DIR` 指向同一路径 ⇒ 产物 `chunks_para_c1553.json`
+/// 的 md5 与不设时**相同**；不设时仍可跑（回退生效）。
+final String kAiDir =
+    Platform.environment['YUESHENG_AI_DIR'] ?? 'D:/ai-teacher/.ai';
+final String kSimBase = '$kAiDir/research/cross-validation/data/chunk_sim';
+final String kCorpus = '$kAiDir/reports/2026-10-21-长文语料/corpus.jsonl';
+final String kOut = '$kSimBase/chunks_para_c1553.json';
 
 /// 段间空行形态：App 排版开关设计态（`reports/2026-10-23-分块链读数.md:19`）。
 /// 旧 `chunks_para.json` 的 `chapter_chars` 已反向验证此变换（5911+71=5982 等 7/7 命中）。
