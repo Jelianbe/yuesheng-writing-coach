@@ -254,6 +254,39 @@ force 分支的覆盖缺口（A2 批补上）
 A2 批已补 `beginner_p3_yuesheng_forceSceneFirst`（66,237 = 65,628 + 609），
 并列入 `REDLINE` 受控（给它上限，而不是当对照组 —— 它本来就该随该块增长）。
 
+常量级 prompt 体积读数面（T-20261025-03 §二 · B3b-0）
+-----------------------------------------------------
+上面所有段落量的都是 `buildSystemPromptV2` 的产物与消息序列。**以下三块常量
+一份快照都没覆盖**，本段补上（数据源 = `test/snapshots/prompt_const_anchor.json`，
+由 `test/services/prompt_const_anchor_test.dart` 运行时生成，非源码正则）：
+
+· `kChunkSystemPrompt` —— >4000 字文本走的分块链 system prompt
+  （`progressive_diagnosis.dart:589`）。此前 `test/` 对它只有「症候 ID 覆盖 /
+  子串存在」断言，**零体积断言** ⇒ 任何增长无拦截。
+· `chunkExceptionGuideBlock` —— 上者内嵌的例外指引表（库私有
+  `_kChunkExceptionGuide`，同文件 `:406`）。**B3b-1 要改的就是它。**
+· `kDiagnosisProtocolSuffix` —— 拼在诊断轮次**旁路 system 消息**上的协议文本
+  （`chat_service.dart:227`；`T-20261024-13` 缺口 1 的对象）。
+
+**本段覆盖什么**：这三块常量的**字符数与字节指纹（FNV-1a 64）**是否变化、
+是否超上限。等价于「体积与字节未变」这一条可判读。
+
+★ 订正前方沿革：2026-10-24 第十二次条曾记「`kChunkSystemPrompt` −31 **不在本
+脚本计量面内**」——那是**该批时的状态**。自本段起它已被覆盖，该句不再是当前事实，
+但**保留原文不改**（沿革条目记的是当批读数，改了就成了伪史）。
+
+**本段不覆盖什么**（如实声明）：
+· 分块链的**行为**完全没有读数 —— 分块链 >4000 字真实语料实测 **0 条**
+  （`T-20261025-03` §五 ①）⇒ 「例外表变长了」不等于「模型判得更准」；
+· 不在计量面内的其它 prompt 常量（F-block×5、`manual_*.dart` 手册正文、
+  `message_injector` 运行时注入段）仍无上限；
+· 本段只证明静态度量，不证明「该常量真的被发送到模型」（生效性由
+  `progressive_chunk_syndrome_coverage_test` 的接线断言负责）。
+
+⚠️ **重冻纪律**：`prompt_const_anchor.json` 不重冻 ⇒ 本段读数恒为上次重冻时的
+旧值（本脚本历史假绿即此形态，见上方 2026-10-06 条）。重冻后**必须**同步重钉
+下方 `CONST_REDLINE` 并登记 `DECISIONS` 归因 —— 只重冻不重钉 ⇒ 红线变装饰。
+
 用法
 ----
     python tool/check_prompt_volume.py            # 读数 + 判定
@@ -383,6 +416,13 @@ def main():
     # U5（§4-265）：旁路系统注入面 —— 此前零上限，现按实测钉值
     _check_bypass(out)
 
+    # T-20261025-03 §二（B3b-0）：buildSystemPromptV2 之外的常量 —— 分块链 +
+    # 例外表 + 协议 suffix。数据源是独立快照（运行时切片，非源码正则）。
+    _check_consts(out)
+
+    # T-20261024-13 缺口 1：注入后的 user 消息面 —— 有指纹、此前无上限。
+    _check_user_face(out)
+
     if '--json' in sys.argv:
         print('\n' + json.dumps(out, ensure_ascii=False, indent=2))
 
@@ -511,6 +551,183 @@ def _check_bypass(out):
             print('  %-40s ★%d 字符，低于 1000 下限' % (k, v))
             out['violations'].append('%s: %d 字符低于下限 1000 ⇒ 疑量错对象'
                                      % (k, v))
+
+
+# ─────────────────────────────────────────────────────────────
+# 常量级 prompt 体积（T-20261025-03 §二 · B3b-0 · L0 读数面）
+#
+# 覆盖范围与不覆盖范围见模块头注「常量级 prompt 体积读数面」段。
+# 数据源 = 独立快照，由 `test/services/prompt_const_anchor_test.dart` 在**运行时**
+# 从 `kChunkSystemPrompt` 里切片生成 —— 不读源码文件做正则（源码文本 ≠ 运行时
+# 注入字节，两者会在生成代码 / 转义变化时分家）。
+# ─────────────────────────────────────────────────────────────
+CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json')
+
+# 键 → (len 上限, 冻结时的 fnv)。**贴实测、余量 +0**。
+# 沿革：2026-10-25 首次钉值（B3b-0，本批零 prompt 改动 —— 三值均为 HEAD 实测，
+#       不是新增预算）。逐值来源 = `UPDATE_SNAPSHOTS=true flutter test
+#       test/services/prompt_const_anchor_test.dart` 的写模式输出：
+#         kChunkSystemPrompt        len=5562 fnv=6964d2b095cc197b
+#         chunkExceptionGuideBlock  len=2544 fnv=11cd34270acab7f
+#         kDiagnosisProtocolSuffix  len=977  fnv=609c7814d5bcc86d
+#       ⚠️ 任务卡事实表称 suffix 为 1,157 字符，**实测为 977**（两路独立测量：
+#          Dart 运行时 `String.length` + 源码字面量拼接解析，均 977；git 史
+#          613 → 826 → 977 三档，从未出现 1,157）⇒ 以实测钉值，卡内数字待订正。
+CONST_REDLINE = {
+    'kChunkSystemPrompt': (5562, '6964d2b095cc197b'),
+    'chunkExceptionGuideBlock': (2544, '11cd34270acab7f'),
+    'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
+}
+
+# 下限自检：读数低于此值 ⇒ 疑量到空串 / 别的对象（不是「省了字」）。
+# 依据：kChunkSystemPrompt 含症候清单 + 五块常量；例外表实测 2,544（33 条例外行）。
+CONST_FLOOR = {
+    'kChunkSystemPrompt': 3000,
+    'chunkExceptionGuideBlock': 2000,
+}
+
+
+def _check_consts(out):
+    """常量级体积：逐键比上限 + 比字节指纹 + 下限自检。"""
+    print('\n=== 常量级 prompt 体积（buildSystemPromptV2 之外 · B3b-0）===')
+    if not os.path.exists(CONST_ANCHOR):
+        # fail-closed：与 _check_bypass 对缺失快照的口径一致（缺失 = 事故，不是常态）
+        print('  ★快照缺失：%s' % CONST_ANCHOR)
+        print('     先跑 UPDATE_SNAPSHOTS=true flutter test '
+              'test/services/prompt_const_anchor_test.dart')
+        out['violations'].append(
+            'prompt_const_anchor 快照缺失 ⇒ 常量级读数面不可判')
+        return
+    d = json.load(io.open(CONST_ANCHOR, encoding='utf-8'))
+
+    for key in sorted(CONST_REDLINE):
+        lim, fnv_frozen = CONST_REDLINE[key]
+        node = d.get(key)
+        if not isinstance(node, dict):
+            print('  %-26s ★快照中无此键' % key)
+            out['violations'].append('%s: 快照缺该键' % key)
+            continue
+        act = node.get('len')
+        fnv = node.get('fnv')
+        if not isinstance(act, int):
+            print('  %-26s ★缺 int 型 len（实际 %r）' % (key, act))
+            out['violations'].append('%s: 缺 int 型 len（%r）' % (key, act))
+            continue
+        out.setdefault('const_actual', {})[key] = act
+        ok = act <= lim
+        print('  %-26s %6d  上限 %6d  余量 %+6d  %s'
+              % (key, act, lim, lim - act, 'OK' if ok else '★超上限'))
+        if not ok:
+            out['violations'].append('%s: %d > 上限 %d（超 %d）'
+                                     % (key, act, lim, act - lim))
+        # fnv 一条专治「等长替换」与「重冻快照但没重钉上限」
+        # —— 只比 len 的话，删 3 字加 3 字就能静默过关。
+        if fnv != fnv_frozen:
+            print('  %-26s ★fnv %s ≠ 冻结 %s' % (key, fnv, fnv_frozen))
+            out['violations'].append(
+                '%s: fnv %s ≠ 冻结 %s ⇒ 字节变了（等长替换或重冻未重钉红线）'
+                % (key, fnv, fnv_frozen))
+
+    # 下限自检（防「量到比对象短得多的东西也判绿」）
+    for key in sorted(CONST_FLOOR):
+        floor = CONST_FLOOR[key]
+        act = (out.get('const_actual') or {}).get(key)
+        if act is None:
+            continue
+        if act < floor:
+            print('  %-26s ★%d 字符，低于下限 %d' % (key, act, floor))
+            out['violations'].append(
+                '%s: %d 低于下限 %d ⇒ 疑量错对象' % (key, act, floor))
+
+
+# ─────────────────────────────────────────────────────────────
+# 注入后的 user 消息面（`T-20261024-13` 缺口 1 · 2026-10-25 关闭）
+#
+# 缺口原文：「**user 侧注入面没有任何体积上限**」。本段之前的两次「以为关了」
+# 都不是它（§4-265⑨ 已登记一次误认）⇒ 这里先把**对象**钉死：
+#
+#   真实对象 = `DiagnosisInjectionService:203` 拼出来的那条 user 消息：
+#     '${m.content}$fullTextBlock\n\n$_diagnosisProtocolSuffix$directExplain$fadingBlock'
+#   ⇒ 它由「学员正文 + 全貌块 + 协议后缀 + 直接解释块 + 渐隐块」**五段**拼成。
+#   ⇒ 只钉其中一段（例如 977 的协议后缀，见 CONST_REDLINE）**不等于**钉住这条消息。
+#
+# 数据源：`message_sequence_anchor.json` 的 `p2_yuesheng_diagnosis_fulltext[3]`。
+#   该用例 `chapterFullText` 非空、走真实 `sendMessage` + 诊断注入
+#   （`chat_service_message_sequence_anchor_test.dart:150-151` 明写「把 user 侧注入
+#   纳入有序指纹」）⇒ 实测 len=1583、role=user。
+#   ⚠️ 注意量级关系：1583 > 977（协议后缀）且 > 22（另两例的学员正文原样）
+#      ⇒ 这正是「注入确实发生了」的算术证据，也是本段下限自检的依据。
+#
+# 为什么既有锚点不够：锚点测试只做「**变了就红**」，而重冻（`UPDATE_SNAPSHOTS=true`）
+#   一次即可把增量写进新基线 ⇒ **有指纹、没有上限**。本段补的就是上限：
+#   `重冻 ≠ 获准增长`（重冻后不重钉本段 ⇒ 红灯，不是绿灯）。
+#
+# 覆盖边界（如实声明，**不是全覆盖**）：
+#   · 只有 fulltext 这一例真的注入了协议后缀；
+#   · `p1_yuesheng_diagnosis[3]` / `p2_yuesheng_diagnosis[3]` 实测 len=22
+#     （学员正文原样、未注入）⇒ **不受本红线约束，也不代表注入面**（钉 22 只防误改）；
+#   · 该例是否代表**全部**注入路径（例如 `directExplain` / `fadingBlock` 非空的分支）
+#     = **未测**，不得据此声称「注入面已全部设限」。
+# ─────────────────────────────────────────────────────────────
+
+# 键 = `快照名[消息下标]`；值 = (实测 len 上限, 冻结时的 fnv)。贴实测、余量 +0。
+USER_FACE_REDLINE = {
+    'p2_yuesheng_diagnosis_fulltext[3]': (1583, '100f00a384794e7d'),
+}
+
+# 下限自检：注入后的 user 消息必须**至少**装得下协议后缀本体，否则说明
+# 「量到的其实是学员正文」——即钉错对象（本缺口历史上已钉错两次）。
+_USER_FACE_MIN_EXTRA = CONST_REDLINE['kDiagnosisProtocolSuffix'][0]
+
+
+def _check_user_face(out):
+    """注入后的 user 消息：逐键比上限 + 比指纹 + role/下限结构自检。"""
+    print('\n=== 注入后的 user 消息面（T-20261024-13 缺口 1）===')
+    if not os.path.exists(MSG_SEQ):
+        print('  ★快照缺失：%s' % MSG_SEQ)
+        out['violations'].append('message_sequence 快照缺失 ⇒ user 注入面不可判')
+        return
+    d = json.load(io.open(MSG_SEQ, encoding='utf-8'))
+
+    for key, (lim, fnv_frozen) in sorted(USER_FACE_REDLINE.items()):
+        msg = _resolve_msg(d, key)
+        if msg is None:
+            print('  %-40s ★快照中无此路径' % key)
+            out['violations'].append('%s: 快照缺该路径' % key)
+            continue
+        act = msg.get('len')
+        role = msg.get('role')
+        fnv = msg.get('fnv')
+        if not isinstance(act, int):
+            print('  %-40s ★缺 int 型 len' % key)
+            out['violations'].append('%s: 缺 int 型 len' % key)
+            continue
+        out.setdefault('user_face_actual', {})[key] = act
+        ok = act <= lim
+        print('  %-40s %6d  上限 %6d  余量 %+6d  %s'
+              % (key, act, lim, lim - act, 'OK' if ok else '★超上限'))
+        if not ok:
+            out['violations'].append('%s: %d > 上限 %d（超 %d）'
+                                     % (key, act, lim, act - lim))
+        if fnv != fnv_frozen:
+            print('  %-40s ★fnv %s ≠ 冻结 %s' % (key, fnv, fnv_frozen))
+            out['violations'].append(
+                '%s: fnv %s ≠ 冻结 %s ⇒ 字节变了（等长替换或重冻未重钉上限）'
+                % (key, fnv, fnv_frozen))
+        # 结构自检①：这条必须是 user 消息（若变 system ⇒ 下标指向了别的消息）
+        if role != 'user':
+            print('  %-40s ★role=%s（应为 user）' % (key, role))
+            out['violations'].append(
+                '%s: role=%s 应 user ⇒ 下标已漂移，须先核装配再改本段'
+                % (key, role))
+        # 结构自检②：长度必须装得下协议后缀本体（否则钉的是学员正文 = 钉错对象）
+        if act < _USER_FACE_MIN_EXTRA:
+            print('  %-40s ★%d < 协议后缀 %d，注入未发生'
+                  % (key, act, _USER_FACE_MIN_EXTRA))
+            out['violations'].append(
+                '%s: %d < 协议后缀 %d ⇒ 该消息没有注入协议文本，'
+                '本红线量错了对象（缺口 1 的真实对象是注入**之后**的 user 消息）'
+                % (key, act, _USER_FACE_MIN_EXTRA))
 
 
 if __name__ == '__main__':
