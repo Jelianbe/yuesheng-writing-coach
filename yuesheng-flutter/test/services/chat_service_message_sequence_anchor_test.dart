@@ -370,6 +370,22 @@ void main() {
         for (final c in _kCases)
           if (!written.containsKey(c.name)) c.name,
       ];
+      // 回读校验的第二半：**多余键**（T-20261024-14 A 块同族判据）。
+      // 双向键集合判据在「比对分支」只作用于已有基线；重建分支若把已删用例的旧键
+      // 一起写回（合并式写入 / 半截覆盖），同样会让判据面里混入不存在的对象。
+      // ⚠️ 诚实边界：本判据在当前写法下**近乎恒绿** —— 写入源就是 `current`，
+      //    其键集由 `_kCases` 直接生成，除非写出侧被改坏（截断 / 追加旧键）才会命中。
+      //    它是防御性检查，**不构成「双向判据有效」的证据**；证据在比对分支的 A1。
+      final extraKeys = <String>[
+        for (final k in written.keys)
+          if (k != 'meta' && !_kCases.any((c) => c.name == k)) k,
+      ];
+      if (extraKeys.isNotEmpty) {
+        fail(
+          '[msg-seq] 基线写入出现多余用例键 ${extraKeys.length} 个：$extraKeys\n'
+          '  ★ 重建分支只应写出 _kCases 里的 ${_kCases.length} 个用例键 + meta。',
+        );
+      }
       if (missingKeys.isNotEmpty) {
         fail(
           '[msg-seq] 基线写入不完整，缺 ${missingKeys.length} 个用例键：'
@@ -380,7 +396,66 @@ void main() {
       return;
     }
 
-    final stored = jsonDecode(file.readAsStringSync());
+    // ── 结构守卫（T-20261024-14 C 块）──────────────────────────────────
+    // 旧行为：快照 0 字节 ⇒ `FormatException: Unexpected end of input`；
+    //         顶层是数组 `[]` ⇒ `type 'String' is not a subtype of type 'int' of 'index'`。
+    // 两者都红得对，但**指向错**：报错像是「比对逻辑有 bug」，真因是快照文件结构非法
+    // ⇒ 后来的人会去改比对代码，而不会去看快照文件。
+    // 判据（C1 / C2）：失败信息必须含「快照结构非法」+ 文件路径 + 实际类型，
+    // 且不得出现 `FormatException` / `subtype of type 'int' of 'index'`。
+    final rawSnapshot = file.readAsStringSync();
+    if (rawSnapshot.trim().isEmpty) {
+      fail(
+        '[msg-seq] 快照结构非法：$kMsgSeqAnchorPath 为 0 字节（或仅空白）\n'
+        '  ★ 真因是快照文件被截断/清空，不是比对逻辑出错。\n'
+        '  先查：git status --porcelain $kMsgSeqAnchorPath ；'
+        '需要可用基线时 git checkout -- $kMsgSeqAnchorPath 。',
+      );
+    }
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(rawSnapshot);
+    } on FormatException catch (e) {
+      // 兜住「非 JSON」这一大类（截断 / 编码坏 / 手改成 YAML 等）。
+      fail(
+        '[msg-seq] 快照结构非法：$kMsgSeqAnchorPath 不是合法 JSON\n'
+        '  解析器原文：${e.message}（偏移 ${e.offset}）\n'
+        '  ★ 真因是快照文件损坏，不是比对逻辑出错。',
+      );
+    }
+    if (decoded is! Map<String, dynamic>) {
+      fail(
+        '[msg-seq] 快照结构非法：$kMsgSeqAnchorPath 顶层应为 JSON 对象，'
+        '实际类型为 ${decoded.runtimeType}\n'
+        '  ★ 真因是快照结构被写错（顶层写成了数组/标量），不是比对逻辑出错。',
+      );
+    }
+    final Map<String, dynamic> stored = decoded;
+
+    // ── 双向键集合判据（T-20261024-14 A 块）────────────────────────────
+    // 旧 `_diff` 只按 `_kCases` **单向**迭代 ⇒ `stored` 里**多出来的顶层键永远不会被读到**
+    // ⇒ 基线里留着一个已删/已改名用例的键，测试照样绿。
+    // 这与「快照缺失即自动生成并通过」是同一族失效：**判据面静默缩小，门禁还在跑**。
+    // 判据取**集合相等**（不是包含）：少一个键 = 覆盖缩水；多一个键 = 判据面里混着
+    // 已不存在的对象。两个方向都必须红。
+    final expectedNames = <String>{for (final c in _kCases) c.name};
+    final storedNames = stored.keys.toSet()..remove('meta');
+    final missingNames = expectedNames.difference(storedNames).toList()..sort();
+    final extraNames = storedNames.difference(expectedNames).toList()..sort();
+    if (missingNames.isNotEmpty || extraNames.isNotEmpty) {
+      fail(
+        '[msg-seq] 基线用例键集合与 _kCases 不相等（双向判据）：\n'
+        '  基线缺少 ${missingNames.length} 个键：$missingNames\n'
+        '  基线多出 ${extraNames.length} 个键：$extraNames\n'
+        '  ★ 多余键多为已删/已改名用例的残留 ⇒ 判据面已静默缩小，'
+        '**不是**「无影响的旧数据」，必须清理或在 _kCases 里说明其来历。\n'
+        '  ★ 缺少键 ⇒ 基线未覆盖该用例（覆盖缩水）。\n'
+        '  确需重建（基线变更须可对账、须经评审）：\n'
+        '    UPDATE_SNAPSHOTS=true flutter test '
+        'test/services/chat_service_message_sequence_anchor_test.dart',
+      );
+    }
+
     final diffs = <String>[];
     for (final c in _kCases) {
       diffs.addAll(_diff(c.name, stored[c.name], current[c.name]));
