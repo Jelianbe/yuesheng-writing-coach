@@ -573,6 +573,28 @@ void main() {
       );
       expect(result.rejectReason, isNull, reason: '注入示例不应触发任何 rejectReason');
       expect(result.diagnosis!.syndromes.first.syndromeId, 'P001');
+
+      // T-20261024-05 批 1b：teaching_plan 三字段结构行（parser 早已支持，
+      // 本批只补 suffix 模板）——端到端断言三字段确被读出。
+      expect(
+        result.diagnosis!.currentTeachingFocusId,
+        'P001',
+        reason: '示例 ID 须与 syndromes 示例同 ID，否则自身触发 focus_not_in_syndromes',
+      );
+      expect(
+        result.diagnosis!.focusReason,
+        isNotEmpty,
+        reason: 'teaching_plan.focus_reason 示例须非空',
+      );
+      // next_step 的判据须能区分「读到 next_step」与「回退 next_focus」：
+      // parser 语义 next_step 优先（diagnosis_parser.dart:445）⇒ nextFocus
+      // 须含 next_step 示例独有标记「训练目标」；示例若删 next_step，
+      // 回退到 next_focus 占位「下步焦点（可选）」即红。
+      expect(
+        result.diagnosis!.nextFocus,
+        contains('训练目标'),
+        reason: 'teaching_plan.next_step 须被优先读出，而非回退 next_focus',
+      );
     });
 
     test('#13 直接说明指令注入默认阈值 5（无自定义人格 → 默认）', () async {

@@ -237,6 +237,7 @@ class ChatService {
       '"form_structure": "可选：expository|interruption|narrative（仅量形式症候）"}], '
       '"suggested_actions": ["A009"], "confidence": 0.8, '
       '"root_cause_analysis": "根因（可选）", "next_focus": "下步焦点（可选）", '
+      '"teaching_plan": {"current_teaching_focus_id": "P001", "focus_reason": "可选：为什么选它（一句话）", "next_step": "可选：识别出症候时的训练目标，如把情绪词换成具体动作（可观测：下一轮情绪词减少、细节增多）"}, '
       '"feedback_summary": "反馈总结（可选）", "suggested_phase": "阶段（可选）", '
       '"overall": {"verdict": "结构完整|基本完整|存在结构性缺口", "reasons": ["理由"], '
       '"keep": "最值得保持的一点", "priority": ["先改项"], "coverage": "基于已诊断 3/20 章"}}\n'
