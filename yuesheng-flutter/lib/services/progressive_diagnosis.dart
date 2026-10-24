@@ -581,7 +581,7 @@ $_kChunkSelfContainedProbe
 
 $_kChunkExceptionGuide
 
-$_kChunkOutputFormat$_kTeachingModeChunkInstruction(teachingMode)''';
+$_kChunkOutputFormat${_kTeachingModeChunkInstruction(teachingMode)}''';
 }
 
 /// 单块系统提示词（全启用默认值）：症候清单由注册表派生，调用处无需感知（ADR-C69）。
@@ -782,7 +782,7 @@ syndrome 对象格式要求：
 - form_structure (string): 可选；仅量形式症候——expository=论文式/说明书结构 / interruption=读者关切时刻被打断 / narrative=叙事流内
 - pending_context (bool): 缺省 false；见「跨片因果提示」
 
-$_kMergeOutputRequirement$_kTeachingModeChunkInstruction(teachingMode)''';
+$_kMergeOutputRequirement${_kTeachingModeChunkInstruction(teachingMode)}''';
 }
 
 /// 简易 JSON 编码器（仅用于合并 prompt 中展示 notes，不做校验）。
