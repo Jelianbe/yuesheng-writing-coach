@@ -107,6 +107,30 @@ List<String> _diff(String path, dynamic a, dynamic b) {
 void main() {
   test('L3 词条级锚点：syndrome / technique / training 逐条字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
+    final file = File(kL3AnchorPath);
+    final exists = file.existsSync();
+
+    // ── fail-closed 守卫（T-20261024-14 B 块；与 -13 B 块同形）────────────
+    // 旧写法 `if (updating || !file.existsSync())` 把两件事并成一个分支：
+    //   「显式重生成」与「快照缺失」⇒ 快照被误删 / 误移 / 未检出时本用例**照样绿**，
+    //   并把当前装配静默写成新基线（此刻 lib 侧若有漂移，基线即被替换成漂移后的值
+    //   ⇒ 之后再不会红）。本文件**门禁侧无兜底**（`scripts/` `tool/` `.ai/tools/`
+    //   全量 grep 无任何脚本读该快照）⇒ 测试侧是唯一一道。
+    // ★ 守卫前置于 _buildCurrent()：否则词条检索里任一环节抛错会先红，
+    //   「快照缺失」这个真因会被后者的报错遮住（判据落点须指向缺失本身）。
+    if (!exists && !updating) {
+      fail(
+        '[l3-anchor] 锚点快照缺失：$kL3AnchorPath\n'
+        '  ★ 快照文件缺失 = 事故，不是常态（该文件本应随仓库一起检出）。\n'
+        '  缺失时**不得**自动生成基线 —— 那等于用「当前行为」重写判据，'
+        '任何漂移都会被静默转绿。\n'
+        '  先查三因：误删 / 误移 / 未检出'
+        '（git status --porcelain、git ls-files test/snapshots/）。\n'
+        '  确需重建（基线变更须可对账、须经评审）：\n'
+        '    UPDATE_SNAPSHOTS=true flutter test '
+        'test/services/l3_entry_anchor_test.dart',
+      );
+    }
 
     // 组装确定性自检：同一词条连跑两遍，输出必须一致。
     final probeId = _syndromeEntryIds.first;
@@ -115,20 +139,43 @@ void main() {
     expect(first, second, reason: 'L3 检索非确定性');
 
     final current = _buildCurrent();
-    final file = File(kL3AnchorPath);
 
-    if (updating || !file.existsSync()) {
+    if (updating) {
+      // ── 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
+      // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
+      // 旧措辞「基线已生成」与正常日志无法区分 ⇒ 重建被误读成「校验通过」。
+      final hadSnapshot = exists;
       file
         ..createSync(recursive: true)
         ..writeAsStringSync(
           '${const JsonEncoder.withIndent('  ').convert(current)}\n',
         );
-      print('[l3-anchor] 基线已生成: $kL3AnchorPath');
       print(
-        '[l3-anchor] syndrome ${_syndromeEntryIds.length} / '
+        '[l3-anchor][告警] UPDATE_SNAPSHOTS=true ⇒ 基线被强制覆盖：'
+        '$kL3AnchorPath（syndrome ${_syndromeEntryIds.length} / '
         'technique ${_techniqueEntryIds.length} / '
-        'training ${_trainingEntryIds.length} 条',
+        'training ${_trainingEntryIds.length} 条）',
       );
+      print(
+        '[l3-anchor][告警] 本次**未做任何比对**，这不是校验通过；'
+        '原快照${hadSnapshot ? '已被丢弃' : '本就不存在（本次为新建）'}。',
+      );
+      print('[l3-anchor][告警] 提交前必须逐条复核 git diff $kL3AnchorPath。');
+
+      // 回读校验：写入成功 ≠ 写出的是完整基线（截断 / 空文件同样「存在」）。
+      final reread = jsonDecode(file.readAsStringSync());
+      final written = reread is Map<String, dynamic>
+          ? reread
+          : const <String, dynamic>{};
+      for (final section in const ['syndrome', 'technique', 'training']) {
+        final got = written[section];
+        if (got is! Map || got.isEmpty) {
+          fail(
+            '[l3-anchor] 基线写入不完整：section `$section` '
+            '${got == null ? '缺失' : '为空或类型错误（${got.runtimeType}）'}',
+          );
+        }
+      }
       expect(file.existsSync(), isTrue);
       return;
     }

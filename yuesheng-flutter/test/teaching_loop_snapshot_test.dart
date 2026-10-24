@@ -153,6 +153,28 @@ List<String> _diff(String path, dynamic a, dynamic b) {
 void main() {
   test('教学闭环结构化决策快照回归', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
+    final file = File(kSnapshotPath);
+    final exists = file.existsSync();
+
+    // ── fail-closed 守卫（T-20261024-14 B 块；与 -13 B 块同形）────────────
+    // 旧写法 `if (updating || !file.existsSync())` 把「显式重生成」与「快照缺失」
+    // 并成一个分支 ⇒ 快照被误删 / 误移 / 未检出时本用例**照样绿**，并静默写新基线。
+    // 本文件**门禁侧无兜底**（全量 grep：无任何脚本读该快照）⇒ 测试侧是唯一一道。
+    // ★ 守卫前置于 _snapshotCase 装配：本用例要读 47 个 fixture，任一缺失会抛
+    //   FileSystemException ⇒ 会把「快照缺失」这个真因遮住。
+    if (!exists && !updating) {
+      fail(
+        '[snapshot] 锚点快照缺失：$kSnapshotPath\n'
+        '  ★ 快照文件缺失 = 事故，不是常态（该文件本应随仓库一起检出）。\n'
+        '  缺失时**不得**自动生成基线 —— 那等于用「当前行为」重写判据，'
+        '任何漂移都会被静默转绿。\n'
+        '  先查三因：误删 / 误移 / 未检出'
+        '（git status --porcelain、git ls-files test/snapshots/）。\n'
+        '  确需重建（基线变更须可对账、须经评审）：\n'
+        '    UPDATE_SNAPSHOTS=true flutter test '
+        'test/teaching_loop_snapshot_test.dart',
+      );
+    }
 
     // 计算当前全部 47 例的结构化快照
     final currentCases = <String, dynamic>{};
@@ -168,20 +190,45 @@ void main() {
       'cases': currentCases,
     };
 
-    final file = File(kSnapshotPath);
-
-    // 首次生成 / 显式重生成
-    if (updating || !file.existsSync()) {
+    if (updating) {
+      // ── 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
+      // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
+      // ⚠️ 本快照的 `meta.generatedAt` 取当前时间 ⇒ **重建必然改变文件 md5**，
+      //    「重建后 md5 不变」在此文件上结构上不可满足（判据须改为「除
+      //    generatedAt 外内容不变」）。
+      final hadSnapshot = exists;
       file
         ..createSync(recursive: true)
         ..writeAsStringSync(
           const JsonEncoder.withIndent('  ').convert(current),
         );
       print(
-        '[snapshot] ${updating ? "已重生成" : "已生成"}基线 → $kSnapshotPath '
-        '(${_corpus.length} 例)',
+        '[snapshot][告警] UPDATE_SNAPSHOTS=true ⇒ 基线被强制覆盖：'
+        '$kSnapshotPath（${_corpus.length} 例）',
       );
+      print(
+        '[snapshot][告警] 本次**未做任何比对**，这不是校验通过；'
+        '原快照${hadSnapshot ? '已被丢弃' : '本就不存在（本次为新建）'}。',
+      );
+      print('[snapshot][告警] 提交前必须逐条复核 git diff $kSnapshotPath。');
       expect(currentCases, isNotEmpty, reason: '基线不应为空（生成模式）');
+
+      // 回读校验：写入成功 ≠ 写出的是完整基线（截断 / 空文件同样「存在」）。
+      final reread = jsonDecode(file.readAsStringSync());
+      final written = reread is Map<String, dynamic>
+          ? reread
+          : const <String, dynamic>{};
+      final writtenCases = written['cases'];
+      if (writtenCases is! Map) {
+        fail('[snapshot] 基线写入结构错误：cases 不是对象（${writtenCases.runtimeType}）');
+      }
+      final lostIds = <String>[
+        for (final c in _corpus)
+          if (!writtenCases.containsKey(c['id']!)) c['id']!,
+      ];
+      if (lostIds.isNotEmpty) {
+        fail('[snapshot] 基线写入不完整，缺 ${lostIds.length} 个用例键：$lostIds');
+      }
       return;
     }
 
