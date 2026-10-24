@@ -130,6 +130,26 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   独立观测面同值）。
   ⚠️ 登记缺口（不是本批解除项）：**user 侧注入面只有快照漂移断言，没有红线上限**。
   后续批若要给 user 侧设体积上限，须另立读数口径（本批不扩面、不改判据逻辑）。
+  ★★ **2026-10-25 该缺口已闭合（U5 裁定 `§4-265`），但名称须订正**：实测该块
+  **不是 user 消息，是 role=system 的独立消息**（`message_sequence[...][1]`）；
+  role=user 那条是**学员正文**（22 / 1583 字符）。若照「user 侧」这个误称去卡，
+  卡住的会是学员正文（3000–4000 字是正常输入，立项书 U1）⇒ 方向反了。
+  真名 = **旁路系统注入面**（`buildSystemPromptV2` 之外的 system 消息），
+  上限见下方 `BYPASS_REDLINE`，判定函数与上面同一套（`act <= lim`，余量 +0）。
+
+· 2026-10-25 第十四次（U5 裁定 · **新增覆盖面，非新增预算** `§4-265`）：
+  **旁路系统注入面首次钉值** —— `p1_yuesheng_diagnosis[1]` / `p2_yuesheng_diagnosis[1]` /
+  `p2_yuesheng_diagnosis_fulltext[1]` 各 **9,327**（三例同块，实测等长）。
+  ★ 三条受控组与对照组 7 组**一律不动**（本批零 prompt 改动、零 lib 改动）。
+  ★ 为何必须钉：B3b 要动的「判据进注入面 / 首筛上限 18-of-39」全部落在这块上，
+  而它此前在本脚本计量面外（本脚本只量 `skill_prompt_anchor.json` 的 `prompt[*].len`
+  = `buildSystemPromptV2` 产物 = 消息序列 `[0]`）。实测：4 条判据 9,327 →
+  18 条按升序取最小 18 **20,992**、按降序取最大 18 **36,065**、39 条全量 **61,388**
+  （探针 `tool/probe_user_face_volume.dart`）⇒ 一次批最多可涨 **3.9×**，无人拦。
+  ★ 结构自检三条（防「索引漂移后静默量错东西」）：该块 role 必须 system ·
+    三例必须等长 · 必须 ≥1000 字符。任一不满足 ⇒ rc=1。
+  ⚠️ 覆盖**不完整**（如实声明）：同面另两条 system 消息（148 / 290）只登记读数、
+    不钉值 —— 无明确变化来源，钉了是噪声红灯。
 
 · 2026-10-24 第十二次（T-20261024-07 症候命名统一去症 · R-025/R-026 舰长批
   `§4-257` 范围案 A）：**受控组 diagnosis 两组各 −15**（57,212→57,197 ·
@@ -360,6 +380,9 @@ def main():
             out['violations'].append('%s: %d > 基线 %d（增长 %d）'
                                      % (k, act, base, act - base))
 
+    # U5（§4-265）：旁路系统注入面 —— 此前零上限，现按实测钉值
+    _check_bypass(out)
+
     if '--json' in sys.argv:
         print('\n' + json.dumps(out, ensure_ascii=False, indent=2))
 
@@ -370,7 +393,6 @@ def main():
             print('  - ' + v)
         return 1
     print('[OK] 受控组均未超红线，且对照组零增长')
-
 
 # 对照组基线 = **最近一次锚点重冻时的实测值**（读数变了就贴新值，理由见头注）。
 #
@@ -394,6 +416,101 @@ MUST_NOT_GROW_BASE = {
     'beginner_p4_yuesheng': 65835,
     'none_p0_yuesheng': 30019,
 }
+
+
+# ─────────────────────────────────────────────────────────────
+# 旁路系统注入面（U5 裁定 · `DECISIONS §4-265`）
+#
+# ★★ 名称订正：此前各方（含本脚本头注 :131）称之为「**user 侧**注入面」，**实测为误称**。
+#   三例诊断快照里该块是 **role=system 的独立消息**（`message_sequence[...][1]`）；
+#   role=user 的那条是**学员正文**（22 / 1583 字符）。
+#   ⇒ 真名 = **旁路系统注入面** = `buildSystemPromptV2` 之外的 system 消息。
+#   ⇒ 若按误称去设上限，卡住的会是**学员正文**（3000–4000 字是正常输入，U1），
+#     而不是判据块 —— 方向完全反了。
+#
+# 覆盖范围（如实声明：**不是全覆盖**）：
+#   · 钉值 = 首轮判据块（`buildFirstRoundCriteriaBlock`，B3b 要增长的就是它）；
+#   · 同面另两条 system 消息（148 / 290）**只登记读数、不钉值** —— 它们没有明确
+#     的变化来源，钉了只会变成噪声性红灯。这是已知的不完整覆盖，不是遗漏。
+# ─────────────────────────────────────────────────────────────
+MSG_SEQ = os.path.join(ROOT, 'test', 'snapshots', 'message_sequence_anchor.json')
+
+# 键 = `快照名[消息下标]`；值 = 实测字符数（贴实测、余量 +0）。
+# 三例同块 ⇒ 三值必须相等，且有结构断言兜底（见 _check_bypass）。
+BYPASS_REDLINE = {
+    'p1_yuesheng_diagnosis[1]': 9327,
+    'p2_yuesheng_diagnosis[1]': 9327,
+    'p2_yuesheng_diagnosis_fulltext[1]': 9327,
+}
+
+
+def _resolve_msg(d, key):
+    """`case[i]` → 该条消息 dict；解析不到返回 None。"""
+    if '[' not in key or not key.endswith(']'):
+        return None
+    name, idx = key[:-1].split('[')
+    seq = d.get(name)
+    if not isinstance(seq, list):
+        return None
+    try:
+        i = int(idx)
+    except ValueError:
+        return None
+    if i >= len(seq):
+        return None
+    return seq[i]
+
+
+def _check_bypass(out):
+    """旁路注入面：逐键比红线 + 三条结构自检（防「索引漂移后静默量错东西」）。"""
+    print('\n=== 旁路系统注入面（U5 · 非 buildSystemPromptV2 的 system 消息）===')
+    if not os.path.exists(MSG_SEQ):
+        # fail-closed：与门禁 18 对缺失快照的口径一致（缺失 = 事故，不是常态）
+        print('  ★快照缺失：%s' % MSG_SEQ)
+        out['violations'].append('message_sequence 快照缺失 ⇒ 旁路面不可判')
+        return
+    d = json.load(io.open(MSG_SEQ, encoding='utf-8'))
+
+    seen = {}
+    for key, lim in sorted(BYPASS_REDLINE.items()):
+        msg = _resolve_msg(d, key)
+        if msg is None:
+            print('  %-40s ★快照中无此路径' % key)
+            out['violations'].append('%s: 快照缺该路径' % key)
+            continue
+        act = msg.get('len')
+        role = msg.get('role')
+        if not isinstance(act, int):
+            print('  %-40s ★缺 int 型 len' % key)
+            out['violations'].append('%s: 缺 int 型 len' % key)
+            continue
+        seen[key] = act
+        out.setdefault('bypass_actual', {})[key] = act
+        ok = act <= lim
+        print('  %-40s %6d  红线 %6d  余量 %+6d  %s'
+              % (key, act, lim, lim - act, 'OK' if ok else '★超红线'))
+        if not ok:
+            out['violations'].append('%s: %d > 红线 %d（超 %d）'
+                                     % (key, act, lim, act - lim))
+        # 结构自检①：该块必须是 system（名称订正的依据；若迁到 user 侧即口径变了）
+        if role != 'system':
+            print('  %-40s ★role=%s（应为 system）' % (key, role))
+            out['violations'].append(
+                '%s: role=%s 应 system ⇒ 旁路面定义已失效，须先核装配再改本脚本'
+                % (key, role))
+
+    # 结构自检②：同一块在三个 case 里必须等长（不等 ⇒ 下标指向了别的东西）
+    if len(set(seen.values())) > 1:
+        detail = ', '.join('%s=%d' % (k, v) for k, v in sorted(seen.items()))
+        print('  ★三例同块长度不一致：%s' % detail)
+        out['violations'].append('旁路块三例不等长（%s）⇒ 下标漂移' % detail)
+
+    # 结构自检③：读数下限（防「量到一条近乎空的消息也判绿」）
+    for k, v in seen.items():
+        if v < 1000:
+            print('  %-40s ★%d 字符，低于 1000 下限' % (k, v))
+            out['violations'].append('%s: %d 字符低于下限 1000 ⇒ 疑量错对象'
+                                     % (k, v))
 
 
 if __name__ == '__main__':
