@@ -377,17 +377,50 @@ void main() {
     //   真正覆盖点，删块不影响它；若一并删除，该分支会重新变成零体积基线覆盖
     //   （A2 批补该用例的原因，见本文件上方 force 用例注释）。
 
-    final current = _buildCurrent();
     final file = File(kAnchorPath);
+    final exists = file.existsSync();
 
-    // 首次生成 / 显式重生成
-    if (updating || !file.existsSync()) {
+    // ── fail-closed 守卫（`T-20261024-13` 缺口 2 的最后一处收口 · 2026-10-25）──
+    // 旧写法 `if (updating || !file.existsSync())` 把两件事并成一个分支：
+    //   「显式重生成」与「快照缺失」⇒ 快照被误删 / 误移 / 未检出时本用例**照样绿**，
+    //   并把当前装配静默写成新基线（此刻 lib 侧若有漂移，基线即被替换成漂移后的值
+    //   ⇒ 之后再不会红）。同族三份（`chat_service_message_sequence_anchor_test`
+    //   / `l3_entry_anchor_test` / `student_profile_anchor_test`）已于 2026-10-24
+    //   改成 fail-closed，本文件是**最后一个**残留。
+    // ★ 守卫**前置于 `_buildCurrent()`**：否则装配侧抛错会先红，
+    //   「快照缺失」这个真因会被后者的报错遮住（判据落点须指向缺失本身）。
+    // ⚠️ 如实声明本守卫的效力边界：本文件钉的 9 组 prompt 总量在
+    //   `tool/check_prompt_volume.py` 的 `REDLINE` 里**另有硬编码常量**，
+    //   所以 fail-open **不构成「主红线可被绕过」**；它丢的是**逐 skill 字节级
+    //   漂移侦测**与「删 A 加 B、总量不变」这类交换式改动的可见性。
+    if (!exists && !updating) {
+      fail(
+        '[anchor] 锚点快照缺失：$kAnchorPath\n'
+        '  ★ 快照文件缺失 = 事故，不是常态（该文件本应随仓库一起检出）。\n'
+        '  缺失时**不得**自动生成基线 —— 那等于用「当前行为」重写判据，'
+        '任何漂移都会被静默转绿。\n'
+        '  先查三因：误删 / 误移 / 未检出'
+        '（git status --porcelain、git ls-files test/snapshots/）。\n'
+        '  确需重建（基线变更须可对账、须经评审）：\n'
+        '    UPDATE_SNAPSHOTS=true flutter test '
+        'test/services/skill_prompt_anchor_test.dart',
+      );
+    }
+
+    final current = _buildCurrent();
+
+    // 显式重生成（`UPDATE_SNAPSHOTS=true`）
+    if (updating) {
       file
         ..createSync(recursive: true)
         ..writeAsStringSync(
           '${const JsonEncoder.withIndent('  ').convert(current)}\n',
         );
       print('[anchor] 基线已生成: $kAnchorPath');
+      print(
+        '[anchor][告警] UPDATE_SNAPSHOTS=true ⇒ 基线被强制覆盖：本次**未做任何比对**，'
+        '这不是校验通过。',
+      );
       print(
         '[anchor] prompt 用例 ${kPromptCases.length} 个 / '
         '逐 skill 指纹 ${kAnchoredSkillIds.length} 个 / '
