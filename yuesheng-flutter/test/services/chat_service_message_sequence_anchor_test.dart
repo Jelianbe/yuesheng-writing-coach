@@ -307,6 +307,32 @@ List<String> _diff(String path, dynamic a, dynamic b) {
 void main() {
   test('chat_service 消息序列结构锚点：有序 (role,len,fnv) 逐条不变', () async {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
+    final file = File(kMsgSeqAnchorPath);
+    final exists = file.existsSync();
+
+    // ── fail-closed 守卫（T-20261024-13 B 块）────────────────────────────
+    // 旧写法 `if (updating || !file.existsSync())` 把两件事并成一个分支：
+    //   「显式重生成」与「快照缺失」⇒ 快照被误删 / 误移 / 未检出时本用例**照样绿**，
+    //   并把当前装配静默写成新基线（此刻 lib 侧若有漂移，基线即被替换成漂移后的值
+    //   ⇒ 之后再不会红）。
+    // 语义对齐门禁 18（scripts/gate.sh:769-772 缺失分支 + :958-960 汇总判定）：
+    //   skill_prompt_anchor.json 缺失 ⇒ RC=SKIP ⇒ DEGRADED ⇒ rc≠0。
+    //   同一对快照不应有两种相反的失效语义。
+    // ★ 守卫前置于 capture：否则 9 次 DB 装配中任一环节抛错会先红，
+    //   「快照缺失」这个真因会被后者的报错遮住（判据落点须指向缺失本身）。
+    if (!exists && !updating) {
+      fail(
+        '[msg-seq] 锚点快照缺失：$kMsgSeqAnchorPath\n'
+        '  ★ 快照文件缺失 = 事故，不是常态（该文件本应随仓库一起检出）。\n'
+        '  缺失时**不得**自动生成基线 —— 那等于用「当前行为」重写判据，'
+        '任何漂移都会被静默转绿。\n'
+        '  先查三因：误删 / 误移 / 未检出'
+        '（git status --porcelain、git ls-files test/snapshots/）。\n'
+        '  确需重建（基线变更须可对账、须经评审）：\n'
+        '    UPDATE_SNAPSHOTS=true flutter test '
+        'test/services/chat_service_message_sequence_anchor_test.dart',
+      );
+    }
 
     final current = <String, Object>{
       'meta': {'note': 'chat_service 边界消息序列结构锚点'},
@@ -315,14 +341,41 @@ void main() {
       current[c.name] = await _captureOne(c);
     }
 
-    final file = File(kMsgSeqAnchorPath);
-    if (updating || !file.existsSync()) {
+    if (updating) {
+      // ── 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
+      // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
+      // 旧措辞「基线已生成」与正常日志无法区分 ⇒ 重建被误读成「校验通过」。
+      final hadSnapshot = exists;
       file
         ..createSync(recursive: true)
         ..writeAsStringSync(
           '${const JsonEncoder.withIndent('  ').convert(current)}\n',
         );
-      print('[msg-seq] 基线已生成: $kMsgSeqAnchorPath（${_kCases.length} 例）');
+      print(
+        '[msg-seq][告警] UPDATE_SNAPSHOTS=true ⇒ 基线被强制覆盖：'
+        '$kMsgSeqAnchorPath（${_kCases.length} 例）',
+      );
+      print(
+        '[msg-seq][告警] 本次**未做任何比对**，这不是校验通过；'
+        '原快照${hadSnapshot ? '已被丢弃' : '本就不存在（本次为新建）'}。',
+      );
+      print('[msg-seq][告警] 提交前必须逐条复核 git diff $kMsgSeqAnchorPath。');
+
+      // 回读校验：写入成功 ≠ 写出的是完整基线（截断 / 空文件同样「存在」）。
+      final reread = jsonDecode(file.readAsStringSync());
+      final written = reread is Map<String, dynamic>
+          ? reread
+          : const <String, dynamic>{};
+      final missingKeys = <String>[
+        for (final c in _kCases)
+          if (!written.containsKey(c.name)) c.name,
+      ];
+      if (missingKeys.isNotEmpty) {
+        fail(
+          '[msg-seq] 基线写入不完整，缺 ${missingKeys.length} 个用例键：'
+          '$missingKeys',
+        );
+      }
       expect(file.existsSync(), isTrue);
       return;
     }
