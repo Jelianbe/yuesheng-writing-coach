@@ -113,6 +113,24 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   `skillContent.syndrome-diagnosis-index` 同步 +875（5,202→6,077）——
   该 skillContent 即单次链的 L2 索引正文，与 prompt 同源互证。
 
+· 2026-10-24 第十一次（T-20261024-05 批 1 · 四字段进 suffix · 舰长「都批」`§4-248①`）：
+  **受控组 3 组 + 对照组 7 组逐键全部 +0** ⇒ **红线常量与对照组基线本次一律不动**
+  （按「钉到实测值」口径：实测值未变 ⇒ 维持原值，本次**不产生任何新预算**）。
+  方向：`lib/services/chat_service.dart` 的 `kDiagnosisProtocolSuffix` 补
+  `reader_impact` / `intervention_value` / `form_fact_count` / `form_structure`
+  四字段（**实测 +213 code point**：613→826）。
+  ★ **为何逐键 0 变化**：本脚本量的是 `skill_prompt_anchor.json` 的 `prompt[*].len`
+  = `buildSystemPromptV2` 产出的 **system prompt**；而该 suffix 只拼在**当轮 user
+  消息**上（`diagnosis_injection_service.dart` · ADR-C82）⇒ **根本不在本脚本计量面内**。
+  ⇒ 报批稿 §1.1「任何字符级注入都会当场破线」对本次改动**不成立**（该判断隐含
+  「注入面 = system prompt」这一前提）；本次的红线一次都没被触发，不是「忘了钉」。
+  ★ 该注入面的体积读数落在**另一份快照**：`test/snapshots/message_sequence_anchor.json`
+  的 `p2_yuesheng_diagnosis_fulltext[3].len` **1219 → 1432（+213，fnv
+  159bca7faec86ef0 → 3a5146a7b4fc0194）**，结构与常量实测 +213 **互为印证**（两个
+  独立观测面同值）。
+  ⚠️ 登记缺口（不是本批解除项）：**user 侧注入面只有快照漂移断言，没有红线上限**。
+  后续批若要给 user 侧设体积上限，须另立读数口径（本批不扩面、不改判据逻辑）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
