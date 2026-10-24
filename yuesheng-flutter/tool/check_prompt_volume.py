@@ -153,6 +153,37 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   （前者经 message_injector 走 system 消息、后者为分块诊断系统提示），
   其漂移由 `chat_context_builder_observation_test` 字节级断言等锚点外测试覆盖。
 
+· 2026-10-25 第十三次（B3a 撤销通道可判化批 · 舰长 2026-10-25 00:33「全批」授权
+  `§4-263①`）：**受控组 diagnosis 两组各 +410**（57,197→57,607 · 55,414→55,824）、
+  **force 组 +0**（66,296 不变）、**对照组 7 组各 +0**（实测逐键零漂移）。
+  逐键对账（锚点重冻 diff，构成完全可解释）：
+  · `skills_diagnosis_p3.dart`（skill `writing-style`，1,208→1,482，**+274**）
+    = ① P017 误判对照行第三列替换（16→148 字符，**+132**）
+    + ② P016 新增行（141 字符 + 换行 1 = 142，`''',` 4 字符由上一行移到新行末 ⇒ **净 +138**）
+    + ⑤ ①的「标 pending」改写为「仍报 P017（不得因前一问通过而免报）」，**+4**
+  · `syndrome_kb_content.dart`（skill `syndrome-diagnosis-index`，6,077→6,213，**+136**）
+    = ③ 诊断输出规范第 7 条下新增一行（3 空格缩进 + 全角括号 2 + 正文 119 = 124 字符 + 换行 1）
+    + ④ 该行的「输出 uncertain」改写为「不进 syndromes 数组 + 缺证据写自然说明」，**+11**
+  · diagnosis 两组 +410 = 274 + 136（两 skill 均在该组注入面内，`skill_layers.dart:80/:84`）；
+  · `advanced_p4_yuesheng` / `advanced_sensei` 各 **+274**（锚点键，非红线键）：
+    `skill_layers.dart:117` 显示 advanced 组**也**加载 `writing-style`、但**不**加载
+    `syndrome-diagnosis-index` ⇒ 只吃到 ①②③⑤，是「改动只落在预期面」的旁证；
+  · 对照组 7 组 + force 组 +0：这些组均不加载上述两个 skill ⇒ 「本批不该动的组确实没动」得证。
+  ⚠️ `manual_3.dart` 去重 **−126 字符**落在 user 侧首轮判据块（`kSyndromeManualContent`），
+    该面**无红线上限**（`§4-263③`）⇒ **不得用于抵扣本批 +410**。
+  方向 = 把两条「窗口内不可判的撤销条件」换成「可指认的」——**新增 prompt 内容**
+  （与前几次「修缺陷回落 / 澄清性注释」方向不同），已获舰长授权。
+  ★★ **本批中途修正一处（主理人核出，施工者确认后改）**：初稿两处新文本要求模型输出
+  `uncertain` / `pending`，而**短链 `[YS_DIAGNOSIS]` 协议字段全表里没有这两个字段**
+  （实测 19 个字段；它们是**分块链** `ChunkNote.uncertain` / `[YS_REVIEW]` 的概念）
+  ⇒ 指令会落空，且落空方向是「不报」= **漏报**。⇒ **不新增协议字段**（那是 L2 协议变更、
+  超 B3a 范围），改用短链已有的合法表达：
+  · `syndrome_kb_content.dart`：「输出 uncertain …」⇒「该条不得报出（不进 syndromes 数组），
+    缺哪类证据写在自然说明部分」（**+11**，计入 ④）；
+  · `skills_diagnosis_p3.dart`：「无 ⇒ 标 pending，不得据此不报」⇒「无 ⇒ 仍报 P017
+    （不得因前一问通过而免报）」（**+4**，计入 ⑤）。
+  ⇒ 红线读数随之由 +395 修正为 **+410**，本沿革与下方常量均按**修正后**实测重贴。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -242,8 +273,19 @@ REDLINE = {
     # 该 skill 内容随 registry 去症 −15 ⇒ 两组同降；逐键对账见头注「红线沿革」第十二次。
     # ⚠️ 本方向 = **删除字符**（非新增预算）：registry 39 条 name/shortName/
     #   v1ActionName 去「症」后缀，派生 6 注入面合计 −130。
-    'diagnosis_yuesheng': 57197,
-    'diagnosis_p1_yuesheng': 55414,
+    # ★ 2026-10-25 第十三次重贴实测值（diagnosis 两组各 +410：57197→57607 /
+    # 55414→55824；force 组实测 +0 故不动；逐键对账见头注「红线沿革」第十三次）。
+    # 方向 = B3a「撤销通道可判化」四处 prompt 注入（`skills_diagnosis_p3.dart`
+    # P017 第三列替换 +132 + P016 新增行净 +138 + pending→仍报改写 +4
+    # = writing-style +274；`syndrome_kb_content.dart` 诊断输出规范第 7 条下
+    # 新增一行 +125 + uncertain→不进数组改写 +11 = syndrome-diagnosis-index +136），
+    # 舰长 2026-10-25 00:33「全批」授权（`DECISIONS §4-263①`）。
+    # ⚠️ 初稿曾要求模型输出 `uncertain` / `pending`——短链协议无此两字段，
+    #    已按主理人裁定改用短链既有表达，本值为**修正后**实测。
+    # ⚠️ `manual_3.dart` 去重 −126 落在**无红线上限的 user 侧判据块**，
+    #   按 `§4-263③` **不得抵扣**本批增量。
+    'diagnosis_yuesheng': 57607,
+    'diagnosis_p1_yuesheng': 55824,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
