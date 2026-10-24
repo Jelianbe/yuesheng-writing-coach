@@ -18,6 +18,10 @@ import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 
+// A′（`DECISIONS §4-258`）：去症批过渡期的「新名 ∪ 该 ID legacy 旧名」白名单。
+// `T-20261024-17` 完成后删除本 import 与全部引用，护栏收回严格态。
+import '../test_support/syndrome_name_legacy_alias.dart';
+
 void main() {
   // 权威症候集合（b9 真源化：由 syndrome_registry 派生，替代 kSyndromeSkillLevels.keys）
   final validSyndromes = kSyndromeIds.toSet();
@@ -391,6 +395,9 @@ void main() {
           if (s.v2ActionName != null) s.v2ActionName!,
           if (s.v2ActionName != null)
             s.v2ActionName!.replaceAll(RegExp(r'症$'), ''),
+          // A′（§4-258）：该 ID 的 legacy 旧名同样映射到**本 ID**（按 ID 精确配对
+          // ⇒ 拿别的 ID 的旧名顶替，仍会因集合不匹配而红）。
+          if (kLegacySyndromeNames[s.id] != null) kLegacySyndromeNames[s.id]!,
         ]) {
           nameToId[key] = s.id;
         }
@@ -475,6 +482,8 @@ void main() {
             s.shortName,
             s.name.replaceAll(RegExp(r'症$'), ''),
             s.shortName.replaceAll(RegExp(r'症$'), ''),
+            // A′（§4-258）：该 ID 的 legacy 旧名（白名单外仍必须红）。
+            if (kLegacySyndromeNames[s.id] != null) kLegacySyndromeNames[s.id]!,
           },
       };
       // 只认「P0XX + 以“症”结尾的名字 + 边界」；跳过「P018 为基础症候」

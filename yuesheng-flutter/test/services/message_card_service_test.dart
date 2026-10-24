@@ -200,7 +200,7 @@ void main() {
         syndromes: [
           DiagnosisSyndromeCard(
             syndromeId: 'P002',
-            name: '信息倾泻症',
+            name: '信息倾泻',
             severity: 'L2',
             evidenceCount: 1,
             readerImpact: '读者读到这里会失去画面，只剩概念在堆叠',

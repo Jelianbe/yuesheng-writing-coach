@@ -1549,7 +1549,7 @@ void main() {
 
       expect(find.byType(TaskPanel), findsOneWidget);
       expect(find.text('练习任务'), findsOneWidget);
-      expect(find.text('信息倾泻症'), findsOneWidget); // P002 注册表名称（D-W1 反查）
+      expect(find.text('信息倾泻'), findsOneWidget); // P002 注册表名称（D-W1 反查）
       expect(find.text('中等'), findsOneWidget); // L2 严重度中文标签（R-027 统一）
       expect(find.text('完成'), findsOneWidget);
 

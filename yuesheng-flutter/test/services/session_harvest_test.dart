@@ -88,7 +88,7 @@ void main() {
       '{"syndrome_id":"P001","name":"情绪标签化","severity":"L1",'
       '"evidence":["x"],"explanation":"y"}';
   const kSynB =
-      '{"syndrome_id":"P002","name":"信息倾泻症","severity":"L2",'
+      '{"syndrome_id":"P002","name":"信息倾泻","severity":"L2",'
       '"evidence":["x"],"explanation":"y"}';
 
   test('触发①：首次诊断（无训练/无候选）⇒ 不出卡', () async {

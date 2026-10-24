@@ -131,6 +131,28 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   ⚠️ 登记缺口（不是本批解除项）：**user 侧注入面只有快照漂移断言，没有红线上限**。
   后续批若要给 user 侧设体积上限，须另立读数口径（本批不扩面、不改判据逻辑）。
 
+· 2026-10-24 第十二次（T-20261024-07 症候命名统一去症 · R-025/R-026 舰长批
+  `§4-257` 范围案 A）：**受控组 diagnosis 两组各 −15**（57,212→57,197 ·
+  55,429→55,414）、**对照组 7 组与 force 组均 −0**（实测逐键零漂移）。
+  方向：`lib/services/syndrome_registry.dart` 39 条记录的 `name`/`shortName`/
+  `v1ActionName` 三字段去「症」后缀（带症 31/24/1 条，实测）——**零逻辑改动**，
+  派生 6 注入面自动跟随（类型速查表 −31 · 手册技法映射表 −24 ·
+  training-templates-index −24 · coaching-actions-v2 −15 · F-block×5 −5 ·
+  kChunkSystemPrompt −31，合计 −130；负对照 4 面实测零变化）。
+  逐键对账（重冻 diff 22+12 处逐条一致）：
+  · diagnosis 两组 −15 = 两组均加载 skill `coaching-actions-v2`（行渲染
+    `skill_registry.dart:200` → `skills_training_p4.dart:257`，消费
+    `v2ActionName ?? shortName`），该 skill 内容 3846→3831（−15）；
+  · training 组 −39（锚点键、非红线键）= coaching-actions-v2 −15 +
+    training-templates-index −24（2706→2682；该 skill 仅 training 组加载）；
+  · advanced / outline 各 −15（锚点键）= coaching-actions-v2 同源；
+  · 对照组 7 组与 force 组 −0：快照 skills 字段实测均**不加载**
+    coaching-actions-v2 ⇒ 诊断/训练组专属面之外零触及。
+  ⚠️ **本方向 = 删除字符**（每个症名 −1），**不是新增预算**；按「贴实测值、
+  不留余量」口径下钉。F-block×5 与 kChunkSystemPrompt −31 **不在本脚本计量面内**
+  （前者经 message_injector 走 system 消息、后者为分块诊断系统提示），
+  其漂移由 `chat_context_builder_observation_test` 字节级断言等锚点外测试覆盖。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -214,8 +236,14 @@ REDLINE = {
     # 对照组 7 组实测 +0（本次改动只在 diagnosis 组专属面 _kIndexFooter）。
     # ⚠️ **本方向 = 新增 prompt 内容**（非「修缺陷回落」）——舰长 2026-10-20
     #   「都批」批准路 α 与形态字段（`DECISIONS §4-227`）；新增预算已获批准。
-    'diagnosis_yuesheng': 57212,
-    'diagnosis_p1_yuesheng': 55429,
+    # ★ 2026-10-24 第十二次重贴实测值（各 −15：57212→57197 / 55429→55414；
+    # 方向 = T-20261024-07 症候命名统一去症（R-025/R-026 舰长批 §4-257 范围案 A），
+    # diagnosis 组加载 skill coaching-actions-v2（派生表消费 v2ActionName ?? shortName），
+    # 该 skill 内容随 registry 去症 −15 ⇒ 两组同降；逐键对账见头注「红线沿革」第十二次。
+    # ⚠️ 本方向 = **删除字符**（非新增预算）：registry 39 条 name/shortName/
+    #   v1ActionName 去「症」后缀，派生 6 注入面合计 −130。
+    'diagnosis_yuesheng': 57197,
+    'diagnosis_p1_yuesheng': 55414,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。

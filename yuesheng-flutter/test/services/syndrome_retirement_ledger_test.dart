@@ -21,6 +21,10 @@ import 'package:writingcoach/data/database/migration_v46.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/syndrome_retirement.dart';
 
+// A′（`DECISIONS §4-258`）：去症批过渡期的「新名 ∪ 该 ID legacy 旧名」白名单。
+// `T-20261024-17` 完成后删除本 import 与全部引用，护栏收回严格态。
+import '../test_support/syndrome_name_legacy_alias.dart';
+
 /// 剥掉名字里的括号补充说明。
 ///
 /// 旧注册表部分条目的 `name` 带括号（如「信息倾泻症（含原 P001 世界观膨胀子类型）」），
@@ -108,7 +112,7 @@ void main() {
       //（P004/P009 旧名带括号补充说明，实体其实未变）。
       //
       // ⚠️ 比较必须**剥掉括号补充说明**再比（P004 旧名
-      // 「信息倾泻症（含原 P001 世界观膨胀子类型）」vs 现行「信息倾泻症」
+      // 「信息倾泻症（含原 P001 世界观膨胀子类型）」vs 现行「信息倾泻」
       // 是同一实体）。这正是 v1 判据翻车的原因 —— 别退回全等比较。
       final wrong = <String>[];
       for (final r in kSyndromeRetirement) {
@@ -117,13 +121,20 @@ void main() {
         if (rawTarget == null) continue; // #2 已保证目标在册，这里兜底
         final targetName = _stripParenthetical(rawTarget);
         final oldName = _stripParenthetical(r.oldName!);
-        if (r.kind == RetirementKind.renumber && oldName != targetName) {
+        // A′（§4-258）：目标 ID 的可接受名 = 现行名 ∪ **该 ID 登记的** legacy 旧名，
+        // 两边都先剥括号注释再比。按 ID 精确配对 —— 别的 ID 的旧名不算「同名」
+        // （拆名批还没清硬编码正文，旧名此刻确实仍指向同一实体）。
+        final legacy = kLegacySyndromeNames[r.mergedInto];
+        final sameName =
+            oldName == targetName ||
+            (legacy != null && oldName == _stripParenthetical(legacy));
+        if (r.kind == RetirementKind.renumber && !sameName) {
           wrong.add(
             '${r.oldId}: 标 renumber 但旧名「${r.oldName}」'
             '≠ 目标名「$targetName」',
           );
         }
-        if (r.kind == RetirementKind.merge && oldName == targetName) {
+        if (r.kind == RetirementKind.merge && sameName) {
           wrong.add('${r.oldId}: 标 merge 但旧名与目标名相同（$targetName）');
         }
       }
@@ -158,7 +169,7 @@ void main() {
       //      （`P035→P009` / `P036→P004` / `P037→P026`）。
       //      这不是「漏删」，是**必须保留的有害残留留证**：
       //      它精确记录了「若 v46 迁移执行，存量库里任何 P035 行都会被
-      //      改写成对话疲劳症」——而 `P035` 如今是现行实体「撞文同质化症」。
+      //      改写成对话疲劳」——而 `P035` 如今是现行实体「撞文同质化」。
       //      ⇒ 这是 v46 被退役的**决定性证据**，删掉它就等于删掉决策依据。
       //
       //   ⚠️ 本条的鉴别力：若有人「顺手把留档表里的 recycled 三条清掉」
@@ -198,7 +209,7 @@ void main() {
       // 那是伪断言，实测当前就有 9 条违反（P001/P002 + P017/P019/P023/P024/
       // P025/P029/P033）。原因是 §4-136 的**编码碰撞**：
       // 同一个字符串既是旧号也是现行号，但指**完全不同的实体**
-      // （实测：字符串 `P017` 现在是「跳跃叙事/过度概括症」，
+      // （实测：字符串 `P017` 现在是「跳跃叙事/过度概括」，
       //  而档案里 `P017` 退役时是「伏笔失效症」）。
       //
       // ⇒ 真正可判的判据是：**旧名 ≠ 现行名**。
@@ -234,9 +245,9 @@ void main() {
       //   `RetirementKind.recycled`（槽位待复用，**不在** merge map 里），注册为
       //   新症候后它们从「真旧号」变成「碰撞键」⇒ 档案 ∩ 现行 由 33 升到 36。
       // ⚠️ **2026-10-11 ADR-C147 需求3 补 P038，本数 36 → 37**：P038（旧=支线涣散，
-      //   renumber）复用为「描写顺序失序症」⇒ 又一个碰撞键。
+      //   renumber）复用为「描写顺序失序」⇒ 又一个碰撞键。
       // ⚠️ **2026-10-11 ADR-C150 补 P039，本数 37 → 38**：P039（旧=目标模糊症，
-      //   已 merge→P007 退役、号腾空）复用为「信息密度缺失症」⇒ 再一个碰撞键。
+      //   已 merge→P007 退役、号腾空）复用为「信息密度缺失」⇒ 再一个碰撞键。
       //   ⚠️ **注意两个集合不同义，别混**（本批已踩过一次）：
       //     ·本用例统计的是**档案 50 条**（含 recycled 3条）∩ 现行 = **38**
       //     · 而 `kSyndromeMergeMap` 只有 **47 条**（recycled 已清）∩ 现行 = **33**

@@ -1,14 +1,14 @@
 // ADR-C116 A2（v2）：学员焦点选择序数/别名映射
 //
 // 被守护的缺陷：directExplain 全貌清单（「序号. [P码] 名称」）后，学员自然回答
-// 「先练第二个 / 对话疲劳症那个」，旧 _parseUserFocusFromMessage 三条正则全部
+// 「先练第二个 / 对话疲劳那个」，旧 _parseUserFocusFromMessage 三条正则全部
 // 要求显式 P\d+ → 解析 null → focus_resolver 静默改用 AI 自挑（userOverride 丢失、
 // 无留痕）。v2 定稿：从 AI 上一条 assistant 消息还原「序号→P码」映射（真同源）
 // + 症候真名别名唯一命中兜底 + 解析失败留痕。
 //
 // name→Pcode 对照真实注册表（syndrome_registry.dart）：
 //   P001 情绪标签化 / P004 节奏停滞 / P005 句式节奏单一 /
-//   P006 语言堆砌 / P009 对话疲劳症（A2 事实订正：P005 真名不是「对话生硬」）。
+//   P006 语言堆砌 / P009 对话疲劳（A2 事实订正：P005 真名不是「对话生硬」）。
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,14 +40,14 @@ ActiveProblemView _p(String id, String name) => ActiveProblemView(
 const String _kAssistantList3 = '''
 本次识别出 3 个症候：
 1. [P005] 句式节奏单一——连续多句同结构
-2. [P009] 对话疲劳症——对话灌水无潜台词
+2. [P009] 对话疲劳——对话灌水无潜台词
 3. [P001] 情绪标签化——空评价词盖章
 你想先动哪一个？''';
 
 const String _kAssistantList5 = '''
 本次识别出 5 个症候：
 1. [P005] 句式节奏单一——连续多句同结构
-2. [P009] 对话疲劳症——对话灌水无潜台词
+2. [P009] 对话疲劳——对话灌水无潜台词
 3. [P001] 情绪标签化——空评价词盖章
 4. [P004] 节奏停滞——事件平铺无聚焦
 5. [P006] 语言堆砌——修饰密度过高
@@ -55,13 +55,13 @@ const String _kAssistantList5 = '''
 
 final List<ActiveProblemView> _active3 = [
   _p('P005', '句式节奏单一'),
-  _p('P009', '对话疲劳症'),
+  _p('P009', '对话疲劳'),
   _p('P001', '情绪标签化'),
 ];
 
 final List<ActiveProblemView> _active5 = [
   _p('P005', '句式节奏单一'),
-  _p('P009', '对话疲劳症'),
+  _p('P009', '对话疲劳'),
   _p('P001', '情绪标签化'),
   _p('P004', '节奏停滞'),
   _p('P006', '语言堆砌'),
@@ -141,8 +141,8 @@ void main() {
   group('组2 别名兜底（真名包含匹配，唯一命中）', () {
     test('按真名回答 → 唯一命中返回', () {
       final r = resolveUserSyndromeFocus(
-        content: '我想先改对话疲劳症那个问题',
-        activeProblems: [_p('P005', '句式节奏单一'), _p('P009', '对话疲劳症')],
+        content: '我想先改对话疲劳那个问题',
+        activeProblems: [_p('P005', '句式节奏单一'), _p('P009', '对话疲劳')],
         recentAssistantText: null,
       );
       expect(r.focusId, 'P009');
@@ -189,7 +189,7 @@ void main() {
     });
 
     test('顿号分隔（2、[P009]）同样接受；非清单行忽略', () {
-      final map = parseSyndromeOrdinalList('开头一句\n2、[P009] 对话疲劳症\n尾句');
+      final map = parseSyndromeOrdinalList('开头一句\n2、[P009] 对话疲劳\n尾句');
       expect(map[2], 'P009');
       expect(map.containsKey(1), isFalse);
     });

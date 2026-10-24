@@ -139,7 +139,7 @@ void main() {
         final result = validateNaturalLanguage('这里有 P002 与 A001 编号');
         expect(result.cleaned.contains('P002'), isFalse);
         expect(result.cleaned.contains('【症候】'), isFalse);
-        expect(result.cleaned, contains('信息倾泻症')); // P002 名
+        expect(result.cleaned, contains('信息倾泻')); // P002 名
         expect(result.cleaned.contains('【动作】'), isFalse);
         expect(result.cleaned, contains('缩小范围')); // A001 名
         expect(result.fixes.any((f) => f.type == 'V-03'), isTrue);
@@ -319,7 +319,7 @@ void main() {
       // 当前 P001 是「情绪标签化」。回填必须精确匹配优先，否则名会错。
       final r = validateNaturalLanguage('这里有 P001 的问题');
       expect(r.cleaned, contains('情绪标签化'));
-      expect(r.cleaned.contains('信息倾泻症'), isFalse);
+      expect(r.cleaned.contains('信息倾泻'), isFalse);
     });
 
     test('★ 旧编号不再被回填成现行症候（单轨：越界即被拒，不被猜）', () {
@@ -380,7 +380,7 @@ void main() {
       //
       //   保留兜底会掩盖问题：V-03 把越界编号替换成「【症候】」占位符
       //   是**底线**（编号不外泄），而兜底分支会让越界号看起来像已知号。
-      expect(syndromeNameOf('P002'), '信息倾泻症');
+      expect(syndromeNameOf('P002'), '信息倾泻');
       expect(syndromeNameOf('P001'), '情绪标签化'); // 不被任何历史映射改写
 
       // ★ 真旧号：必须 null（曾被兜底成 P018 的名字「重复用词/基础语病」）
@@ -392,7 +392,7 @@ void main() {
             '单轨下它必须读不出名字，绝不能被猜成 P018 的名字。',
       );
       // ADR-C147（2026-10-11）：P038–P049 为 renumber/merge 腾空的号，可复用；
-      // P038「描写顺序失序症」、P039「信息密度缺失症」(ADR-C150) 已分配；
+      // P038「描写顺序失序」、P039「信息密度缺失」(ADR-C150) 已分配；
       // 其余 P040–P049 当前未分配 → 均返回 null。
       // ghost 号 H001/H002 永不复用 → 返回 null。
       for (final old in const [

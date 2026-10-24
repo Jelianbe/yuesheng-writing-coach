@@ -246,7 +246,7 @@ void main() {
                 jsonEncode([
                   {
                     'syndrome_id': 'P002',
-                    'name': '信息倾泻症',
+                    'name': '信息倾泻',
                     'severity': 'L2',
                     'evidence': ['例1'],
                   },
@@ -265,7 +265,7 @@ void main() {
 
       // 焦点卡标题 + 建议先关注的症候
       expect(find.text('当前焦点'), findsOneWidget);
-      expect(find.text('建议先关注：信息倾泻症'), findsOneWidget);
+      expect(find.text('建议先关注：信息倾泻'), findsOneWidget);
       // 为什么（只陈述既有字段）
       expect(find.textContaining('出现 1 次'), findsOneWidget);
     });

@@ -112,7 +112,7 @@ void main() {
     ),
     const DiagnosisSyndromeCard(
       syndromeId: 'P010',
-      name: '张力不足症',
+      name: '张力不足',
       severity: 'L3',
       evidenceCount: 3,
     ),
@@ -140,7 +140,7 @@ void main() {
       // 收起态：标签行包含 3 个症候名（用 hitTestable 过滤 SizeTransition 折叠态的详情副本）
       expect(find.text('情绪标签化').hitTestable(), findsOneWidget);
       expect(find.text('视角漂移').hitTestable(), findsOneWidget);
-      expect(find.text('张力不足症').hitTestable(), findsOneWidget);
+      expect(find.text('张力不足').hitTestable(), findsOneWidget);
 
       // 矿物色断言：L1 = 竹青淡 #E8F0EE，L2 = 矿物黄 #F5E6B8，L3 = 矿物红 #E8C5C5
       // 复用 #4 的 hasChipWithColor 模式：chip 外层容器特征是有 borderRadius（圆点没有）
@@ -172,9 +172,9 @@ void main() {
         reason: '情绪标签化 L2 → 矿物黄背景',
       );
       expect(
-        hasChipWithBgColor('张力不足症', const Color(0xFFE8C5C5)),
+        hasChipWithBgColor('张力不足', const Color(0xFFE8C5C5)),
         isTrue,
-        reason: '张力不足症 L3 → 矿物红背景',
+        reason: '张力不足 L3 → 矿物红背景',
       );
     });
 
@@ -249,7 +249,7 @@ void main() {
         ),
       );
 
-      // L1 视角漂移 → 矿物青淡 #E8F0EE；L2 情绪标签化 → #F5E6B8；L3 张力不足症 → #E8C5C5
+      // L1 视角漂移 → 矿物青淡 #E8F0EE；L2 情绪标签化 → #F5E6B8；L3 张力不足 → #E8C5C5
       // 用 predicate 匹配 syndrome chip 容器颜色
       bool hasChipWithColor(String label, Color color) => find
           .byWidgetPredicate(
@@ -279,9 +279,9 @@ void main() {
         reason: '情绪标签化 severity=L2 → #F5E6B8',
       );
       expect(
-        hasChipWithColor('张力不足症', const Color(0xFFE8C5C5)),
+        hasChipWithColor('张力不足', const Color(0xFFE8C5C5)),
         isTrue,
-        reason: '张力不足症 severity=L3 → #E8C5C5',
+        reason: '张力不足 severity=L3 → #E8C5C5',
       );
     });
 
@@ -398,7 +398,7 @@ void main() {
               ),
               DiagnosisSyndromeCard(
                 syndromeId: 'P016',
-                name: '过渡生硬症',
+                name: '过渡生硬',
                 severity: 'L2',
                 evidenceCount: 1,
               ),
@@ -1276,9 +1276,9 @@ void main() {
       // 步骤内容（诚实派生自 payload：证据 2+1+3=6、症候名、严重度、建议数）
       expect(find.text('文本分析'), findsOneWidget);
       expect(find.textContaining('6 处问题片段'), findsOneWidget);
-      expect(find.textContaining('情绪标签化、视角漂移、张力不足症'), findsOneWidget);
+      expect(find.textContaining('情绪标签化、视角漂移、张力不足'), findsOneWidget);
       expect(find.text('各问题相对轻重'), findsOneWidget);
-      expect(find.textContaining('张力不足症（严重）'), findsOneWidget);
+      expect(find.textContaining('张力不足（严重）'), findsOneWidget);
       expect(find.text('建议生成'), findsOneWidget);
       expect(find.textContaining('2 条改写建议'), findsOneWidget);
     });
@@ -1441,7 +1441,7 @@ void main() {
             syndromes: const [
               DiagnosisSyndromeCard(
                 syndromeId: 'P021',
-                name: '画面感缺失症',
+                name: '画面感缺失',
                 severity: 'L2',
                 evidenceCount: 1,
                 explanation: '全段五句均为概括性叙述，没有一个具体可感的细节',
@@ -1543,7 +1543,7 @@ void main() {
             syndromes: const [
               DiagnosisSyndromeCard(
                 syndromeId: 'P021',
-                name: '画面感缺失症',
+                name: '画面感缺失',
                 severity: 'L2',
                 evidenceCount: 0, // 走「（无证据列表）」分支 = 同块参照物
                 explanation: '全段五句均为概括性叙述，没有一个具体可感的细节',
@@ -1650,7 +1650,7 @@ void main() {
     test('N10-4 toJson 含 explanation / fromJson 读回', () {
       const card = DiagnosisSyndromeCard(
         syndromeId: 'P021',
-        name: '画面感缺失症',
+        name: '画面感缺失',
         severity: 'L2',
         evidenceCount: 1,
         evidence: ['午后'],
@@ -1660,7 +1660,7 @@ void main() {
 
       final back = DiagnosisSyndromeCard.fromJson(card.toJson());
       expect(back.explanation, '全段五句均为概括性叙述，没有一个具体可感的细节');
-      expect(back.name, '画面感缺失症');
+      expect(back.name, '画面感缺失');
       expect(back.evidence, ['午后']);
       expect(back.evidenceCount, 1);
     });
@@ -1831,7 +1831,7 @@ void main() {
     const talkSyndromes = [
       DiagnosisSyndromeCard(
         syndromeId: 'P002',
-        name: '信息倾泻症',
+        name: '信息倾泻',
         severity: 'L2',
         evidenceCount: 1,
         explanation: '开篇连续三段交代设定',
@@ -1871,7 +1871,7 @@ void main() {
             syndromes: [
               DiagnosisSyndromeCard(
                 syndromeId: 'P002',
-                name: '信息倾泻症',
+                name: '信息倾泻',
                 severity: 'L2',
                 evidenceCount: 1,
                 explanation: '开篇连续三段交代设定',
@@ -1900,7 +1900,7 @@ void main() {
         'syndromes': [
           {
             'syndrome_id': 'P002',
-            'name': '信息倾泻症',
+            'name': '信息倾泻',
             'severity': 'L2',
             'evidence_count': 1,
             'explanation': '开篇连续三段交代设定',
@@ -1958,7 +1958,7 @@ void main() {
         syndromes: [
           DiagnosisSyndromeCard(
             syndromeId: 'P002',
-            name: '信息倾泻症',
+            name: '信息倾泻',
             severity: 'L2',
             evidenceCount: 1,
             explanation: '开篇连续三段交代设定',
@@ -2094,7 +2094,7 @@ void main() {
     test('A3 形态两字段 toJson→fromJson 字段级相等（含空值用例）', () {
       const full = DiagnosisSyndromeCard(
         syndromeId: 'P002',
-        name: '信息倾泻症',
+        name: '信息倾泻',
         severity: 'L2',
         evidenceCount: 1,
         formFactCount: 3,
@@ -2105,12 +2105,12 @@ void main() {
       expect(back.formStructure, 'expository');
       // 其余字段不因新增字段丢失
       expect(back.syndromeId, 'P002');
-      expect(back.name, '信息倾泻症');
+      expect(back.name, '信息倾泻');
 
       // 空值用例：不落 key ⇒ 读回 null（不变成 0 / 空串）
       const empty = DiagnosisSyndromeCard(
         syndromeId: 'P002',
-        name: '信息倾泻症',
+        name: '信息倾泻',
         severity: 'L2',
         evidenceCount: 1,
       );

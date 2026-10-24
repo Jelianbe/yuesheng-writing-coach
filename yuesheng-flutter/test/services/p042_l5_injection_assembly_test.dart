@@ -96,7 +96,7 @@ String _extractInjectedP042Block(String assembled) {
 /// 构造 P030 活跃症候视图（focus 装配面输入）。
 ActiveSyndromeView _p030View() => const ActiveSyndromeView(
   syndromeId: 'P030',
-  syndromeName: '声线漂移症',
+  syndromeName: '声线漂移',
   severity: Severity.l3,
   confirmationStatus: ConfirmationStatus.confirmed,
 );
@@ -114,7 +114,7 @@ void main() {
       );
 
       // 1) 走的是 focus 完整注入分支（而非非 focus 概览行）
-      expect(assembled, contains('### ★ 当前教学焦点 P030 声线漂移症'));
+      expect(assembled, contains('### ★ 当前教学焦点 P030 声线漂移'));
       // 2) 词条本体确实出现在装配结果里
       expect(assembled, contains(kP042EntryTitle));
       // 3) 可选：KB header 形态存在
@@ -140,7 +140,7 @@ void main() {
         const [
           ActiveSyndromeView(
             syndromeId: 'P029',
-            syndromeName: '降智反派症',
+            syndromeName: '降智反派',
             severity: Severity.l3,
             confirmationStatus: ConfirmationStatus.confirmed,
           ),
@@ -153,7 +153,7 @@ void main() {
       );
 
       // 先证明装配确实产出了内容（防「空字符串上的负断言」假绿）
-      expect(assembled, contains('### ★ 当前教学焦点 P029 降智反派症'));
+      expect(assembled, contains('### ★ 当前教学焦点 P029 降智反派'));
       expect(assembled, contains(kKbHeader));
       // 再断言 P030 词条不出现
       expect(assembled, isNot(contains(kP042EntryTitle)));
@@ -182,7 +182,7 @@ void main() {
           problems: [
             const FocusProblem(
               syndromeId: 'P030',
-              syndromeName: '声线漂移症',
+              syndromeName: '声线漂移',
               severity: Severity.l3,
               confirmationStatus: ConfirmationStatus.confirmed,
               status: 'active',

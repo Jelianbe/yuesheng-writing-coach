@@ -303,8 +303,8 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   ),
   SyndromeRecord(
     id: 'P002',
-    name: '信息倾泻症',
-    shortName: '信息倾泻症',
+    name: '信息倾泻',
+    shortName: '信息倾泻',
     keyword: '设定信息旁白交代',
     oneLine: '世界观/背景以说明书方式直接陈述，非嵌在场景中',
     typeLine: '信息呈现方式不当',
@@ -317,7 +317,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'beginning',
     techniques: ['T010', 'T011'],
     actions: ['A002', 'A008'],
-    v1ActionName: '信息倾泻症',
+    v1ActionName: '信息倾泻',
     v2ActionName: '信息倾泻',
   ),
   SyndromeRecord(
@@ -424,8 +424,8 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   ),
   SyndromeRecord(
     id: 'P009',
-    name: '对话疲劳症',
-    shortName: '对话疲劳症',
+    name: '对话疲劳',
+    shortName: '对话疲劳',
     keyword: '对话无区分度',
     oneLine: '对话占过多篇幅且无潜台词、无动作支撑；或寒暄客套/重复确认无信息增量，看似推进实则灌水',
     typeLine: '对话缺乏表现力，信息密度不足',
@@ -442,8 +442,8 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   // ── L4 情节结构 ──────────────────────────────────────────
   SyndromeRecord(
     id: 'P010',
-    name: '张力不足症',
-    shortName: '张力不足症',
+    name: '张力不足',
+    shortName: '张力不足',
     keyword: '冲突无分量',
     oneLine: '主角不会输/无代价/无后果，读者不紧张',
     typeLine: '冲突缺乏分量',
@@ -460,8 +460,8 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
   ),
   SyndromeRecord(
     id: 'P011',
-    name: '开篇平庸症',
-    shortName: '开篇平庸症',
+    name: '开篇平庸',
+    shortName: '开篇平庸',
     keyword: '开篇无钩子',
     oneLine: '前300字无冲突/悬念/反常，或切入点从最无聊处起笔绕大圈，前三章未建立代入/目标，读者3秒流失',
     typeLine: '开篇缺乏钩子，阅读契约未建立',
@@ -482,8 +482,8 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
 const List<SyndromeRecord> _syndromeRegistryP2 = [
   SyndromeRecord(
     id: 'P012',
-    name: '结尾乏力症',
-    shortName: '结尾乏力症',
+    name: '结尾乏力',
+    shortName: '结尾乏力',
     keyword: '结尾仓促/烂尾',
     oneLine: '收束无满足感，机械降神；或伏笔裸露/烂尾/解释式回收',
     typeLine: '结尾缺少收束满足感，伏笔回收失控',
@@ -500,8 +500,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   ),
   SyndromeRecord(
     id: 'P013',
-    name: '高潮疲软症',
-    shortName: '高潮疲软症',
+    name: '高潮疲软',
+    shortName: '高潮疲软',
     keyword: '高潮执行不到位',
     oneLine: '铺垫做好了但高潮段落无冲击力；关键胜利/优势展示无情绪回报，读者不"爽"',
     typeLine: '高潮执行不到位，情绪回报缺失',
@@ -518,8 +518,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   ),
   SyndromeRecord(
     id: 'P014',
-    name: '情节巧合过多症',
-    shortName: '情节巧合过多症',
+    name: '情节巧合过多',
+    shortName: '情节巧合过多',
     keyword: '情节依赖巧合',
     oneLine: '推进靠偶然事件而非角色主动选择',
     typeLine: '情节驱动依赖巧合',
@@ -537,8 +537,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   // ── L3 角色塑造 ──────────────────────────────────────────
   SyndromeRecord(
     id: 'P015',
-    name: '人设崩塌症',
-    shortName: '人设崩塌症',
+    name: '人设崩塌',
+    shortName: '人设崩塌',
     keyword: '角色中途崩坏',
     oneLine: '连载中角色行为偏离前期建立的模式',
     typeLine: '角色在连载中期崩坏',
@@ -555,8 +555,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   // ── L2 叙事节奏 ──────────────────────────────────────────
   SyndromeRecord(
     id: 'P016',
-    name: '过渡生硬症',
-    shortName: '过渡生硬症',
+    name: '过渡生硬',
+    shortName: '过渡生硬',
     keyword: '场景切换生硬',
     oneLine: '过渡靠"镜头一转"，无感官/情绪连接',
     typeLine: '场景衔接不流畅',
@@ -572,8 +572,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   ),
   SyndromeRecord(
     id: 'P017',
-    name: '跳跃叙事/过度概括症',
-    shortName: '跳跃叙事/过度概括症',
+    name: '跳跃叙事/过度概括',
+    shortName: '跳跃叙事/过度概括',
     keyword: '关键事件被概括',
     oneLine: '重要时刻被一两句带过，读者来不及感受',
     typeLine: '情节推进过快，关键事件被概括',
@@ -608,8 +608,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   // ── 网文商业：章节钩子 / 追读 ─────────────────────────────
   SyndromeRecord(
     id: 'P019',
-    name: '章节钩子缺失症',
-    shortName: '章节钩子缺失症',
+    name: '章节钩子缺失',
+    shortName: '章节钩子缺失',
     keyword: '章节钩子缺失',
     oneLine: '章末无悬念/反转/冲击无翻页动力；或钩子不兑现/提前剧透，读者期待落空',
     typeLine: '章末悬念设计缺失，承诺管理失衡',
@@ -625,8 +625,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   ),
   SyndromeRecord(
     id: 'P020',
-    name: '追读动力不足症',
-    shortName: '追读动力不足症',
+    name: '追读动力不足',
+    shortName: '追读动力不足',
     keyword: '追读动力不足',
     oneLine: '长线悬念/情感绑定/主线牵引弱，连载中弃书',
     typeLine: '长线留存结构缺失，连载中弃书',
@@ -642,8 +642,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
   ),
   SyndromeRecord(
     id: 'P021',
-    name: '画面感缺失症',
-    shortName: '画面感缺失症',
+    name: '画面感缺失',
+    shortName: '画面感缺失',
     keyword: '画面感缺失',
     oneLine: '通篇抽象概述无场景化呈现，读者无法脑内成像',
     typeLine: '通篇抽象概述，缺乏场景化呈现',
@@ -663,8 +663,8 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
 const List<SyndromeRecord> _syndromeRegistryP3 = [
   SyndromeRecord(
     id: 'P022',
-    name: '节奏比例失衡症',
-    shortName: '节奏比例失衡症',
+    name: '节奏比例失衡',
+    shortName: '节奏比例失衡',
     keyword: '节奏比例失衡',
     oneLine: '铺垫/高潮/收束比例失衡，该快的慢、该慢的快',
     typeLine: '铺垫/高潮/收束比例失衡，节奏错配',
@@ -679,8 +679,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P023',
-    name: '设定矛盾症',
-    shortName: '设定矛盾症',
+    name: '设定矛盾',
+    shortName: '设定矛盾',
     keyword: '设定矛盾',
     oneLine: '世界观设定前后冲突，规则/时间线/能力不自洽',
     typeLine: '世界观设定前后冲突，规则/时间线不自洽',
@@ -695,8 +695,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P024',
-    name: '金手指失衡症',
-    shortName: '金手指失衡症',
+    name: '金手指失衡',
+    shortName: '金手指失衡',
     keyword: '金手指使用失衡',
     oneLine: '金手指迟迟不亮相/过强消灭冲突/规则崩坏；升级过快力量通胀或过慢失去期待，成长弧线失衡',
     typeLine: '金手指设定或使用失衡，成长节奏失控',
@@ -711,8 +711,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P025',
-    name: '配角工具人症',
-    shortName: '配角工具人症',
+    name: '配角工具人',
+    shortName: '配角工具人',
     keyword: '配角功能性过强',
     oneLine: '配角无独立性格/动机/记忆点，仅传话推剧情喊口号',
     typeLine: '配角群像工具化，缺乏独立辨识度',
@@ -728,8 +728,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P026',
-    name: '心理内耗症',
-    shortName: '心理内耗症',
+    name: '心理内耗',
+    shortName: '心理内耗',
     keyword: '心理独白失控',
     oneLine: '角色内心反复纠结/自我怀疑/复盘过往，大段独白无进展',
     typeLine: '心理描写失控，无进展内耗',
@@ -745,8 +745,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P027',
-    name: '支线涣散症',
-    shortName: '支线涣散症',
+    name: '支线涣散',
+    shortName: '支线涣散',
     keyword: '支线偏离主线',
     oneLine: '支线剧情不服务主线/人设/爽点，被带跑后主线被搁置',
     typeLine: '支线意义缺失，主线牵引弱化',
@@ -762,8 +762,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P028',
-    name: '被动主角症',
-    shortName: '被动主角症',
+    name: '被动主角',
+    shortName: '被动主角',
     keyword: '主角无主动性',
     oneLine: '主角被剧情拖着走，无主动决策/权衡/反制，读者一眼出戏',
     typeLine: '主角主动性缺失，决策由剧情代劳',
@@ -778,8 +778,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P029',
-    name: '降智反派症',
-    shortName: '降智反派症',
+    name: '降智反派',
+    shortName: '降智反派',
     keyword: '对手无利益动机',
     oneLine: '反派为坏而坏、降智送人头，无利益动机，冲突失真张力崩坏',
     typeLine: '对手塑造工具化，利益冲突缺席',
@@ -794,8 +794,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P030',
-    name: '声线漂移症',
-    shortName: '声线漂移症',
+    name: '声线漂移',
+    shortName: '声线漂移',
     keyword: '声线不稳定',
     oneLine: '文风随段落漂移、前后声线不统一，读者辨不出这是谁写的',
     typeLine: '风格声线失稳，个人风格不统一',
@@ -810,8 +810,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P031',
-    name: '题材边界感缺失症',
-    shortName: '题材边界感缺失症',
+    name: '题材边界感缺失',
+    shortName: '题材边界感缺失',
     keyword: '题材边界模糊',
     oneLine: '不清楚写什么题材/题材边界不清晰，选了不擅长不商业的方向，或题材内部混搭失焦',
     typeLine: '题材定位缺失，读者找不到类型预期',
@@ -826,8 +826,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P032',
-    name: '翻译腔/外来语干扰症',
-    shortName: '翻译腔/外来语干扰症',
+    name: '翻译腔/外来语干扰',
+    shortName: '翻译腔/外来语干扰',
     keyword: '翻译腔/外来语',
     oneLine: '句子带着翻译腔（长定语、名物化、被动堆砌、It is…式抽象）或被外来语/音译词打断语流',
     typeLine: '句式翻译腔化，语流不自然',
@@ -843,7 +843,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P033',
-    name: '冲突未升级/模式重复症',
+    name: '冲突未升级/模式重复',
     shortName: '冲突未升级',
     keyword: '冲突模式重复未递进',
     oneLine: '同一模式重复多次但强度未递增，读者第二次就摸清规律，后续只是音量调大',
@@ -861,7 +861,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P034',
-    name: '代词指代不清/零回指过载症',
+    name: '代词指代不清/零回指过载',
     shortName: '零回指过载',
     keyword: '零形回指/指代不明',
     oneLine: '连续两个以上小句主语/宾语均省略且就近可及候选≥2，读者需回看上段才确认"他/她/它"或零主语指谁',
@@ -898,7 +898,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   //   若将来想复用某个号，先确认它是不是 ghost 号（`kSyndromeRetirement` 查）。
   SyndromeRecord(
     id: 'P035',
-    name: '撞文同质化症',
+    name: '撞文同质化',
     shortName: '撞文同质',
     keyword: '模板化撞文/陌生感缺失',
     oneLine: '遮掉地名与人名后，读者认不出写的是哪部作品——场景可与同题材任意一部互换，缺少只属于这一处的具体性',
@@ -914,7 +914,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P036',
-    name: '细节失真症',
+    name: '细节失真',
     shortName: '细节失真',
     keyword: '生活逻辑断裂/物象缺失',
     oneLine: '只有形容没有物象——关键生活细节经不起一次设问追问（那时她没有女佣使唤吗），逻辑链在常识层断裂',
@@ -931,7 +931,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   ),
   SyndromeRecord(
     id: 'P037',
-    name: '故事核缺失症',
+    name: '故事核缺失',
     shortName: '故事核缺失',
     keyword: '主线失焦/剪裁无主干',
     oneLine: '素材都好但彼此散落，找不到贯穿全篇的单一矛盾或红线——每个单场都合格，合起来不成篇',
@@ -949,7 +949,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   // ── 需求 3 新增（2026-10-11）：描写顺序失序症 ──
   SyndromeRecord(
     id: 'P038',
-    name: '描写顺序失序症',
+    name: '描写顺序失序',
     shortName: '描写顺序失序',
     keyword: '空间/时间描写顺序错乱',
     oneLine: '空间感官或时间感官的描写顺序与因果/感知顺序不符——先写结果后写过程、空间跳接无过渡、时间倒错无提示，读者需自行脑补顺序',
@@ -969,7 +969,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
   // （four_libraries_consistency_test #1）要求新条目取 P038 之后的下一个号。
   SyndromeRecord(
     id: 'P039',
-    name: '信息密度缺失症',
+    name: '信息密度缺失',
     shortName: '信息密度缺失',
     keyword: '句句正确但无信息增量',
     oneLine:

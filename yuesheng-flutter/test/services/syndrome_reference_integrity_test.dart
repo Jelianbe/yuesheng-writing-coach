@@ -63,6 +63,10 @@ import 'package:writingcoach/services/syndrome_retirement.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 
+// A′（`DECISIONS §4-258`）：去症批过渡期的「新名 ∪ 该 ID legacy 旧名」白名单。
+// `T-20261024-17` 完成后删除本 import 与全部引用，护栏收回严格态。
+import '../test_support/syndrome_name_legacy_alias.dart';
+
 // ═══ 一、词法剥离：注释 vs 字符串 ═══════════════════════════════
 
 enum _Zone { code, line, block, str }
@@ -320,8 +324,15 @@ Set<String> _allowedIds() => kSyndromeIds.toSet().union(_legacyIds());
 Set<String> _legacyIds() => kRetiredSyndromeIds;
 
 void _r1IdNameConsistency(_Scan scan) {
+  // ★ 可接受集合 = 现行别名 ∪ 该 ID 登记的 legacy 旧名（A′ · §4-258）。
+  //   按 ID 精确配对（旧名只对本 ID 生效）；**扫描正文字宙（_aliasesOf /
+  //   _buildAliasRe）不变** —— 只放宽「判它合不合法」的那一步，不放宽「扫什么」。
   final alias = <String, Set<String>>{
-    for (final s in kSyndromeRegistry) s.id: _aliasesOf(s),
+    for (final s in kSyndromeRegistry)
+      s.id: {
+        ..._aliasesOf(s),
+        if (kLegacySyndromeNames[s.id] != null) kLegacySyndromeNames[s.id]!,
+      },
   };
   final bad = <String>[];
   for (final h in scan.pairHits) {

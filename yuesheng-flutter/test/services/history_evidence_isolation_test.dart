@@ -36,7 +36,7 @@ const String kOldEvidenceMarker = '他很悲伤地离开了。';
 /// `insertDiagnosisResultCard` → `jsonEncode(payload.toJson())`）。
 String _diagnosisCardJson() {
   return '{"syndromeCount":1,"syndromes":[{"syndromeId":"P011",'
-      '"name":"信息倾泻症","severity":"L2",'
+      '"name":"信息倾泻","severity":"L2",'
       '"evidence":["$kOldEvidenceMarker"],"evidenceCount":1}],'
       '"suggestedActions":[],"confidence":0.8,"diagnosisId":"d1"}';
 }

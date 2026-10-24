@@ -17,7 +17,7 @@ void main() {
         syndromeProfile: {
           'P002': SyndromeAggregation(
             syndromeId: 'P002',
-            syndromeName: '信息倾泻症',
+            syndromeName: '信息倾泻',
             occurrenceCount: 3,
             severityHistory: const [Severity.l1, Severity.l2, Severity.l2],
             latestSeverity: Severity.l2,
@@ -37,7 +37,7 @@ void main() {
 
       expect(card, isNotNull);
       expect(card!.focusId, 'P002');
-      expect(card.focusName, '信息倾泻症');
+      expect(card.focusName, '信息倾泻');
       expect(card.focusScore, greaterThan(0));
       // 为什么：只陈述既有字段，不编造
       expect(card.reason, contains('最新 L2'));
@@ -71,7 +71,7 @@ void main() {
         syndromeProfile: {
           'P002': SyndromeAggregation(
             syndromeId: 'P002',
-            syndromeName: '信息倾泻症',
+            syndromeName: '信息倾泻',
             occurrenceCount: 2,
             severityHistory: const [Severity.l2, Severity.l2],
             latestSeverity: Severity.l2,
@@ -120,7 +120,7 @@ void main() {
         syndromeProfile: {
           'P002': SyndromeAggregation(
             syndromeId: 'P002',
-            syndromeName: '信息倾泻症',
+            syndromeName: '信息倾泻',
             occurrenceCount: 4,
             severityHistory: const [Severity.l3, Severity.l3, Severity.l3],
             latestSeverity: Severity.l3,
@@ -157,7 +157,7 @@ void main() {
         syndromeProfile: {
           'P002': SyndromeAggregation(
             syndromeId: 'P002',
-            syndromeName: '信息倾泻症',
+            syndromeName: '信息倾泻',
             occurrenceCount: 4,
             severityHistory: const [
               Severity.l1,
@@ -203,7 +203,7 @@ void main() {
         syndromeProfile: {
           'P002': SyndromeAggregation(
             syndromeId: 'P002',
-            syndromeName: '信息倾泻症',
+            syndromeName: '信息倾泻',
             occurrenceCount: 1,
             severityHistory: const [Severity.l2],
             latestSeverity: Severity.l2,
