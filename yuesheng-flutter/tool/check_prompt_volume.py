@@ -204,6 +204,25 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
     （不得因前一问通过而免报）」（**+4**，计入 ⑤）。
   ⇒ 红线读数随之由 +395 修正为 **+410**，本沿革与下方常量均按**修正后**实测重贴。
 
+· 2026-10-25 第十五次（T-20261024-16 next_focus/next_step 口径统一 · 报批稿
+  经 `DECISIONS §4-324`「该批就批」授权范围内）：**受控组 3 组 + 对照组 7 组
+  全部 +33**（diagnosis 57,607→57,640 · p1 55,824→55,857 · force
+  66,296→66,329；对照组 7 组逐键 +33，none_p0 30,019→30,052）。
+  方向：`lib/services/skills_l1_core_p2.dart:123` L1 声明改写——「两者都有且
+  不一致时以谁为准」由 `teaching_plan.next_step` 改为 `next_focus`（与
+  validator 链 `diagnosis_validator.dart:458-460` 口径一致，`DECISIONS §4-260④`），
+  同批改 `lib/services/diagnosis_parser.dart:446` 兼容性策略（`??` 两侧换序）。
+  **生产行为零变化**（生产链落 validator 产物，口径本就 next_focus 优先；
+  parser 的 rawParse 只进 displayContent 等展示路径，见报批稿 §2.1）。
+  逐键对账（锚点重冻 diff 44 处 = 14 prompt 组 ×3 + teaching-strategy ×2）：
+  · L1 声明句净增 **+33 字符**（整行含缩进 105 → 138，实测）；
+  · skill `teaching-strategy` 11,782→11,815（+33，fnv
+    5c5c594679ce3769 → 6daaed20900af35e）——它是 **L1 常驻** ⇒ 进每一条
+    system prompt ⇒ 10 组红线/基线键全部同增同值（+33）互证；
+  ⚠️ 本方向 = **prompt 文本改写**（净 +33），非修缺陷回落；按「贴实测值、
+  不留余量」口径下钉。锚点重冻（`UPDATE_SNAPSHOTS=true` 独立命令）与本红线
+  重钉**同批完成**：上方读数是重冻后从快照实测，不是推算。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -337,14 +356,21 @@ REDLINE = {
     #    已按主理人裁定改用短链既有表达，本值为**修正后**实测。
     # ⚠️ `manual_3.dart` 去重 −126 落在**无红线上限的 user 侧判据块**，
     #   按 `§4-263③` **不得抵扣**本批增量。
-    'diagnosis_yuesheng': 57607,
-    'diagnosis_p1_yuesheng': 55824,
+    # ★ 2026-10-25 第十五次重贴实测值（三键各 +33：57607→57640 / 55824→55857 /
+    # 66296→66329；逐键对账见头注「红线沿革」第十五次）。
+    # 方向 = T-20261024-16 L1 声明改写（skills_l1_core_p2.dart:123，净 +33
+    # 字符）——teaching-strategy 是 L1 常驻，进每条 system prompt，
+    # 故受控三组与对照组 7 组同增同值互证。
+    'diagnosis_yuesheng': 57640,
+    'diagnosis_p1_yuesheng': 55857,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
     # ★ 2026-10-14 重贴 66296：甲-1 后某批已实际回落至 66270 未贴线（存量
     #   漂移，非本批造成），2a 对齐 +26 ⇒ 66296。方向 = 下调收紧，贴实测。
-    'beginner_p3_yuesheng_forceSceneFirst': 66296,
+    # ★ 2026-10-25 第十五次重贴 66329：T-20261024-16 L1 声明改写（L1 常驻
+    #   进每组，净 +33），逐键对账见头注「红线沿革」第十五次。
+    'beginner_p3_yuesheng_forceSceneFirst': 66329,
 }
 # 对照组：这些组本批不应增长（beginner 组不涉及新症候）
 MUST_NOT_GROW = [
@@ -448,13 +474,16 @@ def main():
 MUST_NOT_GROW_BASE = {
     # ★ 2026-10-14 第七次重贴（7 组各 +26，逐键对账见头注「红线沿革」第七次；
     # 来源 = 3423d0c1 的 skills_l1_core_p2:326 收敛语义对齐——L1 常驻进每组）。
-    'beginner_gentle': 64395,
-    'beginner_yuesheng': 64361,
-    'beginner_sensei': 64229,
-    'beginner_p1_yuesheng': 64052,
-    'beginner_p3_yuesheng': 65835,
-    'beginner_p4_yuesheng': 65835,
-    'none_p0_yuesheng': 30019,
+    # ★ 2026-10-25 第十五次重贴（7 组各 +33，与 REDLINE 三键同值互证；
+    # 来源 = T-20261024-16 skills_l1_core_p2.dart:123 L1 声明改写——
+    # L1 常驻进每组，整行含缩进 105→138 字符）。逐键对账见头注第十五次。
+    'beginner_gentle': 64428,
+    'beginner_yuesheng': 64394,
+    'beginner_sensei': 64262,
+    'beginner_p1_yuesheng': 64085,
+    'beginner_p3_yuesheng': 65868,
+    'beginner_p4_yuesheng': 65868,
+    'none_p0_yuesheng': 30052,
 }
 
 

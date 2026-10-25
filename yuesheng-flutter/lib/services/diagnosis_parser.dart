@@ -441,8 +441,8 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   final plan = _parseTeachingPlan(obj, syndromes, notes);
   final styleProfile = _parseStyleProfile(obj);
   final overall = _parseOverall(obj, notes); // ADR-0006：H-3 判据在 helper 内落地
-  // 兼容性策略（设计 5.8.4）：teaching_plan.next_step 优先，null 回退 next_focus
-  final finalNextFocus = plan.teachingPlanNextStep ?? texts.nextFocus;
+  // 兼容性策略（§4-260④ 2026-10-25）：next_focus 优先，null 回退 teaching_plan.next_step —— 与 validator 链（diagnosis_validator.dart:458-460）口径一致；生产链本就落 validator
+  final finalNextFocus = texts.nextFocus ?? plan.teachingPlanNextStep;
 
   return _DiagnosisValidation.ok(
     _buildParsedDiagnosis(

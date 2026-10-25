@@ -586,14 +586,17 @@ void main() {
         isNotEmpty,
         reason: 'teaching_plan.focus_reason 示例须非空',
       );
-      // next_step 的判据须能区分「读到 next_step」与「回退 next_focus」：
-      // parser 语义 next_step 优先（diagnosis_parser.dart:445）⇒ nextFocus
-      // 须含 next_step 示例独有标记「训练目标」；示例若删 next_step，
-      // 回退到 next_focus 占位「下步焦点（可选）」即红。
+      // T-20261024-16（`DECISIONS §4-260④` 2026-10-25）：口径统一为
+      // **next_focus 优先**（parser 对齐 validator 链 diagnosis_validator.dart:458-460）。
+      // 判据仍能区分「读到 next_focus」与「回退 next_step」：nextFocus 须等于
+      // next_focus 示例占位「下步焦点（可选）」；示例若删 next_focus，则回退到
+      // teaching_plan.next_step（含「训练目标」）即红。
       expect(
         result.diagnosis!.nextFocus,
-        contains('训练目标'),
-        reason: 'teaching_plan.next_step 须被优先读出，而非回退 next_focus',
+        '下步焦点（可选）',
+        reason:
+            'next_focus 优先（§4-260④）；仅填 next_step 的回退路径由 '
+            'diagnosis_parser_test R2 单独守',
       );
     });
 

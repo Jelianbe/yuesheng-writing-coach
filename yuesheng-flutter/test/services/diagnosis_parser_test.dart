@@ -2,8 +2,11 @@
 // diagnosis_parser 测试（含批次74修复：后缀回拼 + 协议块剥离）
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
+import 'package:writingcoach/services/diagnosis_validator.dart';
 
 void main() {
   group('parseDiagnosis', () {
@@ -141,6 +144,76 @@ void main() {
       expect(r.displayContent, isNot(contains('[YS_FACT]')));
       expect(r.displayContent, isNot(contains('"events"')));
       expect(r.displayContent, contains('自然语言后缀'));
+    });
+  });
+
+  // ── T-20261024-16（`DECISIONS §4-260④` 2026-10-25）：next_focus 与
+  //    teaching_plan.next_step 的兼容性口径统一为 **next_focus 优先**
+  //    （parser 对齐 validator 链 diagnosis_validator.dart:458-460）。
+  //
+  //    负向验证（本批已实测）：把 diagnosis_parser.dart:446 的 `??` 两侧
+  //    换回旧序（teachingPlanNextStep ?? texts.nextFocus）后，**R1 转红**
+  //    （parser 产物变 'B'，与 validator 的 'A' 分叉）；R2/R3/R4 守的是
+  //    回退与缺失路径，旧序下同样成立，故不因换序转红——它们防的是
+  //    「回退链被改断」，不是「优先级方向」。
+  group('next_focus / next_step 兼容性口径（T-20261024-16）', () {
+    Map<String, dynamic> diagJson({String? nextFocus, String? nextStep}) {
+      return {
+        'syndromes': [
+          {
+            'syndrome_id': 'P001',
+            'name': '情绪标签化',
+            'severity': 'L1',
+            'evidence': ['x'],
+            'explanation': 'y',
+            'reader_impact': 'z',
+          },
+        ],
+        'suggested_actions': ['A002'],
+        'confidence': 0.75,
+        if (nextFocus != null) 'next_focus': nextFocus,
+        if (nextStep != null)
+          'teaching_plan': {
+            'current_teaching_focus_id': 'P001',
+            'focus_reason': 'a',
+            'next_step': nextStep,
+          },
+      };
+    }
+
+    String? parseNextFocus({String? nextFocus, String? nextStep}) {
+      final raw =
+          '[YS_DIAGNOSIS]\n'
+          '${jsonEncode(diagJson(nextFocus: nextFocus, nextStep: nextStep))}\n'
+          '[/YS_DIAGNOSIS]';
+      return parseDiagnosis(raw).diagnosis!.nextFocus;
+    }
+
+    test('R1 两字段都填且不一致 ⇒ parser 产物 = next_focus，且与 validator 产物一致', () {
+      final bothJson = diagJson(nextFocus: 'A', nextStep: 'B');
+      // parser 链（本批改动点）
+      expect(parseNextFocus(nextFocus: 'A', nextStep: 'B'), 'A');
+      // validator 链口径 = next_focus 优先（未改动，作为对照真源）
+      expect(
+        validateDiagnosisOutput('自然语言', bothJson).diagnosis!.nextFocus,
+        'A',
+      );
+    });
+
+    test('R2 仅填 next_step ⇒ parser 产物 = next_step（回退仍生效）', () {
+      expect(parseNextFocus(nextStep: 'B'), 'B');
+    });
+
+    test('R3 仅填 next_focus ⇒ parser 产物 = next_focus', () {
+      expect(parseNextFocus(nextFocus: 'A'), 'A');
+    });
+
+    test('R4 两者都不填 ⇒ parser 产物 = null（走 fallback，本批不改 fallback）', () {
+      expect(parseNextFocus(), isNull);
+      expect(
+        validateDiagnosisOutput('自然语言', diagJson()).diagnosis!.nextFocus,
+        isNull,
+      );
     });
   });
 }

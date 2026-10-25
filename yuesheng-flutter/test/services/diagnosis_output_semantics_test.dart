@@ -75,6 +75,7 @@ int _count(String src, String needle) => needle.allMatches(src).length;
 
 const String kDiagnosisP1 = 'lib/services/skills_diagnosis_p1.dart';
 const String kSyndromeKb = 'lib/services/syndrome_kb_content.dart';
+const String kL1CoreP2 = 'lib/services/skills_l1_core_p2.dart';
 
 /// ── N35（①）指纹 ──
 /// 标题句含「≠」，避开全角/半角引号歧义；「通用标准」是与 §一 容忍度矩阵
@@ -366,6 +367,34 @@ void main() {
         json.contains('按判据收敛报出'),
         isTrue,
         reason: 'JSON 段应提及「按判据收敛报出」，表明 syndromes 数组按 D-6 必要条件门执行',
+      );
+    });
+  });
+
+  // ── ⑥ T-20261024-16（`DECISIONS §4-260④` + `§4-324` 报批稿 2026-10-25）──
+  // L1 声明与代码口径同向：两字段都有且不一致时 **以 next_focus 为准**
+  // （parser 已同批对齐，见 diagnosis_parser.dart 兼容性策略）。
+  // 反向断言防回退：旧声明「以 teaching_plan.next_step 为准」不得复现。
+  group('⑥ next_focus / next_step 口径：L1 声明与代码同向（T-20261024-16）', () {
+    test('含「以 next_focus 为准」且恰好 1 处', () {
+      final src = _readSrc(kL1CoreP2);
+      expect(
+        _count(src, '以 next_focus 为准'),
+        1,
+        reason:
+            '$kL1CoreP2 中「以 next_focus 为准」应出现 1 次。\n'
+            '（§4-260④：口径统一为 next_focus 优先，与 validator/parser 链一致）',
+      );
+    });
+
+    test('不含「以 teaching_plan.next_step 为准」（防回退到旧声明）', () {
+      final src = _readSrc(kL1CoreP2);
+      expect(
+        _count(src, '以 teaching_plan.next_step 为准'),
+        0,
+        reason:
+            '$kL1CoreP2 中不得再出现「以 teaching_plan.next_step 为准」。\n'
+            '（旧声明与 validator 链实际口径相反，会持续误导模型；见报批稿 §1 改动②）',
       );
     });
   });
