@@ -62,8 +62,13 @@ VERBOSE = "-v" in sys.argv or "--verbose" in sys.argv
 #   实测过的反例：把 S7 元探针整条注释掉，上一版仍报「探针 34 条：通过 34 / 失败 0」且 rc=0。
 # 【为什么不止断言条数】删一条 + 加一条 ⇒ **条数不变、覆盖已经变了**。条数断言抓不到。
 #   ⇒ 必须同时比对**名称集合**。
-# 【常量怎么来的】不是估的：第 6 笔删掉 S6 之后实测
-#   `grep -cE '^[[:space:]]+probe\(' scripts/_selftest_gate_evidence.py` = 35
+# 【常量怎么来的】不是估的，是**跑出来的**（第 6 笔删掉 S6 之后实测）：
+#   `python scripts/_selftest_gate_evidence.py | grep '探针 '`
+#     ⇒ 「探针 35 条：通过 35 / 失败 0」
+#   ⚠️ **不要**用 `grep -cE '^[[:space:]]+probe\('` 当判据：哨兵
+#   `_probe_can_report_failure()` 里也有一行 `probe("__SANITY__", …)`（且它故意
+#   不计入条数）⇒ 那个 grep 现在回 **36**，与实跑的 35 差 1。用错的判据去核这个
+#   常量，会得出「常量写错了」的假结论 —— 这正是本仓反复踩的那类坑。
 EXPECTED_PROBE_COUNT = 35
 EXPECTED_PROBE_NAMES = (
     "S0-green",
