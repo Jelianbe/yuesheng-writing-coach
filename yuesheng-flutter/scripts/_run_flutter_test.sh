@@ -211,6 +211,30 @@ COV_FLAG="--coverage"
 if [ "${RUN_FLUTTER_TEST_COVERAGE:-1}" = "0" ]; then
   COV_FLAG=""
 fi
+
+# ★ T-20261025-04 P4b：把**本次实际生效的 COV_FLAG** 落盘，供 gate.sh 记进 hits.jsonl。
+#
+# 【为什么由 wrapper 写，而不是 gate.sh 自己记 env】
+#   gate.sh 只能看到它自己导出的 RUN_FLUTTER_TEST_COVERAGE；真正决定命令行的是这里。
+#   「记一个看起来对、实则记的是另一件事的字段」正是本卡要治的病。
+#
+# 【为什么空值也必须写文件】写空文件 ≠ 不写文件：
+#   文件存在且为空 = wrapper 确实跑了、且明确没开覆盖率；
+#   文件不存在   = 不知道 wrapper 跑没跑 / 是哪一版 wrapper（旧版不写这个文件）。
+#   把这两态压成同一态，就是又造一个不可证伪的 PASS。
+#
+# 【为什么写在这一行（跑之前），而不是跑完之后】
+#   这个值在**决策时**就已确定，与 flutter 跑成什么样无关。先落盘 ⇒ 后续进程被杀、
+#   磁盘写满、flutter 崩掉，都不会让「当时开的什么档」这件事灭失（P4b 与 P5 同理）。
+#
+# 【为什么 `printf '%s'` 不带换行】空值时 `%s\n` 会写出 1 字节（一个 LF），
+#   而判据要的是「文件存在且 **0 字节**」；不带换行才真的是 0 字节。
+#   非空时文件内容是 `--coverage`（无尾换行），门禁用内建 `read` 读，不依赖换行存在。
+#
+# 【写失败不 abort】这是证据记录，不是判定前提：写不进去会退化成 UNKNOWN（WARN），
+#   让门禁红在「证据缺失」上，而不是让测试根本跑不起来。
+mkdir -p "$ROOT/outputs/gate" 2>/dev/null || true
+printf '%s' "$COV_FLAG" > "$ROOT/outputs/gate/cov_flag.txt" 2>/dev/null || true
 # ★ 这里**故意不用 `exec`**（2026-09-17 实测修正）：
 #   旧实现 `exec ... flutter test` 会让 bash 被 flutter 替换进程映像，
 #   于是 EXIT trap 永不触发 ⇒ **每次跑完都在工作区留下一个 .flutter_test.lock**

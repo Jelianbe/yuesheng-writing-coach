@@ -60,6 +60,18 @@ def shell_quote(s):
     return "'" + str(s).replace("'", "'\\''") + "'"
 
 
+def run_shell(cmd):
+    """跑一段自由 bash（source 判据库后可以连着看多个变量）。
+
+    为什么需要它：`ev_p4b_cov_flag` 只打印值，**看不到** `_ev_p4b_read` 给出的
+    `EV_P4B_MISSING` 标志位 —— 而 gate.sh 的分支正是按那个标志位走的
+    （「文件在但为空」判 FAIL，「文件缺失」判 WARN）。只测打印值会漏掉这条分叉。
+    """
+    p = subprocess.run(["bash", "-c", cmd], cwd=ROOT, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    return p.returncode, (p.stdout or "").strip()
+
+
 def probe(name, ok, detail):
     results.append((name, bool(ok), detail))
     mark = "PASS" if ok else "FAIL"
@@ -229,6 +241,30 @@ def main():
     rc, out, _ = run_ev("ev_p4b_cov_flag", real_flag)
     probe("S5c-value", rc == 0 and out == "--coverage",
           "实值 ⇒ --coverage（rc=%d）" % rc)
+
+    # ---- P4b 的三态标志位（gate.sh 按 EV_P4B_MISSING 分叉，必须单独钉）----
+    # 「文件缺失」与「文件在但为空」在**打印值**上已经可分（UNKNOWN vs 空），
+    # 但 gate.sh 走的是**标志位**。「空文件被判成 missing」会把
+    # 「明确没开覆盖率」（该 FAIL）降级成「不知道」（只 WARN）—— 一条静默降级通路。
+    rc, out = run_shell(
+        ". %s; _ev_p4b_read %s; printf 'missing=%%s value=[%%s]' "
+        "\"$EV_P4B_MISSING\" \"$EV_P4B_VALUE\"" % (shell_quote(LIB), shell_quote(noflag)))
+    probe("S11-missing-state", out == "missing=1 value=[UNKNOWN]",
+          "文件缺失 ⇒ missing=1 且 value=UNKNOWN（实读=%r）" % out)
+
+    empty_flag2 = write(os.path.join(d, "cov_flag_empty2.txt"), "")
+    rc, out = run_shell(
+        ". %s; _ev_p4b_read %s; printf 'missing=%%s value=[%%s]' "
+        "\"$EV_P4B_MISSING\" \"$EV_P4B_VALUE\"" % (shell_quote(LIB), shell_quote(empty_flag2)))
+    probe("S11b-empty-state", out == "missing=0 value=[]",
+          "空文件 ⇒ missing=0 且值为空（不得被判成缺失，实读=%r）" % out)
+
+    crlf_flag = write(os.path.join(d, "cov_flag_crlf.txt"), "--coverage\r\n")
+    rc, out = run_shell(
+        ". %s; _ev_p4b_read %s; printf '[%%s]' \"$EV_P4B_VALUE\""
+        % (shell_quote(LIB), shell_quote(crlf_flag)))
+    probe("S11c-crlf", out == "[--coverage]",
+          "CRLF 写入 ⇒ 值不带 \\r（否则与 --coverage 比较永不成立，实读=%r）" % out)
 
     # ---------------- P5 工作树脏度 ----------------
     rc, out, _ = run_ev("ev_p5_dirty_count")

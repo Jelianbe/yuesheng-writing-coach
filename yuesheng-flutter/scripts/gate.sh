@@ -134,6 +134,26 @@ SURFACE_LOG="$OUT_DIR/surface_visibility.txt"
 SURFACE_SELFTEST_LOG="$OUT_DIR/surface_visibility_selftest.txt"
 SOURCE_EXIT_LOG="$OUT_DIR/source_exit.txt"
 
+# P4b 证据文件：由 scripts/_run_flutter_test.sh 在决定 COV_FLAG 之后写入（T-20261025-04）。
+# 放在 OUT_DIR（已被 .gitignore 忽略）⇒ 不污染 git status。
+# ⚠️ 起跑时**立刻删掉**上一轮留下的那一份，本轮的证据只能由本轮的 wrapper 产生。
+#    不删的后果：wrapper 因为版本旧/中途 abort 而没写时，门禁会读到**上一轮的值**
+#    ⇒ 把「不知道」显示成「--coverage」= 拿旧事实给新结论作证 —— 这正是本卡要治的病。
+#    ⇒ 删了之后，「缺失」才是本轮的缺失，UNKNOWN 才有意义。
+#    副作用（有意接受）：门禁 0/1 这两行记录的 cov_flag 会是 UNKNOWN，
+#    因为那时 wrapper 确实还没跑。「本轮此刻开了覆盖率吗」的诚实答案是「还不知道」，
+#    比填一个上一轮的 `--coverage` 更接近事实。
+COV_FLAG_FILE="$OUT_DIR/cov_flag.txt"
+rm -f "$COV_FLAG_FILE"
+
+# 判据库（门禁 2 的 P1/P2/P3、门禁 6 的 P4a/P4b 共用同一份定义）。
+# **只 source 一次**：两处各 source 一遍，早晚会出现「一处 source 了、另一处没 source」
+# 而某一侧判据静默变成 command not found 的分叉。库内无副作用（不打印、不写盘）。
+EV_LIB_OK=0
+if . "$ROOT/scripts/lib_gate_evidence.sh" 2>/dev/null; then
+  EV_LIB_OK=1
+fi
+
 pass=0
 fail=0
 degraded=0   # 因环境缺失而**未真正执行**的门禁数（fail-closed：计入退出码）
@@ -170,6 +190,12 @@ GATE_PROFILE="full"
 [ -n "${GATE_PROFILE_OVERRIDE:-}" ] && GATE_PROFILE="$GATE_PROFILE_OVERRIDE"
 GATE_SEQ=0
 GATE_T_LAST=$(date +%s)
+# P4a 的比对基准：**本轮起跑时刻**（秒级 epoch）。
+# 直接复用 GATE_T_LAST 的初值，不再多起一次 `date`（本机 fork 约 75-90 ms）。
+# 与 RUN_ID（`YYYYmmdd-HHMMSS`）同源同一秒或早一秒；P4a 用 `>=` 比较，
+# 同秒相等不会假红（§4-295④）。GATE_T_LAST 后续会被 record_hit 改写，
+# 所以这里必须**拷一份**，不能直接引用它。
+GATE_RUN_START_TS="$GATE_T_LAST"
 GATE_HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
 
 record_hit() {
@@ -185,9 +211,24 @@ record_hit() {
   GATE_SEQ=$((GATE_SEQ + 1))
   # 门禁名实测只含中文/空格/括号/加号/斜杠，均无需转义；仅防御双引号与反斜杠。
   local esc=${name//\\/\\\\}; esc=${esc//\"/\\\"}
-  printf '{"ts":"%s","run":"%s","profile":"%s","seq":%d,"name":"%s","result":"%s","dur_s":%d,"head":"%s"}\n' \
+  # P4b：记录**本轮 wrapper 实际生效的 COV_FLAG**，不是 gate.sh 导出的环境变量。
+  #   取值来源 = wrapper 写的 cov_flag.txt（`_ev_p4b_read` 用内建 read，零 fork；
+  #   本函数每轮要跑 19 次，用 `$(…)` 会白送 19 个进程）。
+  #   文件缺失 ⇒ `UNKNOWN`（**不是**空串、**不许**省略字段）：
+  #     空串 = wrapper 跑了且明确没开覆盖率；UNKNOWN = 不知道跑没跑 / 哪版 wrapper。
+  #     把这两态压成同一态，就又造了一个不可证伪的 PASS（P4b 要求 3）。
+  #   ⚠️ 判据库读不到时不能直接调 `_ev_p4b_read`：`set -u` 下 `EV_P4B_VALUE` 未定义
+  #     会**让 record_hit 当场退出**，进而把 log_result 的计数也带停（门禁自己先崩）。
+  #      库不可用本来就会在门禁 2/6 报 FAIL，这里只需要别把记录装置变成新的故障点。
+  local cov="UNKNOWN"
+  if [ "$EV_LIB_OK" = "1" ]; then
+    _ev_p4b_read "$COV_FLAG_FILE"
+    cov="$EV_P4B_VALUE"
+  fi
+  cov="${cov//\\/\\\\}"; cov=${cov//\"/\\\"}
+  printf '{"ts":"%s","run":"%s","profile":"%s","seq":%d,"name":"%s","result":"%s","dur_s":%d,"head":"%s","cov_flag":"%s"}\n' \
     "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$GATE_RUN_ID" "$GATE_PROFILE" "$GATE_SEQ" \
-    "$esc" "$result" "$dur" "$GATE_HEAD" >> "$HITS_LOG" 2>/dev/null || true
+    "$esc" "$result" "$dur" "$GATE_HEAD" "$cov" >> "$HITS_LOG" 2>/dev/null || true
 }
 
 emit() { printf '%s\n' "$1"; }
@@ -277,7 +318,7 @@ fi
 #   新开道要同步改 ~25 处「十九道」文案 + `.ai/STATE.md` 的道数 ⇒ 属另一批范围。
 #
 # 【判据实现在哪】scripts/lib_gate_evidence.sh。自测 scripts/_selftest_gate_evidence.py
-#   直接调用**同一份**函数（33 条探针）—— 不是另写一份实现，所以测的就是上线的逻辑。
+#   直接调用**同一份**函数（36 条探针）—— 不是另写一份实现，所以测的就是上线的逻辑。
 #
 # 【归因判据】`grep -c '\[FAIL\] P1' <本轮 stdout>` = 1（另两条 = 0）。
 #   所以每条判据的失败行**必须以 `[FAIL] P<n>` 开头**，格式变更会静默废掉归因。
@@ -287,7 +328,7 @@ fi
 #   再串起三条判据，全流程只读日志一次。
 if [ "$RC_TEST" = "0" ]; then
   TEST_EVID_FAIL=0
-  if . "$ROOT/scripts/lib_gate_evidence.sh" 2>/dev/null; then
+  if [ "$EV_LIB_OK" = "1" ]; then
     EVID_OUT="$(ev_check_p123 "$TEST_LOG" "$ROOT/tool/test_count_baseline.json")"
     EVID_RC=$?
     printf '%s\n' "$EVID_OUT" | sed 's/^/  /'
@@ -406,6 +447,33 @@ log_result "R-019 函数行数" "$RC_R019"
 #    1 = T1 FAIL 或任一 T2 FAIL/缺失 或 T2 数量不符护栏；
 #    2 = 环境错误（lcov 缺失 / 解析 0 记录 / --t2 语法错）。
 echo "--> 门禁 6/19: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
+
+# ---------- P4b：本轮实际生效的 COV_FLAG（T-20261025-04）----------
+# 【判据】读 wrapper 写的 cov_flag.txt，**不读 gate.sh 自己导出的 env** ——
+#   环境变量只说明「要求了什么」，文件才说明「wrapper 实际用了什么」。
+# 【三态，不许压成两态】
+#   `--coverage`  ⇒ PASS（与门禁 6 的前提一致）
+#   `''`（空串）  ⇒ **FAIL**：wrapper 跑了、且明确没开覆盖率 ⇒ 本道无可信 lcov 可消费。
+#                    这不是「没有输入」，是「有输入且输入说没有」。
+#   `UNKNOWN`     ⇒ **WARN，不判 PASS 也不判 FAIL**：只说明读不到（旧版 wrapper / 被删），
+#                    不说明覆盖率没开。按卡 §P4b 要求 3「首轮 WARN 过渡并明写」。
+#                    ⚠️ WARN 不得计入「通过」——下面会明确打出它没有算作 PASS。
+COV_FLAG_ACTUAL="UNKNOWN"
+COV_FLAG_KNOWN=0
+if [ "$EV_LIB_OK" = "1" ]; then
+  _ev_p4b_read "$COV_FLAG_FILE"
+  COV_FLAG_ACTUAL="$EV_P4B_VALUE"
+  [ "$EV_P4B_MISSING" = "0" ] && COV_FLAG_KNOWN=1
+fi
+if [ "$COV_FLAG_KNOWN" = "0" ]; then
+  echo "  [WARN] P4b 实际 COV_FLAG：UNKNOWN（$COV_FLAG_FILE 不存在）⇒ 不知道本轮 wrapper 跑没跑 / 哪一版"
+  echo "         ⇒ 本条**未计入通过**：它只说明读不到，不说明覆盖率开了。首轮按 WARN 过渡。"
+elif [ "$COV_FLAG_ACTUAL" = "--coverage" ]; then
+  echo "  [PASS] P4b 实际 COV_FLAG：--coverage（覆盖率开启，与门禁 6 前提一致）"
+else
+  echo "  [FAIL] P4b 实际 COV_FLAG：'$COV_FLAG_ACTUAL'（空串 = 本轮明确未开覆盖率）⇒ 本道无可信 lcov 可消费"
+fi
+
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过覆盖率检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$COVERAGE_LOG"
@@ -416,6 +484,14 @@ elif [ "${RC_TEST:-1}" != "0" ]; then
   echo "  [WARN] 门禁 2 未通过，未产出可信 lcov，跳过覆盖率检查"
   echo "SKIP: (NOT EXECUTED) gate 2 did not pass" > "$COVERAGE_LOG"
   RC_COVERAGE=SKIP
+elif [ "$COV_FLAG_KNOWN" = "1" ] && [ "$COV_FLAG_ACTUAL" != "--coverage" ]; then
+  # 覆盖率**明确没开** ⇒ 后面即便有 lcov 也是上一轮/别人的，不能拿它判覆盖率。
+  # 必须先于 `-f lcov` 判：否则报出来的是「lcov 不存在」，把真实原因
+  # （wrapper 被 RUN_FLUTTER_TEST_COVERAGE=0 关掉了）藏在一句误导性的话后面。
+  echo "  [FAIL] 门禁 6 前提不成立：本轮 COV_FLAG='$COV_FLAG_ACTUAL'，wrapper 没开覆盖率"
+  echo "         查是不是有人导出了 RUN_FLUTTER_TEST_COVERAGE=0（快道会，收尾道不许）"
+  echo "FAIL: coverage disabled for this run (COV_FLAG='$COV_FLAG_ACTUAL')" > "$COVERAGE_LOG"
+  RC_COVERAGE=1
 elif [ ! -f "$ROOT/coverage/lcov.info" ]; then
   # V4.28（QA 实测 2026-09-12）：门禁 2 跑成功却没留下 lcov —— 最常见的
   # 原因是**另一个会话正在并发跑 flutter test --coverage**，dart 收尾时
@@ -424,7 +500,19 @@ elif [ ! -f "$ROOT/coverage/lcov.info" ]; then
   echo "  [FAIL] 门禁 2 已通过但 coverage/lcov.info 不存在 —— 疑似并发 flutter test --coverage 将其抽走"
   echo "FAIL: lcov missing although gate 2 passed (concurrent flutter test --coverage?)" > "$COVERAGE_LOG"
   RC_COVERAGE=1
+elif [ "$EV_LIB_OK" != "1" ]; then
+  echo "  [FAIL] P4a 无法校验：判据库 scripts/lib_gate_evidence.sh 不可读（fail-closed）"
+  echo "FAIL: evidence lib unreadable, cannot verify lcov freshness" > "$COVERAGE_LOG"
+  RC_COVERAGE=1
+elif ! P4A_MSG="$(ev_p4a_fresh "$ROOT/coverage/lcov.info" "$GATE_RUN_START_TS")"; then
+  # P4a：lcov 的 mtime 必须 >= 本轮起跑时刻。
+  #   **必须排在上面的 `-f` 分支之后**：文件不存在时 `stat` 会往 stderr 喷错，
+  #   那行错会被读成「环境故障」，而真实原因是上一行已经说清的「lcov 不存在」。
+  echo "  $P4A_MSG"
+  echo "FAIL: lcov stale (mtime < run_start $GATE_RUN_START_TS)" > "$COVERAGE_LOG"
+  RC_COVERAGE=1
 else
+  echo "  $P4A_MSG"
   if "$PY_BIN" scripts/check_coverage.py \
     --lcov coverage/lcov.info \
     --t1-target 65.0 --t1-margin 2.0 \

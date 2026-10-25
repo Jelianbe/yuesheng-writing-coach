@@ -270,15 +270,41 @@ ev_p4a_fresh() { # $1=lcov $2=run_start_ts
 #   空串 = wrapper 确实跑了、且明确未开覆盖率；
 #   UNKNOWN = 不知道 wrapper 跑没跑 / 哪一版 wrapper。
 # 压成同一态 = 又造一个不可证伪的 PASS（T-20261025-04 §四-P4b 要求 1）。
-ev_p4b_cov_flag() { # $1=cov_flag_file ; stdout=值或 UNKNOWN ; return 0=文件在, 2=缺失
-  local f="${1:-}" v
+#
+# 【为什么拆成「读进变量」+「打印」两层】
+#   gate.sh 的 record_hit 每道门禁都要记这个字段（19 次）。若每次都
+#   `x="$(ev_p4b_cov_flag …)"`，就是 19 次子 shell —— 本机每 fork 75-90 ms，
+#   白送 1.5 s。所以主读法用内建 `read` + 重定向（零 fork），把结果放变量；
+#   `ev_p4b_cov_flag` 只是给自测用的打印壳，契约（stdout/rc）与第 1 笔一致。
+#
+# 【为什么用 `read` 而不是 `$(cat)` / `$(<f)`】
+#   `read` 是内建，重定向是内建 ⇒ 不 fork。`$(<f)` 虽然 bash 有优化，但仍是命令替换，
+#   在 set -u 下还要额外操心退出码。`read` 读不到行（空文件）返回非 0，正好把
+#   「文件在但为空」与「文件缺失」分成两条不同的路径。
+EV_P4B_VALUE=""
+EV_P4B_MISSING=0
+_ev_p4b_read() { # $1=cov_flag_file ; 设 EV_P4B_VALUE / EV_P4B_MISSING（0=在,1=缺失）
+  local f="${1:-}"
+  EV_P4B_VALUE=""
   if [ ! -f "$f" ]; then
-    printf 'UNKNOWN'
-    return 2
+    EV_P4B_MISSING=1
+    EV_P4B_VALUE="UNKNOWN"
+    return 0
   fi
-  v="$(head -n 1 "$f" 2>/dev/null)"
-  printf '%s' "$v"
+  EV_P4B_MISSING=0
+  # 空文件 ⇒ read 失败、EV_P4B_VALUE 保持空串（**不是** UNKNOWN，这是设计）
+  IFS= read -r EV_P4B_VALUE < "$f" 2>/dev/null || true
+  # 防御 CRLF：万一 wrapper 在 Windows 上被改成用非 LF 写，值里会多一个 \r，
+  # 那样 `= "--coverage"` 的比较永远不成立 ⇒ 覆盖率开着却被判「没开」。
+  EV_P4B_VALUE="${EV_P4B_VALUE%$'\r'}"
   return 0
+}
+
+ev_p4b_cov_flag() { # $1=cov_flag_file ; stdout=值或 UNKNOWN ; return 0=文件在, 2=缺失
+  _ev_p4b_read "${1:-}"
+  printf '%s' "$EV_P4B_VALUE"
+  [ "$EV_P4B_MISSING" = "0" ] && return 0
+  return 2
 }
 
 # ---------- P5 工作树脏度 ----------
