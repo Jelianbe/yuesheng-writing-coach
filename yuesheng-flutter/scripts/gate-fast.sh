@@ -127,7 +127,16 @@ record_hit() {
   esac
   GATE_SEQ=$((GATE_SEQ + 1))
   local esc=${name//\\/\\\\}; esc=${esc//\"/\\\"}
-  printf '{"ts":"%s","run":"%s","profile":"%s","seq":%d,"name":"%s","result":"%s","dur_s":%d,"head":"%s"}\n' \
+  # cov_flag 固定写 "n/a"（主理人 2026-10-25 裁定）：
+  #   快道**按设计不跑门禁 6**，本轮不存在「实际生效的 COV_FLAG」这件事
+  #   （wrapper 是被 RUN_FLUTTER_TEST_COVERAGE=0 显式关掉的，那不是"覆盖率档位"，
+  #   而是"本道不涉及覆盖率"）。
+  #   ⚠️ 必须是 "n/a"，**不能**是空串 `""`：`""` 在 P4b 的语义里已经被占用 =
+  #   「wrapper 本该开覆盖率、实际被关了」—— 那是**FAIL 信号**。
+  #   两者混用会让快道行被读成「覆盖率被关掉」，把一本账读出两种事实。
+  #   ⚠️ 也不能不写这个字段：hits.jsonl 是**一本账**，两个写入点 schema 不一致，
+  #   缺失字段在 jq 里是 null（= 未知），同样不是「本道不涉及」。
+  printf '{"ts":"%s","run":"%s","profile":"%s","seq":%d,"name":"%s","result":"%s","dur_s":%d,"head":"%s","cov_flag":"n/a"}\n' \
     "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$GATE_RUN_ID" "$GATE_PROFILE" "$GATE_SEQ" \
     "$esc" "$result" "$dur" "$GATE_HEAD" >> "$HITS_LOG" 2>/dev/null || true
 }
