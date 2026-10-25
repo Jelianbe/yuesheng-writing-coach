@@ -84,12 +84,6 @@ _ev_facts() { # $1=log ; 副作用：设 EV_F_SRC / EV_F_SUMMARY / EV_F_P3_HITS 
   [ -n "$EV_F_P3_HITS" ] || EV_F_P3_HITS=0
 }
 
-# 取汇总行（可能为空）。P1/P2 在**同一个 shell** 里共用同一份事实，不各扫一遍。
-_ev_summary_line() {
-  _ev_facts "${1:-}"
-  printf '%s' "$EV_F_SUMMARY"
-}
-
 # 从汇总行取 +N / ~N（取不到 ⇒ 空串，**不要**猜 0）
 _ev_field() { # $1=行 $2=passed|skipped
   local line="${1:-}"
