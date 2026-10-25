@@ -449,6 +449,11 @@ def main():
     # T-20261024-13 缺口 1：注入后的 user 消息面 —— 有指纹、此前无上限。
     _check_user_face(out)
 
+    # A 块 Q1（报批稿 2026-10-25）：覆盖扫描 —— 以快照为遍历面，反查
+    # 「有 injection 却无上限 / 无 injection 却乱钉」。_check_user_face 只遍历
+    # 钉表键，看不见钉表外的 user 消息；本调用补这个方向（仍在本道内，不加道数）。
+    _check_user_face_coverage(out)
+
     if '--json' in sys.argv:
         print('\n' + json.dumps(out, ensure_ascii=False, indent=2))
 
@@ -757,6 +762,67 @@ def _check_user_face(out):
                 '%s: %d < 协议后缀 %d ⇒ 该消息没有注入协议文本，'
                 '本红线量错了对象（缺口 1 的真实对象是注入**之后**的 user 消息）'
                 % (key, act, _USER_FACE_MIN_EXTRA))
+
+
+def _check_user_face_coverage(out):
+    """覆盖扫描（A 块 Q1 · 报批稿 §1）：快照里**全部** role=user 消息的反向核对。
+
+    `_check_user_face` 只遍历 `USER_FACE_REDLINE` 的**钉表键** ⇒ 某个 case 悄悄
+    开始往 user 消息注入内容（len 超过协议后缀本体）却没有任何上限时，它无法变红
+    （R1 实证：HEAD 代码对该变异 rc=0）。本函数以**快照为遍历面**补这个方向：
+      · len ≥ 协议后缀本体（977）⇒ 注入已发生 ⇒ 该消息**必须**在钉表里
+        （钉了 = 有上限；未钉 ⇒ 红）；
+      · len < 977 ⇒ 没有注入 ⇒ **不许**在钉表里（钉了 ⇒ 红，且会同时撞
+        `_check_user_face` 结构自检②「量错了对象」）。
+    ⚠️ 不引入任何新的下限（`DECISIONS §4-312④`：注入面不设非退化下限）——
+      977 是协议后缀的**既有实测长度**（`CONST_REDLINE` 的 fnv/length 双钉值），
+      此处只用作「注入是否已发生」的判据，不是给注入面设体积下限。
+    ⚠️ 覆盖边界（如实声明）：只扫 `message_sequence_anchor.json` 里已入库的用例；
+      快照外的运行时注入路径不在本扫描面内（与 `_check_bypass` 同款声明）。
+    """
+    print('\n=== user 消息覆盖扫描（A 块 Q1 · 有注入必须有上限）===')
+    if not os.path.exists(MSG_SEQ):
+        # fail-closed：与 _check_user_face 对缺失快照的口径一致（缺失 = 事故）
+        print('  ★快照缺失：%s' % MSG_SEQ)
+        out['violations'].append('message_sequence 快照缺失 ⇒ user 覆盖扫描不可判')
+        return
+    d = json.load(io.open(MSG_SEQ, encoding='utf-8'))
+
+    pinned = set(USER_FACE_REDLINE)
+    threshold = _USER_FACE_MIN_EXTRA  # = 协议后缀本体 977（注入已发生的判据）
+    n_user = n_big = 0
+    for case in sorted(d):
+        seq = d[case]
+        if not isinstance(seq, list):
+            continue  # meta 等非消息列表键
+        for i, msg in enumerate(seq):
+            if not isinstance(msg, dict) or msg.get('role') != 'user':
+                continue
+            key = '%s[%d]' % (case, i)
+            act = msg.get('len')
+            n_user += 1
+            if not isinstance(act, int):
+                print('  %-40s ★缺 int 型 len' % key)
+                out['violations'].append('%s: 缺 int 型 len' % key)
+                continue
+            if act >= threshold:
+                n_big += 1
+                if key in pinned:
+                    print('  %-40s %6d  已钉上限 OK' % (key, act))
+                else:
+                    print('  %-40s %6d  ★有注入却无上限' % (key, act))
+                    out['violations'].append(
+                        '%s: len=%d ≥ 协议后缀 %d ⇒ 注入已发生却无上限'
+                        '（未列入 USER_FACE_REDLINE）' % (key, act, threshold))
+            elif key in pinned:
+                print('  %-40s %6d  ★无注入却列入钉表' % (key, act))
+                out['violations'].append(
+                    '%s: len=%d < 协议后缀 %d ⇒ 没有注入却钉了上限（钉错对象）'
+                    % (key, act, threshold))
+            else:
+                print('  %-40s %6d  未注入未钉 OK' % (key, act))
+    print('  扫描 %d 条 role=user 消息，其中 %d 条 len ≥ %d（协议后缀本体）'
+          % (n_user, n_big, threshold))
 
 
 if __name__ == '__main__':
