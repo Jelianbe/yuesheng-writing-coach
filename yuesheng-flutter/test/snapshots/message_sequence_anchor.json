@@ -5,8 +5,8 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 30019,
-      "fnv": "194fe7d47af23b5b"
+      "len": 30052,
+      "fnv": "7d72547dab4de50e"
     },
     {
       "role": "system",
@@ -27,8 +27,8 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 64361,
-      "fnv": "502d30235674990d"
+      "len": 64394,
+      "fnv": "74556f478d8e0fa4"
     },
     {
       "role": "system",
@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 55824,
-      "fnv": "919cc790326ac65"
+      "len": 55857,
+      "fnv": "24b3c415c0d0c332"
     },
     {
       "role": "system",
@@ -76,8 +76,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 57607,
-      "fnv": "4e0bde6510da40e"
+      "len": 57640,
+      "fnv": "66ff7c3b4755707b"
     },
     {
       "role": "system",
@@ -103,8 +103,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 68993,
-      "fnv": "72e804bac4c1e34b"
+      "len": 69026,
+      "fnv": "556e08d4dcb9c48e"
     },
     {
       "role": "system",
@@ -125,8 +125,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 57607,
-      "fnv": "4e0bde6510da40e"
+      "len": 57640,
+      "fnv": "66ff7c3b4755707b"
     },
     {
       "role": "system",
@@ -152,8 +152,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 48079,
-      "fnv": "23250d6255f2a63f"
+      "len": 48112,
+      "fnv": "529fc7c04f2786b6"
     },
     {
       "role": "system",
@@ -174,8 +174,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 47947,
-      "fnv": "3173e025a2f1250b"
+      "len": 47980,
+      "fnv": "1ccd484200ea2afe"
     },
     {
       "role": "system",
@@ -196,8 +196,8 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 65835,
-      "fnv": "16e52288d7270018"
+      "len": 65868,
+      "fnv": "37c0fd96441cf805"
     },
     {
       "role": "system",
