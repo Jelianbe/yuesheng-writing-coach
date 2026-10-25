@@ -132,6 +132,35 @@ acquire_lock() {
   lock_abort "自愈后重新抢锁失败：另一进程已抢先持锁"
 }
 
+# ★ T-20261025-14（2026-10-25）：旧路径锁（$ROOT/.flutter_test.lock）一次性兼容告警。
+#   锁已在 T-20261025-08 迁到 $LOCK（目录锁），但历史**文件锁**可能仍留在盘上。
+#   三条边界（缺一不算）：
+#     边界 1 **只告警、不 abort**：历史文件存在与否**不参与**「本次能否持锁」的判定。
+#     边界 2 **不删**：旧进程可能仍在跑并继续写它 —— 本脚本无权替他人判死活。
+#     边界 3 读不到 / 空内容 / 首字段非数字 ⇒ 退化为「内容无法解析」，**不承载判定**。
+#             `[ -e ]` 与 `head` 之间有 TOCTOU（文件可能在这一瞬被删）：**已知且可接受** ——
+#             本段不产出判定，最坏结果只是少打一行告警。
+#   为什么放**顶层**而不是 acquire_lock 函数体内：函数内的告警在 abort 路径上会被跳过
+#   ⇒ 又退回「无声」。放这里 ⇒ 拿锁成功 / 自愈 / abort 三条路径都会先告警一次。
+LEGACY_LOCK="$ROOT/.flutter_test.lock"
+if [ -e "$LEGACY_LOCK" ]; then
+  LEGACY_PID="$(head -n 1 "$LEGACY_LOCK" 2>/dev/null)"
+  LEGACY_PID="${LEGACY_PID%% *}"
+  case "$LEGACY_PID" in
+    ''|*[!0-9]*)
+      echo "[WARN] 发现旧路径锁 $LEGACY_LOCK，但内容无法解析（首字段为空或非数字）⇒ 忽略，不影响本次持锁判定。"
+      ;;
+    *)
+      if kill -0 "$LEGACY_PID" 2>/dev/null; then
+        echo "[WARN] 发现旧路径锁 $LEGACY_LOCK（pid 存活：pid=$LEGACY_PID）⇒ 可能有旧版脚本仍在跑。"
+      else
+        echo "[WARN] 发现旧路径锁 $LEGACY_LOCK（pid=$LEGACY_PID 已不存活）⇒ 属历史残留。"
+      fi
+      ;;
+  esac
+  echo "        锁已迁至 $LOCK；本段只告警：不改变持锁判定、不删除该文件。确认无旧进程后可手工删：rm -f '$LEGACY_LOCK'"
+fi
+
 acquire_lock
 
 cleanup_lock() {
