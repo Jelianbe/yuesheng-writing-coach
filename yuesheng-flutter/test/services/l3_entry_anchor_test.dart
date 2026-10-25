@@ -162,6 +162,8 @@ Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
   if (!exists) return null; // 首次生成：F3 不生效（调用处打告警）
   final raw = file.readAsStringSync();
   String? why;
+  // ★ 失败形态标签：多种「基线不可用」共用同一出口，靠它区分。
+  var kind = '不可解析';
   Object? decoded;
   try {
     decoded = jsonDecode(raw);
@@ -177,9 +179,25 @@ Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
           if (decoded[s] is! Map) s,
       ];
       if (missing.isNotEmpty) {
+        kind = decoded.keys.where((k) => k != 'meta').isEmpty
+            ? '顶层只有 meta、缺全部分节'
+            : '缺分节';
         why = '缺分节 $missing';
       } else {
-        return <String, dynamic>{for (final s in _kSections) s: decoded[s]};
+        final sections = <String, dynamic>{
+          for (final s in _kSections) s: decoded[s],
+        };
+        if (anchorMeasureVolume(sections).content == 0) {
+          // ★ 最隐蔽的一种：分节齐备、但所有 `len` 都是 0 且 `fnv` 为空串。
+          //   体积 0 ⇒ 下限 `ceil(0/2) == 0` ⇒ 任何内容都 `≥ 0` ⇒ F3 恒绿（fail-open）。
+          //   与「不可解析」同类失效，必须走同一条 fail 通路，**不另造出口**。
+          kind = '分节齐备但全零长度';
+          why =
+              '分节齐备，但内容体积（单调代理）为 0'
+              '（所有 `len` 均为 0，且无叶字符串）';
+        } else {
+          return sections;
+        }
       }
     }
   }
@@ -187,8 +205,12 @@ Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
       (Platform.environment['ALLOW_FLOORLESS_REBUILD'] ?? '') == 'true';
   if (!waived) {
     fail(
-      '[l3-anchor] 旧基线不可解析 ⇒ 比率下限无法生效：$kL3AnchorPath\n'
-      '  解析器原文：$why\n'
+      '[l3-anchor] 旧基线不可解析 ⇒ 比率下限无法生效（或：可解析但不可用）：'
+      '$kL3AnchorPath\n'
+      '  本次形态：$kind\n'
+      '  判定依据：$why\n'
+      '  ★ 可解析但不可用 = ① 缺分节 ② 顶层只有 `meta` ③ **分节齐备但所有 `len` 均为 0**。\n'
+      '    三者都让下限退化为 0 ⇒ F3 对任何内容恒绿（fail-open），与「文件损坏」同罪。\n'
       '  两条出口：\n'
       '    ① 恢复基线：git checkout -- $kL3AnchorPath\n'
       '    ② 确认要丢弃旧基线：ALLOW_FLOORLESS_REBUILD=true'
@@ -196,7 +218,7 @@ Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
     );
   }
   print(
-    '[l3-anchor][告警] 已放弃比率下限：旧基线不可解析（$why）'
+    '[l3-anchor][告警] 已放弃比率下限：旧基线不可解析或不可用（$kind：$why）'
     '⇒ 本次未做任何比对，这不是校验通过。',
   );
   print('[l3-anchor][告警] 路径：$kL3AnchorPath；本次为「无下限重建」，须人工复核体量。');

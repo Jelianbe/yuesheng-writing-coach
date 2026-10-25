@@ -82,6 +82,8 @@ Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
   if (!exists) return null; // 首次生成：F3 不生效（调用处打告警）
   final raw = file.readAsStringSync();
   String? why;
+  // ★ 失败形态标签：多种「基线不可用」共用同一出口，靠它区分。
+  var kind = '不可解析';
   Object? decoded;
   try {
     decoded = jsonDecode(raw);
@@ -94,7 +96,21 @@ Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
     } else {
       final cases = decoded['cases'];
       if (cases is! Map<String, dynamic>) {
+        kind = decoded.keys.where((k) => k != 'meta' && k != 'version').isEmpty
+            ? '顶层只有 meta/version、缺 cases'
+            : '结构不符（缺 cases）';
         why = '`cases` 应为 JSON 对象，实际为 ${cases.runtimeType}';
+      } else if (cases.isEmpty) {
+        kind = '空 cases';
+        why = '`cases` 是空对象，没有任何用例键';
+      } else if (anchorMeasureVolume(cases).content == 0) {
+        // ★ 最隐蔽的一种：键齐、但所有 `length` 都是 0 且无叶字符串。
+        //   体积 0 ⇒ 下限 `ceil(0/2) == 0` ⇒ 任何内容都 `≥ 0` ⇒ F3 恒绿（fail-open）。
+        //   与「不可解析」同类失效，必须走同一条 fail 通路，**不另造出口**。
+        kind = '键齐但全零长度';
+        why =
+            '用例键齐备，但内容体积（单调代理）为 0'
+            '（所有 `length` 均为 0，且无叶字符串）';
       } else {
         return cases;
       }
@@ -104,8 +120,13 @@ Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
       (Platform.environment['ALLOW_FLOORLESS_REBUILD'] ?? '') == 'true';
   if (!waived) {
     fail(
-      '[anchor] 旧基线不可解析 ⇒ 比率下限无法生效：$kAnchorPath\n'
-      '  解析器原文：$why\n'
+      '[anchor] 旧基线不可解析 ⇒ 比率下限无法生效（或：可解析但不可用）：'
+      '$kAnchorPath\n'
+      '  本次形态：$kind\n'
+      '  判定依据：$why\n'
+      '  ★ 可解析但不可用 = ① 空 `cases` ② 顶层只有 `meta` / `version`'
+      ' ③ **键齐但所有 `length` 均为 0**。\n'
+      '    三者都让下限退化为 0 ⇒ F3 对任何内容恒绿（fail-open），与「文件损坏」同罪。\n'
       '  两条出口：\n'
       '    ① 恢复基线：git checkout -- $kAnchorPath\n'
       '    ② 确认要丢弃旧基线：ALLOW_FLOORLESS_REBUILD=true'
@@ -113,7 +134,7 @@ Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
     );
   }
   print(
-    '[anchor][告警] 已放弃比率下限：旧基线不可解析（$why）'
+    '[anchor][告警] 已放弃比率下限：旧基线不可解析或不可用（$kind：$why）'
     '⇒ 本次未做任何比对，这不是校验通过。',
   );
   print('[anchor][告警] 路径：$kAnchorPath；本次为「无下限重建」，须人工复核体量。');
