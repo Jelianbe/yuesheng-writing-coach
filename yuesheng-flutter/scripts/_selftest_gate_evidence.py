@@ -235,6 +235,48 @@ def main():
     probe("S6-dirty-count", rc == 0 and out.isdigit(),
           "返回整数（当前 worktree dirty_count=%s）" % out)
 
+    # ---------------- 标签契约（「单点归因」直接依赖它）----------------
+    # gate.sh 的验收判据是 `grep -c '\[FAIL\] P1' <该轮 stdout>` = 1 且另两条 = 0。
+    # 所以「判红时首标记是 [FAIL] P<n>」本身是一条必须被测的契约 ——
+    # 格式一改，归因断言就静默失效（红了却说不出哪条红 = 与没红等价）。
+    rc, out, _ = run_ev("ev_p1_summary", nosum)
+    probe("S9-tag-p1-fail", out.startswith("[FAIL] P1"),
+          "P1 判红首标记必须是 [FAIL] P1（实读=%r）" % out[:26])
+    rc, out, _ = run_ev("ev_p2_count", low, base100)
+    probe("S9b-tag-p2-fail", out.startswith("[FAIL] P2"),
+          "P2 判红首标记必须是 [FAIL] P2（实读=%r）" % out[:26])
+    rc, out, _ = run_ev("ev_p3_log_integrity", noisy)
+    probe("S9c-tag-p3-fail", out.startswith("[FAIL] P3"),
+          "P3 判红首标记必须是 [FAIL] P3（实读=%r）" % out[:26])
+    rc, out, _ = run_ev("ev_p2_count", nosum, base100)
+    probe("S9d-tag-p2-na", out.startswith("[N/A] P2") and "[FAIL]" not in out,
+          "P2 无输入时不得出现 [FAIL]（否则破坏 P1 会连带 P2 变红，归因失效）")
+
+    # ---------------- 单一入口 ev_check_p123（gate.sh 实际调的形态）----------------
+    # 为什么单测这一条：gate.sh 里写三行 `msg="$(ev_p<n> …)"` 与写一行
+    # `ev_check_p123` 在**结论上完全等价**，但在「日志被读几遍」上差 3 倍。
+    # 结论等价的两种写法，只有一种是指令要的 —— 所以必须有一条探针钉住入口形态。
+    rc, out, _ = run_ev("ev_check_p123", green, base100)
+    lines = [l for l in out.splitlines() if l.strip()]
+    probe("S10-all-green", rc == 0 and len(lines) == 3
+          and lines[0].startswith("[PASS] P1")
+          and lines[1].startswith("[WARN] P2") and lines[2].startswith("[PASS] P3"),
+          "三行齐全、按 P1/P2/P3 顺序、全绿不 FAIL（rc=%d, 行数=%d）" % (rc, len(lines)))
+
+    rc, out, _ = run_ev("ev_check_p123", nosum, base100)
+    lines = [l for l in out.splitlines() if l.strip()]
+    probe("S10b-only-p1", rc == 1 and len(lines) == 3
+          and sum(1 for l in lines if l.startswith("[FAIL] P1")) == 1
+          and sum(1 for l in lines if "[FAIL] P2" in l) == 0
+          and sum(1 for l in lines if "[FAIL] P3" in l) == 0,
+          "只破坏 P1 ⇒ rc=1 且只有 P1 红（单点归因，行数=%d）" % len(lines))
+
+    missing = os.path.join(d, "no_such_log.txt")
+    rc, out, _ = run_ev("ev_check_p123", missing, base100)
+    lines = [l for l in out.splitlines() if l.strip()]
+    probe("S10c-missing-log", rc == 1 and len(lines) == 3,
+          "日志缺失 ⇒ 仍打满三行（少打一行会把「没判」伪装成「通过」，行数=%d）" % len(lines))
+
     # ---------------- 元探针 ----------------
     empty_txt = write(os.path.join(d, "empty.txt"), "")
     rc, out, _ = run_ev("ev_p1_summary", empty_txt)

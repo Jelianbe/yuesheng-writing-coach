@@ -264,6 +264,44 @@ else
   RC_TEST=1
   tail -n 40 "$TEST_LOG"
 fi
+
+# ---------- 门禁 2 证据链（P1/P2/P3 · T-20261025-04）----------
+# 【要解决的问题】本道的 PASS 在结构上不依赖任何例数证据 ⇒「跑 1 例通过」与
+#   「跑 5295 例通过」在全部产物上完全同形 ⇒ **不可证伪**。这三条判据就是补证据。
+#
+# 【为什么只在 rc=0 时校验】证据是 PASS 的**必要条件**，不是 FAIL 的补充说明。
+#   rc≠0 本身已经 FAIL，此时再叠 P1/P3 只会让归因更糊（红了两处，说不清是哪一处）。
+#   ⇒ 「只破坏 P1 不动测试本身」时，唯一的红点就是 P1 —— 这正是单点归因的前提。
+#
+# 【为什么不新开道】三条判据讲的都是「本道的 PASS 有没有证据」，语义上就属于本道。
+#   新开道要同步改 ~25 处「十九道」文案 + `.ai/STATE.md` 的道数 ⇒ 属另一批范围。
+#
+# 【判据实现在哪】scripts/lib_gate_evidence.sh。自测 scripts/_selftest_gate_evidence.py
+#   直接调用**同一份**函数（33 条探针）—— 不是另写一份实现，所以测的就是上线的逻辑。
+#
+# 【归因判据】`grep -c '\[FAIL\] P1' <本轮 stdout>` = 1（另两条 = 0）。
+#   所以每条判据的失败行**必须以 `[FAIL] P<n>` 开头**，格式变更会静默废掉归因。
+#
+# 【为什么只调一个入口】缓存是 shell 变量，逐条 `msg="$(ev_p<n> …)"` 会各起一个子 shell
+#   ⇒ 缓存全废、14 MB 日志被扫 3 遍（实测 1632 ms vs 单遍）。`ev_check_p123` 先建缓存
+#   再串起三条判据，全流程只读日志一次。
+if [ "$RC_TEST" = "0" ]; then
+  TEST_EVID_FAIL=0
+  if . "$ROOT/scripts/lib_gate_evidence.sh" 2>/dev/null; then
+    EVID_OUT="$(ev_check_p123 "$TEST_LOG" "$ROOT/tool/test_count_baseline.json")"
+    EVID_RC=$?
+    printf '%s\n' "$EVID_OUT" | sed 's/^/  /'
+    [ "$EVID_RC" = "0" ] || TEST_EVID_FAIL=1
+  else
+    echo "  [FAIL] 证据链判据库 scripts/lib_gate_evidence.sh 不可读 ⇒ 无法验证 PASS 的证据"
+    TEST_EVID_FAIL=1
+  fi
+  if [ "$TEST_EVID_FAIL" != "0" ]; then
+    RC_TEST=1
+    echo "  [FAIL] 门禁 2 翻红：上方出现 [FAIL] P<n> ⇒ PASS 缺证据，按 FAIL 计"
+    echo "         （归因看 [FAIL] P 前缀，不要靠 tail -n 40 猜）"
+  fi
+fi
 log_result "单元测试 (flutter test)" "$RC_TEST"
 
 # ---------- 门禁 3: 循环依赖（调用独立脚本 scripts/check_circular.py）----------

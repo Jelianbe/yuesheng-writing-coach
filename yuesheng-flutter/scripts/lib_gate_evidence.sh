@@ -37,12 +37,57 @@ EV_RE_P3='^(scripts/_run_flutter_test\.sh|bash): line [0-9]+: .*: (write error|B
 
 # ---------- 内部工具 ----------
 
-# 取汇总行（可能为空）。`-a`：14 MB 日志含控制字符时 grep 可能判二进制而只回一句
-# "Binary file matches"，那样 `-c` 计数会变成 1 但内容取不到。
-_ev_summary_line() {
-  local f="${1:-}"
+# 单次扫描：一遍 awk 同时产出 P1/P2 要的汇总行、P3 要的命中数 + 首条。
+#
+# 【为什么必须共用一次】不只是省时间。同一份输入被解析两次就**有两次解释机会**，
+#   两处口径早晚漂移 —— 那时会出现「P1 判绿、P2 却说解析不出 +N」这种自相矛盾的读数，
+#   比单条判据写错更难查（因为两条看起来各自都对）。⇒ 解析只发生在这一处；
+#   三条判据只消费事实，不碰文件。
+#
+# 【正则怎么传】必须走 ENVIRON。实测：awk 对 `-v` 与命令行 `var=value` 都会**解释
+#   反斜杠转义**（`\+` 被降级成 `+` 并打 `warning: escape sequence \`\+' treated as plain \`+'`）
+#   ⇒ 正则在传递途中被悄悄改写，而改写后的正则**仍然看起来能跑**。
+#   ENVIRON 原样透传：实测 `\+`、`\.` 均逐字节保留。
+#
+# 【二进制安全】原来用 `grep -a` 是因为日志含控制字符时 grep 会判二进制、只回一句
+#   "Binary file matches"（此时 `-c` 也变成 1，内容取不到）。awk 没有这层探测，按字节读。
+#   实测：14 MB 真日志、掺 NUL 的样本，两者都正常出结果（第 2 笔报告里有读数）。
+#
+# 【缓存语义】按路径缓存，同一文件第二次调用不再扫。
+#   ⚠️ 缓存是**shell 变量**，所以必须在**同一个 shell** 里连续调用才能命中。
+#   `msg="$(ev_p1_summary f)"` 这种写法每条各起一个子 shell ⇒ 缓存全废、日志被扫 3 遍
+#   （实测 1632 ms vs 单遍 290 ms）。⇒ gate.sh **只调 ev_check_p123 这一个入口**，
+#   由它在同一个 shell 里串起三条判据。这是「共用一次解析」的落地形态，
+#   不是靠调用方自觉 —— 调用方自觉的东西早晚会被下一个人写回三遍。
+#   自测每条探针是独立 bash 进程 ⇒ 缓存冷启，测到的仍是真实解析路径。
+#
+# 【首条诊断为什么不在 awk 里截断】`substr` 在 UTF-8 locale 下按字符、在 C locale 下按
+#   字节，同一个表达式两种语义。截断交给 bash 的 `cut -c1-160`（跟随 locale）更稳。
+_ev_facts() { # $1=log ; 副作用：设 EV_F_SRC / EV_F_SUMMARY / EV_F_P3_HITS / EV_F_P3_FIRST
+  local f="${1:-}" out
+  if [ "${EV_F_SRC:-}" = "$f" ] && [ "${EV_F_READY:-0}" = "1" ]; then
+    return 0
+  fi
+  EV_F_SRC="$f"; EV_F_READY=1
+  EV_F_SUMMARY=""; EV_F_P3_HITS=0; EV_F_P3_FIRST=""
   [ -f "$f" ] || return 0
-  grep -aE "$EV_RE_P1" "$f" 2>/dev/null | tail -n 1
+  out="$(EV_RE1="$EV_RE_P1" EV_RE3="$EV_RE_P3" awk '
+    BEGIN { re1 = ENVIRON["EV_RE1"]; re3 = ENVIRON["EV_RE3"]; hits = 0 }
+    $0 ~ re1 { summary = $0 }
+    $0 ~ re3 { hits++; if (hits == 1) first = $0 }
+    END { printf "%d\n%s\n%s\n", hits, summary, first }
+  ' "$f" 2>/dev/null)"
+  EV_F_P3_HITS=""; EV_F_SUMMARY=""; EV_F_P3_FIRST=""
+  # 用内建 `read` 拆三行，不用 `printf | sed`：本机（MSYS/Git Bash）每 fork 一次约 60-100 ms，
+  # 三次 sed 就是三次 fork。实测这一处占掉约 200 ms（第 2 笔报告里有前后读数）。
+  { IFS= read -r EV_F_P3_HITS; IFS= read -r EV_F_SUMMARY; IFS= read -r EV_F_P3_FIRST; } <<< "$out"
+  [ -n "$EV_F_P3_HITS" ] || EV_F_P3_HITS=0
+}
+
+# 取汇总行（可能为空）。P1/P2 在**同一个 shell** 里共用同一份事实，不各扫一遍。
+_ev_summary_line() {
+  _ev_facts "${1:-}"
+  printf '%s' "$EV_F_SUMMARY"
 }
 
 # 从汇总行取 +N / ~N（取不到 ⇒ 空串，**不要**猜 0）
@@ -55,11 +100,17 @@ _ev_field() { # $1=行 $2=passed|skipped
 }
 
 # 基线 provenance 是否齐全（四键缺一 ⇒ 视为**无效基线**，不许静默采用）
+# 用内建读 + case 匹配，不用 4 次 `grep -q`：本机每 fork 约 75-90 ms，文件只有 130 B
+# 也一样要付。实测 4 次 grep = 120-133 ms → 内建读 43-49 ms。
 _ev_base_provenance_ok() {
-  local f="${1:-}" k
+  local f="${1:-}" k body
   [ -f "$f" ] || return 1
+  body="$(< "$f")" 2>/dev/null || return 1
   for k in count head generated_at reason; do
-    grep -q "\"$k\"" "$f" 2>/dev/null || return 1
+    case "$body" in
+      *"\"$k\""*) ;;
+      *) return 1 ;;
+    esac
   done
   return 0
 }
@@ -83,15 +134,16 @@ _ev_write_baseline() { # $1=path $2=count $3=reason
 ev_p1_summary() { # $1=test_log
   local f="${1:-}" line
   if [ ! -f "$f" ]; then
-    echo "P1 汇总行：日志文件不存在（$f）⇒ 无证据"
+    echo "[FAIL] P1 汇总行：日志文件不存在（$f）⇒ 无证据"
     return 1
   fi
-  line="$(_ev_summary_line "$f")"
+  # 不用 `line="$(...)"`：那会起子 shell，把 _ev_facts 的缓存丢掉 ⇒ 同一份日志被重复扫。
+  _ev_facts "$f"; line="$EV_F_SUMMARY"
   if [ -z "$line" ]; then
-    echo "P1 汇总行：未找到 All tests passed! 汇总行 ⇒ PASS 无例数证据"
+    echo "[FAIL] P1 汇总行：未找到 All tests passed! 汇总行 ⇒ PASS 无例数证据"
     return 1
   fi
-  echo "P1 汇总行：命中「$line」"
+  echo "[PASS] P1 汇总行：命中「$line」"
   return 0
 }
 
@@ -100,10 +152,12 @@ ev_p1_summary() { # $1=test_log
 # 取不到 N ⇒ **不判**（返回 0，归因 P1）：否则「破坏 P1」会连带 P2 变红，单点归因失效。
 ev_p2_count() { # $1=test_log $2=baseline_json
   local f="${1:-}" base_json="${2:-}" line n base reason
-  line="$(_ev_summary_line "$f")"
+  # 日志缺失时 _ev_facts 留空 ⇒ 下面落到 [N/A]。不在这里提前 return 0：
+  # 静默返回会让 gate.sh 少打一行，看起来像「P2 通过了」，实际上是「P2 没说话」。
+  _ev_facts "$f"; line="$EV_F_SUMMARY"
   n="$(_ev_field "$line" passed)"
   if [ -z "$n" ]; then
-    echo "P2 例数下限：无法从日志解析 +N ⇒ 本条不判（归因 P1）"
+    echo "[N/A] P2 例数下限：无法从日志解析 +N ⇒ 本条不判（归因 P1）"
     return 0
   fi
 
@@ -111,55 +165,83 @@ ev_p2_count() { # $1=test_log $2=baseline_json
 
   if [ ! -f "$base_json" ]; then
     _ev_write_baseline "$base_json" "$n" "$reason"
-    echo "P2 例数下限：基线不存在 ⇒ 已首建（count=$n，含 provenance 四字段），本轮不判定（WARN）"
+    echo "[WARN] P2 例数下限：基线不存在 ⇒ 已首建（count=$n，含 provenance 四字段），本轮不判定"
     return 0
   fi
 
   if ! _ev_base_provenance_ok "$base_json"; then
-    echo "P2 例数下限：基线 provenance 不齐（需 count/head/generated_at/reason 四键）⇒ 判为无效基线，不采用（WARN）"
+    echo "[WARN] P2 例数下限：基线 provenance 不齐（需 count/head/generated_at/reason 四键）⇒ 判为无效基线，不采用"
     return 0
   fi
 
   base="$(_ev_base_count "$base_json")"
   if [ -z "$base" ]; then
-    echo "P2 例数下限：基线里解析不出 count ⇒ 判为无效基线，不采用（WARN）"
+    echo "[WARN] P2 例数下限：基线里解析不出 count ⇒ 判为无效基线，不采用"
     return 0
   fi
 
   if [ "${UPDATE_TEST_BASELINE:-0}" = "1" ]; then
     _ev_write_baseline "$base_json" "$n" "$reason"
-    echo "P2 例数下限：UPDATE_TEST_BASELINE=1 ⇒ 基线已刷新 $base → $n（显式入口）"
+    echo "[WARN] P2 例数下限：UPDATE_TEST_BASELINE=1 ⇒ 基线已刷新 $base → $n（显式入口）"
     return 0
   fi
 
   if [ "$n" -lt "$base" ]; then
-    echo "P2 例数下限：+N=$n < 基线 $base ⇒ 例数下降（Δ=$((n - base))）"
+    echo "[FAIL] P2 例数下限：+N=$n < 基线 $base ⇒ 例数下降（Δ=$((n - base))）"
     return 1
   fi
   if [ "$n" -gt "$base" ]; then
-    echo "P2 例数下限：+N=$n > 基线 $base（Δ=+$((n - base))）⇒ 用例增长，提示刷新基线（WARN）"
+    echo "[WARN] P2 例数下限：+N=$n > 基线 $base（Δ=+$((n - base))）⇒ 用例增长，提示刷新基线"
     return 0
   fi
-  echo "P2 例数下限：+N=$n = 基线 $base"
+  echo "[PASS] P2 例数下限：+N=$n = 基线 $base"
   return 0
 }
 
 # ---------- P3 日志可信性 ----------
 ev_p3_log_integrity() { # $1=test_log
-  local f="${1:-}" hits first
+  local f="${1:-}" first
   if [ ! -f "$f" ]; then
-    echo "P3 日志可信性：日志文件不存在（$f）⇒ 结论不可信"
+    echo "[FAIL] P3 日志可信性：日志文件不存在（$f）⇒ 结论不可信"
     return 1
   fi
-  hits="$(grep -acE "$EV_RE_P3" "$f" 2>/dev/null)"
-  [ -n "$hits" ] || hits=0
-  if [ "$hits" -gt 0 ]; then
-    first="$(grep -aE "$EV_RE_P3" "$f" 2>/dev/null | head -n 1 | cut -c1-160)"
-    echo "P3 日志可信性：命中 $hits 条写失败诊断（首条：$first）⇒ 日志写不全，结论不可信"
+  _ev_facts "$f"
+  if [ "$EV_F_P3_HITS" -gt 0 ]; then
+    first="$(printf '%s' "$EV_F_P3_FIRST" | cut -c1-160)"
+    echo "[FAIL] P3 日志可信性：命中 $EV_F_P3_HITS 条写失败诊断（首条：$first）⇒ 日志写不全，结论不可信"
     return 1
   fi
-  echo "P3 日志可信性：0 命中（锚定形态）"
+  echo "[PASS] P3 日志可信性：0 命中（锚定形态）"
   return 0
+}
+
+# ---------- P1/P2/P3 单一入口（gate.sh 只调这一个）----------
+# 【为什么要有它】缓存是 shell 变量。gate.sh 若写成
+#   msg="$(ev_p1_summary …)"; msg="$(ev_p2_count …)"; msg="$(ev_p3_log_integrity …)"
+# 每条命令替换各起一个子 shell ⇒ 缓存全废 ⇒ 14 MB 日志被扫 3 遍。
+# 实测：三处各调 = 1632 ms；本函数一次调 = 单遍扫描。**指令要防的正是这个形态。**
+#
+# 【输出契约】
+#   stdout = 恰好三行，每行以 `[PASS]/[WARN]/[N/A]/[FAIL] P<n>` 开头（供单点归因 grep）
+#   return 0 = 三条无一 FAIL；return 1 = 至少一条 FAIL
+#   ⇒ 三行**始终都打**，不因前一条 FAIL 就短路：归因要看的是「哪几条红」，
+#     少打一行会把「没判」伪装成「通过」（S9d 就是钉这条）。
+ev_check_p123() { # $1=test_log $2=baseline_json
+  local f="${1:-}" base="${2:-}" rc=0
+  if [ ! -f "$f" ]; then
+    echo "[FAIL] P1 汇总行：日志文件不存在（$f）⇒ 无证据"
+    echo "[N/A] P2 例数下限：无日志 ⇒ 本条不判（归因 P1）"
+    echo "[FAIL] P3 日志可信性：日志文件不存在（$f）⇒ 结论不可信"
+    return 1
+  fi
+  _ev_facts "$f"   # ← 全流程唯一一次读日志
+  # 三个 `if !` 都**在同一个 shell 里**执行（不是 `msg="$(…)"`）：
+  #   ① 缓存命中，日志不再被读；② 输出直接进 stdout，顺序不会乱；③ 不额外 fork。
+  # 每条都判、不短路 —— 归因要看「哪几条红」，短路会让后面几条根本不说话。
+  if ! ev_p1_summary "$f";               then rc=1; fi
+  if ! ev_p2_count "$f" "$base";         then rc=1; fi
+  if ! ev_p3_log_integrity "$f";         then rc=1; fi
+  return "$rc"
 }
 
 # ---------- P4a 覆盖率新鲜度 ----------
@@ -170,22 +252,22 @@ ev_p3_log_integrity() { # $1=test_log
 ev_p4a_fresh() { # $1=lcov $2=run_start_ts
   local lcov="${1:-}" start="${2:-}" mtime
   if [ ! -f "$lcov" ]; then
-    echo "P4a 覆盖率新鲜度：lcov 不存在（$lcov）⇒ 无新鲜度可验"
+    echo "[FAIL] P4a 覆盖率新鲜度：lcov 不存在（$lcov）⇒ 无新鲜度可验"
     return 1
   fi
   if ! mtime="$(stat -c %Y "$lcov" 2>/dev/null)"; then
-    echo "P4a 覆盖率新鲜度：本环境不支持 stat -c %Y ⇒ 无法验证（fail-closed）"
+    echo "[FAIL] P4a 覆盖率新鲜度：本环境不支持 stat -c %Y ⇒ 无法验证（fail-closed）"
     return 1
   fi
   if [ -z "$mtime" ]; then
-    echo "P4a 覆盖率新鲜度：mtime 读不出 ⇒ 无法验证（fail-closed）"
+    echo "[FAIL] P4a 覆盖率新鲜度：mtime 读不出 ⇒ 无法验证（fail-closed）"
     return 1
   fi
   if [ "$mtime" -ge "$start" ]; then
-    echo "P4a 覆盖率新鲜度：mtime=$mtime >= run_start=$start（差 $((mtime - start))s）"
+    echo "[PASS] P4a 覆盖率新鲜度：mtime=$mtime >= run_start=$start（差 $((mtime - start))s）"
     return 0
   fi
-  echo "P4a 覆盖率新鲜度：mtime=$mtime < run_start=$start（陈旧 $((start - mtime))s）⇒ 消费了上一轮的 lcov"
+  echo "[FAIL] P4a 覆盖率新鲜度：mtime=$mtime < run_start=$start（陈旧 $((start - mtime))s）⇒ 消费了上一轮的 lcov"
   return 1
 }
 
