@@ -133,6 +133,9 @@ WIRING_LOG="$OUT_DIR/wiring.txt"
 SURFACE_LOG="$OUT_DIR/surface_visibility.txt"
 SURFACE_SELFTEST_LOG="$OUT_DIR/surface_visibility_selftest.txt"
 SOURCE_EXIT_LOG="$OUT_DIR/source_exit.txt"
+# 证据链判据自测的日志（WARN 级守卫，不计入十九道）。输出的落点必须固定，
+# 否则「自测跑过」与「自测没跑」在事后看只差一个没人读的 stdout。
+SELFTEST_EVID_LOG="$OUT_DIR/selftest_gate_evidence.txt"
 
 # P4b 证据文件：由 scripts/_run_flutter_test.sh 在决定 COV_FLAG 之后写入（T-20261025-04）。
 # 放在 OUT_DIR（已被 .gitignore 忽略）⇒ 不污染 git status。
@@ -1002,6 +1005,43 @@ else
   fi
 fi
 
+# ---------- 约定层守卫：证据链判据自测（S5 · 2026-10-25 起接，WARN 级）----------
+#
+# 【为什么必须挂进来】`_selftest_gate_evidence.py` 在第 1–4 笔期间只能**手工跑**。
+#   「有自测」与「自测会在交付前自动跑」是两件事 —— 不挂载的探针等于零覆盖，
+#   而它测的恰恰是「判据是不是已经恒绿/恒红」。判据坏掉时门禁照样全绿，
+#   所以这层自测一旦静默，整套证据链就退回「不可证伪」。
+#
+# 【为什么是 WARN 不是 FAIL】它是**元判据**：测的是判据本身，不是产品。
+#   让它阻断收尾，会让「自测脚本自己的 bug」挡住产品交付 —— 与 S1/S4 同级处理。
+#   但**必须喊出来且必须进报告**（见报告「详细日志」段）：静默的 WARN 等于没跑。
+#
+# 【为什么不挂快道（gate-fast.sh）】**不是漏了，是决定**：快道是 pre-commit 用的，
+#   预算约 17 s；这套探针要起 30+ 次 bash 子进程（本机单次 fork 约 75-90 ms），
+#   会显著拖长 every-commit 的等待。快道本来也不跑门禁 6（P4a/P4b 的另一半），
+#   挂一半的自测比不挂更容易被误读成「已经覆盖了」。**别顺手补全。**
+#
+# 【归因】WARN 行以 `[WARN]` 开头且带脚本路径，与门禁的 `[FAIL] P<n>` 不同前缀
+#   ⇒ 不会污染门禁 2 的单点归因判据（`grep -c '\[FAIL\] P1'`）。
+echo "--> 约定层守卫: 证据链判据自测（S5，WARN 级，2026-10-25 起接）"
+SELFTEST_EVID_VERDICT="SKIP"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过证据链判据自测"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$SELFTEST_EVID_LOG"
+elif [ ! -f "$ROOT/scripts/_selftest_gate_evidence.py" ]; then
+  echo "  [WARN] 自测脚本缺失（scripts/_selftest_gate_evidence.py），跳过"
+  echo "SKIP: (NOT EXECUTED) selftest script missing" > "$SELFTEST_EVID_LOG"
+else
+  if "$PY_BIN" scripts/_selftest_gate_evidence.py > "$SELFTEST_EVID_LOG" 2>&1; then
+    SELFTEST_EVID_VERDICT="PASS"
+    echo "  [PASS] 证据链判据自测（含 S7/S8 元探针：判据既非恒绿也非恒红）"
+  else
+    SELFTEST_EVID_VERDICT="WARN"
+    echo "  [WARN] 证据链判据自测失败——判据可能已恒绿/恒红/归因错，详见 $SELFTEST_EVID_LOG"
+    tail -n 20 "$SELFTEST_EVID_LOG"
+  fi
+fi
+
 # ---------- 汇总报告 ----------
 #
 # 判定一律以**退出码**为准（2026-09-03 实证）：旧版对循环依赖用
@@ -1078,6 +1118,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 台账新鲜度: outputs/gate/ledger_freshness.txt
 - Prompt 体积红线: outputs/gate/prompt_volume.txt
 - 约定层守卫·DB 列活性（WARN 级，不计道数）: outputs/gate/wiring.txt
+- 约定层守卫·证据链判据自测（WARN 级，不计道数）: outputs/gate/selftest_gate_evidence.txt — 结果: ${SELFTEST_EVID_VERDICT}
 EOF
 
 echo "=================================================="
