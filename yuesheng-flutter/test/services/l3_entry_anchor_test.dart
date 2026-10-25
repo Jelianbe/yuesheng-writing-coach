@@ -33,6 +33,8 @@ import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 
+import '../helpers/anchor_content_floor.dart';
+
 const String kL3AnchorPath = 'test/snapshots/l3_entry_anchor.json';
 
 /// FNV-1a 64 位指纹（与 skill_prompt_anchor_test.dart 同款）。
@@ -104,6 +106,154 @@ List<String> _diff(String path, dynamic a, dynamic b) {
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────
+// 重建下限判据（T-20261024-15 · L4 支撑层）
+//
+// 由来：本文件的回读校验只有「每个分节是**非空对象**」（下方
+//   `got is! Map || got.isEmpty`）—— 那是 F1 的一半（条数 ≥ 1），
+//   **没有 F2（条目叶值非空）也没有 F3（总数 ≥ 旧基线 50%）**：
+//   每个词条 `len` 全归 0、只留 39 个键，同样算「非空对象」⇒ 塌陷照样过关。
+//
+// 口径（`DECISIONS §4-260⑤` 舰长 2026-10-24 23:31 已裁，不得改）：
+//   ① 每例**非空** + 总数 ≥ 旧基线 **50%**；② 越限 = **fail**。
+//
+// 落点只在**重建分支**：比对分支的判据面是「与基线逐条字节级一致」，塌陷基线
+//   在那里表现为「当前 ≠ 基线」⇒ 本来就会红。
+// ★ 新增的两条判据都在**写盘之前**；既有 F1 回读校验仍在写盘之后（不改它，
+//   避免顺手重构）。「分节塌成空对象」这种极端塌陷会先被 F3 的比率下限拦下。
+// ─────────────────────────────────────────────────────────────
+
+/// 本快照的三个判据面（分节）。
+const List<String> _kSections = ['syndrome', 'technique', 'training'];
+
+/// F2：叶值非空 —— 每条目的 `fnv` 不得为空串。
+///
+/// ★ F1（每分节条数 ≥ 1）由既有回读校验承担（见本文件重建分支里的
+///   `got is! Map || got.isEmpty`），**不在这里重复**。
+/// ⚠️ 诚实边界：本文件**不对单个词条的 `len == 0` 报红** —— 文件头注释已声明
+///   「空内容词条（如索引 / 无对应段）以 len=0 记录」，那是设计。真正接住
+///   「所有词条一起塌陷」的是 F3（体积腰斩）。
+void _assertPerEntryNonEmpty(Map<String, Object> current) {
+  final emptyFnv = <String>[];
+  for (final section in _kSections) {
+    final got = current[section]! as Map<String, Object>;
+    for (final e in got.entries) {
+      final anchor = e.value as Map<String, Object>;
+      if ((anchor['fnv']! as String).isEmpty) {
+        emptyFnv.add('$section.${e.key}');
+      }
+    }
+  }
+  if (emptyFnv.isEmpty) return;
+  fail(
+    '[l3-anchor] 重建下限不过（F2 叶值非空），**已拒绝写盘**：\n'
+    '  F2 空指纹 ${emptyFnv.length} 条：${emptyFnv.take(12).toList()}'
+    '${emptyFnv.length > 12 ? ' …' : ''}\n'
+    '  ★ 指纹为空串 = 写入侧被改坏（截断 / 换了载体），不是「词条变了」。\n'
+    '  排查真因后确需重写基线：UPDATE_SNAPSHOTS=true。',
+  );
+}
+
+/// 读旧基线的三个分节；返回 `null` = 无可比基线。
+///
+/// 「不可解析」（非 JSON / 顶层非对象 / 缺分节）一律**默认 fail**（除非显式豁免）：
+/// `旧快照损坏 + UPDATE_SNAPSHOTS=true` 是**洗白基线最省力的入口**。
+Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
+  if (!exists) return null; // 首次生成：F3 不生效（调用处打告警）
+  final raw = file.readAsStringSync();
+  String? why;
+  Object? decoded;
+  try {
+    decoded = jsonDecode(raw);
+  } on FormatException catch (e) {
+    why = '${e.message}（偏移 ${e.offset}）';
+  }
+  if (why == null) {
+    if (decoded is! Map<String, dynamic>) {
+      why = '顶层应为 JSON 对象，实际为 ${decoded.runtimeType}';
+    } else {
+      final missing = <String>[
+        for (final s in _kSections)
+          if (decoded[s] is! Map) s,
+      ];
+      if (missing.isNotEmpty) {
+        why = '缺分节 $missing';
+      } else {
+        return <String, dynamic>{for (final s in _kSections) s: decoded[s]};
+      }
+    }
+  }
+  final waived =
+      (Platform.environment['ALLOW_FLOORLESS_REBUILD'] ?? '') == 'true';
+  if (!waived) {
+    fail(
+      '[l3-anchor] 旧基线不可解析 ⇒ 比率下限无法生效：$kL3AnchorPath\n'
+      '  解析器原文：$why\n'
+      '  两条出口：\n'
+      '    ① 恢复基线：git checkout -- $kL3AnchorPath\n'
+      '    ② 确认要丢弃旧基线：ALLOW_FLOORLESS_REBUILD=true'
+      '（会打双重告警，且本次不设任何下限）',
+    );
+  }
+  print(
+    '[l3-anchor][告警] 已放弃比率下限：旧基线不可解析（$why）'
+    '⇒ 本次未做任何比对，这不是校验通过。',
+  );
+  print('[l3-anchor][告警] 路径：$kL3AnchorPath；本次为「无下限重建」，须人工复核体量。');
+  return null;
+}
+
+/// F3：总数（**内容体积（单调代理）**）≥ 旧基线 50%。不过即 `fail`（**不写盘**）。
+///
+/// 口径见 `test/helpers/anchor_content_floor.dart`：叶字符串长度 + 仅 `len` /
+/// `length` 键的整数值（本文件的 `len`）；其余整数（`meta` 的各类 `*Count`、
+/// 未来可能的 ID）单列 `nonContentInt`，**不计体积**。
+/// ⚠️ 该指标**不得当作字节数 / token 成本引用**。
+void _assertVolumeFloor(
+  Map<String, Object> current, {
+  required File file,
+  required bool exists,
+}) {
+  final body = <String, Object>{for (final s in _kSections) s: current[s]!};
+  final newMeasure = anchorMeasureVolume(body);
+  final newVolume = newMeasure.content;
+  final baseline = _loadBaselineSections(file, exists: exists);
+  if (baseline == null) {
+    if (!exists) {
+      print(
+        '[l3-anchor][告警] 本次为首次生成，比率下限未生效：$kL3AnchorPath\n'
+        '  ★ 首次生成是合法通路，故不拦；但**不静默** —— 否则「删掉旧快照再重冻」'
+        '就成了绕过下限的最短路径。\n'
+        '  提交前请人工复核该基线的体量是否合理'
+        '（本次内容体积（单调代理）$newVolume；'
+        '非长度整数（不计体积）${newMeasure.nonContentInt}）。',
+      );
+    }
+    return;
+  }
+  final baselineMeasure = anchorMeasureVolume(baseline);
+  final baselineVolume = baselineMeasure.content;
+  final floor = (baselineVolume / 2).ceil();
+  if (newVolume < floor) {
+    fail(
+      '[l3-anchor] 重建内容体积（单调代理）低于比率下限，**已拒绝写盘**：\n'
+      '  实际：$newVolume\n'
+      '  下限：$floor（旧基线 $baselineVolume 的 50%）\n'
+      '  非长度整数（不计体积）：${newMeasure.nonContentInt}'
+      '（旧基线 ${baselineMeasure.nonContentInt}）\n'
+      '  ★ 键齐但内容腰斩 = 装配塌陷的典型形态（知识库读空 / 检索异常被吞）。\n'
+      '  ★ 该指标是「内容体积（单调代理）」，**不得当作字节数 / token 成本引用**。\n'
+      '  确为有意的语料缩减须经评审并在 .ai/DECISIONS.md 登记；'
+      '确认不设下限时：ALLOW_FLOORLESS_REBUILD=true。',
+    );
+  }
+  print(
+    '[l3-anchor] 重建下限通过：内容体积（单调代理）$newVolume ≥ 下限 $floor'
+    '（旧基线 $baselineVolume 的 50%）；'
+    '非长度整数（不计体积）${newMeasure.nonContentInt}。',
+  );
+}
+
 void main() {
   test('L3 词条级锚点：syndrome / technique / training 逐条字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -141,6 +291,12 @@ void main() {
     final current = _buildCurrent();
 
     if (updating) {
+      // ── 基线非退化判据（T-20261024-15 · 重建分支专属）──────────────
+      // 顺序：F2（纯内存）→ F3（要读旧基线，含 IO 与「不可解析」分支）。
+      // 两者都在 `writeAsStringSync` **之前**；既有 F1 回读校验在写盘之后。
+      _assertPerEntryNonEmpty(current);
+      _assertVolumeFloor(current, file: file, exists: exists);
+
       // ── 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
       // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
       // 旧措辞「基线已生成」与正常日志无法区分 ⇒ 重建被误读成「校验通过」。

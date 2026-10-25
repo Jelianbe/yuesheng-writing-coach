@@ -34,6 +34,8 @@ import 'package:writingcoach/services/skill_layers.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import '../helpers/anchor_content_floor.dart';
+
 const String kAnchorPath = 'test/snapshots/skill_prompt_anchor.json';
 
 /// 逐 Skill 指纹覆盖的全部 skill（E.11 ①）
@@ -324,6 +326,206 @@ String _driftSummary(List<String> diffs) {
   return '$head\n  skillContent 命中: $shown$rest';
 }
 
+// ─────────────────────────────────────────────────────────────
+// 重建下限判据（T-20261024-15 · L4 支撑层）
+//
+// 由来：本文件的**重建分支此前连回读都没有**（只有 `expect(file.existsSync())`），
+//   而比对分支的双向键集合判据在重建时完全不生效 —— 「装配塌成空壳」写出的
+//   基线与正常基线外观相同（键齐、指纹合法），此后长期绿。
+//
+// 口径（`DECISIONS §4-260⑤` 舰长 2026-10-24 23:31 已裁，不得改）：
+//   ① 每例**非空** + 总数 ≥ 旧基线 **50%**；② 越限 = **fail**。
+//
+// 落点只在**重建分支**：比对分支的判据面是「与基线逐字节一致」，塌陷基线在那里
+//   表现为「当前 ≠ 基线」⇒ 本来就会红。
+// ★ 判据在**写盘之前**：失败必须**不写**。
+// ─────────────────────────────────────────────────────────────
+
+/// 本快照的四个判据面（分节）。
+const List<String> _kSections = [
+  'prompt',
+  'skillContent',
+  'l3Inject',
+  'constSections',
+];
+
+/// `len == 0` 属**设计允许**的唯一一处：`l3Inject.empty`
+/// （`L3RetrievalContext()` 不带任何 ID ⇒ L3 检索结果本就是空串）。
+/// 实测基线 `test/snapshots/skill_prompt_anchor.json:260-261` 即
+/// `"empty": { "len": 0, ... }`。
+/// ★ 这是**点名豁免**，不是放宽阈值：其余任何条目 `len == 0` 一律红。
+const Set<String> _kLegitEmptyLen = {'l3Inject.empty'};
+
+/// F1 + F2：每例非空。不过即 `fail`（**不写盘**）。
+///
+/// F1 = 每个分节至少 1 条（条数下限）；
+/// F2 = 每条目的 `fnv` 不得为空、`len` 不得为 0（除 `_kLegitEmptyLen` 点名者）。
+void _assertPerCaseNonEmpty(Map<String, Object> current) {
+  final emptySections = <String>[];
+  final emptyEntries = <String>[];
+  final emptyFnv = <String>[];
+  for (final section in _kSections) {
+    final got = current[section]! as Map<String, Object>;
+    if (got.isEmpty) {
+      emptySections.add(section);
+      continue;
+    }
+    for (final e in got.entries) {
+      final anchor = e.value as Map<String, Object>;
+      final id = '$section.${e.key}';
+      final len = anchor['len']! as int;
+      if ((anchor['fnv']! as String).isEmpty) emptyFnv.add(id);
+      if (len < 1 && !_kLegitEmptyLen.contains(id)) {
+        emptyEntries.add('$id(len=$len)');
+      }
+    }
+  }
+  if (emptySections.isEmpty && emptyEntries.isEmpty && emptyFnv.isEmpty) return;
+  fail(
+    '[anchor] 重建下限不过（F1 分节条数 / F2 叶值非空），**已拒绝写盘**：\n'
+    '  F1 空分节 ${emptySections.length} 个：$emptySections\n'
+    '  F2 空条目 ${emptyEntries.length} 条：${emptyEntries.take(12).toList()}'
+    '${emptyEntries.length > 12 ? ' …' : ''}\n'
+    '  F2 空指纹 ${emptyFnv.length} 条：${emptyFnv.take(12).toList()}'
+    '${emptyFnv.length > 12 ? ' …' : ''}\n'
+    '  ★ 这多半是装配塌陷（skill 注册表读空 / `buildSystemPromptV2` 返回空串），'
+    '**不是**「prompt 变短了」。空壳基线一旦落盘，此后长期绿。\n'
+    '  排查真因后确需重写基线：UPDATE_SNAPSHOTS=true。',
+  );
+}
+
+/// 读旧基线的四个分节；返回 `null` = 无可比基线。
+///
+/// 「不可解析」（非 JSON / 顶层非对象 / 缺分节）一律**默认 fail**（除非显式豁免）：
+/// `旧快照损坏 + UPDATE_SNAPSHOTS=true` 是**洗白基线最省力的入口**。
+Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
+  if (!exists) return null; // 首次生成：F3 不生效（调用处打告警）
+  final raw = file.readAsStringSync();
+  String? why;
+  Object? decoded;
+  try {
+    decoded = jsonDecode(raw);
+  } on FormatException catch (e) {
+    why = '${e.message}（偏移 ${e.offset}）';
+  }
+  if (why == null) {
+    if (decoded is! Map<String, dynamic>) {
+      why = '顶层应为 JSON 对象，实际为 ${decoded.runtimeType}';
+    } else {
+      final missing = <String>[
+        for (final s in _kSections)
+          if (decoded[s] is! Map) s,
+      ];
+      if (missing.isNotEmpty) {
+        why = '缺分节 $missing';
+      } else {
+        return <String, dynamic>{for (final s in _kSections) s: decoded[s]};
+      }
+    }
+  }
+  final waived =
+      (Platform.environment['ALLOW_FLOORLESS_REBUILD'] ?? '') == 'true';
+  if (!waived) {
+    fail(
+      '[anchor] 旧基线不可解析 ⇒ 比率下限无法生效：$kAnchorPath\n'
+      '  解析器原文：$why\n'
+      '  两条出口：\n'
+      '    ① 恢复基线：git checkout -- $kAnchorPath\n'
+      '    ② 确认要丢弃旧基线：ALLOW_FLOORLESS_REBUILD=true'
+      '（会打双重告警，且本次不设任何下限）',
+    );
+  }
+  print(
+    '[anchor][告警] 已放弃比率下限：旧基线不可解析（$why）'
+    '⇒ 本次未做任何比对，这不是校验通过。',
+  );
+  print('[anchor][告警] 路径：$kAnchorPath；本次为「无下限重建」，须人工复核体量。');
+  return null;
+}
+
+/// F3：总数（**内容体积（单调代理）**）≥ 旧基线 50%。不过即 `fail`（**不写盘**）。
+///
+/// 口径见 `test/helpers/anchor_content_floor.dart`：叶字符串长度 + 仅 `len` /
+/// `length` 键的整数值；`tokens` 与其余整数单列 `nonContentInt`，**不计体积**。
+/// ⚠️ 该指标**不得当作字节数 / token 成本引用**：本文件的 `len` 与 `tokens`
+///    14/14 恒等（`estimatedTokens => content.length`），同一段 prompt 会被算两遍，
+///    所以只计 `len` 一次；要看成本请用 `tool/check_prompt_volume.py`。
+void _assertVolumeFloor(
+  Map<String, Object> current, {
+  required File file,
+  required bool exists,
+}) {
+  final body = <String, Object>{for (final s in _kSections) s: current[s]!};
+  final newMeasure = anchorMeasureVolume(body);
+  final newVolume = newMeasure.content;
+  final baseline = _loadBaselineSections(file, exists: exists);
+  if (baseline == null) {
+    if (!exists) {
+      print(
+        '[anchor][告警] 本次为首次生成，比率下限未生效：$kAnchorPath\n'
+        '  ★ 首次生成是合法通路，故不拦；但**不静默** —— 否则「删掉旧快照再重冻」'
+        '就成了绕过下限的最短路径。\n'
+        '  提交前请人工复核该基线的体量是否合理'
+        '（本次内容体积（单调代理）$newVolume；'
+        '非长度整数（不计体积，含 tokens）${newMeasure.nonContentInt}）。',
+      );
+    }
+    return;
+  }
+  final baselineMeasure = anchorMeasureVolume(baseline);
+  final baselineVolume = baselineMeasure.content;
+  final floor = (baselineVolume / 2).ceil();
+  if (newVolume < floor) {
+    fail(
+      '[anchor] 重建内容体积（单调代理）低于比率下限，**已拒绝写盘**：\n'
+      '  实际：$newVolume\n'
+      '  下限：$floor（旧基线 $baselineVolume 的 50%）\n'
+      '  非长度整数（不计体积，含 tokens）：${newMeasure.nonContentInt}'
+      '（旧基线 ${baselineMeasure.nonContentInt}）\n'
+      '  ★ 键齐但内容腰斩 = 装配塌陷的典型形态（注册表读空 / 装配异常被吞）。\n'
+      '  ★ 该指标是「内容体积（单调代理）」，**不得当作字节数 / token 成本引用**。\n'
+      '  确为有意的语料缩减须经评审并在 .ai/DECISIONS.md 登记；'
+      '确认不设下限时：ALLOW_FLOORLESS_REBUILD=true。',
+    );
+  }
+  print(
+    '[anchor] 重建下限通过：内容体积（单调代理）$newVolume ≥ 下限 $floor'
+    '（旧基线 $baselineVolume 的 50%）；'
+    '非长度整数（不计体积，含 tokens）${newMeasure.nonContentInt}。',
+  );
+}
+
+/// ③「`len` 与 `tokens` 恒等」自检（主理人 2026-10-25 要求）。
+///
+/// 依据：`estimatedTokens => content.length`（`DECISIONS §4-265⑦`）⇒ 本文件 14 个
+/// prompt 节点两者 **14/14 相等**（实测 `test/snapshots/skill_prompt_anchor.json`）。
+///
+/// 体积口径**只计 `len`、不计 `tokens`**，而这条恒等正是那个决定的前提：
+/// 一旦 `tokens` 改成真实 token 估算，`len` 与 `tokens` 就分家，「不计 `tokens`」
+/// 会变成**静默漏计**（只量到字符数，丢掉真实成本口径）⇒ 判据面悄悄变窄。
+/// ⇒ 把断言打在这个**前提**上，让口径漂移变成响亮红灯。
+void _assertLenTokensIdentity(Map<String, Object> current) {
+  final prompt = current['prompt']! as Map<String, Object>;
+  final drift = <String>[];
+  for (final e in prompt.entries) {
+    final anchor = e.value as Map<String, Object>;
+    final len = anchor['len'] as int?;
+    final tokens = anchor['tokens'] as int?;
+    if (len == null || tokens == null) continue; // 只要求「同时存在时相等」
+    if (len != tokens) drift.add('prompt.${e.key}(len=$len, tokens=$tokens)');
+  }
+  if (drift.isEmpty) return;
+  fail(
+    '[anchor] `estimatedTokens` 不再是 `content.length`，本文件的体积口径需重审：\n'
+    '  ${drift.length} 个节点 len ≠ tokens：${drift.take(12).toList()}'
+    '${drift.length > 12 ? ' …' : ''}\n'
+    '  ★ 体积口径只计 `len`、**不计 `tokens`**（两者恒等，计了就是双计）。'
+    '若 `tokens` 已改为真实 token 估算，「不计 tokens」就变成静默漏计 ⇒ '
+    '须重审 `test/helpers/anchor_content_floor.dart` 的口径并在本卡片登记新口径。\n'
+    '  ★ 该指标是「内容体积（单调代理）」，不得当作字节数 / token 成本引用。',
+  );
+}
+
 void main() {
   test('Phase 3 锚点：prompt / skill 原文 / L3 注入字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -411,6 +613,13 @@ void main() {
 
     // 显式重生成（`UPDATE_SNAPSHOTS=true`）
     if (updating) {
+      // ── 基线非退化判据（T-20261024-15 · 重建分支专属）──────────────
+      // 顺序：③ 恒等自检（口径前提）→ F1/F2（纯内存）→ F3（读旧基线，
+      // 含 IO 与「不可解析」分支）。全部在 `writeAsStringSync` **之前**。
+      _assertLenTokensIdentity(current);
+      _assertPerCaseNonEmpty(current);
+      _assertVolumeFloor(current, file: file, exists: exists);
+
       file
         ..createSync(recursive: true)
         ..writeAsStringSync(

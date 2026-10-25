@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_print
 // ─────────────────────────────────────────────────────────────
 // 画像段快照测试 — formatProfileText 字节级基线
 //
@@ -17,7 +18,156 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/student_profile_format.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import '../helpers/anchor_content_floor.dart';
+
 const String kAnchorPath = 'test/snapshots/student_profile_anchor.json';
+
+// ─────────────────────────────────────────────────────────────
+// 重建下限判据（T-20261024-15 · L4 支撑层）
+//
+// 由来：`T-20261024-14` 在重建分支只保证「**写完整**没有」（回读 `cases` 键齐，
+//   见本文件下方 `lostKeys`）——**没有下限**。每例都格式化成空串同样算
+//   「写完整」，于是写出的基线与「内容全空」的产物一致，此后长期绿：
+//   判据在跑，比的是空对空。
+//
+// 口径（`DECISIONS §4-260⑤` 舰长 2026-10-24 23:31 已裁，不得改）：
+//   ① 量什么 = 每例**非空** + 总数 ≥ 旧基线 **50%**（不设精确 N：精确 N 会随
+//      语料反复调参，而「腰斩」是可解释的异常信号）；
+//   ② 越限 = **fail**（重建出塌陷基线的代价是此后长期假绿，比一次红贵得多）。
+//
+// 落点只在**重建分支**：比对分支的判据面是「与基线逐字节一致」，塌陷基线在那里
+//   表现为「当前 ≠ 基线」⇒ 本来就会红，不需要第二道。
+// ★ 判据在**写盘之前**：失败必须**不写**，否则「红了但文件已脏」，
+//   下一个人只会再跑一次 UPDATE_SNAPSHOTS 把它盖回去。
+// ─────────────────────────────────────────────────────────────
+
+/// F1 + F2：每例非空。不过即 `fail`（**不写盘**）。
+///
+/// F1 = 该例的核心条数 ≥ 1（本文件的核心量是 `length`，即画像文本字符数）；
+/// F2 = 该例内不得出现空载体（`hash` 为空串）。
+/// ★ 只查 F1 不够：「length 为 0 的一例」在 JSON 里确实是一个键、也确实
+///   「非空」，塌陷照样过关 —— 这是本卡把「每例非空」拆成两层的原因。
+/// ⚠️ 诚实边界：本文件的 F2 近恒绿（FNV 指纹不可能为空串），真正接住
+///   「内容清空」的是 F1（`length` 归 0）与 F3（体积腰斩）。F2 留作写入
+///   侧被改坏（截断 / 换了载体）时的兜底，**不构成「判据有牙」的证据**。
+void _assertPerCaseNonEmpty(Map<String, Map<String, dynamic>> current) {
+  final emptyCases = <String>[
+    for (final e in current.entries)
+      if ((e.value['length']! as int) < 1) e.key,
+  ];
+  final emptyLeaves = <String>[
+    for (final e in current.entries)
+      if ((e.value['hash']! as String).isEmpty) '${e.key}.hash',
+  ];
+  if (emptyCases.isEmpty && emptyLeaves.isEmpty) return;
+  fail(
+    '[anchor] 重建下限不过（F1 每例条数 / F2 叶值非空），**已拒绝写盘**：\n'
+    '  F1 整例为空 ${emptyCases.length} 例：$emptyCases\n'
+    '  F2 叶值为空 ${emptyLeaves.length} 处：$emptyLeaves\n'
+    '  ★ 这多半是装配塌陷（formatProfileText 返回空串 / 用例表被清空），'
+    '**不是**「画像变小了」。空壳基线一旦落盘，此后长期绿。\n'
+    '  排查真因后确需重写基线：UPDATE_SNAPSHOTS=true。',
+  );
+}
+
+/// 读旧基线的 `cases` 子树；返回 `null` = 无可比基线。
+///
+/// 三种「不可解析」一律**默认 fail**（除非显式豁免）：① 非 JSON（截断 / 手改坏）；
+/// ② 顶层非对象；③ 缺 `cases` 对象。
+/// ★ 为什么默认 fail：`旧快照损坏 + UPDATE_SNAPSHOTS=true` 是**洗白基线最省力的
+///   入口**（比装配塌陷更容易发生）。默认放行等于把下限判据的钥匙交给
+///   「先弄坏、再重冻」。
+/// ★ 为什么留开关：快照真坏了还得能修 —— 否则判据变成死锁。
+Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
+  if (!exists) return null; // 首次生成：F3 不生效（调用处打告警）
+  final raw = file.readAsStringSync();
+  String? why;
+  Object? decoded;
+  try {
+    decoded = jsonDecode(raw);
+  } on FormatException catch (e) {
+    why = '${e.message}（偏移 ${e.offset}）';
+  }
+  if (why == null) {
+    if (decoded is! Map<String, dynamic>) {
+      why = '顶层应为 JSON 对象，实际为 ${decoded.runtimeType}';
+    } else {
+      final cases = decoded['cases'];
+      if (cases is! Map<String, dynamic>) {
+        why = '`cases` 应为 JSON 对象，实际为 ${cases.runtimeType}';
+      } else {
+        return cases;
+      }
+    }
+  }
+  final waived =
+      (Platform.environment['ALLOW_FLOORLESS_REBUILD'] ?? '') == 'true';
+  if (!waived) {
+    fail(
+      '[anchor] 旧基线不可解析 ⇒ 比率下限无法生效：$kAnchorPath\n'
+      '  解析器原文：$why\n'
+      '  两条出口：\n'
+      '    ① 恢复基线：git checkout -- $kAnchorPath\n'
+      '    ② 确认要丢弃旧基线：ALLOW_FLOORLESS_REBUILD=true'
+      '（会打双重告警，且本次不设任何下限）',
+    );
+  }
+  print(
+    '[anchor][告警] 已放弃比率下限：旧基线不可解析（$why）'
+    '⇒ 本次未做任何比对，这不是校验通过。',
+  );
+  print('[anchor][告警] 路径：$kAnchorPath；本次为「无下限重建」，须人工复核体量。');
+  return null;
+}
+
+/// F3：总数（**内容体积（单调代理）**）≥ 旧基线 50%。不过即 `fail`（**不写盘**）。
+///
+/// 口径见 `test/helpers/anchor_content_floor.dart`：叶字符串长度 + 仅 `len` /
+/// `length` 键的整数值；其余整数单列 `nonContentInt`，**不计体积**。
+/// ⚠️ 该指标**不得当作字节数 / token 成本引用**。
+void _assertVolumeFloor(
+  Map<String, Map<String, dynamic>> current, {
+  required File file,
+  required bool exists,
+}) {
+  final newMeasure = anchorMeasureVolume(current);
+  final newVolume = newMeasure.content;
+  final baseline = _loadBaselineCases(file, exists: exists);
+  if (baseline == null) {
+    if (!exists) {
+      print(
+        '[anchor][告警] 本次为首次生成，比率下限未生效：$kAnchorPath\n'
+        '  ★ 首次生成是合法通路，故不拦；但**不静默** —— 否则「删掉旧快照再重冻」'
+        '就成了绕过下限的最短路径。\n'
+        '  提交前请人工复核该基线的体量是否合理'
+        '（本次内容体积（单调代理）$newVolume；'
+        '非长度整数（不计体积）${newMeasure.nonContentInt}）。',
+      );
+    }
+    return;
+  }
+  final baselineMeasure = anchorMeasureVolume(baseline);
+  final baselineVolume = baselineMeasure.content;
+  final floor = (baselineVolume / 2).ceil();
+  if (newVolume < floor) {
+    fail(
+      '[anchor] 重建内容体积（单调代理）低于比率下限，**已拒绝写盘**：\n'
+      '  实际：$newVolume\n'
+      '  下限：$floor（旧基线 $baselineVolume 的 50%）\n'
+      '  非长度整数（不计体积）：${newMeasure.nonContentInt}'
+      '（旧基线 ${baselineMeasure.nonContentInt}）\n'
+      '  ★ 键齐但内容腰斩 = 装配塌陷的典型形态（fixture 失效 / 注入异常被吞）。\n'
+      '  ★ 该指标是「内容体积（单调代理）」，**不得当作字节数 / token 成本引用**。\n'
+      '  确为有意的语料缩减须经评审并在 .ai/DECISIONS.md 登记；'
+      '确认不设下限时：ALLOW_FLOORLESS_REBUILD=true。',
+    );
+  }
+  print(
+    '[anchor] 重建下限通过：内容体积（单调代理）$newVolume ≥ 下限 $floor'
+    '（旧基线 $baselineVolume 的 50%）；'
+    '非长度整数（不计体积）${newMeasure.nonContentInt}。',
+  );
+}
 
 class ProfileCase {
   final String name;
@@ -159,6 +309,12 @@ void main() {
       }
 
       if (update) {
+        // ── 基线非退化判据（T-20261024-15 · 重建分支专属）──────────────
+        // 顺序：F1/F2（纯内存，先拦最明显的塌陷）→ F3（要读旧基线，含 IO 与
+        // 「不可解析」分支）。两者都在 `writeAsStringSync` **之前**。
+        _assertPerCaseNonEmpty(current);
+        _assertVolumeFloor(current, file: file, exists: exists);
+
         // ── 显式重建通路（UPDATE_SNAPSHOTS=true）────────────────────────
         // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
         final hadSnapshot = exists;

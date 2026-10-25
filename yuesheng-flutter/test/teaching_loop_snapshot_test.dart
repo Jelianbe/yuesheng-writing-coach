@@ -25,6 +25,8 @@ import 'package:writingcoach/services/teacher_validator.dart';
 import 'package:writingcoach/services/syndrome_id_pattern.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'helpers/anchor_content_floor.dart';
+
 const String kSnapshotPath = 'test/snapshots/teaching_loop_snapshot.json';
 
 // 与 corpus_teacher_acceptance_test 同源的 47 例清单（单一可信源）
@@ -150,6 +152,177 @@ List<String> _diff(String path, dynamic a, dynamic b) {
   return out;
 }
 
+// ─────────────────────────────────────────────────────────────
+// 重建下限判据（T-20261024-15 · L4 支撑层）
+//
+// 由来：`T-20261024-14` 在重建分支只保证「写完整没有」（`cases` 是对象 +
+//   47 个 id 键齐）——**没有下限**。47 例全部解析成空结构化决策同样「键齐」，
+//   于是写出的基线与「解析器全塌」的产物一致，此后长期绿。
+//
+// 口径（`DECISIONS §4-260⑤` 舰长 2026-10-24 23:31 已裁，不得改）：
+//   ① 每例**非空** + 总数 ≥ 旧基线 **50%**；② 越限 = **fail**。
+//
+// 落点只在**重建分支**：比对分支的判据面是「与基线递归 diff」，塌陷基线在那里
+//   表现为「当前 ≠ 基线」⇒ 本来就会红。
+// ★ 判据在**写盘之前**：失败必须**不写**。
+// ─────────────────────────────────────────────────────────────
+
+/// 每例必需的结构块（缺一块 = 装配塌陷，不是「决策变简单了」）。
+const List<String> _kCaseBlocks = [
+  'diagnosis',
+  'teacher',
+  'consistency',
+  'compliance',
+];
+
+/// F1 + F2：每例非空。不过即 `fail`（**不写盘**）。
+///
+/// F1 = 该例 `id` / `file` 非空且四个结构块齐备（核心条数 ≥ 1 的对应量）；
+/// F2 = 该例内 **ID 型叶值**不得为空串（`syndromeIds` / `l2SyndromeIds` 的元素）。
+/// ★ 豁免（有实测依据，不是放宽）：`primarySyndromeId` 在「无症候」时按设计写
+///   空串 —— 实测 `test/snapshots/teaching_loop_snapshot.json` 的 `cases.C1` /
+///   `cases.C2`（good / short 语料）即为 `""`；`taskTargetSyndromeId` /
+///   `taskType` 在无训练任务时为 `null`。三者都不参与 F2。
+/// ★ 空**数组**同样是良性的（C1/C2 无症候）：F2 查的是**元素**非空，不是数组非空。
+void _assertPerCaseNonEmpty(Map<String, dynamic> cases) {
+  final emptyCases = <String>[];
+  final emptyIds = <String>[];
+  for (final e in cases.entries) {
+    final id = e.key;
+    final c = e.value as Map<String, dynamic>;
+    final missingBlocks = <String>[
+      for (final b in _kCaseBlocks)
+        if (c[b] is! Map) b,
+    ];
+    final idField = c['id'] as String? ?? '';
+    final fileField = c['file'] as String? ?? '';
+    if (idField.isEmpty || fileField.isEmpty || missingBlocks.isNotEmpty) {
+      emptyCases.add(
+        missingBlocks.isEmpty
+            ? '$id(id=${idField.isEmpty ? '∅' : idField},'
+                  'file=${fileField.isEmpty ? '∅' : fileField})'
+            : '$id(缺块 $missingBlocks)',
+      );
+      continue;
+    }
+    final diagnosis = c['diagnosis'] as Map<String, dynamic>;
+    for (final k in const ['syndromeIds', 'l2SyndromeIds']) {
+      final list = diagnosis[k] as List<dynamic>? ?? const <dynamic>[];
+      for (final v in list) {
+        if (v is String && v.isEmpty) emptyIds.add('$id.diagnosis.$k[]');
+      }
+    }
+  }
+  if (emptyCases.isEmpty && emptyIds.isEmpty) return;
+  fail(
+    '[snapshot] 重建下限不过（F1 每例结构 / F2 叶值非空），**已拒绝写盘**：\n'
+    '  F1 结构缺失 ${emptyCases.length} 例：${emptyCases.take(12).toList()}'
+    '${emptyCases.length > 12 ? ' …' : ''}\n'
+    '  F2 空 ID 叶值 ${emptyIds.length} 处：${emptyIds.take(12).toList()}'
+    '${emptyIds.length > 12 ? ' …' : ''}\n'
+    '  ★ 这多半是装配塌陷（fixture 读不到 / 解析器全返回空 / 校验器异常被吞），'
+    '**不是**「决策变简单了」。空壳基线一旦落盘，此后长期绿。\n'
+    '  排查真因后确需重写基线：UPDATE_SNAPSHOTS=true。',
+  );
+}
+
+/// 读旧基线的 `cases` 子树；返回 `null` = 无可比基线。
+///
+/// 「不可解析」（非 JSON / 顶层非对象 / 缺 `cases` 对象）一律**默认 fail**
+/// （除非显式豁免）：`旧快照损坏 + UPDATE_SNAPSHOTS=true` 是**洗白基线最省力的
+/// 入口**。留开关是为了快照真坏时还能修。
+Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
+  if (!exists) return null; // 首次生成：F3 不生效（调用处打告警）
+  final raw = file.readAsStringSync();
+  String? why;
+  Object? decoded;
+  try {
+    decoded = jsonDecode(raw);
+  } on FormatException catch (e) {
+    why = '${e.message}（偏移 ${e.offset}）';
+  }
+  if (why == null) {
+    if (decoded is! Map<String, dynamic>) {
+      why = '顶层应为 JSON 对象，实际为 ${decoded.runtimeType}';
+    } else {
+      final cases = decoded['cases'];
+      if (cases is! Map<String, dynamic>) {
+        why = '`cases` 应为 JSON 对象，实际为 ${cases.runtimeType}';
+      } else {
+        return cases;
+      }
+    }
+  }
+  final waived =
+      (Platform.environment['ALLOW_FLOORLESS_REBUILD'] ?? '') == 'true';
+  if (!waived) {
+    fail(
+      '[snapshot] 旧基线不可解析 ⇒ 比率下限无法生效：$kSnapshotPath\n'
+      '  解析器原文：$why\n'
+      '  两条出口：\n'
+      '    ① 恢复基线：git checkout -- $kSnapshotPath\n'
+      '    ② 确认要丢弃旧基线：ALLOW_FLOORLESS_REBUILD=true'
+      '（会打双重告警，且本次不设任何下限）',
+    );
+  }
+  print(
+    '[snapshot][告警] 已放弃比率下限：旧基线不可解析（$why）'
+    '⇒ 本次未做任何比对，这不是校验通过。',
+  );
+  print('[snapshot][告警] 路径：$kSnapshotPath；本次为「无下限重建」，须人工复核体量。');
+  return null;
+}
+
+/// F3：总数（**内容体积（单调代理）**）≥ 旧基线 50%。不过即 `fail`（**不写盘**）。
+///
+/// 口径见 `test/helpers/anchor_content_floor.dart`：叶字符串长度 + 仅 `len` /
+/// `length` 键的整数值；其余整数（本文件的 `violationCount`）单列
+/// `nonContentInt`，**不计体积**。
+/// ⚠️ 该指标**不得当作字节数 / token 成本引用**。
+void _assertVolumeFloor(
+  Map<String, dynamic> cases, {
+  required File file,
+  required bool exists,
+}) {
+  final newMeasure = anchorMeasureVolume(cases);
+  final newVolume = newMeasure.content;
+  final baseline = _loadBaselineCases(file, exists: exists);
+  if (baseline == null) {
+    if (!exists) {
+      print(
+        '[snapshot][告警] 本次为首次生成，比率下限未生效：$kSnapshotPath\n'
+        '  ★ 首次生成是合法通路，故不拦；但**不静默** —— 否则「删掉旧快照再重冻」'
+        '就成了绕过下限的最短路径。\n'
+        '  提交前请人工复核该基线的体量是否合理'
+        '（本次内容体积（单调代理）$newVolume；'
+        '非长度整数（不计体积）${newMeasure.nonContentInt}）。',
+      );
+    }
+    return;
+  }
+  final baselineMeasure = anchorMeasureVolume(baseline);
+  final baselineVolume = baselineMeasure.content;
+  final floor = (baselineVolume / 2).ceil();
+  if (newVolume < floor) {
+    fail(
+      '[snapshot] 重建内容体积（单调代理）低于比率下限，**已拒绝写盘**：\n'
+      '  实际：$newVolume\n'
+      '  下限：$floor（旧基线 $baselineVolume 的 50%）\n'
+      '  非长度整数（不计体积）：${newMeasure.nonContentInt}'
+      '（旧基线 ${baselineMeasure.nonContentInt}）\n'
+      '  ★ 键齐但内容腰斩 = 装配塌陷的典型形态（fixture 失效 / 解析器异常被吞）。\n'
+      '  ★ 该指标是「内容体积（单调代理）」，**不得当作字节数 / token 成本引用**。\n'
+      '  确为有意的语料缩减须经评审并在 .ai/DECISIONS.md 登记；'
+      '确认不设下限时：ALLOW_FLOORLESS_REBUILD=true。',
+    );
+  }
+  print(
+    '[snapshot] 重建下限通过：内容体积（单调代理）$newVolume ≥ 下限 $floor'
+    '（旧基线 $baselineVolume 的 50%）；'
+    '非长度整数（不计体积）${newMeasure.nonContentInt}。',
+  );
+}
+
 void main() {
   test('教学闭环结构化决策快照回归', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -191,6 +364,12 @@ void main() {
     };
 
     if (updating) {
+      // ── 基线非退化判据（T-20261024-15 · 重建分支专属）──────────────
+      // 顺序：F1/F2（纯内存，先拦最明显的塌陷）→ F3（要读旧基线，含 IO 与
+      // 「不可解析」分支）。两者都在 `writeAsStringSync` **之前**。
+      _assertPerCaseNonEmpty(currentCases);
+      _assertVolumeFloor(currentCases, file: file, exists: exists);
+
       // ── 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
       // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
       // ⚠️ 本快照的 `meta.generatedAt` 取当前时间 ⇒ **重建必然改变文件 md5**，
