@@ -16,7 +16,10 @@
 # 用法：bash scripts/_run_flutter_test.sh [flutter test args...]
 #   固定附加：--exclude-tags live,external（可覆盖：再传同参数由 flutter 取后者）
 #   覆盖率：默认 --coverage；快道置 RUN_FLUTTER_TEST_COVERAGE=0 关闭
-# 退出码：透传 flutter test 自身退出码。
+# 退出码：透传 flutter test 自身退出码（0 通过 / 1 失败）。
+#   例外：锁护栏 abort 返回 **75**（`EX_TEMPFAIL`：暂时无法执行，重试即可）。
+#   为什么不是 1：1 表示「测试真的红了」，75 表示「压根没跑」。二者混同会误导归因。
+#   为什么 75 不是「跳过」：门禁只判 rc 是否为 0（gate.sh:261）⇒ 75 记 FAIL，不得归 SKIP。
 # ============================================================
 set -u
 
@@ -25,33 +28,134 @@ set -u
 #    各自收尾都会重写 coverage/ 目录，先跑完的那个会把 lcov 抽走 ——
 #    门禁 2 全绿、门禁 6 却拿不到文件。更糟的是两者互相覆盖，
 #    可能留下**不属于本次运行**的 lcov（查错代码）。
-#    这里用锁文件串行化：拿不到锁就明确拒绝出结论，而不是静默降级。
+#    这里用锁串行化：拿不到锁就明确拒绝出结论，而不是静默降级。
+#
+# ★ T-20261025-08（2026-10-25）：锁由「文件锁」改为「目录锁」，为堵住
+#   「进程在跑却没登记为持锁者」（实测：pid 29620 在跑 flutter test，
+#   锁里却仍是 5805 ⇒ 另一轮看到 5805 已死 ⇒ rm -f + 继续 ⇒ 两个
+#   --coverage 并发）。五条护栏（缺一不算）：
+#     判据 1 锁写入失败必须 abort —— 继续跑等于断言「无人并发」，与事实相反。
+#     判据 2 **写后回读**：owner 内容必须等于自己的 pid，不符即 abort。
+#            本环境实测过 `rc=0 ≠ 落盘`；只有回读比对能区分「写了 / 没写 / 写了一半」。
+#     判据 3 判「被占用」要 pid 存活 **且** 命令行匹配 `_run_flutter_test.sh`。
+#            本机短命进程多、pid 复用真实存在，只看存活会把复用误判成真冲突。
+#     判据 4 「锁内 pid 不存活 ⇒ 自愈」这条路必须保留并走通（只测「不该自愈」= 漏一半）。
+#     判据 5 自愈必须留痕：打旧 pid / 新 pid / 判定依据 —— 否则「自愈」与
+#            「真的拿到锁」在日志上完全同形，事后无法归因。
+#   为什么用 `mkdir` 而不是 `rm -f` + `echo >`：`mkdir` 在 POSIX 上**原子**，
+#   已存在即失败（EEXIST）—— 这正是锁需要的语义，且少一个「rm 与 write 之间」的竞态窗。
+#    ⚠️ 必须 `mkdir` **不带 `-p`**：`mkdir -p` 把「已存在」当成功（rc=0）⇒ 锁静默失效。
+#    ⚠️ 不许换 `mktemp -d`：锁的全部意义是「所有人看同一个位置」，
+#       每次给唯一目录 = 永不冲突 = 根本没有锁。
+#    ⚠️ 不许换 `flock`（跨平台不可用，且本卡边界明令禁止）。
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-LOCK="$ROOT/.flutter_test.lock"
+# 锁落在 outputs/gate/（该目录已被 .gitignore 忽略）：不再污染 git status。
+LOCK="$ROOT/outputs/gate/.lock.d"
+LOCK_OWNER="$LOCK/owner"
+LOCK_STARTED="$(date '+%Y-%m-%dT%H:%M:%S')"
 
-if [ -f "$LOCK" ]; then
-  LOCK_PID="$(cat "$LOCK" 2>/dev/null || echo '')"
-  if [ -n "$LOCK_PID" ] && kill -0 "$LOCK_PID" 2>/dev/null; then
-    echo "[ABORT] 已有 flutter test 在跑（pid=$LOCK_PID，锁 $LOCK）。"
-    echo "        并发跑 --coverage 会互相抽走 coverage/lcov.info，故拒绝并发。"
-    echo "        若确认该进程已死，删掉锁文件后重试：rm -f '$LOCK'"
-    exit 75   # EX_TEMPFAIL：暂时失败，重试即可，区别于测试断言失败
+# 退出码 75 = EX_TEMPFAIL（暂时无法执行，重试即可），区别于测试断言失败（1）。
+#   ⚠️ 门禁侧**不得**把 75 归为 SKIP / 环境跳过 —— 那会新开一条假绿通路
+#   （脚本 abort 了，门禁却显示「这道跳过」，十九道少一道而汇总仍可能全绿）。
+#   现状核对（gate.sh:261）：`if bash scripts/_run_flutter_test.sh > log 2>&1`
+#   只判 rc 是否为 0 ⇒ 75 落 else 分支 ⇒ RC_TEST=1 ⇒ 记 FAIL。**这是必须保持的**。
+
+# 读锁内 pid（首字段）；owner 不可读 / 不存在 ⇒ 输出空串，**不要**猜一个值。
+lock_owner_pid() {
+  local line
+  line="$(head -n 1 "$LOCK_OWNER" 2>/dev/null)"
+  printf '%s' "${line%% *}"
+}
+
+# 统一 abort 出口：75 + 可照抄的清理命令。
+lock_abort() {
+  echo "[ABORT] $1"
+  echo "        锁：$LOCK（owner 记录「pid 启动时刻」）"
+  echo "        确认全机无 flutter test 在跑后清理：rm -rf '$LOCK'"
+  exit 75
+}
+
+acquire_lock() {
+  mkdir -p "$ROOT/outputs/gate" 2>/dev/null \
+    || lock_abort "锁的父目录建不起来（$ROOT/outputs/gate）"
+
+  # 判据 1 的前半：锁**建不起来**（非「被占用」）也必须 abort。
+  if mkdir "$LOCK" 2>/dev/null; then
+    return 0
   fi
-  echo "[WARN] 发现陈旧锁文件（pid=$LOCK_PID 已不存在），自动清理"
-  rm -f "$LOCK"
-fi
+  if [ ! -d "$LOCK" ]; then
+    lock_abort "锁无法建立，且不是「被占用」（$LOCK 存在但不是目录，或父目录不可写）"
+  fi
+
+  # 锁存在 ⇒ 判定持有者。读不出 pid 时**不许**假设无人并发。
+  OLD_LINE="$(head -n 1 "$LOCK_OWNER" 2>/dev/null)"
+  OLD_PID="$(lock_owner_pid)"
+  if [ -z "$OLD_PID" ]; then
+    lock_abort "锁已存在但 owner 不可解析（判定依据：$LOCK_OWNER 缺失或首字段为空）"
+  fi
+  OLD_STARTED="${OLD_LINE#* }"
+  if [ "$OLD_STARTED" = "$OLD_LINE" ]; then OLD_STARTED="未知"; fi
+
+  WHY=""
+  if ! kill -0 "$OLD_PID" 2>/dev/null; then
+    WHY="判据 4：锁内 pid=$OLD_PID 已不存活"
+  else
+    OLD_CMD="$(tr '\0' ' ' < "/proc/$OLD_PID/cmdline" 2>/dev/null)"
+    if [ -z "$OLD_CMD" ]; then
+      lock_abort "pid=$OLD_PID 存活但读不到命令行（/proc 不可用）⇒ 无法区分 pid 复用与真持锁者，拒绝假设无人并发"
+    fi
+    case "$OLD_CMD" in
+      *_run_flutter_test.sh*)
+        echo "[ABORT] 已有 flutter test 在跑（pid=$OLD_PID，启动于 $OLD_STARTED，锁 $LOCK）。"
+        echo "        并发跑 --coverage 会互相抽走 coverage/lcov.info，故拒绝并发。"
+        echo "        判据 3：该 pid 存活**且**命令行匹配 _run_flutter_test.sh ⇒ 判为真持锁者。"
+        echo "        若确认该进程已死，清理锁后重试：rm -rf '$LOCK'"
+        exit 75
+        ;;
+      *)
+        WHY="判据 3：pid=$OLD_PID 存活但命令行不是本脚本（pid 复用）→ $OLD_CMD"
+        ;;
+    esac
+  fi
+
+  # 判据 5：自愈必须留痕（旧 pid / 判定依据 / 新 pid 三样齐全）。
+  echo "[WARN] 陈旧锁自愈：旧 pid=$OLD_PID（启动于 $OLD_STARTED）"
+  echo "       判定依据：$WHY"
+  rm -rf "$LOCK"
+  if mkdir "$LOCK" 2>/dev/null; then
+    echo "[INFO] 自愈后重新持锁：新 pid=$$（旧 pid=$OLD_PID 已清理）"
+    return 0
+  fi
+  if [ ! -d "$LOCK" ]; then
+    lock_abort "自愈后仍然建不起锁（非「被占用」）"
+  fi
+  lock_abort "自愈后重新抢锁失败：另一进程已抢先持锁"
+}
+
+acquire_lock
 
 cleanup_lock() {
   # 只删**自己**拿到的锁：pid 已被新进程接管时不要误删对方的锁。
-  if [ -f "$LOCK" ] && [ "$(cat "$LOCK" 2>/dev/null || echo '')" = "$$" ]; then
-    rm -f "$LOCK"
+  if [ -d "$LOCK" ] && [ "$(lock_owner_pid)" = "$$" ]; then
+    rm -rf "$LOCK"
   fi
 }
 # ★ 2026-09-17 起**不再用 exec** 启动 flutter（理由见文件末尾注释），
 # EXIT trap 因此恢复正常工作；下面这行 trap 保留作兜底，
-# 覆盖「flutter 尚未启动就失败」的路径。
+# 覆盖「flutter 尚未启动就失败」以及「owner 写一半被 Ctrl+C」的路径。
 trap cleanup_lock EXIT INT TERM
-echo "$$" > "$LOCK"
+
+# 判据 1：锁内容写入失败必须 abort（锁目录建好了 ≠ 已登记为持锁者）。
+if ! printf '%s %s\n' "$$" "$LOCK_STARTED" > "$LOCK_OWNER" 2>/dev/null; then
+  rm -rf "$LOCK"
+  lock_abort "锁内容写入失败（锁目录已建立，owner 写不进去）"
+fi
+# 判据 2：写后回读。`rc=0` 只说明系统调用被受理，不说明字节到了盘上。
+READBACK_PID="$(lock_owner_pid)"
+if [ "$READBACK_PID" != "$$" ]; then
+  rm -rf "$LOCK"
+  lock_abort "写后回读不符：期望 pid=$$，实读 '$READBACK_PID'（写入 rc=0 但落盘不是本进程）"
+fi
 
 # 1. 注入 Windows 标准环境变量（仅缺时）
 #    bash 变量名解析限制：PROGRAMFILES(X86) 含括号无法作变量名 → 用 env 命令传。
@@ -80,7 +184,8 @@ if [ "${RUN_FLUTTER_TEST_COVERAGE:-1}" = "0" ]; then
 fi
 # ★ 这里**故意不用 `exec`**（2026-09-17 实测修正）：
 #   旧实现 `exec ... flutter test` 会让 bash 被 flutter 替换进程映像，
-#   于是 EXIT trap 永不触发 ⇒ **每次跑完都在工作区留下一个 .flutter_test.lock**。
+#   于是 EXIT trap 永不触发 ⇒ **每次跑完都在工作区留下一个 .flutter_test.lock**
+#   （T-20261025-08 起锁已迁到 outputs/gate/.lock.d，同一弊病对目录锁成立）。
 #   它靠「下次发现 pid 已死就自愈」才没阻塞，但每次都会：①污染 git status；
 #   ②若该 pid 被系统复用给别的进程，会误报「已有 flutter test 在跑」而拒绝执行
 #     （exit 75），看起来像门禁故障。
