@@ -98,6 +98,39 @@ HITS_BEFORE=0
 export GATE_PROFILE_OVERRIDE="$PROFILE"
 
 T0=$(date +%s)
+
+# ---- P5：本轮**起跑时**的工作树脏度（文件计数，`git status --porcelain -uall`）----
+# 【为什么记这个】runs.jsonl 已有的字段能回答「什么时候 / 多久 / 哪个提交 / 新增几条命中」，
+#   但回答不了「**这条失败对应的树长什么样**」。同一个 head + 同一个 rc，
+#   可能出自一棵干净的树，也可能出自一棵改了 12 个文件的树 —— 后者不可复现。
+#
+# 【为什么在起跑前测】要描述的是「我们基于什么树跑的」。跑完之后测试可能改文件/生成快照，
+#   那时再测，记下的就不是起跑时的状态了。
+#
+# 【为什么是计数不是布尔】布尔脏度「几乎恒为 1」，信息量近零 —— 这个判断本身没错。
+#   但**计数不是布尔**：0 / 3 / 27 能区分「干净树上的失败」与「改到一半的树上的失败」。
+#   这也是字段名必须是 `dirty_count` 而不能缩成 `dirty` 的原因：改名等于把计数偷偷降回布尔。
+#
+# 【为什么落在这里（每轮一行）而不是 hits.jsonl（每道一行）】
+#   hits.jsonl 是 19 行/轮，各跑一次 `git status`（本机实测约 111 ms）合计约 2 s，
+#   而同一轮内这 19 个值**完全相同** ⇒ 重复 19 份，零信息增量。
+#
+# 【读不到写 `-1`】`git status` 失败（例如 index.lock 被占）时 `wc -l` 仍会输出 0，
+#   那样「读不到」会被写成「干净」—— 正是本卡要治的假绿形态。用 -1 做哨兵，
+#   **保持该列始终是整数**（`jq '.dirty_count > 0'` 这类查询不会因类型混用而炸），
+#   同时 0 与 -1 永不混淆。
+DIRTY_COUNT=-1
+if DIRTY_STATUS="$(git status --porcelain -uall 2>/dev/null)"; then
+  if [ -z "$DIRTY_STATUS" ]; then
+    DIRTY_COUNT=0
+  else
+    DIRTY_COUNT=0
+    while IFS= read -r _dirty_line; do
+      DIRTY_COUNT=$((DIRTY_COUNT + 1))
+    done <<< "$DIRTY_STATUS"
+  fi
+fi
+
 "${CMD[@]}"
 RC=$?
 T1=$(date +%s)
@@ -108,8 +141,8 @@ HITS_AFTER=$HITS_BEFORE
 HITS_ADDED=$((HITS_AFTER - HITS_BEFORE))
 
 HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-printf '{"ts":"%s","profile":"%s","rc":%d,"dur_s":%d,"head":"%s","hits_added":%d}\n' \
-  "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$PROFILE" "$RC" "$DUR" "$HEAD" "$HITS_ADDED" \
+printf '{"ts":"%s","profile":"%s","rc":%d,"dur_s":%d,"head":"%s","hits_added":%d,"dirty_count":%d}\n' \
+  "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$PROFILE" "$RC" "$DUR" "$HEAD" "$HITS_ADDED" "$DIRTY_COUNT" \
   >> "$RUNS_LOG" 2>/dev/null || true
 
 echo "--------------------------------------------------"
