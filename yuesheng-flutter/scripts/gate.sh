@@ -1034,23 +1034,31 @@ elif [ ! -f "$ROOT/scripts/_selftest_gate_evidence.py" ]; then
   echo "SKIP: (NOT EXECUTED) selftest script missing" > "$SELFTEST_EVID_LOG"
 else
   if "$PY_BIN" scripts/_selftest_gate_evidence.py > "$SELFTEST_EVID_LOG" 2>&1; then
-    SELFTEST_EVID_VERDICT="PASS"
-    # ★ 本行只陈述 rc=0 这个**事实**，不陈述「判据已通过元探针验证」那种**结论**。
+    SELFTEST_EVID_VERDICT="PASS"          # ← 变量不动：`:1121` 汇总行读它，表达的是 rc 判定
+    # ★★ 前缀是 `[INFO]` 而不是 `[PASS]`（2026-10-25 改判，主理人裁定 + 独立复核机器侧核查）：
+    #   ① `[PASS]` 在全套判据里的既定含义是「**该道判据判定通过并计入 tally**」
+    #      （见本文件 `:252` 的 `emit "[PASS] $name"`）。而本层**不计入十九道、也不阻断**。
+    #      两个语义共用一个前缀 —— 这**就是**「措辞过度断言」的生成机制：
+    #      不是这次写错，是那个前缀一直在邀请人这么写。
+    #   ② 机器侧核查：全仓没有任何脚本用 `grep` 统计 `[PASS]` 行；
+    #      `SELFTEST_EVID_VERDICT` 只有 `:1037` 赋值、`:1121` 读取 ⇒ 改前缀零连带风险。
+    # ★ 断言只保留**可观测**的一件事：rc=0。不陈述「判据已通过元探针验证」那种结论。
     #   依据：变异审计 m10/m17 实测——自测层被强制绿、或某条探针被删掉时，
-    #   上一版这行输出**一字不变**。把结论写进输出，就是在没有证据的地方盖了章。
-    echo "  [PASS] 证据链判据自测：35 条探针 + 清单自断言（条数与名称）全部符合预期"
+    #   上一版那行输出**一字不变**。把结论写进输出，就是在没有证据的地方盖了章。
+    echo "  [INFO] 证据链判据自测 rc=0（元探针 S7/S8 仅覆盖 P1，不构成「非恒绿」证明）"
     # ★ 覆盖面边界必须自己说出来（别指望读者去翻脚本）：
     echo "         覆盖面边界：S7/S8 元探针**只覆盖 P1**（ev_p1_summary），能抓的是「P1 单点恒绿 /"
-    echo "         单点恒红」。P2/P3/P4a/P4b/P5 **没有**对应元探针；**本自测层自身**也没有"
-    echo "         （probe() 若被改成恒真，本脚本发现不了）—— 该残余风险已在脚本头部登记为 R2，"
-    echo "         不是待办。本行唯一断言：上面那个 rc=0 是真的。"
+    echo "         单点恒红」；P2/P3/P4a/P4b/P5 **没有**对应元探针。"
+    echo "         自测层自身的兜底是脚本内 _probe_can_report_failure() 哨兵（probe() 恒真 ⇒ rc=1）；"
+    echo "         残余风险由此降级为「**必须同时改坏 probe() 与哨兵**才会静默」，见脚本头部 R2。"
   else
     SELFTEST_EVID_VERDICT="WARN"
-    # 三类失败分开喊，因为它们的处置完全不同（不得共用同一个输出位置）：
+    # 各类失败分开喊，因为它们的处置完全不同（不得共用同一个输出位置）：
     echo "  [WARN] 证据链判据自测失败——详见 $SELFTEST_EVID_LOG"
     echo "         可能是：① 某条判据退化（恒绿/恒红/归因错）② 清单自断言不通过（有人"
-    echo "         增删探针但没同笔改 EXPECTED_PROBE_*）③ 脚本自身报错。"
-    echo "         三种都不许当「测试挂了」略过：前两种意味着判据层已不可信。"
+    echo "         增删探针但没同笔改 EXPECTED_PROBE_*）③ 脚本自身报错"
+    echo "         ④ 哨兵报警（probe() 已不能报告失败 ⇒ 本次「全绿」无意义）。"
+    echo "         四种都不许当「测试挂了」略过：除 ③ 外都意味着判据层已不可信。"
     tail -n 20 "$SELFTEST_EVID_LOG"
   fi
 fi

@@ -20,23 +20,31 @@
 【退出码】0 = 全部探针符合预期；1 = 至少一条不符（并打印失败探针名）。
   挂在 gate.sh 的约定层守卫上，**WARN 级**：自测挂了不该让门禁变红，但必须喊出来。
 
-【已知残余风险 R2 —— **这不是待办，是一个作过的决定**（2026-10-25 立）】
-  本脚本**没有**能力发现「自身被改坏」的两种形态：
-    ① `probe()` 被改成恒真（无条件 `ok=True`）⇒ 所有探针都报 PASS，退出码仍是 0；
-    ② 探针被删剩一两条，而有人顺手把 EXPECTED_PROBE_COUNT / NAMES 改成迁就它。
-  形态与检测边界：下面的 R3 自断言只能把「实跑条数/名称」与**本文件内的常量**对齐 ——
-  常量与实现**一起**被改时它对不出来；`probe()` 若恒真，连「失败」这个输入都收不到。
-  真要防需要什么成本：把本文件的 sha256 与探针清单存到**文件之外**，由独立脚本比对。
-  但那只防「文件被改」，**防不了「文件本来就这么写」** —— 自我指涉的判据在这条路上有硬上限。
-  真正的出口是**异体复核**：独立成员跑变异测试（本卡一直由 VRS 独立复核，就是这个原因）。
-  ⇒ **后来者不许把这一段当待办去做。** 它是在本仓规模下作过的权衡：
-    再加一层「自测的自测」会把成本推得比收益高，而且仍然无法闭合。
-    要推翻，请先推翻上面这个权衡本身。
+【残余风险 R2 —— 已从「不修」改为「加哨兵兜底」（2026-10-25 改判）】
+  原始担心：本脚本发现不了「自身被改坏」，尤其是 `probe()` 被改成恒真（= 变异 m10）
+  ⇒ 所有探针都报 PASS，退出码仍是 0。
+  ⚠️ 我曾据此写下「任何自测都无法自证『自己没被强制绿』」，**那句话过强**。
+     独立复核用十来行推翻了它：见下面的 `_probe_can_report_failure()` ——
+     不看 `bad`（那是从 results 算出来的，probe() 恒真时恒空），
+     而是**塞一条已知必失败的探针、直接看它落进去是不是 False**。
+  现在这套组合能抓的与抓不到的，写清楚：
+    · 能抓：`probe()` 被改成恒真 ⇒ 哨兵返回 False ⇒ 汇总前 rc=1（**已实测**）。
+    · 能抓：探针被删/改名 ⇒ R3 的条数 + 名称清单自断言 ⇒ rc=1（**已实测**）。
+    · 抓不到：**`probe()` 与 `_probe_can_report_failure()` 被同时改坏**。
+      这是有意的：兜底与本体不同源就只能做到这一步，再往上加就是自指涉递归。
+      ⇒ 残余风险由此降级为「**必须同时改两处才会静默**」。
+    · 抓不到：有人把 EXPECTED_PROBE_COUNT/NAMES 一并改成迁就「探针被删剩几条」。
+      外部 sha256 基线只能防「文件被改」，防不了「文件本来就这么写」；
+      真正的出口仍是**异体复核**（独立成员跑变异测试，本卡一直由 VRS 做就是这个原因）。
+  ⇒ **后来者不许把这一段当待办去做**：它是一个作过的决定（先判不修、后被推翻、改成低
+    成本兜底）。要推翻请先指出哨兵与本体在哪条路上共因。
 
 【改探针的规矩】增删/改名任何一条探针，**必须同笔改 EXPECTED_PROBE_COUNT 与
   EXPECTED_PROBE_NAMES**，否则自测会红。这是有意的：让它红，好过让它静默地少测几条。
 """
 
+import contextlib
+import io
 import os
 import subprocess
 import sys
@@ -141,6 +149,29 @@ def probe(name, ok, detail):
     print("/ %-6s %-28s %s" % (mark, name, detail if ok or VERBOSE else detail))
     if VERBOSE and ok:
         pass
+
+
+def _probe_can_report_failure():
+    """哨兵（R2 的兜底）：直接验 `probe()` 还能不能**报告失败**。
+
+    【为什么不复用 results 汇总】`bad` 是**从 results 算出来的**。若 `probe()` 被改成
+      `ok = True`，results 里就全是 True，`bad` 恒空 —— 让嫌疑人自己作证，永远判无罪。
+      这里改成：往 results 里塞一条**已知必失败**的探针，直接看它落进去之后是不是 `False`。
+    【为什么不经任何别的环节】只依赖 `results` 的**追加**与**末元素取值**这两个动作，
+      不依赖标记、不依赖 bad、不依赖退出码计算 ⇒ 不会被同一条篡改带走。
+    【不污染汇总】末尾 `del results[n0:]` 把它自己抹掉；`EXPECTED_PROBE_COUNT` 不受影响。
+    【输出不污染】把探针自身的打印重定向掉，否则每次正常跑都会多一行 `FAIL __SANITY__`，
+      下一个人会去查一个不存在的问题。
+    【能变红（已实测）】把 `probe()` 里的 `bool(ok)` 改成 `True`（= 变异审计的 m10）
+      ⇒ `results[-1][1] is False` 为 False ⇒ 本函数返回 False ⇒ 汇总前直接 rc=1。
+    """
+    n0 = len(results)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        probe("__SANITY__", False, "哨兵：本行必须被判 FAIL（不参与汇总）")
+    ok = (len(results) == n0 + 1) and (results[-1][1] is False)
+    del results[n0:]
+    return ok
 
 
 def self_check_probe_manifest(names):
@@ -430,6 +461,16 @@ def main():
     else:
         print("/ INFO   真样本 outputs/gate/test.txt 不存在 ⇒ 跳过（信息性）")
 
+    # ---------------- 哨兵（R2 的兜底）：probe() 还能不能报告失败 ----------------
+    # ⚠️ 必须放在**汇总之前**、且**不经 probe()** —— 否则它自己也会被同一条篡改带走
+    #    （用 `bad` 判自检 = 让嫌疑人自己作证：probe() 恒真时 bad 恒空）。
+    if not _probe_can_report_failure():
+        print("-" * 60)
+        print("FAIL 自检哨兵：probe() 已不能报告失败 ⇒ 本次「全绿」无意义，不计入通过")
+        print("     ⇒ 处置：先修 probe()，或改用与 probe() 无共因的检查；")
+        print("        **不要**把本行当噪声跳过 —— 它意味着上面每一行 PASS 都不可信。")
+        return 1
+
     # ---------------- 汇总 ----------------
     bad = [n for n, ok, _ in results if not ok]
     names = [n for n, _, _ in results]
@@ -452,7 +493,8 @@ def main():
     if bad or manifest:
         return 1
     print("OK 全部探针符合预期（S7/S8 元探针**只**覆盖 P1：能抓 P1 单点恒绿 / 单点恒红；"
-          "不覆盖 P2–P5，也不覆盖本自测层自身 —— 见文件头 R2）")
+          "不覆盖 P2–P5。自测层自身由 _probe_can_report_failure() 哨兵兜底，"
+          "残余风险见文件头 R2：须同时改坏 probe() 与哨兵才会静默）")
     return 0
 
 
