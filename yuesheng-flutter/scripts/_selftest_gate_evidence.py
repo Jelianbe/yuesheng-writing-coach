@@ -19,6 +19,22 @@
 
 【退出码】0 = 全部探针符合预期；1 = 至少一条不符（并打印失败探针名）。
   挂在 gate.sh 的约定层守卫上，**WARN 级**：自测挂了不该让门禁变红，但必须喊出来。
+
+【已知残余风险 R2 —— **这不是待办，是一个作过的决定**（2026-10-25 立）】
+  本脚本**没有**能力发现「自身被改坏」的两种形态：
+    ① `probe()` 被改成恒真（无条件 `ok=True`）⇒ 所有探针都报 PASS，退出码仍是 0；
+    ② 探针被删剩一两条，而有人顺手把 EXPECTED_PROBE_COUNT / NAMES 改成迁就它。
+  形态与检测边界：下面的 R3 自断言只能把「实跑条数/名称」与**本文件内的常量**对齐 ——
+  常量与实现**一起**被改时它对不出来；`probe()` 若恒真，连「失败」这个输入都收不到。
+  真要防需要什么成本：把本文件的 sha256 与探针清单存到**文件之外**，由独立脚本比对。
+  但那只防「文件被改」，**防不了「文件本来就这么写」** —— 自我指涉的判据在这条路上有硬上限。
+  真正的出口是**异体复核**：独立成员跑变异测试（本卡一直由 VRS 独立复核，就是这个原因）。
+  ⇒ **后来者不许把这一段当待办去做。** 它是在本仓规模下作过的权衡：
+    再加一层「自测的自测」会把成本推得比收益高，而且仍然无法闭合。
+    要推翻，请先推翻上面这个权衡本身。
+
+【改探针的规矩】增删/改名任何一条探针，**必须同笔改 EXPECTED_PROBE_COUNT 与
+  EXPECTED_PROBE_NAMES**，否则自测会红。这是有意的：让它红，好过让它静默地少测几条。
 """
 
 import os
@@ -31,6 +47,53 @@ LIB = os.path.join(HERE, "lib_gate_evidence.sh")
 ROOT = os.path.dirname(HERE)
 
 VERBOSE = "-v" in sys.argv or "--verbose" in sys.argv
+
+# ---------------- 期望的探针清单（R3 自断言的锚）----------------
+# 【为什么要有它】删掉一条探针、或把某个 `probe(...)` 注释掉，只要剩下的都通过，
+#   输出与「全过」在外观上**一字不差** —— 「覆盖变少」与「覆盖完好」同形。
+#   实测过的反例：把 S7 元探针整条注释掉，上一版仍报「探针 34 条：通过 34 / 失败 0」且 rc=0。
+# 【为什么不止断言条数】删一条 + 加一条 ⇒ **条数不变、覆盖已经变了**。条数断言抓不到。
+#   ⇒ 必须同时比对**名称集合**。
+# 【常量怎么来的】不是估的：第 6 笔删掉 S6 之后实测
+#   `grep -cE '^[[:space:]]+probe\(' scripts/_selftest_gate_evidence.py` = 35
+EXPECTED_PROBE_COUNT = 35
+EXPECTED_PROBE_NAMES = (
+    "S0-green",
+    "S1-no-summary",
+    "S1b-tilde",
+    "S1b2-no-tilde",
+    "S1c-failed",
+    "S1d-trailing-noise",
+    "S2b-higher",
+    "S2-lower",
+    "S2c-equal",
+    "S2d-no-baseline",
+    "S2e-bad-provenance",
+    "S2f-unparseable",
+    "S2g-update-env",
+    "S3-write-error",
+    "S3a-clean",
+    "S3b-false-positive",
+    "S4a-stale",
+    "S4b-same-second",
+    "S4b2-newer",
+    "S4c-missing",
+    "S5-unknown",
+    "S5b-empty",
+    "S5c-value",
+    "S11-missing-state",
+    "S11b-empty-state",
+    "S11c-crlf",
+    "S9-tag-p1-fail",
+    "S9b-tag-p2-fail",
+    "S9c-tag-p3-fail",
+    "S9d-tag-p2-na",
+    "S10-all-green",
+    "S10b-only-p1",
+    "S10c-missing-log",
+    "S7-meta-not-always-green",
+    "S8-meta-not-always-red",
+)
 
 # flutter test 汇总行样本（真实形态，取自 2026-10-25 全绿轮）：
 #   05:04 +5295 ~3: All tests passed!
@@ -78,6 +141,31 @@ def probe(name, ok, detail):
     print("/ %-6s %-28s %s" % (mark, name, detail if ok or VERBOSE else detail))
     if VERBOSE and ok:
         pass
+
+
+def self_check_probe_manifest(names):
+    """R3：把「实跑的探针名字」与 EXPECTED_PROBE_* 对齐。返回问题列表（空 = 通过）。
+
+    ★ 它自己**不**计入探针条数：计入的话，「删一条探针」会同时减少一条实跑并增加
+      一条自断言 ⇒ 条数恰好不变，自指涉地把断言弄废。所以它单独打一行。
+    【为什么能变红（已实测，不是推理）】
+      · 注释掉任意一条 probe(...) ⇒ 「条数不符 34 ≠ 35」+「少了一条：<名字>」
+      · 注释掉 S7 ⇒ 「少了一条：S7-meta-not-always-green」
+    """
+    problems = []
+    if len(names) != EXPECTED_PROBE_COUNT:
+        problems.append("条数不符：实跑 %d 条 / 期望 %d 条"
+                        % (len(names), EXPECTED_PROBE_COUNT))
+    dup = [n for n in sorted(set(names)) if names.count(n) > 1]
+    if dup:
+        problems.append("探针名重复：%s" % ", ".join(dup))
+    missing = [n for n in EXPECTED_PROBE_NAMES if n not in names]
+    if missing:
+        problems.append("少了一条：%s" % ", ".join(missing))
+    extra = [n for n in names if n not in EXPECTED_PROBE_NAMES]
+    if extra:
+        problems.append("多了一条（不在期望清单里）：%s" % ", ".join(extra))
+    return problems
 
 
 def write(path, text):
@@ -344,13 +432,27 @@ def main():
 
     # ---------------- 汇总 ----------------
     bad = [n for n, ok, _ in results if not ok]
+    names = [n for n, _, _ in results]
+    manifest = self_check_probe_manifest(names)
     print("-" * 60)
     print("探针 %d 条：通过 %d / 失败 %d" % (len(results), len(results) - len(bad), len(bad)))
+    print("清单自断言（R3）：%s"
+          % ("不通过" if manifest
+             else "通过（条数 %d / 名称 %d 项均与常量一致）"
+                  % (EXPECTED_PROBE_COUNT, len(EXPECTED_PROBE_NAMES))))
+    if manifest:
+        for p in manifest:
+            print("[FAIL] 探针清单自断言：%s" % p)
+        print("⇒ 实跑清单与 EXPECTED_PROBE_* 不一致。**先别改常量** ——")
+        print("   先确认去掉/加上的那条是真不需要了，再同笔改常量；")
+        print("   顺手改常量等于把「覆盖被缩小」这件事改成了「符合预期」。")
     if bad:
         print("失败探针：%s" % ", ".join(bad))
         print("⇒ 判据可能已退化（恒绿/恒红/归因错误）。这不是「测试挂了」，是**判据坏了**。")
+    if bad or manifest:
         return 1
-    print("OK 全部探针符合预期（含 S7/S8 元探针：判据既非恒绿也非恒红）")
+    print("OK 全部探针符合预期（S7/S8 元探针**只**覆盖 P1：能抓 P1 单点恒绿 / 单点恒红；"
+          "不覆盖 P2–P5，也不覆盖本自测层自身 —— 见文件头 R2）")
     return 0
 
 
