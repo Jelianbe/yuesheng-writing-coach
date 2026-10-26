@@ -242,6 +242,31 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   方向 = **删除字符**（消除同一份 prompt 内「例外」与退化集「片内不可判」的
   互斥身份，卡 §一；非新增预算）。
 
+· 2026-10-26 第十七次（T-20261025-03 B3b-1 · 10 条例外行「须指认」改写 · 舰长已批，
+  报批稿 `.ai/reports/2026-10-26-报批稿-B3b1-10条须指认.md` §2，归类**新增类**）：
+  **常量级两键各 +88**（kChunkSystemPrompt 5470→5558 ·
+  chunkExceptionGuideBlock 2452→2540）、**kDiagnosisProtocolSuffix +0**（977 不变、
+  fnv 亦不变）。**REDLINE 三组 / 对照组 7 组 / BYPASS 三键 / USER_FACE 一键全部 +0**
+  —— chunk system prompt 只进分块链（`progressive_diagnosis.dart:1355` 的
+  analyzeChunk），不在 `buildSystemPromptV2` 产物与 chat_service 消息序列计量面内
+  （6 份快照实测：含 `Chunk` 键名的仅 `prompt_const_anchor.json`；例外表正文
+  `例外情况指引` / `上面未列出的症候` 在 6 份快照里 **0 命中** —— 钉的是 len+fnv
+  指纹，不是文本，故「只 grep 正文」会误判为无影响）。
+  逐键对账（10 条 old→new，不含换行）：P008 82→82 (+0) · P023 82→77 (−5) ·
+  P024 77→87 (+10) · P025 72→100 (+28) · P026 76→70 (−6) · P027 51→69 (+18) ·
+  P028 89→103 (+14) · P030 68→75 (+7) · P031 71→82 (+11) · P038 81→92 (+11)
+  ⇒ 10 条合计 749→837 = **+88**，与两键实测 Δ 逐位一致。
+  两键同增同值互证：fnv 468fb21c18aae951→7335b37c4e8212d4 /
+  342437de83973c2d→4be0415a38d9f824（`$_kChunkExceptionGuide` 在装配式
+  `progressive_diagnosis.dart:580` 只出现 1 次）。
+  meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+  （10 条均为原位单行替换，行数不动）。
+  ⚠️ 报批稿 §2 合计行写「old 752 / new 840」——按其自身逐条值相加应为 749 / 837
+  （两行各多算 3、方向相同 ⇒ Δ +88 不受影响）；一律以写模式运行时打印为准。
+  方向 = **新增字符**（例外由「场景清单」改为「须指认 + 指不出即不成立」，使豁免
+  附带可核位置；净增 88 落在批一a 释放的 92 额度内，且新值 2540 仍低于批一a
+  之前的在产实测 2544 ⇒ 未越过任何历史在产水平）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -632,9 +657,24 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    舰长 2026-10-25 00:33「全批」授权 `DECISIONS §4-263`，修正类）——57+33=90
 #    字符 + 2 换行 = −92，两键同减同值互证；逐键对账见头注「红线沿革」第十六次。
 #    ⚠️ 卡 §三 预期 5472/2454（按 −90 算）吞了 2 个换行，以运行时打印 −92 为准。
+# ★ 2026-10-26 第十七次重贴实测值（kChunkSystemPrompt 5470→5558 +88 ·
+#    chunkExceptionGuideBlock 2452→2540 +88；suffix 977 不动）：
+#    方向 = T-20261025-03 B3b-1「10 条须指认改写」（`_kChunkExceptionGuide`，
+#    舰长已批 · 报批稿 `.ai/reports/2026-10-26-报批稿-B3b1-10条须指认.md` §2），
+#    归类**新增类**：10 条例外行由「场景清单」改为「须指认 + 指不出即不成立」。
+#    两键同增同值互证（装配式 `$_kChunkExceptionGuide` 在
+#    `progressive_diagnosis.dart:580` 只出现 1 次，两侧分隔符固定）。
+#    逐键对账（old→new，不含换行）：P008 82→82 (+0) · P023 82→77 (−5) ·
+#    P024 77→87 (+10) · P025 72→100 (+28) · P026 76→70 (−6) · P027 51→69 (+18) ·
+#    P028 89→103 (+14) · P030 68→75 (+7) · P031 71→82 (+11) · P038 81→92 (+11)
+#    ⇒ 10 条合计 749→837 = **+88**，与两键实测 Δ 逐位一致。
+#    ⚠️ 报批稿 §2 合计行写「old 752 / new 840」，按其自身逐条值相加应为
+#    749 / 837（两行各多算 3，方向相同 ⇒ Δ +88 不受影响）；以运行时打印为准。
+#    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+#    （10 条均为原位单行替换，行数不动）。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5470, '468fb21c18aae951'),
-    'chunkExceptionGuideBlock': (2452, '342437de83973c2d'),
+    'kChunkSystemPrompt': (5558, '7335b37c4e8212d4'),
+    'chunkExceptionGuideBlock': (2540, '4be0415a38d9f824'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 
