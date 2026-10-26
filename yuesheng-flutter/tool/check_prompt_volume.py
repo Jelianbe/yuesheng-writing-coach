@@ -267,6 +267,31 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   附带可核位置；净增 88 落在批一a 释放的 92 额度内，且新值 2540 仍低于批一a
   之前的在产实测 2544 ⇒ 未越过任何历史在产水平）。
 
+· 2026-10-26 第十八次（T-20261025-22 P003 原理落实 · 舰长已批，报批稿
+  `.ai/reports/2026-10-26-报批稿-T22-P003原理落实.md` §2，归类**新增类**）：
+  **常量级两键各 +196**（kChunkSystemPrompt 5558→5754 ·
+  chunkExceptionGuideBlock 2540→2736）、**kDiagnosisProtocolSuffix +0**（977 不变、
+  fnv 亦不变）。**REDLINE 三组 / 对照组 7 组 / BYPASS 三键 / USER_FACE 一键全部 +0**
+  —— chunk system prompt 只进分块链（`progressive_diagnosis.dart` 的 analyzeChunk），
+  不在 `buildSystemPromptV2` 产物与 chat_service 消息序列计量面内。
+  逐键对账（单行换行前后不计）：`:409` old 115 字符 → new 311 字符 = **+196**，
+  与两键实测 Δ 逐位一致（2540+196=2736 / 5558+196=5754，取自重冻写模式运行时
+  打印值，非预估）。
+  两键同增同值互证：fnv 7335b37c4e8212d4→764eb55cd9730fc9 /
+  4be0415a38d9f824→b6b1a9f4eb405fd（`$_kChunkExceptionGuide` 在装配式
+  `progressive_diagnosis.dart:580` 只出现 1 次，两侧分隔符固定）。
+  meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+  （原位单行替换，文件行数 1457 前后不变）。
+  ⚠️ **本批是真实提额，不是额度回收**：guide new 2736 越过历史在产峰值 2544
+  （+192）；Δ +196 亦超 B3b-1 §6 的 92 额度上限（超上端 104）⇒ 已按报批稿 §3.3
+  重新裁定后施工。
+  ⚠️ **提额在门禁上不响**：`CONST_REDLINE` 无 `pin == actual` 断言 ⇒ 钉表被放宽
+  1 时 violations 仍为 0。本批靠 T11 人工核对 + 逐键对账兜底；缺口由
+  `T-20261026-01` 跟踪。
+  方向 = **新增字符**（例外行由「场景清单」改为「首问置顶 + 三原理须指认 + 指不出
+  即不成立 + 有标记/本窗全知仍困惑则仍判漂移」，把手册 `:221`/`:223` 三原理投影
+  进分块链，消除两链路判据分叉；零新增症候、零题材词、行数不动）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -672,9 +697,23 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    749 / 837（两行各多算 3，方向相同 ⇒ Δ +88 不受影响）；以运行时打印为准。
 #    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
 #    （10 条均为原位单行替换，行数不动）。
+# ★ 2026-10-26 第十八次重贴实测值（kChunkSystemPrompt 5558→5754 +196 ·
+#    chunkExceptionGuideBlock 2540→2736 +196；suffix 977 不动）：
+#    方向 = T-20261025-22 P003 原理落实（`:409` 单行，舰长已批 · 报批稿
+#    `.ai/reports/2026-10-26-报批稿-T22-P003原理落实.md` §2），归类**新增类**：
+#    例外行由「场景清单」改为「首问置顶 + 三原理须指认 + 指不出即不成立 +
+#    有标记/本窗全知仍困惑则仍判漂移」，把手册 `:221`/`:223` 三原理投影进分块链。
+#    两键同增同值互证（装配式 `$_kChunkExceptionGuide` 在
+#    `progressive_diagnosis.dart:580` 只出现 1 次，两侧分隔符固定）。
+#    逐键对账：`:409` old 115 字符 → new 311 字符 = **+196**，与两键实测 Δ 逐位一致。
+#    ⚠️ fnv 照抄运行时打印串（`toRadixString(16)` **不补零**）⇒
+#    chunkExceptionGuideBlock 打印 15 位 `b6b1a9f4eb405fd`
+#    （真值 0x0b6b1a9f4eb405fd）；补零会让 fnv 比对恒红。
+#    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+#    （原位单行替换，行数不动）。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5558, '7335b37c4e8212d4'),
-    'chunkExceptionGuideBlock': (2540, '4be0415a38d9f824'),
+    'kChunkSystemPrompt': (5754, '764eb55cd9730fc9'),
+    'chunkExceptionGuideBlock': (2736, 'b6b1a9f4eb405fd'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 
