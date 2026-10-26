@@ -223,6 +223,25 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   不留余量」口径下钉。锚点重冻（`UPDATE_SNAPSHOTS=true` 独立命令）与本红线
   重钉**同批完成**：上方读数是重冻后从快照实测，不是推算。
 
+· 2026-10-26 第十六次（T-20261025-05 批一a · 删 P011/P012 两条例外行 · 舰长
+  2026-10-25 00:33「全批」授权 `DECISIONS §4-263`，归类**修正类**（消除互斥）
+  而非新增类）：**常量级两键各 −92**（kChunkSystemPrompt 5562→5470 ·
+  chunkExceptionGuideBlock 2544→2452）、**kDiagnosisProtocolSuffix +0**
+  （977 不变、fnv 亦不变）。**REDLINE 三组 / 对照组 7 组 / BYPASS 三键 /
+  USER_FACE 一键全部 +0** —— chunk system prompt 只进分块链
+  （`progressive_diagnosis.dart` 的 analyzeChunk），不在 `buildSystemPromptV2`
+  产物与 chat_service 消息序列计量面内（6 份快照 grep 实测：chunk prompt
+  特征串零命中）。
+  逐键对账：两行原文 57 + 33 = 90 字符 + 2 个行尾换行 = **−92**（两键同减
+  同值互证：fnv 6964d2b095cc197b→468fb21c18aae951 /
+  11cd34270acab7f→342437de83973c2d；`prompt_const_anchor.json` 同批重冻，
+  meta exceptionIds 33→31 · exceptionLineCount 33→31 · guideLineCount
+  36→34，P033 仍在册）。
+  ⚠️ 任务卡 §三 预期值记 5472 / 2454（按 −90 算）——那是把 2 个换行吞进了
+  90 里；实测 −92。按卡面纪律以**运行时打印值**为准，预期值不当读数用。
+  方向 = **删除字符**（消除同一份 prompt 内「例外」与退化集「片内不可判」的
+  互斥身份，卡 §一；非新增预算）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -607,9 +626,15 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #       ⚠️ 任务卡事实表称 suffix 为 1,157 字符，**实测为 977**（两路独立测量：
 #          Dart 运行时 `String.length` + 源码字面量拼接解析，均 977；git 史
 #          613 → 826 → 977 三档，从未出现 1,157）⇒ 以实测钉值，卡内数字待订正。
+# ★ 2026-10-26 第十六次重贴实测值（kChunkSystemPrompt 5562→5470 −92 ·
+#    chunkExceptionGuideBlock 2544→2452 −92；suffix 977 不动）：
+#    方向 = T-20261025-05 批一a 删 P011/P012 两条例外行（`_kChunkExceptionGuide`，
+#    舰长 2026-10-25 00:33「全批」授权 `DECISIONS §4-263`，修正类）——57+33=90
+#    字符 + 2 换行 = −92，两键同减同值互证；逐键对账见头注「红线沿革」第十六次。
+#    ⚠️ 卡 §三 预期 5472/2454（按 −90 算）吞了 2 个换行，以运行时打印 −92 为准。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5562, '6964d2b095cc197b'),
-    'chunkExceptionGuideBlock': (2544, '11cd34270acab7f'),
+    'kChunkSystemPrompt': (5470, '468fb21c18aae951'),
+    'chunkExceptionGuideBlock': (2452, '342437de83973c2d'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 
