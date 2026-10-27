@@ -41,9 +41,10 @@ import argparse
 import datetime
 import json
 import os
+import re
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 
 
 class C:
@@ -142,6 +143,193 @@ def _count_guard(expect: Optional[int], actual: int) -> Optional[str]:
             f"-- a --t2 rule was dropped or added; the gate would guard fewer files")
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 逻辑面可达性读数（T-20261024-13 · C-4）
+#
+# ★ 定性：**读数，不是判据** —— 不设条数基线、不判红、不新增门禁道数。
+#   本段挂在门禁 6（覆盖率）内执行，因为它回答的是同一个问题：
+#   「哪些代码从测试出发根本走不到」。
+#
+# ★ 口径（C-1 报告 §1.1 两步法 + §3.3 修正）：
+#   ① **符号级**，不按文件名同名（同名口径会把「19 个变体测试」记成「1 个文件没测试」）；
+#   ② 公开符号 = 顶层 class/enum/mixin/extension/typedef + 顶层函数 + 顶层 final/const；
+#   ③ 可达 = 测试文件 import 的 lib 文件，沿 lib 内部 import 边做**传递闭包**。
+#
+# ★★ 效力边界（不许夸大，读之前先读这三条）：
+#   1. **A 零可达是上界不是下界**：import 可达 ≠ 被执行、更 ≠ 被断言。
+#      所以 A 为空**不能**读成「全覆盖」。
+#   2. **B 是软读数**：符号在 test/ 零字面命中，但仍可能被消费侧间接断言
+#      （C-1 实测 7/16 条属这一类）⇒ B 里每一条都必须手工追消费链才算缺口。
+#   3. **空扫不是通过**：分母为 0 或 test 文件为 0 ⇒ 判环境错误（rc=2），
+#      与「lcov 缺失 / 解析 0 记录」同族纪律。否则判据坏掉时会静默全绿。
+# ─────────────────────────────────────────────────────────────────────────────
+
+LOGIC_DIRS: Tuple[str, ...] = (
+    "lib/services",
+    "lib/providers",
+    "lib/utils",
+    "lib/data",
+    "lib/config",
+)
+
+# 生成物 / 非手写文件：不作为读数对象（它们的覆盖由生成源负责）
+_GENERATED_SUFFIXES: Tuple[str, ...] = (".g.dart", ".freezed.dart", ".gr.dart")
+
+_IMPORT_RE = re.compile(
+    r"""^\s*(?:import|export)\s+['"]([^'"]+)['"]""", re.MULTILINE)
+# ★ part / part of 必须一起算边，否则分片文件会被整片误判成「零可达」。
+#   实测（2026-10-27）：不加这两条时 A 读数 51 个，而 lib/ 下 `^part of` 文件恰好
+#   也是 51 个 ⇒ 读数 100% 是 part 假象，是坏尺子而不是缺口。
+_PART_RE = re.compile(r"""^\s*part\s+['"]([^'"]+)['"]""", re.MULTILINE)
+_PART_OF_RE = re.compile(r"""^\s*part\s+of\s+['"]([^'"]+)['"]""", re.MULTILINE)
+_DECL_RE = re.compile(
+    r"^(?:abstract\s+|sealed\s+|base\s+|final\s+)*"
+    r"(?:class|enum|mixin|extension|typedef)\s+([A-Za-z_]\w*)", re.MULTILINE)
+_TOPFN_RE = re.compile(
+    r"^(?:Future<[^\n]*?>|void|bool|int|double|num|String|"
+    r"List<[^\n]*?>|Map<[^\n]*?>|Set<[^\n]*?>|[A-Z]\w*\??)"
+    r"\s+([a-z_]\w*)\s*[<(]", re.MULTILINE)
+_CONST_RE = re.compile(
+    r"^(?:final|const)\s+[^=\n;]+?\s+([A-Za-z_]\w*)\s*=", re.MULTILINE)
+_IDENT_RE = re.compile(r"[A-Za-z_]\w*")
+
+
+def _walk_dart(root: str) -> List[str]:
+    out: List[str] = []
+    for base, _dirs, files in os.walk(root):
+        for name in files:
+            if name.endswith(".dart"):
+                out.append(os.path.join(base, name).replace("\\", "/"))
+    return sorted(out)
+
+
+def _read(path: str) -> str:
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    except OSError:
+        return ""
+
+
+def _resolve_spec(from_file: str, spec: str, lib_root: str) -> Optional[str]:
+    """把 import 字符串解析成绝对路径（统一正斜杠）。非本仓目标返回 None。"""
+    if spec.startswith("dart:") or spec.startswith("package:test") \
+            or spec.startswith("package:flutter"):
+        return None
+    if spec.startswith("package:"):
+        if not spec.startswith("package:writingcoach/"):
+            return None
+        rel = spec[len("package:writingcoach/"):]
+        return os.path.normpath(os.path.join(lib_root, rel)).replace("\\", "/")
+    target = os.path.normpath(os.path.join(os.path.dirname(from_file), spec))
+    return target.replace("\\", "/")
+
+
+def _public_symbols(src: str) -> Set[str]:
+    """提取顶层公开符号名（近似：正则，保守取，不做完整语法解析）。"""
+    syms: Set[str] = set()
+    for rx in (_DECL_RE, _TOPFN_RE, _CONST_RE):
+        for m in rx.finditer(src):
+            name = m.group(1)
+            # 私有符号（_foo）与单一字母噪声不进读数
+            if len(name) > 1 and not name.startswith("_"):
+                syms.add(name)
+    return syms
+
+
+def logic_face_report(repo_root: str = ".") -> Dict[str, object]:
+    """算逻辑面可达性读数。返回结构见模块注释；空输入不在这里判错，由调用方判。"""
+    root = os.path.abspath(repo_root)
+    lib_root = os.path.join(root, "lib")
+    test_root = os.path.join(root, "test")
+
+    logic_files: List[str] = []
+    for sub in LOGIC_DIRS:
+        d = os.path.join(root, sub)
+        if not os.path.isdir(d):
+            continue
+        for p in _walk_dart(d):
+            if not p.endswith(_GENERATED_SUFFIXES):
+                logic_files.append(p)
+
+    test_files = _walk_dart(test_root) if os.path.isdir(test_root) else []
+
+    # test 全树标识符集合（一次扫描，供符号级命中判定）
+    test_idents: Set[str] = set()
+    test_direct: Set[str] = set()
+    for tf in test_files:
+        src = _read(tf)
+        test_idents |= set(_IDENT_RE.findall(src))
+        for spec in _IMPORT_RE.findall(src):
+            resolved = _resolve_spec(tf, spec, lib_root)
+            if resolved:
+                test_direct.add(resolved)
+
+    # lib 内部 import 图（只保留 lib/ 内的边，用于传递闭包）
+    # 边 = import/export + part + part of（分片的可达性完全由属主决定，双向都要连）
+    graph: Dict[str, Set[str]] = {}
+    for lf in _walk_dart(lib_root) if os.path.isdir(lib_root) else []:
+        src = _read(lf)
+        edges: Set[str] = set()
+        for spec in _IMPORT_RE.findall(src) + _PART_RE.findall(src) \
+                + _PART_OF_RE.findall(src):
+            resolved = _resolve_spec(lf, spec, lib_root)
+            if resolved and resolved.startswith(lib_root.replace("\\", "/")):
+                edges.add(resolved)
+        graph[lf] = edges
+
+    # 传递闭包：从 test 直接可达的 lib 文件出发
+    reached: Set[str] = set(test_direct)
+    frontier = list(test_direct)
+    while frontier:
+        cur = frontier.pop()
+        for nxt in graph.get(cur, ()):  # noqa: E501 - 显式空集合，避免默认分支被误读
+            if nxt not in reached:
+                reached.add(nxt)
+                frontier.append(nxt)
+
+    zero_reach: List[str] = []
+    reach_no_symbol: List[str] = []
+    for lf in logic_files:
+        if lf not in reached:
+            zero_reach.append(lf)
+            continue
+        syms = _public_symbols(_read(lf))
+        if syms and not (syms & test_idents):
+            reach_no_symbol.append(lf)
+
+    def rel(p: str) -> str:
+        return os.path.relpath(p, root).replace("\\", "/")
+
+    return {
+        "logic_total": len(logic_files),
+        "test_files": len(test_files),
+        "reached": len([f for f in logic_files if f in reached]),
+        "zero_reach": sorted(rel(p) for p in zero_reach),
+        "reach_no_symbol": sorted(rel(p) for p in reach_no_symbol),
+    }
+
+
+def print_logic_face(rep: Dict[str, object]) -> None:
+    total = rep["logic_total"]
+    print(f"{C.BOLD}[逻辑面可达性读数]{C.RESET} 分母 {total} 个文件 "
+          f"(lib/{{services,providers,utils,data,config}}，排除生成物) · "
+          f"test 文件 {rep['test_files']} 个")
+    zero = rep["zero_reach"]
+    soft = rep["reach_no_symbol"]
+    print(f"  A 零可达（不在 test 的 import 传递闭包内）：{len(zero)} 个")
+    for p in zero:
+        print(f"    - {p}")
+    print(f"  B 可达但公开符号在 test/ 零字面命中：{len(soft)} 个")
+    for p in soft:
+        print(f"    - {p}")
+    print("  口径：A 是**上界**（import 可达 ≠ 被执行/被断言）；B 是**软读数**"
+          "（消费侧间接断言不计入，每条须手工追链才算缺口）")
+    print("  纪律：不设条数基线、不判红（T-20261024-13 C-4）；"
+          "空扫（分母或 test 文件为 0）⇒ 环境错误")
+
+
+
 def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lcov", default="coverage/lcov.info")
@@ -152,7 +340,28 @@ def main(argv: List[str]) -> int:
                     help="hard-fail when the number of --t2 rules differs (anti silent-degradation)")
     ap.add_argument("--warn-event-file", default=None,
                     help="optional path to write a JSON event for CI WARN tracker")
+    ap.add_argument("--repo-root",
+                    default=os.path.normpath(
+                        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")),
+                    help="仓库根（逻辑面读数用；默认=脚本上一级）")
+    ap.add_argument("--no-logic-face", action="store_true",
+                    help="跳过硬编码的逻辑面可达性读数（C-4）；默认打印")
     args = ap.parse_args(argv)
+
+    # ── 逻辑面可达性读数（T-20261024-13 C-4）────────────────────────────
+    # 读数、不判红、不设基线；但**空扫必须判错** —— 否则判据坏掉时静默全绿。
+    if not args.no_logic_face:
+        try:
+            rep = logic_face_report(args.repo_root)
+        except OSError as exc:
+            print(f"{C.RED}ERROR{C.RESET}: logic-face scan failed: {exc}", file=sys.stderr)
+            return 2
+        if rep["logic_total"] == 0 or rep["test_files"] == 0:
+            print(f"{C.RED}ERROR{C.RESET}: logic-face 空扫（分母 {rep['logic_total']} 个逻辑层文件 / "
+                  f"test {rep['test_files']} 个）—— 空扫不是通过：判据可能已坏", file=sys.stderr)
+            return 2
+        print_logic_face(rep)
+        print()
 
     t1_target = args.t1_target
     t1_floor = max(0.0, t1_target - args.t1_margin)
