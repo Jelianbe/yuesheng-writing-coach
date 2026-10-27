@@ -281,7 +281,7 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   4be0415a38d9f824→b6b1a9f4eb405fd（`$_kChunkExceptionGuide` 在装配式
   `progressive_diagnosis.dart:580` 只出现 1 次，两侧分隔符固定）。
   meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
-  （原位单行替换，文件行数 1457 前后不变）。
+  （原位单行替换，行数 1456 → 1456 不变；★ 口径：只认 `wc -l` / `awk END{print NR}`，勿用语言层 `split('\n')` —— 末行有换行时会多算一个空尾元素，本项目已踩过一次）。
   ⚠️ **本批是真实提额，不是额度回收**：guide new 2736 越过历史在产峰值 2544
   （+192）；Δ +196 亦超 B3b-1 §6 的 92 额度上限（超上端 104）⇒ 已按报批稿 §3.3
   重新裁定后施工。
@@ -728,7 +728,7 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    上一版 guide 打印 15 位 `b6b1a9f4eb405fd`（真值 0x0b6b1a9f4eb405fd）即该口径
 #    的历史实例 —— 补零会让 fnv 比对恒红。
 #    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
-#    （原位单行替换，文件行数 1457 前后不变）。
+#    （原位单行替换，行数 1456 → 1456 不变；★ 口径：只认 `wc -l` / `awk END{print NR}`，勿用语言层 `split('\n')` —— 末行有换行时会多算一个空尾元素，本项目已踩过一次）。
 #    ⚠️ **本批是真实提额，不是额度回收**：guide new 2778 既越过上一版 2736，也越过
 #    批一a 之前的在产峰值 2544 ⇒ 须随本 commit 登记 `DECISIONS` 归因。
 CONST_REDLINE = {
