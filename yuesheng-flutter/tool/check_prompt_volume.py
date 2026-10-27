@@ -711,9 +711,29 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    （真值 0x0b6b1a9f4eb405fd）；补零会让 fnv 比对恒红。
 #    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
 #    （原位单行替换，行数不动）。
+# ★ 2026-10-27 第十九次重贴实测值（kChunkSystemPrompt 5754→5796 +42 ·
+#    chunkExceptionGuideBlock 2736→2778 +42；suffix 977 不动）：
+#    方向 = T-20261026-01 T22 补遗（`:409` 单行四处局部替换 + 方案乙 11 字，
+#    舰长已批 · 报批稿
+#    `.ai/reports/2026-10-26-报批稿-T22补遗-三条后门与两处口径.md` §2 / §2.7），
+#    归类**新增类**：E1 首问绑「本窗正文中的感知来源句」· E2 ①改正向列举
+#    （统摄性叙述句）· E3 回退句去「感知中心」「撞位」两个未定义谓词 ·
+#    E4 删「章节标题/段落分隔」两个假凭据并把锁换成「切换前后各自的感知者且二者
+#    不同」· 乙 追加「（该差异须为实质差异）」堵「称呼不同实为同一人」空档。
+#    逐键对账：`:409` 311 字符 → 353 字符 = **+42**，与两键实测 Δ 逐位一致。
+#    Δ 分解（逐处复算）：E1 +14 · E2 +11 · E3 +4 · E4 +2 · 乙 +11 = **+42**。
+#    两键同增同值互证（装配式 `$_kChunkExceptionGuide` 在
+#    `progressive_diagnosis.dart:580` 只出现 1 次，两侧分隔符固定）。
+#    ⚠️ fnv 照抄运行时打印串（`toRadixString(16)` **不补零**）：本次两值恰为 16 位；
+#    上一版 guide 打印 15 位 `b6b1a9f4eb405fd`（真值 0x0b6b1a9f4eb405fd）即该口径
+#    的历史实例 —— 补零会让 fnv 比对恒红。
+#    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+#    （原位单行替换，文件行数 1457 前后不变）。
+#    ⚠️ **本批是真实提额，不是额度回收**：guide new 2778 既越过上一版 2736，也越过
+#    批一a 之前的在产峰值 2544 ⇒ 须随本 commit 登记 `DECISIONS` 归因。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5754, '764eb55cd9730fc9'),
-    'chunkExceptionGuideBlock': (2736, 'b6b1a9f4eb405fd'),
+    'kChunkSystemPrompt': (5796, '77e807292afe6ed5'),
+    'chunkExceptionGuideBlock': (2778, '441cf222c80230b5'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 
