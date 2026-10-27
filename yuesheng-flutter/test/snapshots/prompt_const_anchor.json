@@ -1,11 +1,11 @@
 {
   "kChunkSystemPrompt": {
-    "len": 5796,
-    "fnv": "77e807292afe6ed5"
+    "len": 5785,
+    "fnv": "56e4811709d8d348"
   },
   "chunkExceptionGuideBlock": {
-    "len": 2778,
-    "fnv": "441cf222c80230b5"
+    "len": 2767,
+    "fnv": "7d632f716a1ea36"
   },
   "kDiagnosisProtocolSuffix": {
     "len": 977,
