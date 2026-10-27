@@ -69,7 +69,7 @@ VERBOSE = "-v" in sys.argv or "--verbose" in sys.argv
 #   `_probe_can_report_failure()` 里也有一行 `probe("__SANITY__", …)`（且它故意
 #   不计入条数）⇒ 那个 grep 现在回 **36**，与实跑的 35 差 1。用错的判据去核这个
 #   常量，会得出「常量写错了」的假结论 —— 这正是本仓反复踩的那类坑。
-EXPECTED_PROBE_COUNT = 35
+EXPECTED_PROBE_COUNT = 40
 EXPECTED_PROBE_NAMES = (
     "S0-green",
     "S1-no-summary",
@@ -104,6 +104,11 @@ EXPECTED_PROBE_NAMES = (
     "S10-all-green",
     "S10b-only-p1",
     "S10c-missing-log",
+    "S12a-mixed-two-summaries",
+    "S12b-mixed-p2-na",
+    "S12c-empty-text-branch",
+    "S12d-single-run",
+    "S12e-no-false-drop-text",
     "S7-meta-not-always-green",
     "S8-meta-not-always-red",
 )
@@ -443,6 +448,57 @@ def main():
     lines = [l for l in out.splitlines() if l.strip()]
     probe("S10c-missing-log", rc == 1 and len(lines) == 3,
           "日志缺失 ⇒ 仍打满三行（少打一行会把「没判」伪装成「通过」，行数=%d）" % len(lines))
+
+    # ---------------- 混写日志（并发两轮写同一份 test.txt）----------------
+    # 【为什么要这一组】2026-10-27 实测：后一轮的 `> "$TEST_LOG"` 把前一轮正在写的日志截断，
+    #   两份输出混进一个文件。此时 P1 取**最后**一条汇总行、P3 计**全部**命中 —— 方向相反。
+    #   若最后一条来自 gate-fast 的窄道（`+34`），P2 会拿 34 去比全量基线 5295，
+    #   报「例数下降 5261」并把门禁 2 翻红 —— 理由看起来完全正当，而真因是日志混写。
+    #   ⇒ P1 必须认出「汇总行不唯一」；P2 必须**让位**（[N/A] 归因 P1），否则修完仍假红。
+    #   ⚠️ 这五条里有两条只在 `ev_check_p123` 上才生效（S12b/S12d）——
+    #     只测 `ev_p1_summary` 测不到 P2 让位，那正是这套修复最容易"看起来做完"的盲点。
+    mixed = write(
+        os.path.join(d, "mixed_two_runs.txt"),
+        PROGRESS + GREEN_TAIL + "02:11 +34 ~0: All tests passed!\n",
+    )
+    rc, out, err = run_ev("ev_p1_summary", mixed)
+    probe("S12a-mixed-two-summaries", rc == 1 and "命中 2 条" in out,
+          "混写 ⇒ P1 判红且点出条数（rc=%d, 实读=%.46r）" % (rc, out))
+
+    rc, out, err = run_ev("ev_check_p123", mixed, base100)
+    lines = [l for l in out.splitlines() if l.strip()]
+    probe("S12b-mixed-p2-na",
+          rc == 1 and len(lines) == 3
+          and lines[0].startswith("[FAIL] P1")
+          and lines[1].startswith("[N/A] P2")
+          and lines[2].startswith("[PASS] P3")
+          and err == "",
+          "混写 ⇒ 只有 P1 红、P2 让位 [N/A]、三行齐、stderr 空（rc=%d, 行数=%d, stderr=%.40r）"
+          % (rc, len(lines), err))
+
+    empty_branch = write(os.path.join(d, "empty_branch.txt"), "")
+    rc, out, err = run_ev("ev_check_p123", empty_branch, base100)
+    lines = [l for l in out.splitlines() if l.strip()]
+    probe("S12c-empty-text-branch",
+          rc == 1 and len(lines) == 3
+          and "未找到" in lines[0] and "命中 0 条" not in out,
+          "空文件必须走「未找到」而不是「命中 0 条」（rc=%d, P1=%.30r）"
+          % (rc, lines[0] if lines else ""))
+
+    base10 = make_baseline(d, 10, name="base10.json")
+    single = write(os.path.join(d, "single_run.txt"),
+                   PROGRESS + "02:11 +34 ~0: All tests passed!\n")
+    rc, out, err = run_ev("ev_check_p123", single, base10)
+    lines = [l for l in out.splitlines() if l.strip()]
+    probe("S12d-single-run",
+          rc == 0 and len(lines) == 3 and lines[0].startswith("[PASS] P1") and err == "",
+          "单 run 不得被误伤 ⇒ 三行、P1 PASS、stderr 空（rc=%d, 行数=%d, stderr=%.40r）"
+          % (rc, len(lines), err))
+
+    rc, out, err = run_ev("ev_check_p123", mixed, base100)
+    probe("S12e-no-false-drop-text",
+          ("例数下降" not in out) and ("-5261" not in out),
+          "混写时不得出现「例数下降」/ -5261（旧逻辑的假红文本，实读=%.60r）" % out)
 
     # ---------------- 元探针 ----------------
     empty_txt = write(os.path.join(d, "empty.txt"), "")

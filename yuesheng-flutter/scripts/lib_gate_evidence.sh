@@ -63,25 +63,26 @@ EV_RE_P3='^(scripts/_run_flutter_test\.sh|bash): line [0-9]+: .*: (write error|B
 #
 # 【首条诊断为什么不在 awk 里截断】`substr` 在 UTF-8 locale 下按字符、在 C locale 下按
 #   字节，同一个表达式两种语义。截断交给 bash 的 `cut -c1-160`（跟随 locale）更稳。
-_ev_facts() { # $1=log ; 副作用：设 EV_F_SRC / EV_F_SUMMARY / EV_F_P3_HITS / EV_F_P3_FIRST
+_ev_facts() { # $1=log ; 副作用：设 EV_F_SRC / EV_F_SUMMARY / EV_F_P3_HITS / EV_F_P3_FIRST / EV_F_N1
   local f="${1:-}" out
   if [ "${EV_F_SRC:-}" = "$f" ] && [ "${EV_F_READY:-0}" = "1" ]; then
     return 0
   fi
   EV_F_SRC="$f"; EV_F_READY=1
-  EV_F_SUMMARY=""; EV_F_P3_HITS=0; EV_F_P3_FIRST=""
+  EV_F_SUMMARY=""; EV_F_P3_HITS=0; EV_F_P3_FIRST=""; EV_F_N1=""
   [ -f "$f" ] || return 0
   out="$(EV_RE1="$EV_RE_P1" EV_RE3="$EV_RE_P3" awk '
-    BEGIN { re1 = ENVIRON["EV_RE1"]; re3 = ENVIRON["EV_RE3"]; hits = 0 }
-    $0 ~ re1 { summary = $0 }
+    BEGIN { re1 = ENVIRON["EV_RE1"]; re3 = ENVIRON["EV_RE3"]; hits = 0; n1 = 0 }
+    $0 ~ re1 { summary = $0; n1++ }
     $0 ~ re3 { hits++; if (hits == 1) first = $0 }
-    END { printf "%d\n%s\n%s\n", hits, summary, first }
+    END { printf "%d\n%s\n%s\n%d\n", hits, summary, first, n1 }
   ' "$f" 2>/dev/null)"
   EV_F_P3_HITS=""; EV_F_SUMMARY=""; EV_F_P3_FIRST=""
-  # 用内建 `read` 拆三行，不用 `printf | sed`：本机（MSYS/Git Bash）每 fork 一次约 60-100 ms，
+  # 用内建 `read` 拆四行，不用 `printf | sed`：本机（MSYS/Git Bash）每 fork 一次约 60-100 ms，
   # 三次 sed 就是三次 fork。实测这一处占掉约 200 ms（第 2 笔报告里有前后读数）。
-  { IFS= read -r EV_F_P3_HITS; IFS= read -r EV_F_SUMMARY; IFS= read -r EV_F_P3_FIRST; } <<< "$out"
+  { IFS= read -r EV_F_P3_HITS; IFS= read -r EV_F_SUMMARY; IFS= read -r EV_F_P3_FIRST; IFS= read -r EV_F_N1; } <<< "$out"
   [ -n "$EV_F_P3_HITS" ] || EV_F_P3_HITS=0
+  [ -n "$EV_F_N1" ] || EV_F_N1=0
 }
 
 # 从汇总行取 +N / ~N（取不到 ⇒ 空串，**不要**猜 0）
@@ -137,6 +138,13 @@ ev_p1_summary() { # $1=test_log
     echo "[FAIL] P1 汇总行：未找到 All tests passed! 汇总行 ⇒ PASS 无例数证据"
     return 1
   fi
+  # ★ 唯一性：混写日志（并发两轮写同一份 test.txt）里，summary 取的是**最后一条**。
+  #   只看「找到了一条」等于放弃判断「这条属于哪一轮」—— 实测代价是 P2 拿窄道的
+  #   `+34` 去比全量基线，报出「例数下降 5261」，理由看起来完全正当。
+  if [ "${EV_F_N1:-0}" -gt 1 ]; then
+    echo "[FAIL] P1 汇总行：命中 $EV_F_N1 条汇总行（日志混写/并发）⇒ 无法确认本条结论对应哪一轮"
+    return 1
+  fi
   echo "[PASS] P1 汇总行：命中「$line」"
   return 0
 }
@@ -149,6 +157,13 @@ ev_p2_count() { # $1=test_log $2=baseline_json
   # 日志缺失时 _ev_facts 留空 ⇒ 下面落到 [N/A]。不在这里提前 return 0：
   # 静默返回会让 gate.sh 少打一行，看起来像「P2 通过了」，实际上是「P2 没说话」。
   _ev_facts "$f"; line="$EV_F_SUMMARY"
+  # ★ 汇总行不唯一 ⇒ 本条**不判**（归因 P1）。必须放在解析 +N **之前**：
+  #   放在 -z "$n" 之后，任何形态偏差都会被报成「无法解析 +N」，
+  #   而真因是日志混写 —— 两个不同病因报同一句话，归因就废了。
+  if [ "${EV_F_N1:-0}" -gt 1 ]; then
+    echo "[N/A] P2 例数下限：汇总行不唯一（$EV_F_N1 条）⇒ 本条不判（归因 P1）"
+    return 0
+  fi
   n="$(_ev_field "$line" passed)"
   if [ -z "$n" ]; then
     echo "[N/A] P2 例数下限：无法从日志解析 +N ⇒ 本条不判（归因 P1）"
@@ -214,6 +229,13 @@ ev_p3_log_integrity() { # $1=test_log
 #   msg="$(ev_p1_summary …)"; msg="$(ev_p2_count …)"; msg="$(ev_p3_log_integrity …)"
 # 每条命令替换各起一个子 shell ⇒ 缓存全废 ⇒ 14 MB 日志被扫 3 遍。
 # 实测：三处各调 = 1632 ms；本函数一次调 = 单遍扫描。**指令要防的正是这个形态。**
+#
+# 【P1 与 P3 在混写日志上的**有意不对称**】
+#   P1 = 覆盖取**最后**一条汇总行 / P3 = 计**全部**命中、诊断取**首条**。
+#   ⇒ 同一份混写日志上，二者可能指向**不同的 run**。这是保守方向：P1 靠「唯一性」
+#     判据兜底（命中 >1 就判红），P3 宁可错杀（日志确实混了 ⇒ 结论确实不可信）。
+#   ⚠️ 不要把它「修」成一致：能让 P3 只统计最后一个 run 的前提是先能切分 run 边界，
+#     而 P1 的唯一性判据已在做同一件事 —— 那是重复投入，不是修复。
 #
 # 【输出契约】
 #   stdout = 恰好三行，每行以 `[PASS]/[WARN]/[N/A]/[FAIL] P<n>` 开头（供单点归因 grep）
