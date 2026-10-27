@@ -10,11 +10,27 @@
   判读第 1 片时已看见第 2/3 片 ⇒ uncertain 会被消解、跨片命中会被放大
   ⇒ ③ 量失真。故按块隔离，原文只进一次上下文（块与块不共享）。
 
-★ 判读依据两份都必须先读（A3-15 ①：判据 = 模型实际看到的 prompt）
-  ① chunk_system_prompt.txt —— 生产真实分块层 system prompt（4053 字符）
-  ② criteria_all39.txt —— 39 条判据原文 verbatim（61514 字符，
-     getSyndromeCriteriaSections 同短链注入提取函数）——读数批测
-     「若注入判据原文，各条在长文分片上的行为」，故判据面取全集
+★★ 同构纪律（T-20261027-01 · H7 · 2026-10-27 起强制）
+  采样器喂给子代理的 prompt **必须等于生产当前值**，否则行为层读数
+  （报出率 / 命中率）不能用于回滚判定 —— 这是本批之前最大的口径洞。
+  做法：**每次运行前现场导出生产常量**，不再读手工快照：
+
+    flutter test tool/dump_chunk_prompt_runner.dart      # → chunk_system_prompt_prod.txt
+
+  导出失败 ⇒ 本脚本 **exit 2**（fail-fast）。**不许**退回读旧快照：
+  实测旧快照 `chunk_system_prompt.txt`（2026-10-22，4,053 字符）与当前生产
+  （5,785 字符）不同构，且 `chunk_system_prompt_c155_after.txt`（5,593）也已过期
+  ⇒ 「用一份看起来像的旧文件继续跑」正是本卡要治的病。
+
+  另：任务单里的「待判读文本」段现在**逐字复刻生产的 user 消息**
+  （`章节标题：<title>\n\n文本片段 i/n：\n\n<正文>`，见
+  `progressive_diagnosis.dart:1360`）—— 这也属同构面，缺了它子代理
+  看到的输入形状与生产不同。
+
+★ 偏向措辞已清（H7 判据 2）
+  旧版写死「命中例外条款形态的**不判**」「**宁缺勿滥**…判据例外条款命中的判 miss」
+  ⇒ 系统性把子代理推向「不报」，使 `R-4` 回滚条件永远不可能触发。
+  现改为中性表述：只要求证据逐字可核、理由引判据原文，**不预设报/不报的倾向**。
 
 产物
 ----
@@ -23,26 +39,93 @@
 
 用法
 ----
-python tool/build_chunk_sim_tasks.py
+python tool/build_chunk_sim_tasks.py            # 重新导出 prompt + 重写 18 份任务单
+python tool/build_chunk_sim_tasks.py --dry-run  # 只导出 prompt + 打印首份预览，不写任务单
 """
 
 import io
 import json
 import os
+import shutil
+import subprocess
+import sys
 
 BASE = "D:/ai-teacher/.ai/research/cross-validation/data/chunk_sim"
 CHUNKS = BASE + "/chunks_para.json"
+CORPUS_JSONL = "D:/ai-teacher/.ai/reports/2026-10-21-长文语料/corpus.jsonl"
 TASK_DIR = BASE + "/tasks"
 ANSWER_DIR = BASE + "/answers"
-PROMPT_REF = BASE + "/chunk_system_prompt.txt"
+# 生产 prompt 的**导出产物**（每次运行前刷新；不是手工快照，不纳入历史证据）
+PROMPT_REF = BASE + "/chunk_system_prompt_prod.txt"
 CRITERIA_REF = BASE + "/criteria_all39.txt"
+FLUTTER_ROOT = "D:/ai-teacher/yuesheng-flutter"
+DUMP_RUNNER = "tool/dump_chunk_prompt_runner.dart"
 
 # 语料序号 → 短 ID（L01c1 = 第 1 章第 1 片）
 SHORT = {f"LUXUN-20261022-{i:02d}": f"L{i:02d}" for i in range(1, 8)}
 
 
-def build_task(chunk):
+def refresh_production_prompt():
+    """现场导出生产分块 prompt；失败即退出（不静默使用旧文件）。"""
+    env = dict(os.environ)
+    env["DUMP_OUT"] = PROMPT_REF
+    # Windows：`flutter` 实际是 flutter.BAT，subprocess 直接传 argv 会
+    # WinError 2（2026-10-27 实测）⇒ 必须经 shell 解析（或显式 cmd /c）。
+    exe = os.environ.get("FLUTTER_BIN") or shutil.which("flutter") or "flutter"
+    cmd = f'"{exe}" test {DUMP_RUNNER}'
+    print(f"[build] 导出生产分块 prompt → {PROMPT_REF}")
+    proc = subprocess.run(cmd, shell=True, cwd=FLUTTER_ROOT, env=env,
+                          capture_output=True, text=True, encoding="utf-8",
+                          errors="replace")
+    for line in (proc.stdout or "").splitlines():
+        if "[dump-chunk]" in line or "dump-chunk" in line:
+            print("  " + line.strip())
+    rc = proc.returncode
+    if rc != 0:
+        sys.stderr.write(
+            f"[build] FATAL: 生产 prompt 导出失败（flutter test rc={rc}）\n"
+            f"        不会退回读旧快照 —— 那正是 H7 要治的「采样器与生产不同构」。\n"
+            f"        末 600 字输出：{(proc.stdout or '')[-600:]}\n")
+        raise SystemExit(2)
+    if not os.path.isfile(PROMPT_REF):
+        sys.stderr.write(f"[build] FATAL: 导出命令返回 0 但文件不存在：{PROMPT_REF}\n"
+                         f"        （rc=0 ≠ 落盘）\n")
+        raise SystemExit(2)
+
+
+def load_titles():
+    """corpus_id → 作品名（语料**没有章节标题字段**，只有作品名）。
+
+    ⚠️ 口径（H9 未决，本批不猜）：语料是按「作品段落跨度」切章合成的，
+    因此 `primary_work` 是**作品名**而非章节标题；真正的章号检测口径
+    见 `T-20261027-01 H9`。本脚本只保证**形状同构**（有 `章节标题：` 这一行），
+    不主张语义正确。
+    """
+    titles = {}
+    if not os.path.isfile(CORPUS_JSONL):
+        return titles
+    with io.open(CORPUS_JSONL, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            cid = rec.get("corpus_id")
+            work = rec.get("primary_work") or rec.get("works") or ""
+            if cid and work:
+                titles[cid] = work
+    return titles
+
+
+
+def build_task(chunk, title):
     cid = f"{SHORT[chunk['corpus_id']]}c{chunk['chunk_index'] + 1}"
+    # 长度动态读，不写死：写死字符数会在 prompt 每次变更后变成假描述。
+    prompt_chars = len(io.open(PROMPT_REF, encoding="utf-8").read())
+    criteria_chars = len(io.open(CRITERIA_REF, encoding="utf-8").read())
     lines = []
     lines.append(f"# 模拟诊断任务单 · 分块 {cid}")
     lines.append("")
@@ -64,25 +147,31 @@ def build_task(chunk):
     lines.append("")
     lines.append(
         f"1. **真实分块层 system prompt**：`{PROMPT_REF}`\n"
-        "   （约 4053 字符）——含「片段窗口边界」判读前提 / 块内可自证探针 / "
-        "例外情况指引 / 输出格式。**窗口边界一节优先于其余一切**：你看不到"
-        "本片段之外的任何内容。\n"
-        f"2. **本次注入实验的判据原文（39 条完整判据）**：`{CRITERIA_REF}`\n"
-        "   （约 61514 字符）——每条含判断原则 / 例外情况 / 诊断锚点。"
-        "逐条核对，命中例外条款形态的**不判**。"
+        f"   （{prompt_chars} 字符，**本次运行前刚从生产常量导出**）——含"
+        "「片段窗口边界」判读前提 / 块内可自证探针 / 例外情况指引 / 输出格式。"
+        "**窗口边界一节优先于其余一切**：你看不到本片段之外的任何内容。\n"
+        f"2. **本次注入实验的判据原文**：`{CRITERIA_REF}`\n"
+        f"   （{criteria_chars} 字符）——每条含判断原则 / 例外情况 / 诊断锚点。"
+        "逐条核对；**判据自带的例外条款请按原文判**（本任务单不预设结论）。"
     )
     lines.append("")
     lines.append("## 待判读文本（本片段全文 · 你只看得到这一片）")
     lines.append("")
     lines.append(
-        f"这是全章的第 {chunk['chunk_index'] + 1}/{chunk['chunk_count']} 片。"
+        "**下面这一段就是该模块实际收到的 user 消息全文，逐字复刻**"
+        "（含块首注入行，见 `progressive_diagnosis.dart:1360`）："
+    )
+    lines.append("")
+    lines.append(f"章节标题：{title}")
+    lines.append("")
+    lines.append(f"文本片段 {chunk['chunk_index'] + 1}/{chunk['chunk_count']}：")
+    lines.append("")
+    lines.append(chunk["text"])
+    lines.append("")
+    lines.append(
         "**不要推测片段外内容**；片段外信息只能把你引向 `uncertain`，"
         "不能把「像是有问题」写成肯定结论。"
     )
-    lines.append("")
-    lines.append("```text")
-    lines.append(chunk["text"])
-    lines.append("```")
     lines.append("")
     lines.append("## 你要做的事：39 条判据逐条判定")
     lines.append("")
@@ -125,7 +214,9 @@ def build_task(chunk):
         "对不上即幻觉引用）；severity 按判据原文的严重度三维标定取 L1/L2/L3。\n"
         "2. **`uncertain` 必须写清缺哪类信息**，不得用 uncertain 逃避判断"
         "（片段内可自证的照常判）。\n"
-        "3. **宁缺勿滥**：没有可指认证据不得判 hit；判据例外条款命中的判 miss。\n"
+        "3. **每条判定都按判据原文判**：`hit` 要能指出本片内可指认的位置；"
+        "判据自带的例外条款、以及「片段外才能判定」的情形，一律按判据原文处理，"
+        "**本任务单不替你预设方向**。\n"
         "4. **文件里只有 JSON**，不要任何解释性文字；JSON 必须可被 "
         "`json.load` 解析。"
     )
@@ -140,13 +231,35 @@ def build_task(chunk):
     return cid, "\n".join(lines)
 
 
-def main():
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    dry_run = "--dry-run" in argv
+
+    refresh_production_prompt()
+
     with io.open(CHUNKS, encoding="utf-8") as f:
         chunks = json.load(f)["chunks"]
+
+    titles = load_titles()
+    missing = sorted({c["corpus_id"] for c in chunks
+                      if c["corpus_id"] not in titles})
+    if missing:
+        print(f"[build] WARN: {len(missing)} 个 corpus_id 无 primary_work ⇒ "
+              f"标题回退为 corpus_id：{', '.join(missing)}")
+
+    if dry_run:
+        ch = chunks[0]
+        title = titles.get(ch["corpus_id"], ch["corpus_id"])
+        cid, task = build_task(ch, title)
+        print(f"[build][dry-run] {cid} 预览（前 1600 字）—— 不写任何文件：")
+        print(task[:1600])
+        return 0
+
     os.makedirs(TASK_DIR, exist_ok=True)
     os.makedirs(ANSWER_DIR, exist_ok=True)
     for ch in chunks:
-        cid, task = build_task(ch)
+        title = titles.get(ch["corpus_id"], ch["corpus_id"])
+        cid, task = build_task(ch, title)
         with io.open(TASK_DIR + "/" + cid + ".md", "w",
                       encoding="utf-8", newline="\n") as f:
             f.write(task)
@@ -159,7 +272,8 @@ def main():
                     ensure_ascii=False, indent=2))
     print(f"[build] 任务单 {len(chunks)} 个 → {TASK_DIR}")
     print(f"[build] 答案壳 {len(chunks)} 个 → {ANSWER_DIR}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
