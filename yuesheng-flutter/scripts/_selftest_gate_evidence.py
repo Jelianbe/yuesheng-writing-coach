@@ -495,7 +495,19 @@ def main():
           "单 run 不得被误伤 ⇒ 三行、P1 PASS、stderr 空（rc=%d, 行数=%d, stderr=%.40r）"
           % (rc, len(lines), err))
 
-    rc, out, err = run_ev("ev_check_p123", mixed, base100)
+    # ★ S12e 的基线**必须是 5295**，不许改回 base100「图省事」—— 改回 = 把这条探针变成恒真。
+    #   【为什么】夹具 100 时，老逻辑算出的下降是 Δ = 34 - 100 = **-66**，
+    #     而 -5261 = 34 - 5295 ⇒ `"-5261" not in out` 在任何实现下都成立，是措辞不是判据
+    #     （柯有据 2026-10-27 独立复核 §4-347 实测：把该子句删掉，探针照样全绿）。
+    #   【为什么恰好是 5295】它与 GREEN_TAIL 的 `+5295` 同源，也与生产基线
+    #     `tool/test_count_baseline.json` 的 count 同值 ⇒ 只有它才能复现生产实测的假红原文：
+    #     `[FAIL] P2 例数下限：+N=34 < 基线 5295 ⇒ 例数下降（Δ=-5261）`。
+    #   【为什么另建一条而不改 base100】base100 是 S2b/S2-lower/S2c/S2f/S9b/S10*/S12b/S12c
+    #     的夹具，改它 = 连带改掉那些探针的语义（R-010：只加不改）。
+    #   【生产基线变动时】若 test_count_baseline.json 的 count 不再是 5295，本夹具与
+    #     `-5261` 这个字面量需同步重算（Δ = 34 - 新基线），否则又退回「恒真」。
+    base5295 = make_baseline(d, 5295, name="base5295.json")
+    rc, out, err = run_ev("ev_check_p123", mixed, base5295)
     probe("S12e-no-false-drop-text",
           ("例数下降" not in out) and ("-5261" not in out),
           "混写时不得出现「例数下降」/ -5261（旧逻辑的假红文本，实读=%.60r）" % out)
