@@ -202,11 +202,12 @@ void _selfCheck(Map<String, Object> current, String guideText) {
       '⇒ 疑量到空串 / 别的对象。',
     );
   }
-  // ② 例外表实测 2,544 字符；低于 2,000 说明切片错位（少切了条目）
+  // ② 例外表实测 2,767 字符；低于 2,000 说明切片错位（少切了条目）
+  //    （2026-10-28 刷新：旧值 2,544 停在批一a 之前 —— T-20261026-01 附带项①）
   if (guideLen < 2000) {
     fail(
       '结构自检②不过：chunkExceptionGuideBlock.len=$guideLen < 2000 '
-      '⇒ 切片起点/终点错位（实测参考值 2,544）。',
+      '⇒ 切片起点/终点错位（实测参考值 2,767）。',
     );
   }
   // ③ 切片体内不得出现 endMarker（防 endMarker 过早命中、只切到半张表）

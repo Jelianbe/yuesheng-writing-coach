@@ -449,6 +449,35 @@ MUST_NOT_GROW = [
 ]
 
 
+def _pin_verdict(out, key, act, lim, word):
+    """体积红线/上限的**两道**判据：① 超限（act > lim）② 钉表脱钩（act != lim）。
+
+    ★ 为什么必须两条、且必须分开报（T-20261026-01 · pin == actual）
+      旧判据只有 `act <= lim` ⇒ 把上限**抬到实测值之上**（1583 → 1584）时
+      **rc=0 且打印「余量 +1 OK」**（柯有据 M6 实测，主理人独立复现）
+      ⇒ 红线变成「可协商」，「重冻 ⇒ 同批重钉」这条联动失去牙齿。
+      两个方向的病因**相反**，合成一句话就归因不了（§4-296 同族教训）：
+        act > lim = 内容涨了、没重钉
+        act < lim = 上限被抬高了 / 未贴实测（§4-159「贴实测不留余量」）
+
+    ★ 为什么现在加不会假红：三张表实测 **17 项余量全 +0**
+      （`python tool/check_prompt_volume.py`，2026-10-28）⇒ 等式与旧判据等价。
+
+    返回 (ok, tag)：ok 保持旧语义（未超限）；tag 用于打印，区分三态。
+    """
+    if act > lim:
+        out['violations'].append('%s: %d > %s %d（超 %d）'
+                                 % (key, act, word, lim, act - lim))
+        return False, '★超%s' % word
+    if act < lim:
+        out['violations'].append(
+            '%s: 上限 %d ≠ 实测 %d（余量 %+d）⇒ 钉表与实测脱钩：'
+            '抬线或未重钉（pin==actual，T-20261026-01）'
+            % (key, lim, act, lim - act))
+        return True, '★%s≠实测' % word
+    return True, 'OK'
+
+
 def main():
     if not os.path.exists(ANCHOR):
         print('[FAIL] 锚点快照不存在：%s' % ANCHOR)
@@ -482,12 +511,9 @@ def main():
             out['violations'].append('%s: 快照缺该组' % k)
             continue
         out['actual'][k] = act
-        ok = act <= lim
+        _, tag = _pin_verdict(out, k, act, lim, '红线')
         print('  %-24s %6d  红线 %6d  余量 %+6d  %s'
-              % (k, act, lim, lim - act, 'OK' if ok else '★超红线'))
-        if not ok:
-            out['violations'].append('%s: %d > 红线 %d（超 %d）'
-                                     % (k, act, lim, act - lim))
+              % (k, act, lim, lim - act, tag))
 
     print('\n=== 对照组（本批不应增长）===')
     for k in MUST_NOT_GROW:
@@ -528,11 +554,15 @@ def main():
 
     print('')
     if out['violations']:
-        print('[FAIL] %d 项超限：' % len(out['violations']))
+        # 文案刻意不用「超限」：violations 里混着四类病因（超限 / 上限≠实测 /
+        # fnv 不符 / 结构自检），只用「超限」会把「上限被抬高」也报成「超限」——
+        # 那是**方向相反**的误归因（T-20261026-01 加牙时一并订正）。
+        print('[FAIL] %d 项不合规（超限 / 上限≠实测 / 指纹不符 / 结构自检）：'
+              % len(out['violations']))
         for v in out['violations']:
             print('  - ' + v)
         return 1
-    print('[OK] 受控组均未超红线，且对照组零增长')
+    print('[OK] 受控组均未超红线、钉表与实测逐项相等，且对照组零增长')
 
 # 对照组基线 = **最近一次锚点重冻时的实测值**（读数变了就贴新值，理由见头注）。
 #
@@ -629,12 +659,9 @@ def _check_bypass(out):
             continue
         seen[key] = act
         out.setdefault('bypass_actual', {})[key] = act
-        ok = act <= lim
+        _, tag = _pin_verdict(out, key, act, lim, '红线')
         print('  %-40s %6d  红线 %6d  余量 %+6d  %s'
-              % (key, act, lim, lim - act, 'OK' if ok else '★超红线'))
-        if not ok:
-            out['violations'].append('%s: %d > 红线 %d（超 %d）'
-                                     % (key, act, lim, act - lim))
+              % (key, act, lim, lim - act, tag))
         # 结构自检①：该块必须是 system（名称订正的依据；若迁到 user 侧即口径变了）
         if role != 'system':
             print('  %-40s ★role=%s（应为 system）' % (key, role))
@@ -741,7 +768,9 @@ CONST_REDLINE = {
 }
 
 # 下限自检：读数低于此值 ⇒ 疑量到空串 / 别的对象（不是「省了字」）。
-# 依据：kChunkSystemPrompt 含症候清单 + 五块常量；例外表实测 2,544（33 条例外行）。
+# 依据：kChunkSystemPrompt 含症候清单 + 五块常量；例外表实测 2,767（33 条例外行）。
+# （2026-10-28 刷新：旧值 2,544 停在批一a 之前；现值取自 CONST_REDLINE 同一份脚本输出，
+#   不手填 —— T-20261026-01 附带项②。）
 CONST_FLOOR = {
     'kChunkSystemPrompt': 3000,
     'chunkExceptionGuideBlock': 2000,
@@ -775,12 +804,9 @@ def _check_consts(out):
             out['violations'].append('%s: 缺 int 型 len（%r）' % (key, act))
             continue
         out.setdefault('const_actual', {})[key] = act
-        ok = act <= lim
+        _, tag = _pin_verdict(out, key, act, lim, '上限')
         print('  %-26s %6d  上限 %6d  余量 %+6d  %s'
-              % (key, act, lim, lim - act, 'OK' if ok else '★超上限'))
-        if not ok:
-            out['violations'].append('%s: %d > 上限 %d（超 %d）'
-                                     % (key, act, lim, act - lim))
+              % (key, act, lim, lim - act, tag))
         # fnv 一条专治「等长替换」与「重冻快照但没重钉上限」
         # —— 只比 len 的话，删 3 字加 3 字就能静默过关。
         if fnv != fnv_frozen:
@@ -864,12 +890,9 @@ def _check_user_face(out):
             out['violations'].append('%s: 缺 int 型 len' % key)
             continue
         out.setdefault('user_face_actual', {})[key] = act
-        ok = act <= lim
+        _, tag = _pin_verdict(out, key, act, lim, '上限')
         print('  %-40s %6d  上限 %6d  余量 %+6d  %s'
-              % (key, act, lim, lim - act, 'OK' if ok else '★超上限'))
-        if not ok:
-            out['violations'].append('%s: %d > 上限 %d（超 %d）'
-                                     % (key, act, lim, act - lim))
+              % (key, act, lim, lim - act, tag))
         if fnv != fnv_frozen:
             print('  %-40s ★fnv %s ≠ 冻结 %s' % (key, fnv, fnv_frozen))
             out['violations'].append(
