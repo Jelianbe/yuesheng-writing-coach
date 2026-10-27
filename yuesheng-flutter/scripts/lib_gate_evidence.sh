@@ -116,9 +116,18 @@ _ev_base_count() { # 取不到 ⇒ 空串
   sed -nE 's/.*"count"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' "$f" 2>/dev/null | head -n 1
 }
 
-# 写基线（**唯一**写盘入口）。只允许两处调用：基线不存在时的首建、或 UPDATE_TEST_BASELINE=1。
+# 写基线（**唯一**写盘入口）。
+#
+# ★ 授权闸（T-20261027-03 F3，2026-10-28）：此前这里只有**注释**约束「只允许两处调用」，
+#   代码上谁调都能写 ⇒ 「基线被删过」永远留不下痕迹（删了就以当场 +N 首建，永久自洽）。
+#   现在必须显式 `EV_ALLOW_WRITE_BASELINE=1` 才能写；调用方在 `ev_p2_count` 的
+#   UPDATE 分支内先置该变量（外部仍只需 `UPDATE_TEST_BASELINE=1`，工作流不变）。
 _ev_write_baseline() { # $1=path $2=count $3=reason
   local path="$1" count="$2" reason="$3" head
+  if [ "${EV_ALLOW_WRITE_BASELINE:-0}" != "1" ]; then
+    echo "[FAIL] 内部错误：_ev_write_baseline 未经授权被调用（缺 EV_ALLOW_WRITE_BASELINE=1）" >&2
+    return 1
+  fi
   head="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
   printf '{"count": %s, "head": "%s", "generated_at": "%s", "reason": "%s"}\n' \
     "$count" "$head" "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$reason" > "$path" 2>/dev/null
@@ -173,14 +182,22 @@ ev_p2_count() { # $1=test_log $2=baseline_json
   reason="flutter test 全绿轮次的 +N（基线只卡下降，不卡等号）"
 
   if [ ! -f "$base_json" ]; then
-    _ev_write_baseline "$base_json" "$n" "$reason"
-    echo "[WARN] P2 例数下限：基线不存在 ⇒ 已首建（count=$n，含 provenance 四字段），本轮不判定"
-    return 0
+    # F3（T-20261027-03，2026-10-28）：**不再自动首建**。
+    # 旧行为「基线不存在 ⇒ 以当场 +N 首建 ⇒ 本轮不判定」使「删基线」= 永久自洽，
+    # 且无任何判据能发现「基线被删过」——这是本卡三项里最大的洞。
+    # 文案必须给**可执行**命令：否则换机 / 首次 clone 的第一件事就是假红。
+    echo "[FAIL] P2 例数下限：基线缺失（$base_json）"
+    echo "       首建（仅换机 / 首次 clone 需要，且必须在**测试全绿**的轮次）："
+    echo "         UPDATE_TEST_BASELINE=1 bash scripts/gate.sh"
+    echo "       说明：该命令会跑完十九道门禁并在末尾重写基线；不要手工编辑 json。"
+    return 1
   fi
 
   if ! _ev_base_provenance_ok "$base_json"; then
-    echo "[WARN] P2 例数下限：基线 provenance 不齐（需 count/head/generated_at/reason 四键）⇒ 判为无效基线，不采用"
-    return 0
+    # F-6：无效基线必须 **FAIL**，不许 WARN 放过。
+    # 旧行为 WARN+return 0 ⇒ 「缺 reason / 缺 head」的基线被静默忽略，而基线仍然失效 ⇒ 双输。
+    echo "[FAIL] P2 例数下限：基线 provenance 不齐（需 count/head/generated_at/reason 四键）⇒ 无效基线，拒绝采用"
+    return 1
   fi
 
   base="$(_ev_base_count "$base_json")"
@@ -190,7 +207,9 @@ ev_p2_count() { # $1=test_log $2=baseline_json
   fi
 
   if [ "${UPDATE_TEST_BASELINE:-0}" = "1" ]; then
-    _ev_write_baseline "$base_json" "$n" "$reason"
+    # 授权闸：外部仍只认 UPDATE_TEST_BASELINE=1（工作流不变），
+    # 这里的 EV_ALLOW_WRITE_BASELINE 只是让「唯一写盘入口」在代码层成立。
+    EV_ALLOW_WRITE_BASELINE=1 _ev_write_baseline "$base_json" "$n" "$reason"
     echo "[WARN] P2 例数下限：UPDATE_TEST_BASELINE=1 ⇒ 基线已刷新 $base → $n（显式入口）"
     return 0
   fi

@@ -295,18 +295,21 @@ def main():
     nb_path = os.path.join(d, "fresh_baseline.json")
     rc, out, _ = run_ev("ev_p2_count", green, nb_path)
     created = os.path.isfile(nb_path)
-    keys_ok = created and all(
-        ('"%s"' % k) in open(nb_path, encoding="utf-8").read()
-        for k in ("count", "head", "generated_at", "reason")
-    )
-    probe("S2d-no-baseline", rc == 0 and created and keys_ok,
-          "基线缺失 ⇒ WARN + 首建且 provenance 四键齐（rc=%d, created=%s, keys=%s）"
-          % (rc, created, keys_ok))
+    has_hint = "UPDATE_TEST_BASELINE=1" in out
+    # ★ 2026-10-28（T-20261027-03 F3）：期望**反转**。旧行为「缺失 ⇒ 自动首建 ⇒ 不判定」
+    #   使「删基线」= 永久自洽（本卡最大的洞）。现在必须 FAIL、**不写盘**、且文案给
+    #   可执行的首建命令 —— 三条缺一都会复发（不 FAIL = 洞还在；写盘 = 自洽；
+    #   无指引 = 换机即假红）。
+    probe("S2d-no-baseline", rc == 1 and not created and "基线缺失" in out and has_hint,
+          "基线缺失 ⇒ FAIL、不首建、文案含首建命令（rc=%d, created=%s, hint=%s）"
+          % (rc, created, has_hint))
 
     badprov = make_baseline(d, 100, name="badprov.json", omit="head")
     rc, out, _ = run_ev("ev_p2_count", green, badprov)
-    probe("S2e-bad-provenance", rc == 0 and "无效基线" in out,
-          "缺 head 的基线 ⇒ 判无效、不采用（rc=%d）" % rc)
+    # ★ 2026-10-28（F-6）：provenance 不齐从 WARN 升 FAIL —— 旧行为「WARN 放过」使
+    #   无效基线被静默忽略而基线仍然失效（双输）。
+    probe("S2e-bad-provenance", rc == 1 and "无效基线" in out,
+          "缺 head 的基线 ⇒ FAIL（无效基线拒绝采用，rc=%d）" % rc)
 
     rc, out, _ = run_ev("ev_p2_count", nosum, base100)
     probe("S2f-unparseable", rc == 0 and "归因 P1" in out,
