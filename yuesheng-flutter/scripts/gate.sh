@@ -341,7 +341,22 @@ if [ "$RC_TEST" = "0" ]; then
   if [ "$EV_LIB_OK" = "1" ]; then
     EVID_OUT="$(ev_check_p123 "$TEST_LOG" "$ROOT/tool/test_count_baseline.json")"
     EVID_RC=$?
-    printf '%s\n' "$EVID_OUT" | sed 's/^/  /'
+    # 【为什么把 P1/P2/P3 结论落盘】结论原先只进 stdout ⇒ outputs/gate/ 零承载、
+    #   gate-report.md 零证据原文 ⇒ 读报告的人无法知道这条 PASS 是哪个 run 的；
+    #   一旦代码被改坏，唯一正解是全量重跑（5~6 min），人不会重跑 ⇒ 默认采信。
+    # 【为什么 stdout 形态一个字节都不许动】本道归因判据是 grep -c '[FAIL] P1' = 1
+    #   （另两条 = 0），每行必须以 '[FAIL] P<n>' 开头；[run=…] 只许进文件，不许进 stdout。
+    # 【为什么用 while + 内建 printf】逐行 sed/tee 会让 3 行输出各起子进程；双写零 fork，
+    #   且 stdout 与 sed 's/^/  /' 逐字节等价（两个空格 + 原行 + 换行）。
+    # 【这个文件会无限增长】append-only（每轮 3 行，量级可忽略），但别当可清空的临时文件。
+    # 【空输出必须先判】set -u 在生效、无 set -e；here-string 对空串会喂一行空，
+    #   不判空就会多打一行空行 + 多写一条空记录。
+    if [ -n "$EVID_OUT" ]; then
+      while IFS= read -r ev_line; do
+        printf '  %s\n' "$ev_line"
+        printf '[run=%s][rc=%s] %s\n' "$GATE_RUN_ID" "$EVID_RC" "$ev_line" >> "$OUT_DIR/evidence_p123.txt"
+      done <<< "$EVID_OUT"
+    fi
     [ "$EVID_RC" = "0" ] || TEST_EVID_FAIL=1
   else
     echo "  [FAIL] 证据链判据库 scripts/lib_gate_evidence.sh 不可读 ⇒ 无法验证 PASS 的证据"
