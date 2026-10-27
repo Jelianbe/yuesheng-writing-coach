@@ -50,7 +50,7 @@ import 'widgets/settings_cards.dart';
 import '../../config/svc_copy.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
-const String _appVersion = '0.5.2';
+const String _appVersion = '0.5.3';
 const String _packageName = 'com.yuesheng.writingcoach';
 const String _feedbackQQGroup = '470562649';
 
