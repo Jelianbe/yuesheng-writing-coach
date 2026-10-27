@@ -265,10 +265,34 @@ printf '%s' "$COV_FLAG" > "$ROOT/outputs/gate/cov_flag.txt" 2>/dev/null || true
 #     （`UPDATE_SNAPSHOTS=true flutter test test/services/<anchor>_test.dart`），
 #     绝不与收尾门禁同一条命令。
 unset UPDATE_SNAPSHOTS
+
+# ★ T-20261027-03 F1/F2：额外落一份**机器可读**报告（例集指纹的数据源）。
+#   用 `--file-reporter`：它是**追加**输出，stdout 形态完全不变
+#   ⇒ P1/P2/P3 三条既有判据的输入零变化（这是选它而不是 `--reporter json` 的原因：
+#   后者会把 stdout 换成 JSON，三条判据的解析全要重写）。
+#   实测（2026-10-28）：`--file-reporter json:<path>` 与 `--coverage` 兼容；
+#   **路径必须是 Windows 可认形态**（MSYS 的 `/tmp/...` 不生效，文件静默不生成）。
+#   文件名与本轮 TEST_LOG 同轮 ⇒ 不复用固定名（§4-345：覆盖写的单文件不可当日志账本）。
+JSON_REPORT=""
+if [ -n "${TEST_LOG_PATH:-}" ]; then
+  JSON_REPORT="${TEST_LOG_PATH%.txt}.json"
+  # 转成相对 ROOT 的路径：flutter 是 Windows 原生进程，相对路径最稳。
+  case "$JSON_REPORT" in
+    "$ROOT"/*) JSON_REPORT="${JSON_REPORT#"$ROOT"/}" ;;
+  esac
+fi
+
+FT_ARGS=(flutter test)
+[ -n "$COV_FLAG" ] && FT_ARGS+=("$COV_FLAG")
+FT_ARGS+=(--exclude-tags live,external)
+if [ -n "$JSON_REPORT" ]; then
+  FT_ARGS+=(--file-reporter "json:$JSON_REPORT")
+fi
+
 /usr/bin/env "PROGRAMFILES(X86)=${PROG_FILES_X86}" \
   HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= \
   NO_PROXY=localhost,127.0.0.1 \
-  flutter test $COV_FLAG --exclude-tags live,external "$@"
+  "${FT_ARGS[@]}" "$@"
 RC=$?
 cleanup_lock
 exit $RC

@@ -70,7 +70,7 @@ VERBOSE = "-v" in sys.argv or "--verbose" in sys.argv
 #   `_probe_can_report_failure()` 里也有一行 `probe("__SANITY__", …)`（且它故意
 #   不计入条数）⇒ 那个 grep 现在回 **36**，与实跑的 35 差 1。用错的判据去核这个
 #   常量，会得出「常量写错了」的假结论 —— 这正是本仓反复踩的那类坑。
-EXPECTED_PROBE_COUNT = 44
+EXPECTED_PROBE_COUNT = 46
 EXPECTED_PROBE_NAMES = (
     "S0-green",
     "S1-no-summary",
@@ -83,6 +83,8 @@ EXPECTED_PROBE_NAMES = (
     "S2c-equal",
     "S2d-no-baseline",
     "S2e-bad-provenance",
+    "S2h-f1-fingerprint-match",
+    "S2i-f1-fingerprint-mismatch",
     "S2f-unparseable",
     "S2g-update-env",
     "S3-write-error",
@@ -310,6 +312,32 @@ def main():
     #   无效基线被静默忽略而基线仍然失效（双输）。
     probe("S2e-bad-provenance", rc == 1 and "无效基线" in out,
           "缺 head 的基线 ⇒ FAIL（无效基线拒绝采用，rc=%d）" % rc)
+
+    # ---- F1 例集指纹（T-20261027-03）---------------------------------
+    # 数据源必须是 json 报告：文本日志的标签集合**同一份代码两跑不同**
+    # （4011 vs 4286），拿它做指纹 = 每轮抖动。
+    green_json = green[:-4] + ".json"
+    write(green_json,
+          '{"test":{"id":1,"name":"alpha case","suiteID":0},"type":"testStart"}\n'
+          '{"test":{"id":2,"name":"beta case","suiteID":0},"type":"testStart"}\n')
+    _, fp_out, _ = run_ev("_ev_suite_fingerprint", green_json)
+    fp_hash = fp_out.split(" ")[1] if " " in fp_out else ""
+
+    good = os.path.join(d, "fp_good.json")
+    write(good, '{"count": 100, "head": "6970aee7", '
+                '"generated_at": "2026-10-25T11:30:35+0800", "reason": "fixture", '
+                '"suite_size": 2, "suite_fingerprint": "%s"}' % fp_hash)
+    rc, out, _ = run_ev("ev_p2_count", green, good)
+    probe("S2h-f1-fingerprint-match", rc == 0 and "例集指纹 2 例一致" in out,
+          "json 指纹与基线一致 ⇒ PASS 且注明例集一致（rc=%d, fp=%s）" % (rc, fp_hash))
+
+    bad = os.path.join(d, "fp_bad.json")
+    write(bad, '{"count": 100, "head": "6970aee7", '
+               '"generated_at": "2026-10-25T11:30:35+0800", "reason": "fixture", '
+               '"suite_size": 2, "suite_fingerprint": "0000000000000000"}')
+    rc, out, _ = run_ev("ev_p2_count", green, bad)
+    probe("S2i-f1-fingerprint-mismatch", rc == 1 and "例集变了" in out,
+          "★ 例集变了、净数不变（F-2 的形态）⇒ FAIL（rc=%d）" % rc)
 
     rc, out, _ = run_ev("ev_p2_count", nosum, base100)
     probe("S2f-unparseable", rc == 0 and "归因 P1" in out,

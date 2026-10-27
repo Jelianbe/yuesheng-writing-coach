@@ -396,6 +396,16 @@ if [ "$RC_TEST" = "0" ]; then
       done <<< "$EVID_OUT"
     fi
     [ "$EVID_RC" = "0" ] || TEST_EVID_FAIL=1
+    # F2-C（T-20261027-03）：基线陈旧提醒（跨自然日 **且** head 与当前不同 ⇒ WARN，当日一次）。
+    # ★ 为什么单独一段、不进 ev_check_p123：后者的输出行数被自测断言为**恰好 3 行**
+    #   （S10/S12 探针），把提醒塞进去会让行数变 4 ⇒ 探针全红而判据没坏。
+    # ★ 为什么这行不破坏本道的归因判据：归因只 grep `[FAIL] P1`（另两条计数为 0），
+    #   而本行是 `[WARN] P2` 前缀、不含 `[FAIL]`。
+    STALE_HINT="$(ev_p2_stale_hint "$ROOT/tool/test_count_baseline.json" 2>/dev/null || true)"
+    if [ -n "$STALE_HINT" ]; then
+      echo "  $STALE_HINT"
+      printf '[run=%s] %s\n' "$GATE_RUN_ID" "$STALE_HINT" >> "$OUT_DIR/evidence_p123.txt"
+    fi
   else
     echo "  [FAIL] 证据链判据库 scripts/lib_gate_evidence.sh 不可读 ⇒ 无法验证 PASS 的证据"
     TEST_EVID_FAIL=1

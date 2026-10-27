@@ -122,15 +122,72 @@ _ev_base_count() { # 取不到 ⇒ 空串
 #   代码上谁调都能写 ⇒ 「基线被删过」永远留不下痕迹（删了就以当场 +N 首建，永久自洽）。
 #   现在必须显式 `EV_ALLOW_WRITE_BASELINE=1` 才能写；调用方在 `ev_p2_count` 的
 #   UPDATE 分支内先置该变量（外部仍只需 `UPDATE_TEST_BASELINE=1`，工作流不变）。
-_ev_write_baseline() { # $1=path $2=count $3=reason
-  local path="$1" count="$2" reason="$3" head
+_ev_write_baseline() { # $1=path $2=count $3=reason [$4="<suite_size> <fingerprint>"]
+  local path="$1" count="$2" reason="$3" suite="${4:-}" head
   if [ "${EV_ALLOW_WRITE_BASELINE:-0}" != "1" ]; then
     echo "[FAIL] 内部错误：_ev_write_baseline 未经授权被调用（缺 EV_ALLOW_WRITE_BASELINE=1）" >&2
     return 1
   fi
   head="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-  printf '{"count": %s, "head": "%s", "generated_at": "%s", "reason": "%s"}\n' \
-    "$count" "$head" "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$reason" > "$path" 2>/dev/null
+  if [ -n "$suite" ]; then
+    # 例集两键（T-20261027-03 F1/F2）：count 只证明「几个」，指纹才证明「哪几个」。
+    printf '{"count": %s, "head": "%s", "generated_at": "%s", "reason": "%s", "suite_size": %s, "suite_fingerprint": "%s"}\n' \
+      "$count" "$head" "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$reason" \
+      "${suite%% *}" "${suite#* }" > "$path" 2>/dev/null
+  else
+    # 无 json 报告时退回四键形态（不伪造指纹 —— 假指纹比没有更坏）。
+    printf '{"count": %s, "head": "%s", "generated_at": "%s", "reason": "%s"}\n' \
+      "$count" "$head" "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$reason" > "$path" 2>/dev/null
+  fi
+}
+
+# 例集指纹（T-20261027-03 F1/F2）：从 `--file-reporter json` 报告取**全量用例名**。
+#
+# ★ 为什么不能用文本日志（这条是本卡的前提，不是偏好）
+#   `+N` 是「已完成 N 个」，冒号后的标签是「当前正在跑的那个」，两者系统性差 1；
+#   并发段里**大多数用例名从头到尾不进日志**（`§四·补三` 定稿）：
+#   全量 5333 例，落盘 distinct 标签 **4011**（run1）/ **4286**（run2）——
+#   **同一份代码两跑不同** ⇒ 拿它做例集指纹 = 每轮抖动，比现状更坏。
+#   json 报告是唯一可信源（`testStart` 事件覆盖全部用例）。
+#
+# 输出：`<用例数> <sha256 前 16>`；取不到 ⇒ **空串**（调用方必须按「不判」处理，
+# 不许当 PASS —— 与 P2「取不到 +N 不判」同族）。
+_ev_suite_fingerprint() { # $1=json 报告
+  local f="${1:-}" body n fp
+  [ -f "$f" ] || return 0
+  body="$(grep '"type":"testStart"' "$f" 2>/dev/null \
+    | sed -nE 's/.*"test":\{"id":[0-9]+,"name":"([^"]*)".*/\1/p' \
+    | grep -v '^loading ' || true)"
+  [ -z "$body" ] && return 0
+  body="$(printf '%s\n' "$body" | LC_ALL=C sort -u)"
+  n="$(printf '%s\n' "$body" | wc -l | tr -d ' ')"
+  fp="$(printf '%s\n' "$body" | sha256sum | cut -c1-16)"
+  printf '%s %s' "$n" "$fp"
+}
+
+# 基线陈旧提醒（T-20261027-03 F2 的 C 部分）：
+# `generated_at` 跨自然日 **且** `head` 与当前 HEAD 不同 ⇒ WARN，**当日只提醒一次**。
+#
+# ★ 为什么独立成函数、不回 ev_p2_count：后者受「三行契约」约束
+#   （`ev_check_p123` 的输出行数被 S10/S12 探针断言为恰好 3 行）；
+#   把提醒塞进去会让行数变 4 ⇒ 探针全红，而真正的判据没坏。
+ev_p2_stale_hint() { # $1=baseline_json
+  local f="${1:-}" gen head_base gen_day today cur_head marker
+  [ -f "$f" ] || return 0
+  gen="$(sed -nE 's/.*"generated_at"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$f" 2>/dev/null | head -n 1)"
+  head_base="$(sed -nE 's/.*"head"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$f" 2>/dev/null | head -n 1)"
+  [ -z "$gen" ] && return 0
+  [ -z "$head_base" ] && return 0
+  gen_day="${gen:0:10}"
+  today="$(date '+%Y-%m-%d')"
+  [ "$gen_day" = "$today" ] && return 0
+  cur_head="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  [ "$head_base" = "$cur_head" ] && return 0
+  marker="${TMPDIR:-/tmp}/.ys_p2_stale_$today"
+  [ -f "$marker" ] && return 0
+  : > "$marker" 2>/dev/null || true
+  echo "[WARN] P2 基线陈旧：建于 $gen_day（head=$head_base），当前 head=$cur_head ⇒ 建议在下次全绿后 UPDATE_TEST_BASELINE=1 重钉（本条每日只提醒一次）"
+  return 0
 }
 
 # ---------- P1 汇总行 ----------
@@ -163,6 +220,7 @@ ev_p1_summary() { # $1=test_log
 # 取不到 N ⇒ **不判**（返回 0，归因 P1）：否则「破坏 P1」会连带 P2 变红，单点归因失效。
 ev_p2_count() { # $1=test_log $2=baseline_json
   local f="${1:-}" base_json="${2:-}" line n base reason
+  local json suite fp_base fp_note
   # 日志缺失时 _ev_facts 留空 ⇒ 下面落到 [N/A]。不在这里提前 return 0：
   # 静默返回会让 gate.sh 少打一行，看起来像「P2 通过了」，实际上是「P2 没说话」。
   _ev_facts "$f"; line="$EV_F_SUMMARY"
@@ -185,11 +243,9 @@ ev_p2_count() { # $1=test_log $2=baseline_json
     # F3（T-20261027-03，2026-10-28）：**不再自动首建**。
     # 旧行为「基线不存在 ⇒ 以当场 +N 首建 ⇒ 本轮不判定」使「删基线」= 永久自洽，
     # 且无任何判据能发现「基线被删过」——这是本卡三项里最大的洞。
-    # 文案必须给**可执行**命令：否则换机 / 首次 clone 的第一件事就是假红。
-    echo "[FAIL] P2 例数下限：基线缺失（$base_json）"
-    echo "       首建（仅换机 / 首次 clone 需要，且必须在**测试全绿**的轮次）："
-    echo "         UPDATE_TEST_BASELINE=1 bash scripts/gate.sh"
-    echo "       说明：该命令会跑完十九道门禁并在末尾重写基线；不要手工编辑 json。"
+    # ★ 文案必须**压成一行**：本函数受「每条判据恰一行」契约约束
+    #   （`ev_check_p123` 的输出行数被 S10/S12 探针断言为恰好 3 行）。
+    echo "[FAIL] P2 例数下限：基线缺失（$base_json）⇒ 首建：UPDATE_TEST_BASELINE=1 bash scripts/gate.sh（须在全绿轮次；勿手编 json）"
     return 1
   fi
 
@@ -206,23 +262,47 @@ ev_p2_count() { # $1=test_log $2=baseline_json
     return 0
   fi
 
+  # ── 例集指纹（T-20261027-03 F1/F2）──────────────────────────────────
+  # 数据源 = 本轮 json 报告：wrapper 由 `TEST_LOG_PATH` 推导同名 `.json`
+  # （`--file-reporter` 是追加输出，stdout/txt 形态不变，P1/P3 零影响）。
+  json="${f%.txt}.json"
+  suite="$(_ev_suite_fingerprint "$json")"
+  fp_base="$(sed -nE 's/.*"suite_fingerprint"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' \
+    "$base_json" 2>/dev/null | head -n 1)"
+
   if [ "${UPDATE_TEST_BASELINE:-0}" = "1" ]; then
     # 授权闸：外部仍只认 UPDATE_TEST_BASELINE=1（工作流不变），
     # 这里的 EV_ALLOW_WRITE_BASELINE 只是让「唯一写盘入口」在代码层成立。
-    EV_ALLOW_WRITE_BASELINE=1 _ev_write_baseline "$base_json" "$n" "$reason"
-    echo "[WARN] P2 例数下限：UPDATE_TEST_BASELINE=1 ⇒ 基线已刷新 $base → $n（显式入口）"
+    EV_ALLOW_WRITE_BASELINE=1 _ev_write_baseline "$base_json" "$n" "$reason" "$suite"
+    if [ -n "$suite" ]; then
+      echo "[WARN] P2 例数下限：UPDATE_TEST_BASELINE=1 ⇒ 基线已刷新 $base → $n（含例集指纹 ${suite#* }，显式入口）"
+    else
+      echo "[WARN] P2 例数下限：UPDATE_TEST_BASELINE=1 ⇒ 基线已刷新 $base → $n（**无 json 报告 ⇒ 未写指纹**，显式入口）"
+    fi
     return 0
   fi
 
+  if [ -z "$suite" ]; then
+    fp_note="；例集指纹未判（无 json 报告 ⇒ 归因 json 臂）"
+  elif [ -z "$fp_base" ]; then
+    fp_note="；例集指纹未判（基线无 suite_fingerprint ⇒ 下次 UPDATE 时写入，本轮 F1 未生效）"
+  elif [ "${suite#* }" != "$fp_base" ]; then
+    # ★ F1 的核心：删 A 补 B 时净数可以完全不变 ⇒ 只比净数恒绿。
+    echo "[FAIL] P2 例集：指纹 ${suite#* } ≠ 基线 $fp_base ⇒ 例集变了（删 A 补 B / 改名 / 删例）；净数 +N=$n 不作数"
+    return 1
+  else
+    fp_note="；例集指纹 ${suite%% *} 例一致"
+  fi
+
   if [ "$n" -lt "$base" ]; then
-    echo "[FAIL] P2 例数下限：+N=$n < 基线 $base ⇒ 例数下降（Δ=$((n - base))）"
+    echo "[FAIL] P2 例数下限：+N=$n < 基线 $base ⇒ 例数下降（Δ=$((n - base))）$fp_note"
     return 1
   fi
   if [ "$n" -gt "$base" ]; then
-    echo "[WARN] P2 例数下限：+N=$n > 基线 $base（Δ=+$((n - base))）⇒ 用例增长，提示刷新基线"
+    echo "[WARN] P2 例数下限：+N=$n > 基线 $base（Δ=+$((n - base))）⇒ 用例增长，提示刷新基线$fp_note"
     return 0
   fi
-  echo "[PASS] P2 例数下限：+N=$n = 基线 $base"
+  echo "[PASS] P2 例数下限：+N=$n = 基线 $base$fp_note"
   return 0
 }
 
