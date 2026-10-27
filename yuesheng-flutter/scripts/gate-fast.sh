@@ -315,18 +315,25 @@ log_result "静态分析 (analyze lib+integration_test+tool+test)" "$RC_ANALYZE"
 # ---------- 门禁 2: 窄范围测试 ----------
 echo "--> 快道 门禁 2: 单元测试（窄范围，不加 --coverage）"
 if [ "$TEST_SCOPE" = "__ALL__" ]; then
-  if bash scripts/_run_flutter_test.sh > "$TEST_LOG" 2>&1; then
+  if TEST_LOG_PATH="$TEST_LOG" bash scripts/_run_flutter_test.sh; then
     RC_TEST=0
   else
+    rc_ev=$?          # ★ 必须先取：`RC_TEST=1` 是赋值，会把 $? 冲成 0
     RC_TEST=1
-    tail -n 40 "$TEST_LOG"
+    if [ "$rc_ev" = "75" ]; then
+      echo "  [NOTE] 门禁 2 未执行：另一轮 flutter test 持锁（rc=75）⇒ 本轮无测试日志（不展示上一轮内容）"
+    else
+      tail -n 40 "$TEST_LOG"
+    fi
   fi
   log_result "单元测试 (flutter test，本轮强制全量)" "$RC_TEST"
 elif [ -n "$TEST_SCOPE" ]; then
   # --exclude-tags live,external 由 _run_flutter_test.sh 固定加，此处不重复传
-  RUN_FLUTTER_TEST_COVERAGE=0 bash scripts/_run_flutter_test.sh $TEST_SCOPE > "$TEST_LOG" 2>&1
+  TEST_LOG_PATH="$TEST_LOG" RUN_FLUTTER_TEST_COVERAGE=0 bash scripts/_run_flutter_test.sh $TEST_SCOPE
   RC_TEST=$?
-  if [ "$RC_TEST" != "0" ]; then
+  if [ "$RC_TEST" = "75" ]; then
+    echo "  [NOTE] 门禁 2 未执行：另一轮 flutter test 持锁（rc=75）⇒ 本轮无测试日志（不展示上一轮内容）"
+  elif [ "$RC_TEST" != "0" ]; then
     tail -n 40 "$TEST_LOG"
   fi
   log_result "单元测试 (flutter test，窄范围 ${TEST_COUNT} 文件)" "$RC_TEST"

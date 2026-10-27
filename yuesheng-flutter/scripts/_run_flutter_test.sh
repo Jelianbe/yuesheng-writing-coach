@@ -186,6 +186,15 @@ if [ "$READBACK_PID" != "$$" ]; then
   lock_abort "写后回读不符：期望 pid=$$，实读 '$READBACK_PID'（写入 rc=0 但落盘不是本进程）"
 fi
 
+# ★ T-20261027-04 乙（2026-10-27 舰长裁「先乙后甲」）：日志截断必须发生在**持锁之后**。
+#   旧写法由调用方 `> "$TEST_LOG"` 在脚本启动前截断 ⇒ 两轮并发时后一轮先清空、
+#   前一轮仍按旧偏移写 ⇒ 稀疏文件（曾见 14.2 MB 带 NUL）⇒ 汇总行可能落在 NUL 之后不被 grep 命中。
+#   `exec >` 只截断一次，且此刻已持锁 ⇒ 截断与写入进同一临界区。
+#   未设 TEST_LOG_PATH 时行为与改前完全一致（stdout 照旧交给调用方）。
+if [ -n "${TEST_LOG_PATH:-}" ]; then
+  exec > "$TEST_LOG_PATH" 2>&1
+fi
+
 # 1. 注入 Windows 标准环境变量（仅缺时）
 #    bash 变量名解析限制：PROGRAMFILES(X86) 含括号无法作变量名 → 用 env 命令传。
 export PROGRAMFILES="${PROGRAMFILES:-C:\\Program Files}"

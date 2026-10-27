@@ -309,11 +309,18 @@ echo "--> 门禁 2/19: 单元测试 (flutter test)"
 # 「%PROGRAMFILES(X86)% environment variable not found.」且被 `| tail`
 # 吞掉退出码后**假绿**。注入兜底统一放在 _run_flutter_test.sh：
 #   原值优先，仅缺时注入 Windows 标准值；其他环境完全不变。
-if bash scripts/_run_flutter_test.sh > "$TEST_LOG" 2>&1; then
+if TEST_LOG_PATH="$TEST_LOG" bash scripts/_run_flutter_test.sh; then
   RC_TEST=0
 else
+  rc_ev=$?          # ★ 必须先取：`RC_TEST=1` 是赋值，会把 $? 冲成 0
   RC_TEST=1
-  tail -n 40 "$TEST_LOG"
+  if [ "$rc_ev" = "75" ]; then
+    # 75 = lock_abort（另一轮持锁）⇒ 本轮**没跑**测试，test.txt 是上一轮内容。
+    # 不截断它：截断会摧毁正在持锁那一轮的日志 —— 那正是 T-20261027-04 要治的混写。
+    echo "  [NOTE] 门禁 2 未执行：另一轮 flutter test 持锁（rc=75）⇒ 本轮无测试日志（不展示上一轮内容）"
+  else
+    tail -n 40 "$TEST_LOG"
+  fi
 fi
 
 # ---------- 门禁 2 证据链（P1/P2/P3 · T-20261025-04）----------
