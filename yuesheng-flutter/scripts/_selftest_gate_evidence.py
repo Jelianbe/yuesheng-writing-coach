@@ -44,6 +44,7 @@
 """
 
 import contextlib
+import fnmatch
 import io
 import os
 import subprocess
@@ -639,16 +640,29 @@ def main():
           "真绿必须判绿 ⇒ 判据不是恒红（rc=%d）" % rc)
 
     # ---------------- 真样本（信息性，不影响退出码）----------------
-    real = os.path.join(ROOT, "outputs", "gate", "test.txt")
+    # 日志名自甲方案（T-20261027-04 §7）起带 run id：`outputs/gate/test-<run>.txt`；
+    # 固定名 `test.txt` 只在甲落地前的存量里存在。取 mtime 最新的一份 = 「上一轮」。
+    # 通配与 gate.sh 的保留策略同一条（`test-2*-*.txt`），别写成 `test*` ——
+    # 同目录还有手工留档的 `test_run_full.txt`，它不是门禁日志。
+    gate_dir = os.path.join(ROOT, "outputs", "gate")
+    cands = []
+    if os.path.isdir(gate_dir):
+        cands = [
+            os.path.join(gate_dir, n)
+            for n in os.listdir(gate_dir)
+            if n == "test.txt" or fnmatch.fnmatch(n, "test-2*-*.txt")
+        ]
+    cands.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+    real = cands[0] if cands else os.path.join(gate_dir, "test.txt")
     if os.path.isfile(real):
         rc, out, _ = run_ev("ev_p1_summary", real)
         rc3, _, _ = run_ev("ev_p3_log_integrity", real)
-        print("/ INFO   真样本 outputs/gate/test.txt  P1 rc=%d · P3 rc=%d（信息性，不参与判定）"
-              % (rc, rc3))
+        print("/ INFO   真样本 %s  P1 rc=%d · P3 rc=%d（信息性，不参与判定）"
+              % (os.path.basename(real), rc, rc3))
         if out:
             print("         %s" % out)
     else:
-        print("/ INFO   真样本 outputs/gate/test.txt 不存在 ⇒ 跳过（信息性）")
+        print("/ INFO   真样本 outputs/gate/test-<run>.txt 不存在 ⇒ 跳过（信息性）")
 
     # ---------------- 哨兵（R2 的兜底）：probe() 还能不能报告失败 ----------------
     # ⚠️ 必须放在**汇总之前**、且**不经 probe()** —— 否则它自己也会被同一条篡改带走

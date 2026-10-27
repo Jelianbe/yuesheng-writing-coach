@@ -79,7 +79,8 @@ mkdir -p "$OUT_DIR"
 REPORT="$OUT_DIR/gate-report.md"
 FORMAT_LOG="$OUT_DIR/format.txt"
 TYPECHECK_LOG="$OUT_DIR/typecheck.txt"
-TEST_LOG="$OUT_DIR/test.txt"
+# ⚠️ TEST_LOG **不在这里定义**：它的文件名含 `$GATE_RUN_ID`（见下方「测试日志命名与保留策略」）。
+#   顺序不可反 —— 本文件 `set -u` 在生效，提前展开未定义变量会当场 abort。
 CIRCULAR_LOG="$OUT_DIR/circular.txt"
 SECURITY_LOG="$OUT_DIR/security.txt"
 R019_LOG="$OUT_DIR/r019.txt"
@@ -114,6 +115,29 @@ GATE_PROFILE="fast"
 GATE_SEQ=0
 GATE_T_LAST=$(date +%s)
 GATE_HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+# ---------- 测试日志命名与保留策略（甲方案 · T-20261027-04 §7）----------
+# 【为什么名字里必须带 run id】固定名 `test.txt` 全仓唯一 ⇒ 两轮必争同一文件：后一轮的
+#   截断会把前一轮日志抹掉 ⇒ 「截断型混写」。带 run id 才是根因消灭（与 gate.sh 同一裁定，
+#   机理与取舍不在此复述）。
+# 【为什么定义放在这里】本文件 `set -u` 在生效，`$GATE_RUN_ID` 在上一行才算出来。
+TEST_LOG="$OUT_DIR/test-$GATE_RUN_ID.txt"
+
+# 【保留策略】磁盘终态只留 PRUNE_KEEP 份（**含本轮**），与本文件外的 gate.sh 同一语义。
+#   ★ 为什么清掉的是 KEEP-1 份历史：本段**早于本轮文件创建**（文件由门禁 2 的 wrapper
+#     在拿到锁之后才建）⇒ 按 KEEP 清历史会让磁盘终态变成 KEEP+1 份。
+#     语义定死：`PRUNE_KEEP` = 磁盘终态份数（含本轮），启动时只保留 `PRUNE_KEEP-1` 份历史。
+#   通配**只匹配 `test-2*-*.txt`**（绝不写 `test*`）；排除本轮自身；失败只打一行 [WARN]。
+#   本轮 abort（rc=75）时不会创建文件 ⇒ 磁盘终态是 `PRUNE_KEEP-1` 份，属预期。
+#   快道目录实测仅 80 K，5 份上限是统一口径而不是为省空间。
+PRUNE_KEEP=5                                  # 磁盘终态份数（含本轮）
+PRUNE_KEEP_HIST=$((PRUNE_KEEP - 1))           # 启动时保留的历史份数
+PRUNE_OLD_LOGS="$(ls -1t "$OUT_DIR"/test-2*-*.txt 2>/dev/null | tail -n +$((PRUNE_KEEP_HIST + 1)) || true)"
+while IFS= read -r _old_log; do
+  [ -n "$_old_log" ] || continue
+  [ "$_old_log" = "$TEST_LOG" ] && continue
+  rm -f -- "$_old_log" || echo "  [WARN] 旧测试日志清理失败（不影响门禁结论）: $_old_log"
+done <<< "$PRUNE_OLD_LOGS"
 
 record_hit() {
   local name="$1"; local ok="$2"
@@ -591,7 +615,7 @@ ${DEGRADED_BANNER}${LIB_NOMATCH_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 ## 详细日志
 - 格式: outputs/gate-fast/format.txt
 - 静态分析: outputs/gate-fast/typecheck.txt
-- 测试: outputs/gate-fast/test.txt
+- 测试: outputs/gate-fast/test-$GATE_RUN_ID.txt
 - 循环依赖: outputs/gate-fast/circular.txt
 - 安全扫描: outputs/gate-fast/security.txt
 - R-019 函数行数: outputs/gate-fast/r019.txt

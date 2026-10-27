@@ -112,7 +112,8 @@ REPORT="$OUT_DIR/gate-report.md"
 # 日志落盘
 FORMAT_LOG="$OUT_DIR/format.txt"
 TYPECHECK_LOG="$OUT_DIR/typecheck.txt"
-TEST_LOG="$OUT_DIR/test.txt"
+# ⚠️ TEST_LOG **不在这里定义**：它的文件名含 `$GATE_RUN_ID`（见下方「测试日志命名与保留策略」）。
+#   顺序不可反 —— 本文件 `set -u` 在生效，提前展开未定义变量会当场 abort。
 CIRCULAR_LOG="$OUT_DIR/circular.txt"
 SECURITY_LOG="$OUT_DIR/security.txt"
 R019_LOG="$OUT_DIR/r019.txt"
@@ -207,6 +208,35 @@ GATE_T_LAST=$(date +%s)
 # 所以这里必须**拷一份**，不能直接引用它。
 GATE_RUN_START_TS="$GATE_T_LAST"
 GATE_HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+# ---------- 测试日志命名与保留策略（甲方案 · T-20261027-04 §7）----------
+# 【为什么名字里必须带 run id】固定名 `test.txt` 全仓唯一 ⇒ 两轮必争同一文件：后一轮的
+#   截断会把前一轮日志抹掉，出现「截断型混写」（前轮汇总行已写、后轮未写汇总行即被截断）
+#   ⇒ 新老一致假绿。乙方案（bf8b7176）只把截断搬进锁内，名字仍唯一 ⇒ 下一轮仍会合法覆盖。
+#   带 run id 才是根因消灭：两轮永不写同一文件。
+# 【为什么定义放在这里】本文件 `set -u` 在生效，`$GATE_RUN_ID` 在上一段才算出来；
+#   提前展开 = 引用未定义变量 = 当场 abort。
+TEST_LOG="$OUT_DIR/test-$GATE_RUN_ID.txt"
+
+# 【保留策略】按轮累积会无限增长（单份实测 ≈14 MB）⇒ 磁盘终态只留 PRUNE_KEEP 份（**含本轮**）。
+#   ★ 为什么清掉的是 KEEP-1 份历史：本段**早于本轮文件创建**（文件由门禁 2 的 wrapper
+#     在拿到锁之后才建），所以 `ls` 此刻只看得到历史文件。若按 KEEP 清历史，
+#     磁盘终态会是 KEEP+1（7 份历史清到 5 份 + 本轮新建 1 份 = 6 份）
+#     ⇒ 甲-3 判据「只剩 5 份（含本轮）」必红。
+#     ⇒ 语义定死：`PRUNE_KEEP` = **磁盘终态份数（含本轮）**，启动时只保留 `PRUNE_KEEP-1` 份历史。
+#   · 通配**只匹配 `test-2*-*.txt`**：同目录下有历史样本 `test_run_full.txt`（14.4 MB，
+#     手工留档、不可再生）与 `test_v46.json` 等，写成 `test*` 会把它们一起删掉。
+#   · 排除本轮自身：此刻文件还没创建，理论上不会命中；显式比对是防 GATE_RUN_ID 撞名。
+#   · 本轮 abort（rc=75，另一轮持锁）时不会创建文件 ⇒ 磁盘终态是 `PRUNE_KEEP-1` 份，属预期。
+#   · 失败不得让门禁失败（这是顺手维护，不是判据）⇒ 打一行 [WARN]，不空吞。
+PRUNE_KEEP=5                                  # 磁盘终态份数（含本轮）
+PRUNE_KEEP_HIST=$((PRUNE_KEEP - 1))           # 启动时保留的历史份数
+PRUNE_OLD_LOGS="$(ls -1t "$OUT_DIR"/test-2*-*.txt 2>/dev/null | tail -n +$((PRUNE_KEEP_HIST + 1)) || true)"
+while IFS= read -r _old_log; do
+  [ -n "$_old_log" ] || continue
+  [ "$_old_log" = "$TEST_LOG" ] && continue
+  rm -f -- "$_old_log" || echo "  [WARN] 旧测试日志清理失败（不影响门禁结论）: $_old_log"
+done <<< "$PRUNE_OLD_LOGS"
 
 record_hit() {
   local name="$1"; local ok="$2"
@@ -315,8 +345,9 @@ else
   rc_ev=$?          # ★ 必须先取：`RC_TEST=1` 是赋值，会把 $? 冲成 0
   RC_TEST=1
   if [ "$rc_ev" = "75" ]; then
-    # 75 = lock_abort（另一轮持锁）⇒ 本轮**没跑**测试，test.txt 是上一轮内容。
-    # 不截断它：截断会摧毁正在持锁那一轮的日志 —— 那正是 T-20261027-04 要治的混写。
+    # 75 = lock_abort（另一轮持锁）⇒ 本轮**没跑**测试，本轮的 test-<run>.txt **不存在**
+    # （甲方案起日志名带 run id ⇒ 不会再把上一轮内容显示成本轮）。
+    # 不截断任何日志：截断会摧毁正在持锁那一轮的日志 —— 那正是 T-20261027-04 要治的混写。
     echo "  [NOTE] 门禁 2 未执行：另一轮 flutter test 持锁（rc=75）⇒ 本轮无测试日志（不展示上一轮内容）"
   else
     tail -n 40 "$TEST_LOG"
@@ -1143,7 +1174,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 ## 详细日志
 - 格式: outputs/gate/format.txt
 - 静态分析: outputs/gate/typecheck.txt
-- 测试: outputs/gate/test.txt
+- 测试: outputs/gate/test-$GATE_RUN_ID.txt
 - 循环依赖: outputs/gate/circular.txt
 - 安全扫描: outputs/gate/security.txt
 - R-019 函数行数: outputs/gate/r019.txt
