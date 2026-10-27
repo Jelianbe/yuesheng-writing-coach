@@ -69,7 +69,7 @@ VERBOSE = "-v" in sys.argv or "--verbose" in sys.argv
 #   `_probe_can_report_failure()` 里也有一行 `probe("__SANITY__", …)`（且它故意
 #   不计入条数）⇒ 那个 grep 现在回 **36**，与实跑的 35 差 1。用错的判据去核这个
 #   常量，会得出「常量写错了」的假结论 —— 这正是本仓反复踩的那类坑。
-EXPECTED_PROBE_COUNT = 40
+EXPECTED_PROBE_COUNT = 44
 EXPECTED_PROBE_NAMES = (
     "S0-green",
     "S1-no-summary",
@@ -109,6 +109,13 @@ EXPECTED_PROBE_NAMES = (
     "S12c-empty-text-branch",
     "S12d-single-run",
     "S12e-no-false-drop-text",
+    # S13 组的名字带**卡项编号**（G1a/G1b/G2b/G2c），不按执行顺序编号：
+    #   它们来自三张不同卡项、同一批补齐，用执行顺序号会让人误以为是同一件事的四个步骤。
+    #   ⇒ 名字自己说明它守的是哪一项；清单比对按**集合**做，与顺序无关。
+    "S13-G2b-reversed-mixed-order",
+    "S13-G2c-fixture-count-parseable",
+    "S13-G1a-p2-missing-no-stderr",
+    "S13-G1b-facts-reset-stale-n1",
     "S7-meta-not-always-green",
     "S8-meta-not-always-red",
 )
@@ -511,6 +518,115 @@ def main():
     probe("S12e-no-false-drop-text",
           ("例数下降" not in out) and ("-5261" not in out),
           "混写时不得出现「例数下降」/ -5261（旧逻辑的假红文本，实读=%.60r）" % out)
+
+    # ---------------- G2b · 逆序混写 = **顺序无关性**（不是新失败形态）----------------
+    # 【为什么要它】S12a/S12b/S12e 的夹具是「全量汇总行在前、窄道 +34 在后」。
+    #   逆序（`+34` 在前、`+5295` 在后）时，P1 取**最后**一条汇总行 ⇒ 取到的是 `+5295`
+    #   ⇒ 老逻辑看起来**完全正常**（P1 PASS、P2 +N=5295 = 基线 5295 ⇒ PASS）。
+    #   ⇒ 同一份「混写」事实，只因为两轮写入的先后不同，判据就时红时绿 —— 那是判据不稳定，
+    #     不是日志有问题。本探针钉的正是这条**顺序无关性**。
+    # 【★ 禁止写成 `("例数下降" not in out)`】该形态下新老库**都不出**这四个字
+    #   （老库 +5295 恰好等于基线 ⇒ 走 PASS 分支；新库走 [N/A]）⇒ 天生恒真。
+    #   这是 G2（S12e）同族第 2 次，别在这里重犯。
+    # 【老逻辑下的期望输出原文】老库 ⇒ `[PASS] P1 命中「04:31 +5295」` /
+    #   `[PASS] P2 +N=5295 = 基线 5295` / `[PASS] P3`，rc=0 ⇒ 本探针必红。
+    reversed_mixed = write(
+        os.path.join(d, "mixed_reversed.txt"),
+        "02:11 +34 ~0: All tests passed!\n" + PROGRESS + GREEN_TAIL,
+    )
+    rc, out, err = run_ev("ev_check_p123", reversed_mixed, base5295)
+    lines = [l for l in out.splitlines() if l.strip()]
+    probe("S13-G2b-reversed-mixed-order",
+          rc == 1 and len(lines) == 3
+          and lines[0].startswith("[FAIL] P1") and "命中 2 条" in lines[0]
+          and lines[1].startswith("[N/A] P2")
+          and lines[2].startswith("[PASS] P3"),
+          "逆序混写（+34 在前）也必须判红 ⇒ P1 命中 2 条 / P2 让位（rc=%d, 行数=%d, P1=%.40r）"
+          % (rc, len(lines), lines[0] if lines else ""))
+
+    # ---------------- G2c · 夹具可解析守卫（守「编码形态」这一类，不守某个数值）----------------
+    # 【它守什么】上一批实测发现：夹具若写成 `"count": "5295"`（带引号），
+    #   `_ev_base_count` 解析不出 ⇒ `ev_p2_count` 走「无效基线」WARN ⇒
+    #   **S12e 在缺陷在场时也全绿**（比原缺陷更坏：原缺陷只是一个子句恒真，带引号让整条探针失效）。
+    #   所以「夹具能被解析」本身必须是一条**能变红**的判据。
+    # 【为什么断言 `_ev_base_count` 的返回值，而不是「文件里有 count 字样」】后者对编码形态
+    #   零鉴别力（带引号的文件里也有 `count` 字样）。返回值是**行为**：解析得出 / 解析不出。
+    # 【为什么取三个不同数值】若 `_ev_base_count` 被改成恒返回 "5295" 或恒返回空，
+    #   单值断言会漏；100/5295/10 三值同时对上才排除「常量函数」与「空函数」两种退化。
+    # 【为什么不顺带断言「带引号 ⇒ 返回空」】那会把**库**的一个实现细节钉死：
+    #   若将来有人让 `_ev_base_count` 宽容引号（一种正当改进），本探针会**拦住正确修法** ——
+    #   本文件 S6 就是这么被删掉的（`"-1".isdigit()` 为 False）。⇒ 带引号形态只作诊断读数，不断言。
+    g2c_pairs = [("base100", base100, "100"),
+                 ("base5295", base5295, "5295"),
+                 ("base10", base10, "10")]
+    g2c_got = [(n, run_shell(". %s; _ev_base_count %s"
+                             % (shell_quote(LIB), shell_quote(p)))[1], want)
+               for n, p, want in g2c_pairs]
+    quoted_diag = run_shell(
+        ". %s; _ev_base_count %s"
+        % (shell_quote(LIB),
+           shell_quote(write(os.path.join(d, "base_quoted_diag.json"),
+                             '{"count": "5295", "head": "6970aee7", '
+                             '"generated_at": "2026-10-25T11:30:35+0800", '
+                             '"reason": "diagnostic"}\n'))))[1]
+    probe("S13-G2c-fixture-count-parseable",
+          all(got == want for _, got, want in g2c_got),
+          "夹具必须能被 _ev_base_count 解析出传入的 count（实读=%s；诊断：带引号形态→%r，不断言）"
+          % (", ".join("%s→%r(期望%s)" % (n, got, want) for n, got, want in g2c_got),
+             quoted_diag))
+
+    # ---------------- G1a · ⑦（`${EV_F_N1:-0}` 空串默认）的零覆盖补口 ----------------
+    # 【为什么需要】`_ev_facts` 对**不存在的文件**在 line 73 `[ -f "$f" ] || return 0` 早退，
+    #   此时 `EV_F_N1` 是 line 72 设的**空串**（不是 "0"）—— 因为 line 85 那句
+    #   `[ -n "$EV_F_N1" ] || EV_F_N1=0` 在早退路径上**根本到不了**。
+    #   `ev_p1_summary`/`ev_p2_count` 靠 `${EV_F_N1:-0}` 把空串解释成 0。
+    #   删掉 `:-0` ⇒ `[ "" -gt 1 ]` 往 stderr 喷 `integer expression expected`，
+    #   `if` 仍判假 ⇒ **结论不变、只多一行 stderr**。
+    #   ⇒ 所以本探针断言 `err == ""`，**不**匹配报错文本（换机器 / 换 locale 就废）。
+    # 【为什么现有 9 处 `run_ev("ev_p2_count", …)` 抓不到】它们第一参数**全是存在的文件**
+    #   ⇒ `EV_F_N1` 总被 awk 赋成 "0"/"1"/"2"，`:-0` 这条分支从不执行。
+    # 【诚实分类】**⑦ 属纵深，非必需**：生产 `ev_check_p123` 对缺失日志在 line 247 就
+    #   自己短路了，压根到不了 `_ev_facts`；⑦ 真正兜的是「同一 shell 先读 A 文件、
+    #   再读一个不存在的文件」这条**非生产**路径。它值一条探针，但别把它写成「必需」。
+    # 【老逻辑下的期望输出原文】删 `:-0` ⇒ stderr 出现
+    #   `...: [: : integer expression expected`（本机实测），out 仍是 `[N/A] P2 …无法从日志解析`。
+    missing_log = os.path.join(d, "no_such_log_for_p2.txt")
+    rc, out, err = run_ev("ev_p2_count", missing_log, base100)
+    probe("S13-G1a-p2-missing-no-stderr",
+          rc == 0 and err == "" and "无法从日志解析" in out,
+          "日志缺失 + 直调 ev_p2_count ⇒ 不得有 stderr（⑦ 用 :-0 兜空串；"
+          "实读 stderr=%.60r, out=%.40r）" % (err, out))
+
+    # ---------------- G1b · ①（`_ev_facts` 的 reset 行）的零覆盖补口 ----------------
+    # 【缺 ① 会怎样】`_ev_facts` 先设 `EV_F_SRC/READY` 与四个变量（line 72），再判 `[ -f ]`。
+    #   删掉 line 72 的 `EV_F_N1=""` ⇒ **文件不存在时**上一份文件留下的 `EV_F_N1` 原封不动
+    #   ⇒ `ev_p2_count` 把「日志缺失」归因成「汇总行不唯一（2 条）」。
+    #   ⚠️ rc **不变**（两种都是 `[N/A]` + 0），变的**只有归因文本** ⇒ 判据必须断言归因。
+    #   这是本仓最贵的一类错：让下一个人去找一场从没发生过的并发。
+    # 【为什么必须**同一 bash 进程**内两调用】① 只在「读第二个文件」时才起作用；
+    #   每次 `run_ev` 都是新进程 ⇒ 冷启 ⇒ 永远看不到残留。
+    # 【为什么要先打阳性对照 `n1_after_mixed`】否则「归因正确」也可能是因为残留压根没被造出来
+    #   （= 零命中 vs 测量没跑，外观相同）。阳性对照 = 证明这次测量真的发生了。
+    # 【诚实分类】**① 属纵深，非必需**：生产 `ev_check_p123` 只调一次 `_ev_facts`，
+    #   且缺失日志在它自己的 line 247 就短路了。① 兜的是「同一 shell 连读两份日志」这条非生产路径。
+    # 【老逻辑下的期望输出原文】删 `EV_F_N1=""` ⇒ 阳性对照仍是 `n1_after_mixed=2`，
+    #   但 P2 行变成 `[N/A] P2 例数下限：汇总行不唯一（2 条）⇒ 本条不判（归因 P1）` ⇒ 本探针必红。
+    _, g1b_out = run_shell(
+        ". %s; _ev_facts %s; printf 'n1_after_mixed=%%s\\n' \"$EV_F_N1\"; "
+        "ev_p2_count %s %s"
+        % (shell_quote(LIB), shell_quote(mixed),
+           shell_quote(missing_log), shell_quote(base100)))
+    g1b_lines = [l for l in g1b_out.splitlines() if l.strip()]
+    probe("S13-G1b-facts-reset-stale-n1",
+          len(g1b_lines) == 2
+          and g1b_lines[0] == "n1_after_mixed=2"
+          and g1b_lines[1].startswith("[N/A] P2")
+          and "无法从日志解析" in g1b_lines[1]
+          and "汇总行不唯一" not in g1b_lines[1],
+          "同进程连读两份 ⇒ 缺失日志必须归因「无法解析」而非「不唯一」"
+          "（阳性对照=%r, P2=%.40r）"
+          % (g1b_lines[0] if g1b_lines else "",
+             g1b_lines[1] if len(g1b_lines) > 1 else ""))
 
     # ---------------- 元探针 ----------------
     empty_txt = write(os.path.join(d, "empty.txt"), "")
