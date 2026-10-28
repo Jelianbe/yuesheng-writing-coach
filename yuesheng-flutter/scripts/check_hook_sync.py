@@ -81,7 +81,7 @@ def main() -> int:
             print(f"[SKIP] hook 副本未安装（{dst} 不存在）——非漂移。")
             print(f"       安装：bash <repo>/yuesheng-flutter/scripts/install-git-hooks.ps1"
                   f"（PowerShell: pwsh -File ...）")
-        return 0
+        return 2
 
     if dst_md5 == src_md5:
         if not quiet:
