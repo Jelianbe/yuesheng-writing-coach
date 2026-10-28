@@ -769,9 +769,29 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    （原位单行替换，行数 1456 → 1456 不变；★ 口径：只认 `wc -l` / `awk END{print NR}`，勿用语言层 `split('\n')` —— 末行有换行时会多算一个空尾元素，本项目已踩过一次）。
 #    ⚠️ **相对上一版是回收，相对批一a 之前的 2544 仍是提额**：guide new 2767
 #    比上一版 2736 低 11（乙撤回），但比在产峰值 2544 高 223 ⇒ 两种口径要分清。
+# ★ 2026-10-28 第二十一次重贴实测值（kChunkSystemPrompt 5785→5849 +64 ·
+#    chunkExceptionGuideBlock 2767→2831 +64；suffix 977 不动）：
+#    方向 = `T-20261027-01` **H4-A**（舰长「按你推荐走就行，都批」· 报批稿
+#    `.ai/reports/2026-10-28-报批稿-H4-③强制两条锚定引文.md` §2 · `DECISIONS §4-358`）：
+#    ③ 由「须指认切换前后各自的感知者且二者不同」升级为「**须在本窗正文中逐字
+#    摘引两条句子**（切换前一条 / 切换后一条；不得同句、不得取自引号内人物台词），
+#    再分别指出各自感知者」⇒ 新增四项**可锚定化**要求（两条句子 / 前后各一 /
+#    不同句 / 非台词），**不新增任何豁免**。
+#    归类**新增类**：`:409` old 342 字符 → new 406 字符 = **+64**，
+#    与两键实测 Δ 逐位一致（2767+64=2831 / 5785+64=5849，取自重冻写模式运行时打印值）。
+#    两键同增同值互证（装配式 `$_kChunkExceptionGuide` 在
+#    `progressive_diagnosis.dart:580` 只出现 1 次，两侧分隔符固定）。
+#    ⚠️ fnv 照抄运行时打印串（`toRadixString(16)` **不补零**）：本次两键**均为 16 位**
+#    （chunk `670a18da88bcb786` / guide `257abc1bd89b48ec`）⇒ 补零或截断都会让比对恒红。
+#    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+#    （原位单行替换）。
+#    ⚠️ **本批是真实提额**：guide new 2831 越过在产峰值 2767（+64），比批一a 之前的
+#    2544 高 287 ⇒ 不得写成「额度回收」。
+#    ★ 沿革记账位置：常量级重钉（第十九次起）只记在**本段**；表头那份「红线沿革」
+#    列表停更在第十八次 —— 引用沿革序号时以本段为真源。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5785, '56e4811709d8d348'),
-    'chunkExceptionGuideBlock': (2767, '7d632f716a1ea36'),
+    'kChunkSystemPrompt': (5849, '670a18da88bcb786'),
+    'chunkExceptionGuideBlock': (2831, '257abc1bd89b48ec'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 
