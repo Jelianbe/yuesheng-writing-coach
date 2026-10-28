@@ -58,6 +58,14 @@ String getSyndromeContent(List<String> syndromeIds) {
 /// 选项 A，舰长批准）。后续按实测增删只改本常量一处，装配机制不动。
 const List<String> kFirstRoundCriteriaIds = ['P001', 'P002', 'P003', 'P018'];
 
+/// P034 五条「不判」的逐字副本（真源：`syndrome_kb_content_manual_6.dart:387`）。
+/// 仅首轮面注入；分块链已有 3/5 改写，不动（一次一变量）。
+/// 同步牙：`first_round_p034_exemption_test.dart` 断言本常量是
+/// `getSyndromeCriteriaSections(['P034'])` 的子串 ⇒ 手册改动会红。
+const String _kFirstRoundP034Exemptions =
+    'P034（代词指代不清/零回指过载）不判清单：\n\n'
+    '- **以下不判指称过载**（原例外内化，对应"就近候选<2"阈值）：①同一小话题下的单主角行动链——连续零主语省略、就近候选恒为1；②对话轮内紧邻动作省略说话人——中文网文常态；③上句刚出现唯一专名、就近候选仅1个；④明确时间/场景连词引导的换域（"与此同时/另一边/而此时"）——其后零回指读者有重锚预期；⑤无人物候选竞争的并列环境句/写景流水句。';
+
 /// W-17：按 ID 提取 L3 判据段**原文**（不带 [getSyndromeContent] 的
 /// 「活跃症候详细定义」header —— 该句语义为「你当前锁定诊断的症候」，与
 /// 首轮语境错位，等于把判据伪装成既定结论，有先入为主锚定风险；设计批
@@ -87,7 +95,11 @@ String buildFirstRoundCriteriaBlock({
             .where((id) => !disabledSyndromeIds.contains(id))
             .toList();
   if (ids.isEmpty) return '';
-  return '$header\n\n${getSyndromeCriteriaSections(ids)}';
+  // R-009：用户永久关闭 P034 ⇒ 其「不判清单」也不注入（不提示一个被关的症候）。
+  final exemptions = disabledSyndromeIds.contains('P034')
+      ? ''
+      : '\n\n$_kFirstRoundP034Exemptions';
+  return '$header\n\n${getSyndromeCriteriaSections(ids)}$exemptions';
 }
 
 // ── b9 批次28：症候库表格行渲染（输出与手写逐字一致）──────────

@@ -49,13 +49,13 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 55857,
-      "fnv": "24b3c415c0d0c332"
+      "len": 55814,
+      "fnv": "4b6d0c4dc911feec"
     },
     {
       "role": "system",
-      "len": 9397,
-      "fnv": "51e1c8edabd233fa"
+      "len": 9600,
+      "fnv": "3f9dab904223cb53"
     },
     {
       "role": "system",
@@ -76,13 +76,13 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 57640,
-      "fnv": "66ff7c3b4755707b"
+      "len": 57597,
+      "fnv": "6eb12916ae7346a1"
     },
     {
       "role": "system",
-      "len": 9397,
-      "fnv": "51e1c8edabd233fa"
+      "len": 9600,
+      "fnv": "3f9dab904223cb53"
     },
     {
       "role": "system",
@@ -125,13 +125,13 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 57640,
-      "fnv": "66ff7c3b4755707b"
+      "len": 57597,
+      "fnv": "6eb12916ae7346a1"
     },
     {
       "role": "system",
-      "len": 9397,
-      "fnv": "51e1c8edabd233fa"
+      "len": 9600,
+      "fnv": "3f9dab904223cb53"
     },
     {
       "role": "system",
@@ -152,13 +152,13 @@
   "p2_yuesheng_diagnosis_nofulltext": [
     {
       "role": "system",
-      "len": 57640,
-      "fnv": "66ff7c3b4755707b"
+      "len": 57597,
+      "fnv": "6eb12916ae7346a1"
     },
     {
       "role": "system",
-      "len": 9397,
-      "fnv": "51e1c8edabd233fa"
+      "len": 9600,
+      "fnv": "3f9dab904223cb53"
     },
     {
       "role": "system",

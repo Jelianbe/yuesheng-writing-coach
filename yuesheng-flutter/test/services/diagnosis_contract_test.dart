@@ -21,6 +21,7 @@ import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/skill_layers.dart';
 import 'package:writingcoach/services/skill_registry.dart';
+import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 const String _kValidDiagnosisJson = '''
@@ -170,12 +171,17 @@ void main() {
         }
       }
 
-      // L2 diagnosis 组：已注册项必须出现
+      // L2 diagnosis 组：已注册项必须出现。
+      // 索引 skill 自 T-20261028-06（B 包）起由 dispatcher 按「用户禁用集 +
+      // 单章排除集」动态重建，不再逐字等于静态注册内容 ⇒ 比对重建后的正文。
       for (final ref in getL2SkillIds(L2Mode.diagnosis)) {
         final skill = getSkill(ref.skillId);
         if (skill != null) {
+          final expected = ref.skillId == 'syndrome-diagnosis-index'
+              ? buildSyndromeIndexContent(kSingleChapterExcludedSyndromeIds)
+              : skill.content;
           expect(
-            result.systemPrompt.contains(skill.content),
+            result.systemPrompt.contains(expected),
             isTrue,
             reason: 'L2 diagnosis skill 缺失: ${ref.skillId}',
           );

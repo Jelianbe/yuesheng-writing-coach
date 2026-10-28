@@ -101,6 +101,8 @@ import 'package:writingcoach/services/outline_parser.dart'
 import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/p0_verify/anchor_probe.dart';
 import 'package:writingcoach/services/reply_receipt_guard.dart';
+import 'package:writingcoach/services/syndrome_knowledge_base.dart'
+    show kSingleChapterExcludedSyndromeIds;
 import 'package:writingcoach/services/teacher_service.dart'
     show TeacherDiagnosisInput, callTeacherStream;
 import 'package:writingcoach/services/teacher_validator.dart'
@@ -805,7 +807,7 @@ class DiagnosisFlowHandler {
     required ReferenceItem? primaryRef,
     required SendMessageOptions options,
   }) async {
-    final rawParse = _filterDisabled(_diagnosis.parseDiagnosis(fullContent));
+    final rawParse = _filterShortChain(_diagnosis.parseDiagnosis(fullContent));
     _logDiagnoseParse(rawParse);
     var displayContent = rawParse.displayContent;
     ParsedDiagnosis? diagnosis = rawParse.diagnosis;
@@ -1726,30 +1728,49 @@ class DiagnosisFlowHandler {
   Type get k9Surface => DiagnosisFlowHandler;
 
   /// 硬兜底：prompt 层软过滤后，AI 仍可能报索引表外/已禁用症候——这里剥掉。
-  ParseResult _filterDisabled(ParseResult r) {
-    final d = r.diagnosis;
-    if (disabledSyndromeIds.isEmpty || d == null) return r;
-    final kept = d.syndromes
-        .where((s) => !disabledSyndromeIds.contains(s.syndromeId))
-        .toList();
-    if (kept.length == d.syndromes.length) return r;
-    return ParseResult(
-      displayContent: r.displayContent,
-      diagnosis: ParsedDiagnosis(
-        syndromes: kept,
-        suggestedActions: d.suggestedActions,
-        confidence: d.confidence,
-        rootCauseAnalysis: d.rootCauseAnalysis,
-        nextFocus: d.nextFocus,
-        feedbackSummary: d.feedbackSummary,
-        suggestedPhase: d.suggestedPhase,
-        suggestedBeginnerLevel: d.suggestedBeginnerLevel,
-        teachingMode: d.teachingMode,
-        currentTeachingFocusId: d.currentTeachingFocusId,
-        focusReason: d.focusReason,
-        styleProfile: d.styleProfile,
-        overall: d.overall,
-      ),
-    );
+  /// [extraExcluded] 仅供**单章短链**传入（merge/跨章路径不传，P022 保留）。
+  ParseResult _filterDisabled(
+    ParseResult r, {
+    Set<String> extraExcluded = const {},
+  }) {
+    if (disabledSyndromeIds.isEmpty && extraExcluded.isEmpty) return r;
+    return filterExcludedSyndromes(r, {
+      ...disabledSyndromeIds,
+      ...extraExcluded,
+    });
   }
+
+  /// 单章短链专用：并入「单章窗口不可判」症候（P022）。
+  /// merge 路径（`commitDiagnosisFromContent`）**不得**调用本方法。
+  ParseResult _filterShortChain(ParseResult r) =>
+      _filterDisabled(r, extraExcluded: kSingleChapterExcludedSyndromeIds);
+}
+
+/// 纯函数：按排除集剥掉症候（短链与 merge 的差异只在调用点是否传入单章排除集）。
+@visibleForTesting
+ParseResult filterExcludedSyndromes(ParseResult r, Set<String> excluded) {
+  final d = r.diagnosis;
+  if (excluded.isEmpty || d == null) return r;
+  final kept = d.syndromes
+      .where((s) => !excluded.contains(s.syndromeId))
+      .toList();
+  if (kept.length == d.syndromes.length) return r;
+  return ParseResult(
+    displayContent: r.displayContent,
+    diagnosis: ParsedDiagnosis(
+      syndromes: kept,
+      suggestedActions: d.suggestedActions,
+      confidence: d.confidence,
+      rootCauseAnalysis: d.rootCauseAnalysis,
+      nextFocus: d.nextFocus,
+      feedbackSummary: d.feedbackSummary,
+      suggestedPhase: d.suggestedPhase,
+      suggestedBeginnerLevel: d.suggestedBeginnerLevel,
+      teachingMode: d.teachingMode,
+      currentTeachingFocusId: d.currentTeachingFocusId,
+      focusReason: d.focusReason,
+      styleProfile: d.styleProfile,
+      overall: d.overall,
+    ),
+  );
 }

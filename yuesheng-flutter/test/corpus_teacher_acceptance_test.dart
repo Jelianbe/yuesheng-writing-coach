@@ -288,6 +288,10 @@ const List<CorpusItem> corpus = [
     hasL2Expected: true,
     expectedTaskSyndrome: 'P005',
   ),
+  // ⚠️ legacy（T-20261028-06 · B 包）：P022 已退出单章/短链诊断面
+  // （`kSingleChapterExcludedSyndromeIds`，R-027 舰长批）。本样本是退出前的
+  // 存档答案，只用于回归「旧答案仍可解析」；若日后按新 prompt 重录，P022
+  // 不应再出现——届时本条 expectSyndromes 应随新口径重写，不得把 P022 加回注入面。
   CorpusItem(
     id: 'A27',
     file: 'corpus_A27_p022.txt',

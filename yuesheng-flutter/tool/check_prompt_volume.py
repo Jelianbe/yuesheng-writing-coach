@@ -430,8 +430,12 @@ REDLINE = {
     # 方向 = T-20261024-16 L1 声明改写（skills_l1_core_p2.dart:123，净 +33
     # 字符）——teaching-strategy 是 L1 常驻，进每条 system prompt，
     # 故受控三组与对照组 7 组同增同值互证。
-    'diagnosis_yuesheng': 57640,
-    'diagnosis_p1_yuesheng': 55857,
+    # ★ 2026-10-28 第十六次重贴实测值（diagnosis 两组各 −43：57640→57597 /
+    # 55857→55814；force 组 66329 不动 —— force 场景不加载 L2 诊断索引）。
+    # 方向 = B 包「P022 退出单章短链面」（R-027 舰长 2026-10-28「都批」）：注入点
+    # 剔除 `| P022 |` 索引行（42 字符 + 行间 \n = 43），库常量保留行。
+    'diagnosis_yuesheng': 57597,
+    'diagnosis_p1_yuesheng': 55814,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
@@ -626,10 +630,15 @@ MSG_SEQ_SEGMENTS = os.path.join(
 #   给「与此同时/而另一边」加**可辨感知者**限定（消除与 `:207` 交叉剪辑判据的同词互斥）。
 #   同批：`l3_entry_anchor.json` 的 `syndrome.P003` 2,634 → 2,704（同一 +70）。
 #   本表只钉 len（不钉 fnv）；fnv 差异由 `message_sequence_anchor.json` 看守。
+#
+# ★ 2026-10-28 第二十三次重贴实测值（`T-20261028-06` A 包 · R-027 舰长「都批」）：
+#   9,397 → **9,600**（三例同 Δ **+203**）。来源 = P034 五条「不判」逐字追加到首轮
+#   判据块末尾（176 字符清单行 + 23 字符标题 + 4 字符分隔 = 203）。
+#   未改 header（「以下四条」仍指前四段整段判据）；P034 被用户关闭时不注入。
 BYPASS_REDLINE = {
-    'p1_yuesheng_diagnosis[1]': 9397,
-    'p2_yuesheng_diagnosis[1]': 9397,
-    'p2_yuesheng_diagnosis_fulltext[1]': 9397,
+    'p1_yuesheng_diagnosis[1]': 9600,
+    'p2_yuesheng_diagnosis[1]': 9600,
+    'p2_yuesheng_diagnosis_fulltext[1]': 9600,
 }
 
 

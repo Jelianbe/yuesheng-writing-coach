@@ -119,7 +119,15 @@ void main() {
       final marker = '---\n\n';
       final idx = full.indexOf(marker);
       final sectionsFromFull = full.substring(idx + marker.length);
-      expect(block.endsWith(sectionsFromFull), isTrue);
+      // T-20261028-06（A 包）：首轮块末尾追加 P034 不判清单（独立附加块）。
+      // 判据段本身的 verbatim 要求不变 ⇒ 先剥附加块再比对。
+      const p034Title = 'P034（代词指代不清/零回指过载）不判清单：';
+      final appended = block.indexOf('\n\n$p034Title');
+      final criteriaOnly = appended == -1
+          ? block
+          : block.substring(0, appended);
+      expect(criteriaOnly.endsWith(sectionsFromFull), isTrue);
+      expect(block.contains(p034Title), isTrue, reason: 'P034 附加块应在（A 包）');
     });
 
     test('比例原则/不判条款随段在场（W-31 归因的关键缺口 = 豁免面 0% 在场）', () {

@@ -235,6 +235,14 @@ String buildSyndromeIndexContent([
 /// [buildSyndromeIndexContent]）。
 final String kSyndromeIndexContent = buildSyndromeIndexContent();
 
+/// 单章窗口结构上不可判、仅 merge / 跨章侧保留的症候 ID。
+/// ⚠️ **不删库常量里的行**：`four_libraries_consistency_test.dart:59/98-102`
+/// 断言每个注册表 ID 都在 `kSyndromeIndexContent` 里、且行数 == 注册表条数。
+/// 排除只发生在**注入点**（`skill_dispatcher.dart`）与短链后置过滤
+/// （`diagnosis_flow_handler.dart`）。当前成员仅 P022：其判据对象是跨章篇幅比例，
+/// ≤4000 字窗口内无位置（手册 `manual_5.dart:14`）。
+const Set<String> kSingleChapterExcludedSyndromeIds = {'P022'};
+
 /// L3 完整手册：症候诊断手册（对应 RN content，含 P001-P029 完整定义）
 /// 头部「症候图谱」计数由注册表派生（b9 批次28），正文段落保留人工编写。
 final String kSyndromeManualContent =

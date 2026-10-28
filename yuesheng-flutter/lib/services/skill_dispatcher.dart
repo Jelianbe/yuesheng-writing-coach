@@ -382,10 +382,13 @@ void _buildL2Chunks(
       var content =
           skill.contentForPhase?.call(ctx.phase, skill.content) ??
           skill.content;
-      // 诊断编辑器：索引 skill 按用户启用集动态生成（剔除关闭行）。
-      if (ref.skillId == 'syndrome-diagnosis-index' &&
-          ctx.disabledSyndromeIds.isNotEmpty) {
-        content = buildSyndromeIndexContent(ctx.disabledSyndromeIds);
+      // 诊断编辑器：索引 skill 按用户启用集动态生成（剔除关闭行）；
+      // 单章不可判症候（P022）同样从索引剔除——库常量保留行，此为注入点剔除。
+      if (ref.skillId == 'syndrome-diagnosis-index') {
+        content = buildSyndromeIndexContent({
+          ...ctx.disabledSyndromeIds,
+          ...kSingleChapterExcludedSyndromeIds,
+        });
       }
       chunks.add(content);
       loadedIds.add(ref.skillId);
