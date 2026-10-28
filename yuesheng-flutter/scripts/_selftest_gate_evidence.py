@@ -135,14 +135,28 @@ results = []  # [(name, ok, detail)]
 
 
 def run_ev(func, *args, env=None):
-    """在 bash 里 source 判据库后调用一个判据函数。返回 (rc, stdout, stderr)。"""
+    """在 bash 里 source 判据库后调用一个判据函数。返回 (rc, stdout, stderr)。
+
+    ★ 环境隔离（2026-10-28 实测，T-20261027-03 同族）：
+      自测**必须清掉** `UPDATE_TEST_BASELINE` / `EV_ALLOW_WRITE_BASELINE` 再跑。
+      否则在 `UPDATE_TEST_BASELINE=1 bash scripts/gate.sh` 这种轮次里，
+      `ev_p2_count` 会先走「重写基线」分支直接 `return 0` ⇒
+      5 条探针（S2-lower / S2h / S2i / S9b / S13-G2c）全部假失败。
+      实测代价：门禁 19/19 全绿的同时自测报「判据可能已退化」——
+      一条**纯环境污染**被读成「判据坏了」，比没报更糟。
+      探针若确实要测 UPDATE 路径，必须**显式**在 env 里传（见 S2g-update-env）。
+    """
+    base_env = {
+        k: v for k, v in os.environ.items()
+        if k not in ('UPDATE_TEST_BASELINE', 'EV_ALLOW_WRITE_BASELINE')
+    }
     cmd = ". %s; %s %s" % (shell_quote(LIB), func,
                            " ".join(shell_quote(str(a)) for a in args))
     p = subprocess.run(
         ["bash", "-c", cmd],
         cwd=ROOT, capture_output=True, text=True,
         encoding="utf-8", errors="replace",
-        env={**os.environ, **(env or {})},
+        env={**base_env, **(env or {})},
     )
     return p.returncode, (p.stdout or "").strip(), (p.stderr or "").strip()
 

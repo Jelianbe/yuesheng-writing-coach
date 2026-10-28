@@ -1,1 +1,1 @@
-{"count": 5333, "head": "d57c7eba", "generated_at": "2026-10-27T20:22:30+0800", "reason": "2026-10-27 20:22 重钉（上版 5295@6970aee7）：取 2026-10-27 两轮全量门禁（HEAD d57c7eba）test.txt 汇总行「+5333 ~3: All tests passed!」的 +N；口径=甲（L-28）：直接取全量 +N，含紧凑报告器对慢测试重发射的虚高，两轮同为 5333 ⇒ 量级稳定；基线只卡下降，不卡等号"}
+{"count": 5334, "head": "6a532bb9", "generated_at": "2026-10-28T09:53:51+0800", "reason": "flutter test 全绿轮次的 +N（基线只卡下降，不卡等号）", "suite_size": 5323, "suite_fingerprint": "38c4c70df35bff3d"}
