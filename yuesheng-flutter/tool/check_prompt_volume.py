@@ -797,9 +797,30 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    2544 高 287 ⇒ 不得写成「额度回收」。
 #    ★ 沿革记账位置：常量级重钉（第十九次起）只记在**本段**；表头那份「红线沿革」
 #    列表停更在第十八次 —— 引用沿革序号时以本段为真源。
+# ★ 2026-10-28 第二十三次重贴实测值（kChunkSystemPrompt 5849→5893 +44 ·
+#    chunkExceptionGuideBlock 2831→2875 +44；suffix 977 不动）：
+#    方向 = `T-20261027-01` **H5**（舰长批准「批准落地（推荐）」· 报批稿
+#    `.ai/reports/2026-10-28-报批稿-H5-感知者与感知来源句定义.md` §4 · `DECISIONS §4-360`）：
+#    首问去不可判主体「读者」，并**内联两项定义**（"感知者"＝本窗中信息落在其认知
+#    范围内的那个主体（人，或"叙述者"）；"感知来源句"＝不含引号、能从中指认该
+#    感知者的陈述句（纯环境句不算））；②去「读者能辨明」的「读者」；兜底句
+#    「读者仍无法确定谁在看」→「仍无法确定感知者」（术语统一）。
+#    **不新增豁免**、**不动 ③**（H4-A 已定稿）、**不加新术语**。
+#    归类**新增类**：`:409` old 406 字符 → new 450 字符 = **+44**，
+#    与两键实测 Δ 逐位一致（2831+44=2875 / 5849+44=5893，取自重冻写模式运行时打印值）。
+#    两键同增同值互证（装配式 `$_kChunkExceptionGuide` 在
+#    `progressive_diagnosis.dart:580` 只出现 1 次，两侧分隔符固定）。
+#    ⚠️ fnv 照抄运行时打印串（`toRadixString(16)` **不补零**）：本次 chunk 打印
+#    **14 位** `f62af4dabe1ff8`（真值 0x0f62af4dabe1ff8）；guide 16 位
+#    `1aa76708c389a1f6` ⇒ 补零会让 chunk 比对恒红。
+#    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+#    （原位单行替换；重冻写模式实测打印确认）。
+#    ⚠️ **本批是真实提额**：guide new 2875 越过 H4-A 刚创的在产峰值 2831（+44）
+#    ⇒ 不得写成「额度回收」。占 kChunkSystemPrompt 48.8%（每块都付）。
+#    ★ 内容牙 L1–L4 落在 `test/services/prompt_const_anchor_test.dart`（不新增用例）。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5849, '670a18da88bcb786'),
-    'chunkExceptionGuideBlock': (2831, '257abc1bd89b48ec'),
+    'kChunkSystemPrompt': (5893, 'f62af4dabe1ff8'),
+    'chunkExceptionGuideBlock': (2875, '1aa76708c389a1f6'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 

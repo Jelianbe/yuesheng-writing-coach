@@ -286,6 +286,48 @@ void _printMetaDrift(dynamic storedMeta, dynamic currentMeta) {
   );
 }
 
+/// 内容牙 L1–L4（`T-20261027-01` H5 · 2026-10-28 舰长批准 · 报批稿 §6.2）。
+///
+/// 打在**运行时切片**上（见文件头部：量注入字节，不量源码文本）。
+/// ★ 这四条**不是语义牙**：拦「定义没写 / 没排除项 / 没接后果 / 废词复活」，
+///   拦不住「定义写得像、模型照旧乱判」——后者须对照稿 + 真实采样（本批无 key）。
+void _contentLint(String guideText) {
+  final p003 = guideText
+      .split('\n')
+      .firstWhere((l) => l.startsWith('- P003例外'), orElse: () => '');
+  if (p003.isEmpty) {
+    fail('内容牙 L1 不过：例外表内找不到 `- P003例外` 行 ⇒ 行首形态或切片对象已变。');
+  }
+
+  // L1 两项定义都要在（形态牙："＝"定义标记）
+  for (final term in const ['"感知者"＝', '"感知来源句"＝']) {
+    if (!p003.contains(term)) {
+      fail('内容牙 L1 不过：P003 行缺定义标记 `$term`（H5 两项内联定义）。');
+    }
+  }
+
+  // L2 定义必须带排除项 —— 无排除项的定义 = 无鉴别力
+  if (!p003.contains('纯环境句不算')) {
+    fail(
+      '内容牙 L2 不过：感知来源句定义缺排除项 `纯环境句不算`'
+      '（无排除项 ⇒ 任意含人名的陈述句都能充数）。',
+    );
+  }
+
+  // L3 两项都要接在后果句上（只定义、不改变任一判定方向的项 = 死条）
+  if (!p003.contains('各自的感知者，二者不同')) {
+    fail('内容牙 L3 不过：感知者未接到 ③ 的换锁句 `二者不同`。');
+  }
+  if (!p003.contains('感知来源句') || !p003.contains('即不构成漂移')) {
+    fail('内容牙 L3 不过：感知来源句未接到后果句 `不构成漂移`。');
+  }
+
+  // L4 废词牙：`感知中心` 2026-10-27 撤出（§4-343 E3），不得复活
+  if (guideText.contains('感知中心')) {
+    fail('内容牙 L4 不过：例外表内出现废词 `感知中心`（复裁见 2026-10-28 报批稿 §1）。');
+  }
+}
+
 void main() {
   test('常量级 prompt 体积锚点：三块常量字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -316,6 +358,7 @@ void main() {
     final collected = _buildCurrent();
     final current = collected.anchors;
     _selfCheck(current, collected.guideText);
+    _contentLint(collected.guideText);
 
     // ── ② 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
     // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
