@@ -27,7 +27,7 @@
 // R-019：本文件所有函数均 ≤50 行（`_runDiagnosisFlow` 51 行处见下方拆分说明）。
 // ─────────────────────────────────────────────────────────────
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, immutable;
 import 'package:writingcoach/config/injection_constraints.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
@@ -58,6 +58,19 @@ class DiagnosisInjectionService {
   final DiagnosisRepository _diagnosisRepo;
   final TeachingStateRepository _stateRepo;
   final DiagnosisFlowHandler _flow;
+
+  /// 最近一次**真的发生了**的注入的五段读数（ADR-0009 · T-20261024-13 A 块）。
+  ///
+  /// ★ 只写不读：生产判定**不得**依赖它（若要用须另写 ADR）。
+  ///   存在的唯一理由：`directExplain` / `fadingBlock` 由私有异步方法按会话
+  ///   状态生成，测试侧无法复算二者边界 ⇒ 没有这个观察点就**只能量整条**，
+  ///   而整条 1583 里 1511 是系统注入 ⇒ 学员正文一变长就假红。
+  ///
+  /// ⚠️ 这里**不加** `@visibleForTesting`：本仓其它 lib 文件要经
+  ///   `ChatService.lastInjectionSegments` 转发（跨文件访问会触发
+  ///   `invalid_use_of_visible_for_testing_member`），对外唯一入口由那个
+  ///   转发 getter 上的注解约束。
+  InjectionSegments? lastSegments;
   final ChatServiceReplyObserver _replyObserver;
 
   /// C 簇成员提升为函数注入（跨簇私有成员不可访问）。
@@ -197,15 +210,33 @@ class DiagnosisInjectionService {
     final directExplain = await _buildDirectExplainBlock();
     // ADR-C134：fading 支架渐退 override 块（运行时条件注入；无复发/失败 → ''）。
     final fadingBlock = await _buildFadingBlock(sessionId);
-    messages[lastUser] = ChatMessage(
-      role: m.role,
-      content:
-          '${m.content}$fullTextBlock\n\n$_diagnosisProtocolSuffix$directExplain$fadingBlock',
-    );
+    final seg = _segmentsOf(m, fullTextBlock, directExplain, fadingBlock);
+    messages[lastUser] = ChatMessage(role: m.role, content: seg.assembled);
   }
 
-  /// 全貌清单块（症状数 ≥ 阈值时逐条列全部症候，让学员选）。
+  /// 把当前拼接要素固化成五段并**记住**（ADR-0009 · 观察点唯一写入处）。
   ///
+  /// R-019 说明：独立成函数**不是为凑行数**（本仓明令禁止机械拆分）——
+  /// `_maybeInjectDiagnosisProtocol` 本已贴上限，而「分段建模 + 观察点写入」
+  /// 本身是独立职责：体积判据靠它取段级读数，与「决定注不注入」是两件事。
+  InjectionSegments _segmentsOf(
+    ChatMessage m,
+    String fullTextBlock,
+    String directExplain,
+    String fadingBlock,
+  ) {
+    final seg = InjectionSegments(
+      studentBody: m.content,
+      fullTextBlock: fullTextBlock,
+      protocolSuffix: _diagnosisProtocolSuffix,
+      directExplain: directExplain,
+      fadingBlock: fadingBlock,
+    );
+    lastSegments = seg;
+    return seg;
+  }
+
+  /// 全貌清单块（症状数 ≥ 阈值时逐条列全部症候，让学员选）。  ///
   /// R-019：2026-10-04 从 [_maybeInjectDiagnosisProtocol] 拆出 —— 那个函数因
   /// 本修复的论证注释涨到 57 行（上限 50）。拆的是**独立职责 + 独立失败模式**
   ///（它要 await 阈值、且是唯一带格式约束的地方），不是为凑行数的机械切分。
@@ -437,4 +468,63 @@ class DiagnosisInjectionService {
     await callbacks.onComplete(parsed.finalContent, parsed.messageId);
     debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
   }
+}
+
+/// 注入后 user 消息的**五段读数**（ADR-0009 · T-20261024-13 A 块）。
+///
+/// ★ 段 = **拼接边界**，不是文本分隔符。
+///   不用「空行分段」：空行属于正文内容，段数会随学员输入变化 ⇒ 上限钉不住。
+///   顺序固定 = 拼接顺序（`segmentCount` 是段数自检的唯一真源）。
+///
+/// ★ 为什么单独建模而不是就地拼字符串：体积红线要按段计量（正文变长不该红、
+///   系统注入变胖必须红），而 `directExplain` / `fadingBlock` 由私有异步方法
+///   按会话状态生成 ⇒ 只有在这里把边界固化成结构，测试才拿得到段级读数。
+@immutable
+class InjectionSegments {
+  const InjectionSegments({
+    required this.studentBody,
+    required this.fullTextBlock,
+    required this.protocolSuffix,
+    required this.directExplain,
+    required this.fadingBlock,
+  });
+
+  /// ① 学员正文（原样，未注入）
+  final String studentBody;
+
+  /// ② 章节全文块（无全文时为 `''`）
+  final String fullTextBlock;
+
+  /// ③ 诊断协议后缀（`kDiagnosisProtocolSuffix` 单一真源，本文件不复制）
+  final String protocolSuffix;
+
+  /// ④ 直接解释支架（运行时条件注入，可为 `''`）
+  final String directExplain;
+
+  /// ⑤ 渐退支架（ADR-C134，运行时条件注入，可为 `''`）
+  final String fadingBlock;
+
+  /// 段数的唯一真源 —— 判据用它做自检（缺段 = 没量到，不许静默只判前 N 段）。
+  static const int segmentCount = 5;
+
+  /// 装配：`'\n\n'` **只**插在第 ②/③ 段之间（与 ADR-0009 之前的拼接式逐字节等价）。
+  String get assembled =>
+      '$studentBody$fullTextBlock\n\n$protocolSuffix$directExplain$fadingBlock';
+
+  /// 按拼接顺序取各段 —— 供判据/测试逐段遍历（顺序即真源，勿另行硬编码）。
+  List<String> get byIndex => [
+    studentBody,
+    fullTextBlock,
+    protocolSuffix,
+    directExplain,
+    fadingBlock,
+  ];
+
+  static const List<String> names = [
+    'studentBody',
+    'fullTextBlock',
+    'protocolSuffix',
+    'directExplain',
+    'fadingBlock',
+  ];
 }

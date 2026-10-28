@@ -284,6 +284,14 @@ class ChatService {
         logSafeRun: _logSafeRun,
       );
 
+  /// 最近一次诊断注入的五段读数（ADR-0009 · T-20261024-13 A 块）。
+  ///
+  /// `_diagnosisService` 是私有字段、测试够不到 ⇒ 这里转发一层。
+  /// **只读**：生产判定不得依赖它（要用须另写 ADR）。
+  @visibleForTesting
+  InjectionSegments? get lastInjectionSegments =>
+      _diagnosisService.lastSegments;
+
   /// ADR-0004 步 5 批 2：prompt 组装簇（C）已抽出为独立类 + DI。
   ///
   /// **懒加载**理由同 [_diagnosisService]：构造参数含 C/A 簇私有成员的闭包。

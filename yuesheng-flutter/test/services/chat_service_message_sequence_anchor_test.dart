@@ -43,6 +43,8 @@ import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/diagnosis_injection_service.dart'
+    show InjectionSegments;
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
@@ -54,6 +56,14 @@ import 'package:writingcoach/types/teaching_types.dart';
 import '../helpers/anchor_content_floor.dart';
 
 const String kMsgSeqAnchorPath = 'test/snapshots/message_sequence_anchor.json';
+
+/// 五段读数的**独立**快照（ADR-0009 · T-20261024-13 A 块）。
+///
+/// ★ 为什么不塞进 [kMsgSeqAnchorPath]：旧快照的顶层键集合受「双向键集合判据」
+///   看守（`T-20261024-14` A 块），新增一个顶层键要同时改两处排除清单 ——
+///   那是在**动 fail-closed 判据**。分段是新读数面 ⇒ 独立文件零改动旧判据。
+const String kSegmentsAnchorPath =
+    'test/snapshots/injection_segments_anchor.json';
 
 /// 中性正文（compose 意图：不触发诊断协议 / 意图注入 / 颗粒度注入）。
 const String _kContent = '他推开门，风灌了进来，桌上的信纸被吹落在地。';
@@ -240,7 +250,25 @@ List<Map<String, Object>> _sequence(List<ChatMessage> messages) => messages
     )
     .toList();
 
-Future<List<Map<String, Object>>> _captureOne(_Case c) async {
+/// 单例捕获结果：消息序列 + （若发生了注入）五段读数（ADR-0009）。
+typedef _Capture = ({List<Map<String, Object>> seq, Map<String, Object>? segs});
+
+/// 五段读数：`{段名: {len, fnv}}`（ADR-0009 · T-20261024-13 A 块）。
+///
+/// ★ 段名与顺序**取自 `InjectionSegments.names` / `byIndex`**（生产侧唯一真源），
+///   测试侧不另抄一份 —— 抄一份就是第二真源，段顺序一改两边静默分叉。
+Map<String, Object> _segmentsOf(InjectionSegments seg) {
+  final parts = seg.byIndex;
+  return <String, Object>{
+    for (var i = 0; i < InjectionSegments.names.length; i++)
+      InjectionSegments.names[i]: <String, Object>{
+        'len': parts[i].length,
+        'fnv': _fnv1a64(parts[i]).toRadixString(16),
+      },
+  };
+}
+
+Future<_Capture> _captureOne(_Case c) async {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
   try {
     final sessionRepo = SessionRepository(db);
@@ -273,7 +301,11 @@ Future<List<Map<String, Object>>> _captureOne(_Case c) async {
       ),
       subphase: c.subphase,
     );
-    return _sequence(llm.captured);
+    final seg = service.lastInjectionSegments;
+    return (
+      seq: _sequence(llm.captured),
+      segs: seg == null ? null : _segmentsOf(seg),
+    );
   } finally {
     await db.close();
   }
@@ -519,7 +551,8 @@ void main() {
       'meta': {'note': 'chat_service 边界消息序列结构锚点'},
     };
     for (final c in _kCases) {
-      current[c.name] = await _captureOne(c);
+      final cap = await _captureOne(c);
+      current[c.name] = cap.seq;
     }
 
     if (updating) {
@@ -660,6 +693,92 @@ void main() {
     }
 
     print('[msg-seq] 比对通过：消息序列结构与基线一致 ✓');
+    expect(diffs, isEmpty);
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // 诊断注入五段读数锚点（ADR-0009 · T-20261024-13 A 块）
+  //
+  // 为什么按段量：整条 1583 里 1511 是系统注入（suffix 977 + directExplain 349
+  //   + fadingBlock 185），红线却主要由**学员正文变长**触发 ⇒ 两个方向互相掩盖：
+  //   正文变长顶红（假红）、支架膨胀被正文缩短抵消（假绿）。
+  // 段 = 拼接边界（`InjectionSegments`），不是空行 —— 空行段数随用户输入变化。
+  // ─────────────────────────────────────────────────────────────
+  test('诊断注入五段读数锚点：逐段 (len,fnv) 不变（ADR-0009）', () async {
+    final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
+    final file = File(kSegmentsAnchorPath);
+    final exists = file.existsSync();
+
+    if (!exists && !updating) {
+      fail(
+        '[seg-anchor] 分段快照缺失：$kSegmentsAnchorPath\n'
+        '  ★ 缺失 = 事故，不是常态（不自动重建 —— 那等于用当前行为重写判据）。\n'
+        '  重建：UPDATE_SNAPSHOTS=true flutter test '
+        'test/services/chat_service_message_sequence_anchor_test.dart',
+      );
+    }
+
+    final current = <String, Object>{
+      'meta': {'note': '诊断注入五段读数锚点（ADR-0009）'},
+    };
+    var injected = 0;
+    for (final c in _kCases) {
+      final cap = await _captureOne(c);
+      final segs = cap.segs;
+      if (segs == null) continue;
+      injected++;
+      if (segs.length != InjectionSegments.segmentCount) {
+        fail(
+          '[seg-anchor] ${c.name} 分段数 ${segs.length} ≠ '
+          '${InjectionSegments.segmentCount}（缺段 = 没量到，不许只判前 N 段）',
+        );
+      }
+      current[c.name] = segs;
+    }
+    // 空扫不是通过：9 例里零例注入 ⇒ 判据面为空
+    if (injected == 0) {
+      fail('[seg-anchor] 9 例里零例发生注入 ⇒ 分段判据面为空（空扫不是通过）');
+    }
+
+    if (updating) {
+      file
+        ..createSync(recursive: true)
+        ..writeAsStringSync(
+          '${const JsonEncoder.withIndent('  ').convert(current)}\n',
+        );
+      final reread = jsonDecode(file.readAsStringSync());
+      final written = reread is Map<String, dynamic>
+          ? reread
+          : const <String, dynamic>{};
+      expect(
+        written.keys.where((k) => k != 'meta').length,
+        injected,
+        reason: '回读键数必须等于本次注入例数（写到一半 = 半截基线）',
+      );
+      print(
+        '[seg-anchor][告警] UPDATE_SNAPSHOTS=true ⇒ 已重写 $kSegmentsAnchorPath'
+        '（$injected 例注入；本次**未做比对**，这不是校验通过）',
+      );
+      return;
+    }
+
+    final decoded = jsonDecode(file.readAsStringSync());
+    final stored = decoded is Map<String, dynamic>
+        ? decoded
+        : const <String, dynamic>{};
+    final diffs = <String>[];
+    for (final c in _kCases) {
+      if (!current.containsKey(c.name)) continue;
+      diffs.addAll(_diff(c.name, stored[c.name], current[c.name]));
+    }
+    if (diffs.isNotEmpty) {
+      print('[seg-anchor] 检测到 ${diffs.length} 处分段漂移：');
+      for (final d in diffs.take(40)) {
+        print('  - $d');
+      }
+      fail('诊断注入五段读数漂移（${diffs.length} 处），见上方 diff。');
+    }
+    print('[seg-anchor] 比对通过：五段读数与基线一致 ✓');
     expect(diffs, isEmpty);
   });
 }

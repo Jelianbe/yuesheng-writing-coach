@@ -543,6 +543,8 @@ def main():
 
     # T-20261024-13 缺口 1：注入后的 user 消息面 —— 有指纹、此前无上限。
     _check_user_face(out)
+    # ADR-0009：整条只作松上限；**主量**在这里（按段）。
+    _check_user_face_segments(out)
 
     # A 块 Q1（报批稿 2026-10-25）：覆盖扫描 —— 以快照为遍历面，反查
     # 「有 injection 却无上限 / 无 injection 却乱钉」。_check_user_face 只遍历
@@ -607,6 +609,12 @@ MUST_NOT_GROW_BASE = {
 #     的变化来源，钉了只会变成噪声性红灯。这是已知的不完整覆盖，不是遗漏。
 # ─────────────────────────────────────────────────────────────
 MSG_SEQ = os.path.join(ROOT, 'test', 'snapshots', 'message_sequence_anchor.json')
+
+# 五段读数的独立快照（ADR-0009 · T-20261024-13 A 块）。
+# 不塞进 message_sequence_anchor.json：那份的顶层键集合受「双向键集合判据」
+# 看守，加新键要动 fail-closed 判据 ⇒ 另立文件，零改动旧判据。
+MSG_SEQ_SEGMENTS = os.path.join(
+    ROOT, 'test', 'snapshots', 'injection_segments_anchor.json')
 
 # 键 = `快照名[消息下标]`；值 = 实测字符数（贴实测、余量 +0）。
 # 三例同块 ⇒ 三值必须相等，且有结构断言兜底（见 _check_bypass）。
@@ -866,6 +874,38 @@ USER_FACE_REDLINE = {
 # 「量到的其实是学员正文」——即钉错对象（本缺口历史上已钉错两次）。
 _USER_FACE_MIN_EXTRA = CONST_REDLINE['kDiagnosisProtocolSuffix'][0]
 
+# ── 五段读数（ADR-0009 · T-20261024-13 A 块）─────────────────────────────
+# 段 = **拼接边界**（`InjectionSegments`），不是文本分隔符：空行属于正文内容，
+# 段数会随学员输入变化 ⇒ 上限钉不住。
+#
+# ★ 与 `USER_FACE_REDLINE`（整条 1583）的关系：整条**保留为松上限**
+#   （防装配层爆量），但**不作主量** —— 整条里 1511 是系统注入，
+#   学员正文一变长（3000–4000 字是正常输入）就顶红，而支架膨胀会被正文缩短
+#   抵消 ⇒ 两个方向互相掩盖。
+#
+# ★ 下列值为**锚点实测**（本轮 `injection_segments_anchor.json` 写出，非手填）：
+#   8 + 62 + 977 + 349 + 185 = 1581，加装配 `\n\n` 2 = **1583**
+#   ⇒ 与 `USER_FACE_REDLINE` 的整条值逐值吻合（差 2 就是那个分隔符）。
+USER_FACE_SEGMENTS = {
+    'p2_yuesheng_diagnosis_fulltext': {
+        'studentBody': (8, '2b56b05e131f4426'),
+        'fullTextBlock': (62, 'f1d182190e275c1'),
+        'protocolSuffix': (977, '609c7814d5bcc86d'),
+        'directExplain': (349, '5d479de78f67ea3c'),
+        'fadingBlock': (185, '10523563b3b11eaf'),
+    },
+}
+
+# 段名 = 拼接顺序的真源；必须与 `InjectionSegments.names` 逐字一致。
+# 漂了就是「量错对象」⇒ 判据要红，不许静默跳过。
+USER_FACE_SEGMENT_NAMES = (
+    'studentBody',
+    'fullTextBlock',
+    'protocolSuffix',
+    'directExplain',
+    'fadingBlock',
+)
+
 
 def _check_user_face(out):
     """注入后的 user 消息：逐键比上限 + 比指纹 + role/下限结构自检。"""
@@ -912,6 +952,52 @@ def _check_user_face(out):
                 '%s: %d < 协议后缀 %d ⇒ 该消息没有注入协议文本，'
                 '本红线量错了对象（缺口 1 的真实对象是注入**之后**的 user 消息）'
                 % (key, act, _USER_FACE_MIN_EXTRA))
+
+
+def _check_user_face_segments(out):
+    """注入后 user 消息的**五段**读数（ADR-0009 · T-20261024-13 A 块）。
+
+    三道判据缺一不可：
+      ① 快照缺失 ⇒ FAIL（缺失是事故，不是「没变化」）；
+      ② 段名/段数不符 ⇒ FAIL（区分「没注入」与「没量到」，防只判前 N 段）；
+      ③ 逐段 `len`（`pin == actual`，超限与脱钩分开报）+ 逐段 `fnv`。
+    """
+    print('\n=== 注入后 user 消息**按段**（ADR-0009 · T-20261024-13 A 块）===')
+    if not os.path.exists(MSG_SEQ_SEGMENTS):
+        print('  ★分段快照缺失：%s' % MSG_SEQ_SEGMENTS)
+        out['violations'].append('分段快照缺失 ⇒ 分段判据不可判（缺失不是没变化）')
+        return
+    d = json.load(io.open(MSG_SEQ_SEGMENTS, encoding='utf-8'))
+    for case, segs in sorted(USER_FACE_SEGMENTS.items()):
+        node = d.get(case)
+        if not isinstance(node, dict):
+            print('  %-40s ★快照中无该 case' % case)
+            out['violations'].append('%s: 分段快照缺该 case' % case)
+            continue
+        got_names = tuple(node.keys())
+        if got_names != USER_FACE_SEGMENT_NAMES:
+            print('  %-40s ★段名/段数不符：%s' % (case, got_names))
+            out['violations'].append(
+                '%s: 段为 %s，应为 %s ⇒ 拼接式变了或量错对象'
+                % (case, got_names, USER_FACE_SEGMENT_NAMES))
+            continue
+        for name in USER_FACE_SEGMENT_NAMES:
+            lim, fnv_frozen = segs[name]
+            act = node[name].get('len')
+            fnv = node[name].get('fnv')
+            if not isinstance(act, int):
+                print('  %-40s ★缺 int 型 len' % (case + '.' + name))
+                out['violations'].append('%s.%s: 缺 int 型 len' % (case, name))
+                continue
+            _, tag = _pin_verdict(out, '%s.%s' % (case, name), act, lim, '上限')
+            print('  %-40s %6d  上限 %6d  余量 %+6d  %s'
+                  % (case + '.' + name, act, lim, lim - act, tag))
+            if fnv != fnv_frozen:
+                print('  %-40s ★fnv %s ≠ 冻结 %s'
+                      % (case + '.' + name, fnv, fnv_frozen))
+                out['violations'].append(
+                    '%s.%s: fnv %s ≠ 冻结 %s ⇒ 该段字节变了'
+                    % (case, name, fnv, fnv_frozen))
 
 
 def _check_user_face_coverage(out):

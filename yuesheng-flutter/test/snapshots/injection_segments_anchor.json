@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "note": "诊断注入五段读数锚点（ADR-0009）"
+  },
+  "p2_yuesheng_diagnosis_fulltext": {
+    "studentBody": {
+      "len": 8,
+      "fnv": "2b56b05e131f4426"
+    },
+    "fullTextBlock": {
+      "len": 62,
+      "fnv": "f1d182190e275c1"
+    },
+    "protocolSuffix": {
+      "len": 977,
+      "fnv": "609c7814d5bcc86d"
+    },
+    "directExplain": {
+      "len": 349,
+      "fnv": "5d479de78f67ea3c"
+    },
+    "fadingBlock": {
+      "len": 185,
+      "fnv": "10523563b3b11eaf"
+    }
+  }
+}
