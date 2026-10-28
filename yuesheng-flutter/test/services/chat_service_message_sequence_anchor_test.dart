@@ -172,6 +172,18 @@ const List<_Case> _kCases = [
         '少年推开门，风灌了进来。桌上的信纸被吹落在地，他捡起来读了一遍。'
         '窗外的雨越下越大，他决定今天就出发。',
   ),
+  // C2（T-20261024-13 A1 甲案）：唯一正常业务路径缺口 —— 学员只诊断一段粘贴文本 /
+  // 一句引用时没有「章节全文」⇒ `fullTextBlock` 退化为空段（len 0），其余四段照常注入
+  // （注入由措辞门裁决，与 `chapterFullText` 无关）。
+  // ★ 除 `chapterFullText` 外与上一例**逐字段相同**：一个维度 = 一个变量。
+  _Case(
+    'p2_yuesheng_diagnosis_nofulltext',
+    TeachingPhase.p2PracticeLoop,
+    AttitudeLevel.yuesheng,
+    TeachingSubphase.diagnosis,
+    false,
+    content: '请诊断我这段文字',
+  ),
   _Case(
     'p3_yuesheng_advanced',
     TeachingPhase.p3Training,
@@ -735,9 +747,12 @@ void main() {
       }
       current[c.name] = segs;
     }
-    // 空扫不是通过：9 例里零例注入 ⇒ 判据面为空
+    // 空扫不是通过：_kCases.length 例里零例注入 ⇒ 判据面为空
     if (injected == 0) {
-      fail('[seg-anchor] 9 例里零例发生注入 ⇒ 分段判据面为空（空扫不是通过）');
+      fail(
+        '[seg-anchor] ${_kCases.length} 例里零例发生注入 ⇒ 分段判据面为空'
+        '（空扫不是通过）',
+      );
     }
 
     if (updating) {
@@ -766,6 +781,35 @@ void main() {
     final stored = decoded is Map<String, dynamic>
         ? decoded
         : const <String, dynamic>{};
+
+    // ── 双向键集合判据（X1 · T-20261024-13 A1 甲案）──────────────────────
+    // 旧比对循环（下一段）按 `_kCases` 单向迭代，只罚「当前有、基线也有但值不同」：
+    //   · 基线里**多出来的键**（已删/已改名用例的残留）永不进入循环 ⇒ 测试照样绿；
+    //   · 基线**缺少**某注入例的键时，`_diff(null, current)` 虽会红，但报出的是一整段
+    //     `∅ → {…}` dump，**不指名缺的是哪个键**；一旦有人把循环改成「只遍历两边都有
+    //     的键」，这条覆盖就会静默消失 —— 这就是 X1 要补的洞（新夹具的覆盖可以静默缩水）。
+    // 故把**键集合相等**单独立成判据，形式与消息序列面（:667-690）一致：集合相等，不是包含。
+    // ★ 期望集合取自 `current`（本次**实际注入**的例），**不用 `_kCases` 派生** ——
+    //   非注入例本就没有键，用 `_kCases` 会造出大批假缺键。
+    final expectedSegKeys = current.keys.where((k) => k != 'meta').toSet();
+    final storedSegKeys = stored.keys.where((k) => k != 'meta').toSet();
+    final missingSegKeys = expectedSegKeys.difference(storedSegKeys).toList()
+      ..sort();
+    final extraSegKeys = storedSegKeys.difference(expectedSegKeys).toList()
+      ..sort();
+    if (missingSegKeys.isNotEmpty || extraSegKeys.isNotEmpty) {
+      fail(
+        '[seg-anchor] 分段基线键集合与本次注入例不相等（双向判据）：\n'
+        '  基线缺少 ${missingSegKeys.length} 个键：$missingSegKeys\n'
+        '    ★ 缺键 = 覆盖缩水 / 基线未随新夹具重冻 ⇒ 该例的五段读数**从未被比对**过。\n'
+        '  基线多出 ${extraSegKeys.length} 个键：$extraSegKeys\n'
+        '    ★ 多键 = 已删/已改名用例的残留 ⇒ 判据面里混着已不存在的对象。\n'
+        '  确需重建（基线变更须可对账、须经评审）：\n'
+        '    UPDATE_SNAPSHOTS=true flutter test '
+        'test/services/chat_service_message_sequence_anchor_test.dart',
+      );
+    }
+
     final diffs = <String>[];
     for (final c in _kCases) {
       if (!current.containsKey(c.name)) continue;

@@ -149,6 +149,33 @@
       "fnv": "aec24484a9871bd"
     }
   ],
+  "p2_yuesheng_diagnosis_nofulltext": [
+    {
+      "role": "system",
+      "len": 57640,
+      "fnv": "66ff7c3b4755707b"
+    },
+    {
+      "role": "system",
+      "len": 9327,
+      "fnv": "66bcfe33cd8df033"
+    },
+    {
+      "role": "system",
+      "len": 148,
+      "fnv": "3b7f022bcf5d9229"
+    },
+    {
+      "role": "user",
+      "len": 1521,
+      "fnv": "49d7de888531ca6d"
+    },
+    {
+      "role": "system",
+      "len": 290,
+      "fnv": "aec24484a9871bd"
+    }
+  ],
   "p3_yuesheng_advanced": [
     {
       "role": "system",

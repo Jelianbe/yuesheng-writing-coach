@@ -857,8 +857,20 @@ def _check_consts(out):
 #   一次即可把增量写进新基线 ⇒ **有指纹、没有上限**。本段补的就是上限：
 #   `重冻 ≠ 获准增长`（重冻后不重钉本段 ⇒ 红灯，不是绿灯）。
 #
+# ★ 沿革（T-20261024-13 A1 甲案 · C2 补钉）：
+#   此前钉表只有 `..._fulltext` 一例，而「学员只诊断一段粘贴文本 / 一句引用」
+#   （**没有**章节全文）是唯一正常业务路径缺口、零覆盖。本轮补夹具
+#   `p2_yuesheng_diagnosis_nofulltext`（与前者逐字段相同，仅 `chapterFullText` 为 null）
+#   并**同批补两条钉值**（整条 + 五段），理由：
+#     · 新例 len=1521 ≥ 977 ⇒ 覆盖扫描（`_check_user_face_coverage`）会判
+#       「注入已发生却无上限」⇒ 不钉即红；
+#     · 五段不钉 ⇒ 重冻快照即可让该路径的支架体积静默增长（`重冻 ≠ 获准增长`
+#       对两例同等适用）。
+#   余量 +0（钉值 = 实测值），与既有例同口径。
+#
 # 覆盖边界（如实声明，**不是全覆盖**）：
-#   · 只有 fulltext 这一例真的注入了协议后缀；
+#   · 两例真的注入了协议后缀：fulltext len=1583 / nofulltext len=1521
+#     （后者差 62 正是缺失的 `fullTextBlock` 段：8+0+977+349+185+2=1521）；
 #   · `p1_yuesheng_diagnosis[3]` / `p2_yuesheng_diagnosis[3]` 实测 len=22
 #     （学员正文原样、未注入）⇒ **不受本红线约束，也不代表注入面**（钉 22 只防误改）；
 #   · 该例是否代表**全部**注入路径（例如 `directExplain` / `fadingBlock` 非空的分支）
@@ -868,6 +880,7 @@ def _check_consts(out):
 # 键 = `快照名[消息下标]`；值 = (实测 len 上限, 冻结时的 fnv)。贴实测、余量 +0。
 USER_FACE_REDLINE = {
     'p2_yuesheng_diagnosis_fulltext[3]': (1583, '100f00a384794e7d'),
+    'p2_yuesheng_diagnosis_nofulltext[3]': (1521, '49d7de888531ca6d'),
 }
 
 # 下限自检：注入后的 user 消息必须**至少**装得下协议后缀本体，否则说明
@@ -884,12 +897,23 @@ _USER_FACE_MIN_EXTRA = CONST_REDLINE['kDiagnosisProtocolSuffix'][0]
 #   抵消 ⇒ 两个方向互相掩盖。
 #
 # ★ 下列值为**锚点实测**（本轮 `injection_segments_anchor.json` 写出，非手填）：
-#   8 + 62 + 977 + 349 + 185 = 1581，加装配 `\n\n` 2 = **1583**
+#   fulltext：8 + 62 + 977 + 349 + 185 = 1581，加装配 `\n\n` 2 = **1583**
 #   ⇒ 与 `USER_FACE_REDLINE` 的整条值逐值吻合（差 2 就是那个分隔符）。
+#   ★ 沿革（T-20261024-13 A1 甲案 · C2）：新增 `..._nofulltext` 五段钉值。
+#     该例 `chapterFullText` 为 null ⇒ `fullTextBlock` 段长 **0**（fnv 为空串指纹），
+#     其余四段与 fulltext 例**逐值相同**（8 / 977 / 349 / 185）—— 这正说明本轮只换了
+#     「有无全文」一个维度；若哪天其余四段也变了，就不是 C2 而是另有变量混入。
 USER_FACE_SEGMENTS = {
     'p2_yuesheng_diagnosis_fulltext': {
         'studentBody': (8, '2b56b05e131f4426'),
         'fullTextBlock': (62, 'f1d182190e275c1'),
+        'protocolSuffix': (977, '609c7814d5bcc86d'),
+        'directExplain': (349, '5d479de78f67ea3c'),
+        'fadingBlock': (185, '10523563b3b11eaf'),
+    },
+    'p2_yuesheng_diagnosis_nofulltext': {
+        'studentBody': (8, '2b56b05e131f4426'),
+        'fullTextBlock': (0, '4bf29ce484222325'),
         'protocolSuffix': (977, '609c7814d5bcc86d'),
         'directExplain': (349, '5d479de78f67ea3c'),
         'fadingBlock': (185, '10523563b3b11eaf'),
