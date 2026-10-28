@@ -618,10 +618,18 @@ MSG_SEQ_SEGMENTS = os.path.join(
 
 # 键 = `快照名[消息下标]`；值 = 实测字符数（贴实测、余量 +0）。
 # 三例同块 ⇒ 三值必须相等，且有结构断言兜底（见 _check_bypass）。
+#
+# ★ 2026-10-28 第二十二次重贴实测值（`T-20261027-01` H11 B+C · `DECISIONS §4-359`）：
+#   9,327 → **9,397**（三例同 Δ **+70**），fnv `66bcfe33cd8df033` → `51e1c8edabd233fa`。
+#   来源：手册 P003 词条正文（`syndrome_kb_content_manual_1.dart:223`）单行内两处改动 ——
+#   删「章节标题」（短链只注入 `chapter.content`，标题是独立列 ⇒ 无从观测的豁免）+
+#   给「与此同时/而另一边」加**可辨感知者**限定（消除与 `:207` 交叉剪辑判据的同词互斥）。
+#   同批：`l3_entry_anchor.json` 的 `syndrome.P003` 2,634 → 2,704（同一 +70）。
+#   本表只钉 len（不钉 fnv）；fnv 差异由 `message_sequence_anchor.json` 看守。
 BYPASS_REDLINE = {
-    'p1_yuesheng_diagnosis[1]': 9327,
-    'p2_yuesheng_diagnosis[1]': 9327,
-    'p2_yuesheng_diagnosis_fulltext[1]': 9327,
+    'p1_yuesheng_diagnosis[1]': 9397,
+    'p2_yuesheng_diagnosis[1]': 9397,
+    'p2_yuesheng_diagnosis_fulltext[1]': 9397,
 }
 
 
