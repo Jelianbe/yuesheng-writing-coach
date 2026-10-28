@@ -140,7 +140,7 @@ class AnchorProbeReport {
     return 'anchor total=${a.total} ok=${a.okCount} amb=${a.ambiguousCount} '
         'short=${a.tooShortCount} fail=${a.failCount + a.failJoinedCount} '
         'empty=$emptyEvidenceCount shortRate=${_fmt(a.tooShortRate)} '
-        'aer=${_fmt(aer)} src=$sourceChars';
+        'aer=${_fmt(aer)} src=$sourceChars sem=$kAnchorSemanticCheck';
   }
 
   static String _fmt(double? v) => v == null ? 'n/a' : v.toStringAsFixed(3);
@@ -153,9 +153,14 @@ class AnchorProbeReport {
   ///
   /// 未测时**不写任何比率字段**，只写 `skip` —— 与 [summary] 同一条纪律：
   /// `aer: null` 和 `aer: 0` 是两件事，落库后更容易被读混，干脆不落。
+  ///
+  /// `sem` 每条都带（含未测）：锚定从不判断"这句能否支撑该症候"。
+  /// **版本不升**：升 `v` 会让 [pilot_metrics_summary] 的 fail-closed 判定
+  /// （`decoded['v'] != version` ⇒ 计 0）把历史 v=1 数据全读成 0。
   String toPayload() {
     final base = <String, Object?>{
       'v': kAnchorPayloadVersion,
+      'sem': kAnchorSemanticCheck,
       'src': sourceChars,
       'syn': syndromeCount,
       'emp': emptyEvidenceCount,

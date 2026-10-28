@@ -186,6 +186,17 @@ void main() {
       expect(chunk.substring(span[0], span[1]), '窗外的雪落了一夜');
     });
 
+    // O-1（`.ai/DECISIONS §4-365`）：锚定只证"原文确有这句"，不证"这句能支撑该症候"。
+    // 该标注须随裁决一起走；删掉它就等于让 ok_exact 被读成"判据成立"。
+    test('命中也不等于语义已验证 ⇒ 仍带 not_performed（O-1）', () {
+      final a = anchorOne(chunk, '窗外的雪落了一夜');
+      expect(a.status, AnchorStatus.okExact);
+      expect(a.semanticCheck, kAnchorSemanticCheck);
+      expect(kAnchorSemanticCheck, 'not_performed');
+      // 反例守门：任何"已验证"读法都无对应取值。
+      expect(kAnchorSemanticCheck, isNot('verified'));
+    });
+
     test('L1 空白折叠 ⇒ ok_ws，且 span 回填到原文（不是归一化坐标）', () {
       // 原文有换行，evidence 里写成空格
       const withNewline = '他握紧了青玉牌，\n指节发白，窗外雪落了一夜。';

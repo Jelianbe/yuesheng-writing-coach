@@ -58,6 +58,17 @@ void main() {
       expect(r.aer, isNull);
       expect(r.summary.contains('anchor total=0'), isTrue);
     });
+
+    // O-1：summary 是会被直接粘进报告的那一行，语义边界必须跟着它走。
+    test('summary 带 sem=not_performed（O-1）', () {
+      final r = probeAnchors(
+        sourceText: _src,
+        evidenceBySyndrome: {
+          'P002': ['他握紧了青玉牌'],
+        },
+      );
+      expect(r.summary.contains('sem=not_performed'), isTrue);
+    });
   });
 
   group('锚定结果透传', () {
@@ -259,6 +270,8 @@ void main() {
       // ★ 守门：落库不得出现比率。存了比率而丢原料，口径一改历史就算不出来了。
       expect(p.containsKey('aer'), isFalse);
       expect(p.containsKey('shortRate'), isFalse);
+      // 未测也带语义标注：没测 ≠ 语义已验证。
+      expect(p['sem'], kAnchorSemanticCheck);
     });
 
     test('已测 ⇒ 逐条明细，带症候 ID 与真实长度', () {
@@ -277,6 +290,8 @@ void main() {
       expect(items.length, 3);
       expect(p['emp'], 0);
       expect(p['src'], _src.length);
+      // 已测同样带语义标注：锚上 ≠ 判据成立（O-1）。
+      expect(p['sem'], kAnchorSemanticCheck);
 
       // 症候归位：前两条属于 P002（一条真一条假），第三条属于 P017。
       expect(items[0]['s'], 'P002');

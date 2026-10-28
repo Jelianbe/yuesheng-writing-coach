@@ -8,6 +8,13 @@
 
 import 'assertion.dart' show stripQuotes;
 
+/// 锚定**只**证明「原文确有这句」，**不**证明「这句就是所报症候的证据」。
+///
+/// 与 AI_NovelGenerator `review_evidence.py:155-181` 的 `semantic_check: "not_performed"`
+/// 同口径（`.ai/DECISIONS §4-365` O-1）：把「验了什么 / 没验什么」写进产物本身，
+/// 而不是靠读者记得。唯一取值 ⇒ 任何把它读成「语义已验证」的地方都是误读。
+const String kAnchorSemanticCheck = 'not_performed';
+
 /// 工作阈值（`工作阈值·未标定`）。正文只写符号，数值只在此处与 `04` §5.9 各一处。
 class AnchorThresholds {
   const AnchorThresholds({
@@ -97,6 +104,11 @@ class AnchoredEvidence {
 
   /// 省略号拼段时被丢弃的短段数（单列 `dropped_parts`，**不进分母**）。
   final int droppedParts;
+
+  /// 恒为 [kAnchorSemanticCheck]：本函数只验「原文有这句」，从不判断
+  /// 「这句能否支撑该症候」。声明成 getter 而不是常量字段，是为了让写报告
+  /// 的一方必须显式取一次 —— `okExact` 不等于判据成立。
+  String get semanticCheck => kAnchorSemanticCheck;
 
   @override
   String toString() => '${status.code}${span == null ? "" : " $span"} | $raw';
