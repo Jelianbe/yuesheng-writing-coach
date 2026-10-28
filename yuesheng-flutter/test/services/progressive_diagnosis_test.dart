@@ -10,6 +10,8 @@
 //      （T-20261021-03 读数批实锤修复，报告《分块链读数》§四）
 //   #10 负向自测：旧拼接逻辑在同 overlap 结构下必现重复段（证 #9 非空转）
 //   #11 无 overlap 合并路径（dupCount=0）：精确保全、不误删
+//   #16 H6 无空行分段稿（段间单换行）长稿必须切块（T-20261027-01）
+//   #17 H6 反向：含空行的稿仍只在 '\n\n' 处切块，逐块长度与改动前一致
 //   #4 buildMergePrompt 注入 SYNDROME_DIAGNOSIS_SKILL 引用 + 跨片段合并规则
 //   #5 runProgressiveDiagnosis 短文本走 null（走单次链路）
 //   #8 ADR-C80 空内容分级降级（换参重试 / 仍空显式失败 / 合法零症候不误伤）
@@ -333,6 +335,67 @@ void main() {
       final chunks = splitContent(content);
       expect(chunks, hasLength(1), reason: '尾段 100 <500 ⇒ 必须合并');
       expect(chunks.single, content, reason: '无 overlap 合并必须逐字保全原文（不误删）');
+    });
+
+    test('#16 H6：无空行分段稿（段间单换行）长稿必须切块', () {
+      // T-20261027-01 §H6：'\n\n' 切不出段 ⇒ 旧实现整篇成一块，分块链的
+      // 窗口纪律（片段 i/n + 窗外判 uncertain）落在 n=1 上。
+      // 边界（不在本条判据内）：整篇**无换行**时两级分隔符都切不出段，
+      // 保持段落原子性整段成块（ADR-C73 §2，见 #6 / E2E-1/4/5）。
+      final paragraphs = <String>[];
+      for (var i = 0; i < 15; i++) {
+        paragraphs.add('无空行段$i${'X' * 330}');
+      }
+      final content = paragraphs.join('\n');
+      expect(content.contains('\n\n'), isFalse);
+      expect(content.length, greaterThan(kDiagnosisChunkSize));
+
+      final chunks = splitContent(content);
+
+      expect(
+        chunks.length,
+        greaterThanOrEqualTo(2),
+        reason: 'H6 判据 ≥2（旧实现恒 1）',
+      );
+      expect(chunks.first.length, lessThan(content.length));
+      for (final c in chunks) {
+        expect(content.contains(c), isTrue, reason: '块必须是原文逐字子串（锚点定位前提）');
+      }
+      final coverage = computeChunkCoverage(content, chunks);
+      expect(coverage.every((c) => c.located), isTrue);
+      expect(coverage.last.end, content.length, reason: '末块须覆盖到原文结尾（不丢尾）');
+    });
+
+    test('#17 H6 反向：含空行的稿仍在空行处切块（逐块长度与改动前一致）', () {
+      // 反向判据（卡面）：原本就有空行的稿，分块结果必须与现状逐块一致。
+      // 构造特意让**段内**含单个换行 —— 若实现误按 '\n' 切，块边界会落进段内，
+      // 下面的「块边界必在 '\n\n' 处」会红。
+      final paragraphs = <String>[];
+      for (var i = 0; i < 14; i++) {
+        paragraphs.add('段$i上半${'X' * 120}\n段$i下半${'Y' * 120}');
+      }
+      final content = paragraphs.join('\n\n');
+
+      final chunks = splitContent(content);
+
+      expect(chunks.map((c) => c.length).toList(), <int>[2761, 1010]);
+      var cursor = 0;
+      for (final c in chunks) {
+        final start = content.indexOf(c, cursor);
+        expect(start, isNot(-1), reason: '块必须是原文子串');
+        expect(
+          start == 0 || content.startsWith('\n\n', start - 2),
+          isTrue,
+          reason: '块起点必在段落边界（不得在段内单换行处切）',
+        );
+        final end = start + c.length;
+        expect(
+          end == content.length || content.startsWith('\n\n', end),
+          isTrue,
+          reason: '块终点必在段落边界（不得在段内单换行处切）',
+        );
+        cursor = start;
+      }
     });
   });
 

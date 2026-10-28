@@ -213,23 +213,39 @@ List<ChunkCoverage> computeChunkCoverage(String content, List<String> chunks) {
 /// 按段落切分文本为若干块，块间保留 overlap 字符的上下文重叠。
 ///
 /// 算法：
-///   1. 按 '\n\n' 切段落
+///   1. 按 '\n\n' 切段落；若切不出段（无空行分段稿），退一级按 '\n' 切
 ///   2. 从 startIndex 累加段落，总长度接近 SIZE 时切块
 ///   3. overlap 从本块末尾段落向前回溯，累计长度 ≥ OVERLAP 停
 ///   4. 末块 < MIN_LAST_CHUNK 时合并到前一块（合并时按 overlap 段索引
 ///      去重，见 [_mergeSmallLastChunk]——T-20261021-03 读数批实锤修复）
 ///
+/// 分隔符降级（T-20261027-01 · H6）：`'\n\n'` 切成单段说明**全文没有空行**，
+/// 而中文长稿常见「段间只按一次回车」。旧实现此时长稿整篇成一块，分块链路
+/// 的窗口纪律（片段 i/n + 窗外判 uncertain）落在 n=1 上，跨章判据整段失效。
+/// 故退一级用单个换行再切；块文本仍是原文的**逐字子串**（join 回同一分隔符），
+/// 锚点定位不受影响。
+///
 /// 原子性：单段超长（首段即 ≥ SIZE）时**整段成块**，不再按字符硬切——
 /// 段落是分块算法的边界，段内不再切。修复批次 H 侦察的同步死循环缺陷
-/// （ADR-C73 §2）。
+/// （ADR-C73 §2）。**两级分隔符都切不出段（整篇无换行）时仍整段成块**：
+/// 此时不存在段落边界，字符硬切会造出句中断崖，属另一项设计取舍，H6 不动。
 List<String> splitContent(String content) {
   if (content.length <= kDiagnosisChunkSize) {
     return [content];
   }
 
-  final paragraphs = content.split('\n\n');
-  final (chunks, spans) = _chunkParagraphs(paragraphs);
-  _mergeSmallLastChunk(chunks, spans, paragraphs.length);
+  var separator = '\n\n';
+  var paragraphs = content.split(separator);
+  if (paragraphs.length == 1) {
+    separator = '\n';
+    paragraphs = content.split(separator);
+  }
+  if (paragraphs.length == 1) {
+    return [content];
+  }
+
+  final (chunks, spans) = _chunkParagraphs(paragraphs, separator);
+  _mergeSmallLastChunk(chunks, spans, paragraphs.length, separator);
   return chunks;
 }
 
@@ -245,9 +261,11 @@ List<String> splitContent(String content) {
 /// 回溯后会让 startIndex 不变 ⇒ while 永真。
 (List<String>, List<({int start, int end})>) _chunkParagraphs(
   List<String> paragraphs,
+  String separator,
 ) {
   final chunks = <String>[];
   final spans = <({int start, int end})>[];
+  final sepLen = separator.length;
   var startIndex = 0;
 
   while (startIndex < paragraphs.length) {
@@ -256,7 +274,7 @@ List<String> splitContent(String content) {
     var reachedThreshold = false;
 
     for (var i = startIndex; i < paragraphs.length; i++) {
-      final pLen = paragraphs[i].length + 2; // +2 是 '\n\n' 分隔
+      final pLen = paragraphs[i].length + sepLen; // 分隔符计入块长
       if (length + pLen >= kDiagnosisChunkSize) {
         reachedThreshold = true;
         break;
@@ -266,7 +284,7 @@ List<String> splitContent(String content) {
     }
 
     if (!reachedThreshold) {
-      chunks.add(paragraphs.sublist(startIndex).join('\n\n'));
+      chunks.add(paragraphs.sublist(startIndex).join(separator));
       spans.add((start: startIndex, end: paragraphs.length));
       break;
     }
@@ -278,11 +296,16 @@ List<String> splitContent(String content) {
       continue;
     }
 
-    final chunk = paragraphs.sublist(startIndex, endIndex).join('\n\n');
+    final chunk = paragraphs.sublist(startIndex, endIndex).join(separator);
     chunks.add(chunk);
     spans.add((start: startIndex, end: endIndex));
 
-    startIndex = _overlapStartIndex(paragraphs, endIndex, startIndex);
+    startIndex = _overlapStartIndex(
+      paragraphs,
+      endIndex,
+      startIndex,
+      separator,
+    );
   }
 
   return (chunks, spans);
@@ -298,11 +321,17 @@ List<String> splitContent(String content) {
 /// 只修了 `endIndex == startIndex` 的原子分支，本退化分支漏网。
 /// 修复 = 回溯失败改从 endIndex 起（该边界不带 overlap），保证 startIndex
 /// 严格前移；代价仅是该边界损失一次 overlap 连续性（块内容覆盖不变）。
-int _overlapStartIndex(List<String> paragraphs, int endIndex, int startIndex) {
+int _overlapStartIndex(
+  List<String> paragraphs,
+  int endIndex,
+  int startIndex,
+  String separator,
+) {
+  final sepLen = separator.length;
   var overlapLength = 0;
   var overlapStart = endIndex - 1;
   while (overlapStart > startIndex) {
-    overlapLength += paragraphs[overlapStart].length + 2;
+    overlapLength += paragraphs[overlapStart].length + sepLen;
     if (overlapLength >= kDiagnosisChunkOverlap) {
       break;
     }
@@ -330,6 +359,7 @@ void _mergeSmallLastChunk(
   List<String> chunks,
   List<({int start, int end})> spans,
   int paragraphCount,
+  String separator,
 ) {
   if (chunks.length < 2) return;
   final last = chunks.last;
@@ -340,12 +370,12 @@ void _mergeSmallLastChunk(
   final dupCount =
       (prevEnd < paragraphCount ? prevEnd : paragraphCount) - lastStart;
   if (dupCount <= 0) {
-    chunks[chunks.length - 2] = '${chunks[chunks.length - 2]}\n\n$last';
+    chunks[chunks.length - 2] = '${chunks[chunks.length - 2]}$separator$last';
   } else {
-    final kept = last.split('\n\n').skip(dupCount).join('\n\n');
+    final kept = last.split(separator).skip(dupCount).join(separator);
     chunks[chunks.length - 2] = kept.isEmpty
         ? chunks[chunks.length - 2]
-        : '${chunks[chunks.length - 2]}\n\n$kept';
+        : '${chunks[chunks.length - 2]}$separator$kept';
   }
   chunks.removeLast();
 }
