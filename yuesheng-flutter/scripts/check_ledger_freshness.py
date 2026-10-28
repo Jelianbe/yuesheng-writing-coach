@@ -147,7 +147,12 @@ def declared_gate_counts(state: str) -> list[tuple[str, int]]:
 def declared_test_counts(state: str) -> list[tuple[str, int]]:
     """STATE 里「N 例 / N passed」的声明，同样跳过快照行。"""
     out: list[tuple[str, int]] = []
-    for m in re.finditer(r"(\d{3,5})\s*(?:例|passed)", state):
+    # ★ 2026-10-28 精度修复：原文 `(\d{3,5})\s*(?:例|passed)` 会把**症候编号**
+    #   当成例数 —— `c452873e` 的提交标题「分块链 P003 例外落…」重生成进 STATE 后
+    #   `P003` 的 `003` + `例外` 命中 ⇒ F2 报「声明 3 例可疑」（2 行同一提交被点两次）。
+    #   症候 id 形如 `P003` / `P011`：数字**紧邻 ASCII 字母** ⇒ 那不是量词声明。
+    #   收紧为「数字前不得紧邻字母或数字」，`5334 例` / `共5334例` 仍照常校验。
+    for m in re.finditer(r"(?<![A-Za-z0-9])(\d{3,5})\s*(?:例|passed)", state):
         line_start = state.rfind("\n", 0, m.start()) + 1
         line = state[line_start : state.find("\n", m.start())]
         if re.search(r"20\d\d-\d\d-\d\d", line) or "快照" in line:
