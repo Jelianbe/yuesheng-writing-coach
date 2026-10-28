@@ -1336,6 +1336,27 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
 
 // ── 单块分析：空内容分级降级（ADR-C80）──
 
+/// 分块链 user 消息正文（`T-20261027-01` **H9**）。
+///
+/// **只声明系统确实知道的两件事**：这条片段取自哪条来源记录、它是第几块。
+/// 旧标签「`章节标题：<title>`」把**记录标题**当成**片段内容的章节归属** ——
+/// 系统并不知道后者：`Chapters` 只有 `title`（自由文本，可为空）与 `sortOrder`
+/// （记录在书中的位置），没有章号；用户把多章抄进一条记录时，那两者都只代表
+/// **记录**，不代表块内正文（`tables.dart:41`）。离线采样器同一模板同理：
+/// 语料只有作品名，没有章节标题（`tool/build_chunk_sim_tasks.py:96`）。
+///
+/// ⇒ 改为中性声明 + 「可能含多章」，把「本窗正文是什么」交回片段正文自己。
+/// 标题为空时整行省略（`chapters.title` 默认空串，不是异常态）。
+String buildChunkUserMessage({
+  required String recordTitle,
+  required int chunkIndex,
+  required int chunkCount,
+  required String chunk,
+}) {
+  final head = recordTitle.isEmpty ? '' : '来源记录：$recordTitle（本片段可能含多章）\n\n';
+  return '$head文本片段 ${chunkIndex + 1}/$chunkCount：\n\n$chunk';
+}
+
 /// 单块分析的 messages（尝试 1 与兜底重试共用同一组消息）。
 List<ChatMessage> _chunkMessages(
   String title,
@@ -1357,7 +1378,12 @@ List<ChatMessage> _chunkMessages(
     ),
     ChatMessage(
       role: 'user',
-      content: '章节标题：$title\n\n文本片段 ${chunkIndex + 1}/$chunkCount：\n\n$chunk',
+      content: buildChunkUserMessage(
+        recordTitle: title,
+        chunkIndex: chunkIndex,
+        chunkCount: chunkCount,
+        chunk: chunk,
+      ),
     ),
   ];
 }

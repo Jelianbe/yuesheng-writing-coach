@@ -23,9 +23,11 @@
   ⇒ 「用一份看起来像的旧文件继续跑」正是本卡要治的病。
 
   另：任务单里的「待判读文本」段现在**逐字复刻生产的 user 消息**
-  （`章节标题：<title>\n\n文本片段 i/n：\n\n<正文>`，见
-  `progressive_diagnosis.dart:1360`）—— 这也属同构面，缺了它子代理
-  看到的输入形状与生产不同。
+  （`来源记录：<title>（本片段可能含多章）\n\n文本片段 i/n：\n\n<正文>`，见
+  `progressive_diagnosis.dart:1350` `buildChunkUserMessage`）—— 这也属同构面，
+  缺了它子代理看到的输入形状与生产不同。
+  ★ 2026-10-28（`T-20261027-01` H9）：旧文 `章节标题：<title>` 已随生产一并撤下 ——
+  那个标签把**记录标题**当成**块内章节归属**，而系统并不知道后者。
 
 ★ 偏向措辞已清（H7 判据 2）
   旧版写死「命中例外条款形态的**不判**」「**宁缺勿滥**…判据例外条款命中的判 miss」
@@ -96,10 +98,10 @@ def refresh_production_prompt():
 def load_titles():
     """corpus_id → 作品名（语料**没有章节标题字段**，只有作品名）。
 
-    ⚠️ 口径（H9 未决，本批不猜）：语料是按「作品段落跨度」切章合成的，
-    因此 `primary_work` 是**作品名**而非章节标题；真正的章号检测口径
-    见 `T-20261027-01 H9`。本脚本只保证**形状同构**（有 `章节标题：` 这一行），
-    不主张语义正确。
+    ⚠️ 口径（H9 已裁，2026-10-28 —— `DECISIONS §4-361`）：语料是按「作品段落跨度」
+    切章合成的，因此 `primary_work` 是**作品名**而非章节标题。⇒ 标签不再主张
+    「这是章节标题」，生产与会话同改为中性的「来源记录：」+「本片段可能含多章」；
+    本脚本只保证**形状同构**（同一行形态），不主张语义正确。
     """
     titles = {}
     if not os.path.isfile(CORPUS_JSONL):
@@ -159,11 +161,14 @@ def build_task(chunk, title):
     lines.append("")
     lines.append(
         "**下面这一段就是该模块实际收到的 user 消息全文，逐字复刻**"
-        "（含块首注入行，见 `progressive_diagnosis.dart:1360`）："
+        "（含块首注入行，见 `progressive_diagnosis.dart:1350` "
+        "`buildChunkUserMessage`）："
     )
     lines.append("")
-    lines.append(f"章节标题：{title}")
-    lines.append("")
+    # 与生产同形：标题为空则整行省略（生产 `chapters.title` 默认空串）。
+    if title:
+        lines.append(f"来源记录：{title}（本片段可能含多章）")
+        lines.append("")
     lines.append(f"文本片段 {chunk['chunk_index'] + 1}/{chunk['chunk_count']}：")
     lines.append("")
     lines.append(chunk["text"])

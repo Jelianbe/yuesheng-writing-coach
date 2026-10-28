@@ -20,6 +20,11 @@
 //   ③ `ChatService.kDiagnosisProtocolSuffix`（`chat_service.dart:227`）——
 //      拼在诊断轮次 user 消息上的协议文本；`T-20261024-13` 缺口 1 的对象。
 //
+// ★ 2026-10-28 追加第 ④ 键（`T-20261027-01` **H9**）：分块链 **user 消息模板**
+//   （`buildChunkUserMessage`，固定入参样张）。它此前零锚点 ⇒ 标签措辞（
+//   「章节标题：」把记录标题当成块内章节归属）可被任意改动而无人拦。
+//   本键与前三块同口径（len + fnv），并配内容牙 `_payloadCheck()`（P1–P4）。
+
 // ## `chunkExceptionGuideBlock` 怎么取（为什么不是读源码文件）
 //
 // 该常量是**库私有**，外部 test 不可直接引用。这里**不为它开公开 API**——
@@ -170,6 +175,16 @@ CollectedPromptConsts _buildCurrent() {
       'kChunkSystemPrompt': _textAnchor(chunkPrompt),
       'chunkExceptionGuideBlock': _textAnchor(guide),
       'kDiagnosisProtocolSuffix': _textAnchor(suffix),
+      // H9：分块链 user 消息模板（固定入参的样张）。量的是**装配产物**，
+      // 与上面三块同口径（len + fnv）⇒ 措辞/分隔符一改即红。
+      'chunkUserMessageSample': _textAnchor(
+        buildChunkUserMessage(
+          recordTitle: kPayloadSampleTitle,
+          chunkIndex: kPayloadSampleIndex,
+          chunkCount: kPayloadSampleCount,
+          chunk: kPayloadSampleBody,
+        ),
+      ),
       'meta': {
         'exceptionIds': ids,
         'exceptionLineCount': exceptionLineCount,
@@ -266,7 +281,63 @@ const List<String> kPinnedKeys = [
   'kChunkSystemPrompt',
   'chunkExceptionGuideBlock',
   'kDiagnosisProtocolSuffix',
+  'chunkUserMessageSample',
 ];
+
+// ── H9 payload 样张入参（固定值 ⇒ 样张可逐字节比对）──
+const String kPayloadSampleTitle = '第三章 雨夜';
+const int kPayloadSampleIndex = 0;
+const int kPayloadSampleCount = 3;
+const String kPayloadSampleBody = '他推开门，雨声灌进来。';
+
+/// 内容牙 P1–P4（`T-20261027-01` H9）：分块链 user 消息**不得再断言**
+/// 「这段内容属于某一章」。
+///
+/// 打在 `buildChunkUserMessage` 的**产物**上，与快照样张互补：
+/// 样张拦「改了字」，本节拦「改回了错误形态」（两者都可能被一次重冻同时洗掉，
+/// 但本节还额外证明**空标题分支**与**正文原样嵌入**）。
+void _payloadCheck() {
+  final withTitle = buildChunkUserMessage(
+    recordTitle: kPayloadSampleTitle,
+    chunkIndex: kPayloadSampleIndex,
+    chunkCount: kPayloadSampleCount,
+    chunk: kPayloadSampleBody,
+  );
+  // P1 旧形态不得复活：`章节标题：` = 把记录标题当块内章节归属（H9 缺陷本体）
+  if (withTitle.contains('章节标题：')) {
+    fail('内容牙 P1 不过：分块 payload 仍出现 `章节标题：`（H9 已撤的假断言）。');
+  }
+  // P2 必须只声明知道的事：来源记录 + 块序号
+  for (final must in const ['来源记录：$kPayloadSampleTitle', '文本片段 1/3：']) {
+    if (!withTitle.contains(must)) {
+      fail('内容牙 P2 不过：分块 payload 缺 `$must`。');
+    }
+  }
+  // P2b 必须带「可能含多章」这一句 —— 否则标签仍在暗示整段同一章
+  if (!withTitle.contains('本片段可能含多章')) {
+    fail('内容牙 P2 不过：分块 payload 缺「本片段可能含多章」（假断言未被撤干净）。');
+  }
+  // P3 正文必须原样嵌入（防模板改造时把正文剪了 / 换行被吃）
+  if (!withTitle.endsWith('\n\n$kPayloadSampleBody')) {
+    fail('内容牙 P3 不过：正文未原样收尾于 payload。');
+  }
+  // P4 空标题分支：`chapters.title` 默认空串（不是异常态）⇒ 不得留下「来源记录：」空壳
+  final noTitle = buildChunkUserMessage(
+    recordTitle: '',
+    chunkIndex: 1,
+    chunkCount: 2,
+    chunk: kPayloadSampleBody,
+  );
+  if (noTitle.contains('来源记录：')) {
+    fail('内容牙 P4 不过：标题为空时仍输出「来源记录：」空壳行。');
+  }
+  if (!noTitle.startsWith('文本片段 2/2：')) {
+    fail(
+      '内容牙 P4 不过：标题为空时块序号行形态变了（实际开头：'
+      '${noTitle.length > 16 ? noTitle.substring(0, 16) : noTitle}）。',
+    );
+  }
+}
 
 /// 打印 meta 归因差异（**不判定**——判定只看三个钉值键的 len + fnv）。
 void _printMetaDrift(dynamic storedMeta, dynamic currentMeta) {
@@ -359,6 +430,7 @@ void main() {
     final current = collected.anchors;
     _selfCheck(current, collected.guideText);
     _contentLint(collected.guideText);
+    _payloadCheck();
 
     // ── ② 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
     // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
@@ -446,7 +518,7 @@ void main() {
     // meta 归因信息（不判定）
     _printMetaDrift(stored['meta'], current['meta']);
 
-    print('[const-anchor] 比对通过：三块常量与基线字节级一致 ✓');
+    print('[const-anchor] 比对通过：三块常量 + 分块 payload 模板与基线字节级一致 ✓');
     for (final k in kPinnedKeys) {
       final a = current[k]! as Map;
       print('[const-anchor]   $k len=${a['len']} fnv=${a['fnv']}');

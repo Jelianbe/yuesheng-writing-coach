@@ -11,6 +11,10 @@
     "len": 977,
     "fnv": "609c7814d5bcc86d"
   },
+  "chunkUserMessageSample": {
+    "len": 45,
+    "fnv": "b7338367261932a"
+  },
   "meta": {
     "exceptionIds": [
       "P001",
