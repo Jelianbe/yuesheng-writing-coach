@@ -25,11 +25,39 @@
       "lines": 54
     },
     {
+      "file": "lib/services/chat_context_builder.dart",
+      "func": "_buildSyndromeSections",
+      "start": 195,
+      "end": 250,
+      "lines": 56
+    },
+    {
       "file": "lib/services/chat_service.dart",
       "func": "_streamLlm",
       "start": 574,
       "end": 713,
       "lines": 140
+    },
+    {
+      "file": "lib/services/focus_resolver.dart",
+      "func": "_selectFallback",
+      "start": 242,
+      "end": 316,
+      "lines": 75
+    },
+    {
+      "file": "lib/services/merge_convergence.dart",
+      "func": "mergeOutputConvergence",
+      "start": 95,
+      "end": 146,
+      "lines": 52
+    },
+    {
+      "file": "lib/services/progressive_diagnosis.dart",
+      "func": "_chunkParagraphs",
+      "start": 262,
+      "end": 312,
+      "lines": 51
     }
   ]
 }

@@ -71,10 +71,19 @@ CONTROL_KEYWORDS = {
 # 超长空白行；若 ret 段写成 `[\w<>?,\s\[\]]+?`，`\s` 会在这些空白上反复
 # 回溯 → 灾难性回溯。
 # 三重防护：① ret 段限长 {1,60}?；② 调用方跳过超长行；③ 行内必须有 `(`。
+#
+# ★ 2026-10-29（`T-20261029-01`）ret 段补 `()` `{}`：
+#   Dart **记录类型**返回 `({String a, bool b})` / `(int, String)` 里的括号
+#   不在原字符类里 ⇒ 匹配失败 ⇒ 该函数**整条从统计中消失**（不是少算行数，
+#   是「不存在」）。实证：`T-20261027-06` 收尾时把 `_streamLlm` 的签名从记录
+#   类型改成 `Future<StreamOutcome>`，它才**第一次**被门禁 5 看见（140 行）。
+#   全库复扫 ⇒ 另有 4 个函数从未被计入（`_buildSyndromeSections` 等）。
+#   ⇒ 任何「把签名改成记录类型」的改动都能无意绕过 R-019，是逃逸口而非漏算。
+#   负向验证：`scripts/_selftest_check_r019.py` 的 A1 探针（记录签名 60 行必报）。
 SIG_RE = re.compile(
     r'^(?P<indent>[ \t]*)'
     r'(?:(?:static|external|abstract|final|const|late)\s+)*'
-    r'(?P<ret>[\w<>?,\s\[\]]{1,60}?)\s+'
+    r'(?P<ret>[\w<>?,\s\[\](){}]{1,60}?)\s+'
     r'(?P<name>[A-Za-z_$][\w$]*)'
     r'(?P<generics><[^>]*>)?\s*'
     r'\('
@@ -234,7 +243,11 @@ def scan_file(path, limit):
         if line.rstrip().endswith(','):
             continue
         # `(` 之后必须能找到 `{`（签名行或之后几行），且不能以 `;` 或 `=>` 收尾
-        open_paren = line.index('(', m.start())
+        # ★ 2026-10-29：ret 段现在可能自带括号（记录类型 `({..})`）⇒
+        #   `line.index('(', m.start())` 会命中**返回类型里**那个 `(`，
+        #   随后配平到记录类型自己的 `)`，`after` 自然不是 `{` ⇒ 整条静默丢弃。
+        #   正则末尾的 `\(` 就是参数列表起点 ⇒ 直接用 `m.end() - 1`。
+        open_paren = m.end() - 1
         tail = line[open_paren:]
         if '=>' in tail or tail.rstrip().endswith(';'):
             continue
