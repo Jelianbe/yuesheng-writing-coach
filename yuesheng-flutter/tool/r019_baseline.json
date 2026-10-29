@@ -32,13 +32,6 @@
       "lines": 56
     },
     {
-      "file": "lib/services/chat_service.dart",
-      "func": "_streamLlm",
-      "start": 574,
-      "end": 713,
-      "lines": 140
-    },
-    {
       "file": "lib/services/focus_resolver.dart",
       "func": "_selectFallback",
       "start": 242,

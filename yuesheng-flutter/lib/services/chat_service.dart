@@ -577,139 +577,181 @@ extension ChatServiceSendRun on ChatService {
     required SendMessageOptions options,
   }) async {
     // 8. 流式调用 + 拦截诊断块
-    String fullContent = '';
-    // ADR-0010：终态判据 —— `isDone` 帧仅当某次尝试真见过 `[DONE]` 才投递
-    // （LlmClient._flushIsDone「恰好一次」契约），缺失 ⇒ 对端主动关流。
-    bool sawDone = false;
-    // ★ 两个标志**刻意分离**（ADR-C105 v5 P1-2）：
-    //   - `blockIntercepted`：已进入「协议块拦截模式」，从标记处起停止转发（**任何**标记）。
-    //   - `inDiagnosisBlock`：本轮**确实发起了诊断**（仅 `[YS_DIAGNOSIS]` / ```diagnosis）。
-    //     它下游喂给 `_recordDiagnosisOutcome(attempted:)`，契约（diagnosis_flow_handler
-    //     .dart:288-289）明写是「AI 输出含 [YS_DIAGNOSIS] 块」。若被 `[YS_TRAINING]` /
-    //     `[YS_OUTLINE]` / `[YS_FACT]` / `[YS_GENUI]` 置位，则纯训练轮会被误记为
-    //     「发起诊断却失败」，连续 2 轮即插入「诊断失败卡」（用户可见误报）。
-    bool inDiagnosisBlock = false;
-    bool blockIntercepted = false;
-    int displayLength = 0;
-    int streamChunkCount = 0;
-
     debugPrint('[ChatService] 步骤8: 开始 streamChat 调用...');
     // TH 九批：标注主对话链路（一次性标记，LlmClient 入口即消费）。
     _llmClient.markCallContext(_kMainChatCallContext);
-    await _llmClient.streamChat(messages, (response) {
-      if (response.isDone) {
-        sawDone = true;
-        debugPrint('[ChatService] 步骤8: streamChat 收到 [DONE]');
-        return;
-      }
-      if (response.content.isEmpty) return;
+    final sink = _ChatStreamFrameSink(callbacks.onStream);
+    await _llmClient.streamChat(
+      messages,
+      sink.onFrame,
+      cancelToken: options.cancelToken,
+    );
+    // ★ ADR-C105 v5（第 2 轮自检 P2-2）：流结束后补一次**全文**诊断标记判定
+    // （流式阶段遇任一更早的标记即短路，其后的 [YS_DIAGNOSIS] 会扫不到）。
+    sink.finalizeDiagnosisFlag();
+    debugPrint(
+      '[ChatService] 步骤8: streamChat 完成 | 总 chunk=${sink.streamChunkCount} | fullContent 长度=${sink.fullContent.length} | inDiagnosisBlock=${sink.inDiagnosisBlock}',
+    );
+    _reportOutputAssessment(sink.fullContent);
+    return (
+      fullContent: sink.fullContent,
+      inDiagnosisBlock: sink.inDiagnosisBlock,
+      sawDone: sink.sawDone,
+    );
+  }
 
-      streamChunkCount++;
-      fullContent += response.content;
-      // 批次6（6.10）：内存上限截断——超限丢弃头部，displayLength 同步左移
-      //（已转发内容不受影响，仅服务端解析缓冲降载）
-      if (fullContent.length > ChatService._kFullContentMaxLen) {
-        final overflow = fullContent.length - ChatService._kFullContentMaxLen;
-        fullContent = fullContent.substring(overflow);
-        displayLength = (displayLength - overflow).clamp(0, fullContent.length);
-        debugPrint(
-          '[ChatService] 步骤8: fullContent 超上限截断头部 $overflow 字符（上限 ${ChatService._kFullContentMaxLen}）',
-        );
-      }
-      if (streamChunkCount <= 3 || streamChunkCount % 10 == 0) {
-        debugPrint(
-          '[ChatService] 步骤8: chunk#$streamChunkCount | delta="${response.content.length > 30 ? '${response.content.substring(0, 30)}...' : response.content}" | fullLen=${fullContent.length}',
-        );
-      }
+  /// 入档批次：AI 输出轻量校验（空/重复 loop/元文本）——只留痕不截断，
+  /// 阈值校准后再决定是否干预（写作场景误拦风险高于模型抽风）
+  void _reportOutputAssessment(String fullContent) {
+    if (fullContent.isEmpty) return;
+    final assessment = assessLlmOutput(fullContent);
+    if (!assessment.isProblematic) return;
+    debugPrint(
+      '[ChatService] 输出校验命中: ${assessment.detail} | blank=${assessment.isBlank} repeat=${assessment.hasRepetition} meta=${assessment.hasMetaText}',
+    );
+  }
+}
 
-      if (blockIntercepted) return;
+/// 流式帧累积器 —— 自 `_streamLlm` 拆出的**独立类**（`T-20261029-02`）。
+///
+/// 职责单一：吃 `LlmClient.streamChat` 的每一帧，决定**哪些字符可以上屏**，
+/// 并累积终态事实（`fullContent` / `sawDone` / `inDiagnosisBlock`）。不做 IO、
+/// 不持有 LLM 句柄，依赖只有「上屏回调」一个 —— 这正是它与 `part` / `extension`
+/// 伪拆分的分界（后者只把同一坨代码换个容器，职责与依赖都不变）。
+///
+/// 留在本文件而非独立文件：它读取 `ChatService` 的四个私有静态成员
+/// （`_kFullContentMaxLen` / `_kMaxStreamMarkerLen` / `_earliestMarkerIndexList` /
+/// `_blockPendingPrefix`），跨文件需把它们提为 public —— 那是把私有内部暴露给
+/// 一个消费者，代价大于收益。
+class _ChatStreamFrameSink {
+  _ChatStreamFrameSink(this._emit);
 
-      // 拦截诊断块、大纲记忆块（[YS_ENTITY]）、事实块（[YS_FACT]）、
-      // GENUI 块（[YS_GENUI]）、训练判定块（[YS_TRAINING]，ADR-C105 A1）：
-      // 任一标记出现即从该处起不再转发，避免原始协议 JSON 泄漏到流式展示
-      // 批次6（6.3）：O(n²) → O(n)——安全区已转发到 displayLength，标记只可能
-      // 出现在末尾 ≤ 最大标记长的窗口内（含跨 chunk 拼接），从窗口起点起搜，
-      // 避免每 chunk 对全量 fullContent 做三次 indexOf 扫描。
-      final scanStart = displayLength > ChatService._kMaxStreamMarkerLen
-          ? displayLength - ChatService._kMaxStreamMarkerLen + 1
-          : 0;
-      final diagMarkerIndex = fullContent.indexOf(kDiagnosisStart, scanStart);
-      final mdDiagMarkerIndex = fullContent.indexOf(
-        kMarkdownDiagOpen,
-        scanStart,
+  final void Function(String delta) _emit;
+
+  String fullContent = '';
+
+  // ADR-0010：终态判据 —— `isDone` 帧仅当某次尝试真见过 `[DONE]` 才投递
+  // （LlmClient._flushIsDone「恰好一次」契约），缺失 ⇒ 对端主动关流。
+  bool sawDone = false;
+
+  // ★ 两个标志**刻意分离**（ADR-C105 v5 P1-2）：
+  //   - `blockIntercepted`：已进入「协议块拦截模式」，从标记处起停止转发（**任何**标记）。
+  //   - `inDiagnosisBlock`：本轮**确实发起了诊断**（仅 `[YS_DIAGNOSIS]` / ```diagnosis）。
+  //     它下游喂给 `_recordDiagnosisOutcome(attempted:)`，契约（diagnosis_flow_handler
+  //     .dart:288-289）明写是「AI 输出含 [YS_DIAGNOSIS] 块」。若被 `[YS_TRAINING]` /
+  //     `[YS_OUTLINE]` / `[YS_FACT]` / `[YS_GENUI]` 置位，则纯训练轮会被误记为
+  //     「发起诊断却失败」，连续 2 轮即插入「诊断失败卡」（用户可见误报）。
+  bool inDiagnosisBlock = false;
+  bool blockIntercepted = false;
+
+  /// 已转发到 UI 的字符数（`fullContent` 游标；头部截断时同步左移）
+  int displayLength = 0;
+  int streamChunkCount = 0;
+
+  void onFrame(LlmStreamResponse response) {
+    if (response.isDone) {
+      sawDone = true;
+      debugPrint('[ChatService] 步骤8: streamChat 收到 [DONE]');
+      return;
+    }
+    if (response.content.isEmpty) return;
+
+    _appendDelta(response.content);
+    if (blockIntercepted) return;
+
+    // 先试「协议块标记」再试「半截标记暂缓」：前者一旦命中即接管，
+    // 后者只在未命中时才需要计算。
+    if (_interceptAtProtocolBlock()) return;
+    _forwardSafeTail();
+  }
+
+  void _appendDelta(String delta) {
+    streamChunkCount++;
+    fullContent += delta;
+    // 批次6（6.10）：内存上限截断——超限丢弃头部，displayLength 同步左移
+    //（已转发内容不受影响，仅服务端解析缓冲降载）
+    if (fullContent.length > ChatService._kFullContentMaxLen) {
+      final overflow = fullContent.length - ChatService._kFullContentMaxLen;
+      fullContent = fullContent.substring(overflow);
+      displayLength = (displayLength - overflow).clamp(0, fullContent.length);
+      debugPrint(
+        '[ChatService] 步骤8: fullContent 超上限截断头部 $overflow 字符（上限 ${ChatService._kFullContentMaxLen}）',
       );
-      final outlineMarkerIndex = fullContent.indexOf(kOutlineStart, scanStart);
-      final factMarkerIndex = fullContent.indexOf(kFactStart, scanStart);
-      final genuiMarkerIndex = fullContent.indexOf(kGenuiStart, scanStart);
-      final trainingMarkerIndex = fullContent.indexOf(
-        kTrainingStart,
-        scanStart,
+    }
+    if (streamChunkCount <= 3 || streamChunkCount % 10 == 0) {
+      debugPrint(
+        '[ChatService] 步骤8: chunk#$streamChunkCount | delta="${delta.length > 30 ? '${delta.substring(0, 30)}...' : delta}" | fullLen=${fullContent.length}',
       );
-      final markerIndex = ChatService._earliestMarkerIndexList([
-        diagMarkerIndex,
-        mdDiagMarkerIndex,
-        outlineMarkerIndex,
-        factMarkerIndex,
-        genuiMarkerIndex,
-        trainingMarkerIndex,
-      ]);
-      if (markerIndex != -1) {
-        final newDisplay = fullContent.substring(displayLength, markerIndex);
-        if (newDisplay.isNotEmpty) callbacks.onStream(newDisplay);
-        displayLength = markerIndex;
-        blockIntercepted = true;
-        // 见本函数顶部注释：只有诊断类标记才置 `inDiagnosisBlock`（成败计数用），
-        // 其余协议块（大纲 / 事实 / GENUI / 训练）只切拦截模式。
-        if (markerIndex == diagMarkerIndex ||
-            markerIndex == mdDiagMarkerIndex) {
-          inDiagnosisBlock = true;
-        }
-        debugPrint(
-          '[ChatService] 步骤8: 检测到协议块标记，切换到拦截模式 | displayLength=$displayLength | 诊断块=${inDiagnosisBlock ? "是" : "否"}',
-        );
-        return;
-      }
+    }
+  }
 
-      final pendingLen = ChatService._blockPendingPrefix(fullContent);
-      final safeEnd = pendingLen > 0
-          ? fullContent.length - pendingLen
-          : fullContent.length;
-      if (safeEnd > displayLength) {
-        final newDisplay = fullContent.substring(displayLength, safeEnd);
-        if (newDisplay.isNotEmpty) callbacks.onStream(newDisplay);
-        displayLength = safeEnd;
-      }
-    }, cancelToken: options.cancelToken);
-    // ★ ADR-C105 v5（第 2 轮自检 P2-2）：补一次**全文**诊断标记判定。
-    // 流式阶段只把「最早出现的标记」与诊断标记比对，而一旦任一标记命中即
-    // `blockIntercepted` 短路（`return`）⇒ 若 `[YS_TRAINING]` / `[YS_OUTLINE]` 等
-    // **排在诊断块之前**，其后的 `[YS_DIAGNOSIS]` 在整个流里都扫不到 ⇒
-    // `inDiagnosisBlock` 漏置位（**假阴性**：真诊断失败不计入，少插失败卡）。
-    // 这里在流结束后对完整回复补判一次，使语义与契约（「输出含 [YS_DIAGNOSIS] 块」
-    // ⇒ attempted）字面一致；O(n) 一次，与 `parseDiagnosis` 的判定同源。
+  /// 拦截诊断块、大纲记忆块（[YS_ENTITY]）、事实块（[YS_FACT]）、
+  /// GENUI 块（[YS_GENUI]）、训练判定块（[YS_TRAINING]，ADR-C105 A1）：
+  /// 任一标记出现即从该处起不再转发，避免原始协议 JSON 泄漏到流式展示。
+  ///
+  /// 批次6（6.3）：O(n²) → O(n)——安全区已转发到 displayLength，标记只可能
+  /// 出现在末尾 ≤ 最大标记长的窗口内（含跨 chunk 拼接），从窗口起点起搜，
+  /// 避免每 chunk 对全量 fullContent 做多次 indexOf 扫描。
+  bool _interceptAtProtocolBlock() {
+    final scanStart = displayLength > ChatService._kMaxStreamMarkerLen
+        ? displayLength - ChatService._kMaxStreamMarkerLen + 1
+        : 0;
+    final diagMarkerIndex = fullContent.indexOf(kDiagnosisStart, scanStart);
+    final mdDiagMarkerIndex = fullContent.indexOf(kMarkdownDiagOpen, scanStart);
+    final outlineMarkerIndex = fullContent.indexOf(kOutlineStart, scanStart);
+    final factMarkerIndex = fullContent.indexOf(kFactStart, scanStart);
+    final genuiMarkerIndex = fullContent.indexOf(kGenuiStart, scanStart);
+    final trainingMarkerIndex = fullContent.indexOf(kTrainingStart, scanStart);
+    final markerIndex = ChatService._earliestMarkerIndexList([
+      diagMarkerIndex,
+      mdDiagMarkerIndex,
+      outlineMarkerIndex,
+      factMarkerIndex,
+      genuiMarkerIndex,
+      trainingMarkerIndex,
+    ]);
+    if (markerIndex == -1) return false;
+
+    final newDisplay = fullContent.substring(displayLength, markerIndex);
+    if (newDisplay.isNotEmpty) _emit(newDisplay);
+    displayLength = markerIndex;
+    blockIntercepted = true;
+    // 只有诊断类标记才置 `inDiagnosisBlock`（成败计数用），
+    // 其余协议块（大纲 / 事实 / GENUI / 训练）只切拦截模式。
+    if (markerIndex == diagMarkerIndex || markerIndex == mdDiagMarkerIndex) {
+      inDiagnosisBlock = true;
+    }
+    debugPrint(
+      '[ChatService] 步骤8: 检测到协议块标记，切换到拦截模式 | displayLength=$displayLength | 诊断块=${inDiagnosisBlock ? "是" : "否"}',
+    );
+    return true;
+  }
+
+  void _forwardSafeTail() {
+    final pendingLen = ChatService._blockPendingPrefix(fullContent);
+    final safeEnd = pendingLen > 0
+        ? fullContent.length - pendingLen
+        : fullContent.length;
+    if (safeEnd > displayLength) {
+      final newDisplay = fullContent.substring(displayLength, safeEnd);
+      if (newDisplay.isNotEmpty) _emit(newDisplay);
+      displayLength = safeEnd;
+    }
+  }
+
+  /// ★ ADR-C105 v5（第 2 轮自检 P2-2）：补一次**全文**诊断标记判定。
+  /// 流式阶段只把「最早出现的标记」与诊断标记比对，而一旦任一标记命中即
+  /// `blockIntercepted` 短路 ⇒ 若 `[YS_TRAINING]` / `[YS_OUTLINE]` 等
+  /// **排在诊断块之前**，其后的 `[YS_DIAGNOSIS]` 在整个流里都扫不到 ⇒
+  /// `inDiagnosisBlock` 漏置位（**假阴性**：真诊断失败不计入，少插失败卡）。
+  /// 这里在流结束后对完整回复补判一次，使语义与契约（「输出含 [YS_DIAGNOSIS] 块」
+  /// ⇒ attempted）字面一致；O(n) 一次，与 `parseDiagnosis` 的判定同源。
+  void finalizeDiagnosisFlag() {
     if (!inDiagnosisBlock &&
         (fullContent.contains(kDiagnosisStart) ||
             fullContent.contains(kMarkdownDiagOpen))) {
       inDiagnosisBlock = true;
     }
-    debugPrint(
-      '[ChatService] 步骤8: streamChat 完成 | 总 chunk=$streamChunkCount | fullContent 长度=${fullContent.length} | inDiagnosisBlock=$inDiagnosisBlock',
-    );
-    // 入档批次：AI 输出轻量校验（空/重复 loop/元文本）——只留痕不截断，
-    // 阈值校准后再决定是否干预（写作场景误拦风险高于模型抽风）
-    if (fullContent.isNotEmpty) {
-      final assessment = assessLlmOutput(fullContent);
-      if (assessment.isProblematic) {
-        debugPrint(
-          '[ChatService] 输出校验命中: ${assessment.detail} | blank=${assessment.isBlank} repeat=${assessment.hasRepetition} meta=${assessment.hasMetaText}',
-        );
-      }
-    }
-    return (
-      fullContent: fullContent,
-      inDiagnosisBlock: inDiagnosisBlock,
-      sawDone: sawDone,
-    );
   }
 }
 
