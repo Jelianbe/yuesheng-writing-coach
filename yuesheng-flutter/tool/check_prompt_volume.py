@@ -851,9 +851,32 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    ⇒ 不得写成「额度回收」。占 kChunkSystemPrompt 49.4%（每块都付）。
 #    ★ 判据 §7-P1 / §7-P3（文本级）落在 `test/services/prompt_const_anchor_test.dart`
 #    的 `_p003WindowBranchCheck`（不新增用例）。P2/P4（行为级）**未验**（无 key，E2）。
+# ★ 2026-10-29 第二十五次重贴实测值（kChunkSystemPrompt 5962→6100 +138 ·
+#    chunkExceptionGuideBlock 2944→3082 +138；suffix 977 不动）：
+#    方向 = `T-20261027-01` H2（舰长批准「授权 H2 和 H8」· 报批稿
+#    `.ai/reports/2026-10-29-报批稿-H2-自由间接引语可错推断判据.md` §2－§3 裁点① 丙案）：
+#    P003 例外的 **② 支**补入「可错推断 / 权威断言」判据（②补）—— 无引号句含推测/
+#    预期词且推断可归属本窗感知者 ⇒ 作人物可错推断，即不构成漂移；叙述者以断定口吻
+#    陈述超出感知者认知的事实 ⇒ 仍判；句首「其实」「原来」「殊不知」不得单独作豁免凭据。
+#    同时把 ② 的裸禁令「须指认不含他人内心」改为「须指认不含**叙述者代述的**他人内心」
+#    （丙案，消除与 ②补「所述可以是他人」的字面矛盾）。
+#    归类**新增类**：`:439` 单行原位替换 519→657 字符 = **+138**（UTF-8 字节 1465→1861
+#    = +396），与两键实测 Δ 逐位一致（2944+138=3082 / 5962+138=6100，取自重冻写模式
+#    运行时打印值）。零换行、零全角引号 ⇒ 行数与 meta 三值不动。
+#    两键同增同值互证（装配式 `$_kChunkExceptionGuide` 在
+#    `progressive_diagnosis.dart:610` 只出现 1 次，两侧分隔符固定）。
+#    ⚠️ fnv 照抄运行时打印串（`toRadixString(16)` **不补零**）：本次 chunk 16 位
+#    `576903d657a60464`；guide 亦 **16 位** `24ab03bbc9115ff8`（首字非 0，故本次无需补位；
+#    上一批 guide 是 **15 位** `bfcf419cdafe28f`）⇒ 凡按「几位」格式化的一律恒红（二十次同型）。
+#    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+#    （原位单行替换，行数不动；重冻写模式实测打印确认）。
+#    ⚠️ **本批是真实提额**：guide new 3082 越过上一批刚创的在产峰值 2944（+138）
+#    ⇒ 不得写成「额度回收」。占 kChunkSystemPrompt 50.5%（每块都付）。
+#    ★ 内容牙 牙1–牙5 落在同文件 `_p003FidBranchCheck`（不新增用例）。行为验收
+#    挂 `T-20261024-19`，本批**无 key 未验**（E2），不得自宣「误伤下降」。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5962, '7456e36b367d69e3'),
-    'chunkExceptionGuideBlock': (2944, 'bfcf419cdafe28f'),
+    'kChunkSystemPrompt': (6100, '576903d657a60464'),
+    'chunkExceptionGuideBlock': (3082, '24ab03bbc9115ff8'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 

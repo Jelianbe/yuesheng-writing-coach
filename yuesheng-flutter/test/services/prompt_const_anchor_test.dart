@@ -478,6 +478,58 @@ void _p003WindowBranchCheck(String chunkPrompt, String guideText) {
   }
 }
 
+/// 判据 **§6-牙1…牙5**（`T-20261027-01` H2 · 舰长 2026-10-29「授权 H2 和 H8」·
+/// 报批稿 `2026-10-29-报批稿-H2-自由间接引语可错推断判据.md` §6.1）。
+///
+/// 拦的是自由间接引语（FID）误伤的**判据文本本身**：
+///   牙1 ②补 子句在位 · 牙2 可错推断接到后果句 · 牙3 权威断言侧未被放宽侧吃掉
+///   牙4 标记词后门堵句在位 · 牙5 ② 的裸禁令不得复活（丙案把「不含他人内心」
+///   收窄为「不含叙述者代述的他人内心」，与 ②补 的「所述可以是他人」不再打架）
+///   （离线探针另加 **牙6** 推测词列举六词 / **牙7** 定句主口径 —— 只在探针侧，
+///    本用例不重复，避免同一串字面量两处各写一份而分家。
+///    ★ 牙6 只钉「六词逐字在位」：真源六词后带「等」= **开放列举**，探针不声称闭合。）
+///
+/// ★ 五条都打在 `_contentLint` 同一条 `p003` **运行时切片行**上：若插入带来换行，
+///   `split('\n')` 只取到前半物理行 ⇒ 切片本身即不成立，无需另建行数断言
+///   （快照 `meta` 段只做归因、不钉值，见 `prompt_const_anchor.json` 的 `meta.note`）。
+/// ★ 本用例是 **fail-fast**：第一条缺串即 `fail`，且同一 `test()` 里更早的
+///   `_p003WindowBranchCheck` 会先红 ⇒ 「一起红」在本机读数里观测不到。
+///   逐位归因（哪条牙测的是本包新增的东西）由离线变异探针做：
+///   `.ai/reports/2026-10-29-H2-负向自检.py`（内存切片变异，不动 `lib/`）。
+/// ★ 这**不是行为牙**：拦「判据没写 / 只写一半 / 矛盾复活」，
+///   拦不住「模型照旧把 FID 判成漂移」—— 后者须真实链路采样（本机无 key
+///   ⇒ 挂 `T-20261024-19`；**本批不得自宣「误伤下降」**）。
+void _p003FidBranchCheck(String guideText) {
+  final p003 = guideText
+      .split('\n')
+      .firstWhere((l) => l.startsWith('- P003例外'), orElse: () => '');
+  if (p003.isEmpty) {
+    fail('§6-牙1 不过：例外表内找不到 `- P003例外` 行 ⇒ 行首形态或切片对象已变。');
+  }
+  const teeth = <String, String>{
+    '牙1（②补 子句在位）': '②补：',
+    '牙2（可错推断接到后果句）': '作人物可错推断，即不构成漂移',
+    '牙3（权威断言侧仍在 · R-009 侧）': '叙述者以断定口吻陈述超出感知者认知的事实⇒仍判',
+    '牙4（标记词不得单独作豁免凭据）': '不得单独作豁免凭据',
+  };
+  for (final e in teeth.entries) {
+    if (!p003.contains(e.value)) {
+      fail(
+        '${e.key} 不过：P003 行缺「${e.value}」'
+        '⇒ ②补 未落地 / 只写一半 / 方向句丢失。',
+      );
+    }
+  }
+  // 牙5 反向牙：② 的裸禁令一旦复活 = 与 ②补 的字面矛盾回来了（误伤源原地不动）。
+  if (p003.contains('须指认不含他人内心')) {
+    fail(
+      '§6-牙5 不过：② 支的裸禁令「须指认不含他人内心」复活 —— '
+      '与 ②补 的「所述可以是他人」构成字面矛盾，自由间接引语仍会被硬判'
+      '（见 2026-10-29 H2 报批稿 §3 裁点① 丙案）。',
+    );
+  }
+}
+
 void main() {
   test('常量级 prompt 体积锚点：三块常量字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -510,6 +562,7 @@ void main() {
     _selfCheck(current, collected.guideText);
     _contentLint(collected.guideText);
     _p003WindowBranchCheck(collected.chunkPrompt, collected.guideText);
+    _p003FidBranchCheck(collected.guideText);
     _payloadCheck();
 
     // ── ② 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
