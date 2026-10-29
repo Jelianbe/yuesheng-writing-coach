@@ -172,7 +172,7 @@ void main() {
       expect((await repo.getMessage(id))!.truncated, 1);
     });
 
-    test('边界：库中无 messages 表 → v49 块跳过，升级不抛错', () async {
+    test('边界：极老库无 messages 表 → v49 块跳过，升级不抛错', () async {
       final db = await _openPath(createNoMessagesDbFile());
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(version.read<int>('user_version'), kSchemaHead);
