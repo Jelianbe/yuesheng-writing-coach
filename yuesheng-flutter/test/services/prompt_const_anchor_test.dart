@@ -20,10 +20,13 @@
 //   ③ `ChatService.kDiagnosisProtocolSuffix`（`chat_service.dart:227`）——
 //      拼在诊断轮次 user 消息上的协议文本；`T-20261024-13` 缺口 1 的对象。
 //
-// ★ 2026-10-28 追加第 ④ 键（`T-20261027-01` **H9**）：分块链 **user 消息模板**
-//   （`buildChunkUserMessage`，固定入参样张）。它此前零锚点 ⇒ 标签措辞（
+// ★ 2026-10-28 追加第 ④ 键（`T-20261027-01` **H9**）：分块链**窗口元信息**串
+//   （固定入参样张）。它此前零锚点 ⇒ 标签措辞（
 //   「章节标题：」把记录标题当成块内章节归属）可被任意改动而无人拦。
 //   本键与前三块同口径（len + fnv），并配内容牙 `_payloadCheck()`（P1–P4）。
+//   ★ 2026-10-29 **H8**（`T-20261027-01` 批八）：该串不再与正文拼在同一条 user
+//   消息里 ⇒ 键名随对象改名 `chunkUserMessageSample → chunkWindowMetaSample`，
+//   并另加形状牙 **H1–H4**（角色序列 / 正文纯净 / 块序不重复 / 主 system 不动）。
 
 // ## `chunkExceptionGuideBlock` 怎么取（为什么不是读源码文件）
 //
@@ -183,14 +186,14 @@ CollectedPromptConsts _buildCurrent() {
       'kChunkSystemPrompt': _textAnchor(chunkPrompt),
       'chunkExceptionGuideBlock': _textAnchor(guide),
       'kDiagnosisProtocolSuffix': _textAnchor(suffix),
-      // H9：分块链 user 消息模板（固定入参的样张）。量的是**装配产物**，
+      // H9：分块链「窗口元信息」串（固定入参的样张）。量的是**装配产物**，
       // 与上面三块同口径（len + fnv）⇒ 措辞/分隔符一改即红。
-      'chunkUserMessageSample': _textAnchor(
-        buildChunkUserMessage(
+      // H8：该串现单独成一条 system 消息，正文那条不再含它（键名随之改）。
+      'chunkWindowMetaSample': _textAnchor(
+        buildChunkWindowMeta(
           recordTitle: kPayloadSampleTitle,
           chunkIndex: kPayloadSampleIndex,
           chunkCount: kPayloadSampleCount,
-          chunk: kPayloadSampleBody,
         ),
       ),
       'meta': {
@@ -290,7 +293,7 @@ const List<String> kPinnedKeys = [
   'kChunkSystemPrompt',
   'chunkExceptionGuideBlock',
   'kDiagnosisProtocolSuffix',
-  'chunkUserMessageSample',
+  'chunkWindowMetaSample',
 ];
 
 // ── H9 payload 样张入参（固定值 ⇒ 样张可逐字节比对）──
@@ -299,52 +302,111 @@ const int kPayloadSampleIndex = 0;
 const int kPayloadSampleCount = 3;
 const String kPayloadSampleBody = '他推开门，雨声灌进来。';
 
-/// 内容牙 P1–P4（`T-20261027-01` H9）：分块链 user 消息**不得再断言**
-/// 「这段内容属于某一章」。
+/// 内容牙 P1–P4（`T-20261027-01` H9）+ 形状牙 H1–H4（同卡 **H8** · 批八）
+/// + 透传牙 T1（**复核后增补**，钉「第二条消息内容 = 元信息构造器产物」）。
 ///
-/// 打在 `buildChunkUserMessage` 的**产物**上，与快照样张互补：
-/// 样张拦「改了字」，本节拦「改回了错误形态」（两者都可能被一次重冻同时洗掉，
-/// 但本节还额外证明**空标题分支**与**正文原样嵌入**）。
+/// **P 组**：分块链**不得再断言**「这段内容属于某一章」。打在元信息串的
+/// **产物**上，与快照样张互补：样张拦「改了字」，本节拦「改回了错误形态」
+/// （两者都可能被一次重冻同时洗掉，但本节还额外证明**空标题分支**）。
+///
+/// **H 组**（H8）：注入**形状**本身 —— 标签单独成条、正文那条只装正文、
+/// 块序不重复注入、主 system 仍是那个常量本体。
+/// ⚠️ 本文件用例是 **fail-fast**（第一条不过即 `fail`），所以「哪一条红」
+/// 需由离线变异探针逐位归因，不指望一次跑全部报出。
 void _payloadCheck() {
-  final withTitle = buildChunkUserMessage(
+  final meta = buildChunkWindowMeta(
     recordTitle: kPayloadSampleTitle,
     chunkIndex: kPayloadSampleIndex,
     chunkCount: kPayloadSampleCount,
-    chunk: kPayloadSampleBody,
   );
-  // P1 旧形态不得复活：`章节标题：` = 把记录标题当块内章节归属（H9 缺陷本体）
-  if (withTitle.contains('章节标题：')) {
-    fail('内容牙 P1 不过：分块 payload 仍出现 `章节标题：`（H9 已撤的假断言）。');
+  final msgs = buildChunkMessages(
+    kPayloadSampleTitle,
+    kPayloadSampleBody,
+    kPayloadSampleIndex,
+    kPayloadSampleCount,
+  );
+  final bodyMsg = msgs.last;
+  // P1 旧形态不得复活：`章节标题：` = 把记录标题当块内章节归属（H9 缺陷本体）。
+  // ★ H8 后覆盖面**扩到元信息 + 正文两条**（标签搬到哪条都不能复活）。
+  final metaPlusBody = '$meta\n$bodyMsg';
+  if (metaPlusBody.contains('章节标题：')) {
+    fail('内容牙 P1 不过：分块注入仍出现 `章节标题：`（H9 已撤的假断言）。');
   }
   // P2 必须只声明知道的事：来源记录 + 块序号
   for (final must in const ['来源记录：$kPayloadSampleTitle', '文本片段 1/3：']) {
-    if (!withTitle.contains(must)) {
-      fail('内容牙 P2 不过：分块 payload 缺 `$must`。');
+    if (!meta.contains(must)) {
+      fail('内容牙 P2 不过：窗口元信息缺 `$must`。');
     }
   }
   // P2b 必须带「可能含多章」这一句 —— 否则标签仍在暗示整段同一章
-  if (!withTitle.contains('本片段可能含多章')) {
-    fail('内容牙 P2 不过：分块 payload 缺「本片段可能含多章」（假断言未被撤干净）。');
+  if (!meta.contains('本片段可能含多章')) {
+    fail('内容牙 P2 不过：窗口元信息缺「本片段可能含多章」（假断言未被撤干净）。');
   }
-  // P3 正文必须原样嵌入（防模板改造时把正文剪了 / 换行被吃）
-  if (!withTitle.endsWith('\n\n$kPayloadSampleBody')) {
-    fail('内容牙 P3 不过：正文未原样收尾于 payload。');
+  // P3′ 正文那条**逐字节等于片段本体**（H8 取代旧 P3 的 `endsWith`：
+  // 现在不只是「结尾是正文」，而是「整条就是正文」—— 更强的判据）。
+  if (bodyMsg.content != kPayloadSampleBody) {
+    fail(
+      '内容牙 P3 不过：user 消息不是片段本体'
+      '（实 len=${bodyMsg.content.length}，期望 len=${kPayloadSampleBody.length}）。',
+    );
   }
   // P4 空标题分支：`chapters.title` 默认空串（不是异常态）⇒ 不得留下「来源记录：」空壳
-  final noTitle = buildChunkUserMessage(
+  final noTitle = buildChunkWindowMeta(
     recordTitle: '',
     chunkIndex: 1,
     chunkCount: 2,
-    chunk: kPayloadSampleBody,
   );
   if (noTitle.contains('来源记录：')) {
-    fail('内容牙 P4 不过：标题为空时仍输出「来源记录：」空壳行。');
+    fail('内容牙 P4 不过：标题为空时元信息仍输出「来源记录：」空壳行。');
   }
   if (!noTitle.startsWith('文本片段 2/2：')) {
     fail(
       '内容牙 P4 不过：标题为空时块序号行形态变了（实际开头：'
       '${noTitle.length > 16 ? noTitle.substring(0, 16) : noTitle}）。',
     );
+  }
+  // ── H 组：注入形状（H8 本体）──
+  // H1 角色序列必须恰为 system,system,user（回退成两条 ⇒ 红；
+  //    拆成两条 user ⇒ 也红：那不是本包批准的落法）
+  final roles = msgs.map((m) => m.role).join(',');
+  if (roles != 'system,system,user') {
+    fail('形状牙 H1 不过：分块链角色序列是 `$roles`，期望 `system,system,user`。');
+  }
+  // T1 透传（★ 三链观测点黑洞由用例有效性评审方 2026-10-29 抓出）：
+  //   H1 只判第二条的**角色**，P2/P4/H3 打的是**直调构造器**的串 —— 从来没有人读过
+  //   `msgs[1].content`。于是「第二条消息内容写成空串 / 正文 / 把 chunkIndex 写死」
+  //   在本批三链里全绿。T1 把「那条消息 == 构造器产物」钉住，并用**第二组入参**
+  //   （空标题 + 1/2）再钉一次 ⇒ 装配处漏传参数也会红。
+  if (msgs[1].content != meta) {
+    fail(
+      '透传牙 T1 不过：第二条消息内容与 buildChunkWindowMeta(样张入参) 不等'
+      '（实 len=${msgs[1].content.length}，期望 len=${meta.length}）。',
+    );
+  }
+  final msgs2 = buildChunkMessages('', kPayloadSampleBody, 1, 2);
+  if (msgs2[1].content != noTitle) {
+    final got = msgs2[1].content;
+    fail(
+      '透传牙 T1 不过：换一组入参（空标题 · 片段 2/2）后第二条不再是该组的元信息'
+      '（实 `${got.length > 24 ? got.substring(0, 24) : got}`）⇒ 装配处把标题/块序写死了。',
+    );
+  }
+  // H2 纯净：正文那条不得再含任何标签字面量（缺陷本体：标签混进被观察文本）
+  for (final banned in const ['来源记录：', '文本片段 ', '本片段可能含多章']) {
+    if (bodyMsg.content.contains(banned)) {
+      fail('形状牙 H2 不过：正文消息重新混入标签 `$banned`（H8 缺陷回归）。');
+    }
+  }
+  // H3 反重复：块序号在「元信息 + 正文」两条里**恰出现一次**
+  //    （两处都写 ⇒ 模型看到两遍块序，比混排更糟）
+  final ordinals = RegExp('文本片段 ').allMatches(metaPlusBody).length;
+  if (ordinals != 1) {
+    fail('形状牙 H3 不过：块序号出现 $ordinals 次（期望恰 1 次，重复注入）。');
+  }
+  // H4 主 system 仍是常量本体 —— 本包「CONST_REDLINE 零漂移」承诺的守卫。
+  //    （若有人改用丙案把标签并进主 system，len/fnv 锚点会红，但这条先指出**是谁**）
+  if (msgs.first.content != kChunkSystemPrompt) {
+    fail('形状牙 H4 不过：第一条消息不是 kChunkSystemPrompt 本体（主 system 被动了）。');
   }
 }
 

@@ -1366,7 +1366,7 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
 
 // ── 单块分析：空内容分级降级（ADR-C80）──
 
-/// 分块链 user 消息正文（`T-20261027-01` **H9**）。
+/// 分块链「窗口元信息」消息正文（`T-20261027-01` **H9** 文案 + **H8** 形状）。
 ///
 /// **只声明系统确实知道的两件事**：这条片段取自哪条来源记录、它是第几块。
 /// 旧标签「`章节标题：<title>`」把**记录标题**当成**片段内容的章节归属** ——
@@ -1377,18 +1377,31 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
 ///
 /// ⇒ 改为中性声明 + 「可能含多章」，把「本窗正文是什么」交回片段正文自己。
 /// 标题为空时整行省略（`chapters.title` 默认空串，不是异常态）。
-String buildChunkUserMessage({
+///
+/// **H8（2026-10-29 · 批八）**：本串**不再与正文拼在同一条 user 消息里**。
+/// 它是「关于这条输入的说明」，不是「这条输入的内容」——混在正文前时，
+/// 「可能含多章」这句窗口断言直接压在 P003「谁在看」的判定域上（§1.2 机理）。
+/// ⇒ 单独成一条 system 消息，正文那条逐字节 == 片段本体。
+/// **文案一字未改**：H8 只改形状，改字须另走 R-027。
+///
+/// 形状先例：短链首轮判据块同为「主 system + 独立 system 消息」（`w17` ⑧），
+/// 生产链已有三条 system 相邻（`message_sequence_anchor.json` = `SSSUS`）。
+String buildChunkWindowMeta({
   required String recordTitle,
   required int chunkIndex,
   required int chunkCount,
-  required String chunk,
 }) {
   final head = recordTitle.isEmpty ? '' : '来源记录：$recordTitle（本片段可能含多章）\n\n';
-  return '$head文本片段 ${chunkIndex + 1}/$chunkCount：\n\n$chunk';
+  return '$head文本片段 ${chunkIndex + 1}/$chunkCount：';
 }
 
 /// 单块分析的 messages（尝试 1 与兜底重试共用同一组消息）。
-List<ChatMessage> _chunkMessages(
+///
+/// **H8**：三条 —— 主 system（字节不变）· 窗口元信息（独立成条）· 纯正文。
+/// 公开 + `@visibleForTesting`：注入形状需要机器执行点（角色序列 + 逐条内容），
+/// 只靠「总条数」守不住「放对了哪条角色」。
+@visibleForTesting
+List<ChatMessage> buildChunkMessages(
   String title,
   String chunk,
   int chunkIndex,
@@ -1407,14 +1420,15 @@ List<ChatMessage> _chunkMessages(
           : _buildChunkSystemPrompt(disabledSyndromeIds, teachingMode),
     ),
     ChatMessage(
-      role: 'user',
-      content: buildChunkUserMessage(
+      role: 'system',
+      content: buildChunkWindowMeta(
         recordTitle: title,
         chunkIndex: chunkIndex,
         chunkCount: chunkCount,
-        chunk: chunk,
       ),
     ),
+    // H8：正文那条**只装正文** —— 标签不再前置污染「这段是谁在看」的观察对象。
+    ChatMessage(role: 'user', content: chunk),
   ];
 }
 
@@ -1437,7 +1451,7 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
 }) async {
-  final messages = _chunkMessages(
+  final messages = buildChunkMessages(
     title,
     chunk,
     chunkIndex,

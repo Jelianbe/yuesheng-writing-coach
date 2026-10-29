@@ -11,9 +11,9 @@
     "len": 977,
     "fnv": "609c7814d5bcc86d"
   },
-  "chunkUserMessageSample": {
-    "len": 45,
-    "fnv": "b7338367261932a"
+  "chunkWindowMetaSample": {
+    "len": 32,
+    "fnv": "5510c8ce2f3b4552"
   },
   "meta": {
     "exceptionIds": [

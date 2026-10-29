@@ -19,11 +19,14 @@
 //   ④ 两种模式的 prompt **不相等**（证明模式真的进了 prompt，而非常量没变）。
 //
 // 入口说明（为什么不用私有函数）：
-//   `_buildChunkSystemPrompt` / `_chunkMessages` 均为私有（`_` 前缀），
-//   `test/` 不在同一库 ⇒ 不可直接引用。
-//   本文件走**真实公开入口**取 direct 模式的分块 system prompt：
+//   `_buildChunkSystemPrompt` 为私有（`_` 前缀），`test/` 不在同一库 ⇒ 不可直接
+//   引用。分块 messages 装配器已于 `T-20261027-01` **H8**（2026-10-29 批八）公开为
+//   `buildChunkMessages`（`@visibleForTesting`），但本文件**不改走直调** ——
+//   继续走**真实公开入口**取 direct 模式的分块 system prompt：
 //   `runProgressiveDiagnosis(teachingMode: TeachingMode.direct)`
 //   → Fake LlmClient 捕获实际发出的 system message。
+//   ★ H8 后分块链有**两条** system（主提示词 + 窗口元信息）：本文件取的是
+//   `firstWhere(role == 'system')` = 第 0 条 = 主提示词本体，语义不变。
 //   （该路径已被既有测试 progressive_diagnosis_test.dart #14 验证可在
 //     测试环境跑通 —— 本文件复用同一模式，不新增测试基础设施。）
 // ─────────────────────────────────────────────────────────────

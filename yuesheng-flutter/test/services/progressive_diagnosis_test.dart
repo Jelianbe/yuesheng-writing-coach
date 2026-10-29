@@ -612,10 +612,17 @@ void main() {
       expect(fake.chatExtraBodies[1]!['thinking'], {'type': 'disabled'});
 
       // 重试是换参数，不是换消息：chunk0 两次调用的 messages 逐条一致
-      expect(fake.chatMessages.length, 6);
-      for (var i = 0; i < 2; i++) {
-        expect(fake.chatMessages[i].role, fake.chatMessages[i + 2].role);
-        expect(fake.chatMessages[i].content, fake.chatMessages[i + 2].content);
+      // ★ H8（批八）：单次调用由 2 条变 **3 条**（主 system · 窗口元信息 · 纯正文）
+      //   ⇒ 2 次 + 1 次 = 9 条，步长（同块两次调用的偏移）由 2 变 3。
+      expect(fake.chatMessages.length, 9);
+      expect(
+        fake.chatMessages.take(3).map((m) => m.role).toList(),
+        const ['system', 'system', 'user'],
+        reason: 'H8 注入形状：元信息单独成条，正文那条只装正文',
+      );
+      for (var i = 0; i < 3; i++) {
+        expect(fake.chatMessages[i].role, fake.chatMessages[i + 3].role);
+        expect(fake.chatMessages[i].content, fake.chatMessages[i + 3].content);
       }
 
       // 救回的 notes 真正进入 merge 阶段（端到端：P001 出现在合并 prompt）
