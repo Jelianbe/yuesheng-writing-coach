@@ -10,12 +10,12 @@
 // `l3_entry_anchor.json`）只覆盖 `buildSystemPromptV2` 的产物与消息序列，
 // **以下三块常量不在任何一份里**：
 //
-//   ① `kChunkSystemPrompt`（`progressive_diagnosis.dart:589`）——
+//   ① `kChunkSystemPrompt`（`progressive_diagnosis.dart:617`）——
 //      >4000 字文本走的分块链 system prompt。`test/` 对它的既有断言
 //      （`progressive_chunk_syndrome_coverage_test.dart`）全部是
 //      **ID 覆盖 / 子串存在性**，**零体积断言** ⇒ 任何增长无拦截。
 //   ② `chunkExceptionGuideBlock` —— 上者内嵌的例外指引表（库私有常量
-//      `_kChunkExceptionGuide`，`progressive_diagnosis.dart:406`）。
+//      `_kChunkExceptionGuide`，`progressive_diagnosis.dart:436`）。
 //      下一批 B3b-1 要改的正是它 ⇒ 没有读数面就无从读数、也无从拦超限。
 //   ③ `ChatService.kDiagnosisProtocolSuffix`（`chat_service.dart:227`）——
 //      拼在诊断轮次 user 消息上的协议文本；`T-20261024-13` 缺口 1 的对象。
@@ -80,11 +80,18 @@ import 'package:writingcoach/services/progressive_diagnosis.dart';
 const String kAnchorPath = 'test/snapshots/prompt_const_anchor.json';
 
 // ── 切片锚点（取例外表首行 / 输出格式段首行；两者均由源码实测）──
-/// 例外表首行（`progressive_diagnosis.dart:406` 常量正文第一行）。
+/// 例外表首行（`progressive_diagnosis.dart:436` 常量正文第一行）。
 const String kGuideStartMarker = '例外情况指引（以下场景通常不应判定为症候）：';
 
 /// 输出格式段首行（`_kChunkOutputFormat` 正文第一行，装配顺序紧接例外表）。
 const String kGuideEndMarker = '请输出JSON格式的笔记';
+
+/// 窗口边界节的首/尾锚点（`T-20261028-01` §7-P3 用它切出该节本体）：
+/// 首 = `_kChunkWindowBoundary` 正文第一行（`progressive_diagnosis.dart:526`）；
+/// 尾 = 紧随其后的「块内可自证」对照段首行（`_kChunkSelfContainedProbe`，`:539`）。
+/// ⇒ 切片 = 该节**全部正文**，不含相邻段。
+const String kBoundaryStartMarker = '## 片段窗口边界（判读前提，先读这一节）';
+const String kBoundaryEndMarker = '- 可在片段内指认位置的';
 
 /// 例外表条目行的唯一形态：`- Pxxx例外…`
 final RegExp kExceptionLineRe = RegExp(r'- (P\d{3})例外');
@@ -113,7 +120,7 @@ Map<String, Object> _textAnchor(String s) => {
 
 /// 从**已装配好的** `kChunkSystemPrompt` 里切出例外指引表。
 ///
-/// 装配形态（`progressive_diagnosis.dart:574-584`）：
+/// 装配形态（`progressive_diagnosis.dart:610-612`）：
 /// `…\n\n$_kChunkExceptionGuide\n\n$_kChunkOutputFormat…`
 /// ⇒ 从 startMarker 到 endMarker 之间的原文，必然以 `\n\n` 收尾；
 /// 去掉这 2 个字符即为常量本体（不含装配分隔符）。
@@ -124,7 +131,7 @@ String _sliceChunkExceptionGuide(String prompt) {
     throw StateError(
       '例外表切片锚点失效：start=$start end=$end。'
       '装配形态或锚点文案已变，须先核 '
-      'progressive_diagnosis.dart:574-584 再改本文件的 kGuide*Marker。',
+      'progressive_diagnosis.dart:610-612 再改本文件的 kGuide*Marker。',
     );
   }
   final raw = prompt.substring(start, end);
@@ -144,6 +151,7 @@ String _sliceChunkExceptionGuide(String prompt) {
 typedef CollectedPromptConsts = ({
   Map<String, Object> anchors,
   String guideText,
+  String chunkPrompt,
 });
 
 /// 汇总当前读数。三个值**全部来自同一次** `kChunkSystemPrompt` 取值。
@@ -197,6 +205,7 @@ CollectedPromptConsts _buildCurrent() {
       },
     },
     guideText: guide,
+    chunkPrompt: chunkPrompt,
   );
 }
 
@@ -217,12 +226,12 @@ void _selfCheck(Map<String, Object> current, String guideText) {
       '⇒ 疑量到空串 / 别的对象。',
     );
   }
-  // ② 例外表实测 2,767 字符；低于 2,000 说明切片错位（少切了条目）
+  // ② 例外表实测 2,944 字符；低于 2,000 说明切片错位（少切了条目）
   //    （2026-10-28 刷新：旧值 2,544 停在批一a 之前 —— T-20261026-01 附带项①）
   if (guideLen < 2000) {
     fail(
       '结构自检②不过：chunkExceptionGuideBlock.len=$guideLen < 2000 '
-      '⇒ 切片起点/终点错位（实测参考值 2,767）。',
+      '⇒ 切片起点/终点错位（实测参考值 2,944）。',
     );
   }
   // ③ 切片体内不得出现 endMarker（防 endMarker 过早命中、只切到半张表）
@@ -399,6 +408,76 @@ void _contentLint(String guideText) {
   }
 }
 
+/// 判据 P1 / P3（`T-20261028-01` · 2026-10-29 舰长批准 · 报批稿 §7）。
+///
+/// **P1 文本级**：P003 的失败路径不得再无条件落到「按正文判定」——
+///   缺的是**片段外**的句子（切换前一条被上一块截走）时必须先降级为 `uncertain`。
+/// **P3 一致性**：同一段 prompt 里 P003 行与 `_kChunkWindowBoundary` 对
+///   「证据在窗外」这一场景不得给相反指令 —— 断言**切出边界节本体**后三要素仍在
+///   （依赖片段外信息 / 不要勉强给结论 / `uncertain`），即「方向」而非「字还在」。
+///
+/// ★ 这不是行为牙：拦「分支没写 / 只写一半 / 旧形态复活」，
+///   拦不住「模型照旧硬判」—— 后者须离线对照稿（F1/F2）+ 真实采样。
+/// ★ 判据编号沿用报批稿 §7（写作 `§7-P1` / `§7-P3`），与本文件上方
+///   `_payloadCheck` 的「内容牙 P1–P4」（H9）**不是同一套编号**，勿混读。
+void _p003WindowBranchCheck(String chunkPrompt, String guideText) {
+  final p003 = guideText
+      .split('\n')
+      .firstWhere((l) => l.startsWith('- P003例外'), orElse: () => '');
+  if (p003.isEmpty) {
+    fail('§7-P1 不过：例外表内找不到 `- P003例外` 行。');
+  }
+  // P1-① 窗外分支逐字在（触发条件 + 标的 + 缺哪类信息）
+  const windowBranch = [
+    '指不出依据时，若缺的是片段外的句子（切换前一条被上一片段截走）',
+    '⇒标 `"uncertain": true`（缺前文），交合并阶段裁决',
+  ];
+  for (final m in windowBranch) {
+    if (!p003.contains(m)) fail('§7-P1 不过：P003 行缺窗外分支片段「$m」。');
+  }
+  // P1-② 兜底必须被限定为「其余」—— 否则旧的无条件方向仍在
+  if (!p003.contains('其余指不出依据⇒例外不成立，按正文判定')) {
+    fail('§7-P1 不过：兜底句未限定为「其余」⇒ 仍是无条件按正文判定。');
+  }
+  // P1-③ 旧形态不得复活（「只摘引一条…」直接接兜底 = 窗外分支被抹掉）
+  if (p003.contains('只摘引一条即视为指不出依据。指不出依据⇒')) {
+    fail('§7-P1 不过：旧形态复活 —— 「只摘引一条…」后直接是无条件兜底。');
+  }
+  // P3 同向：**切出窗口边界节本体**再断言方向。
+  // ★ 不用整条 chunkPrompt.contains —— 那样只能说明「句中某个字还在」：
+  //   该节被改成硬判时句子仍在、方向已反，判据会假绿（2026-10-29 独立复核指出，
+  //   初版就是这么写的）。且「不要勉强给结论」在跨章依赖节里也有一份同形句，
+  //   整条 contains 会被另一节掩盖 ⇒ 必须限定在切片内。
+  final bStart = chunkPrompt.indexOf(kBoundaryStartMarker);
+  final bEnd = bStart < 0
+      ? -1
+      : chunkPrompt.indexOf(kBoundaryEndMarker, bStart);
+  if (bStart < 0 || bEnd <= bStart) {
+    fail(
+      '§7-P3 不过：窗口边界节切片锚点失效（start=$bStart end=$bEnd）'
+      '⇒ 节标题或其后「块内可自证」对照段已变，须先核 '
+      'progressive_diagnosis.dart:526/539 再改 kBoundary*Marker。',
+    );
+  }
+  final boundary = chunkPrompt.substring(bStart, bEnd);
+  // 方向三要素：触发条件（依赖片段外信息）+ 禁令（不要勉强给结论）+ 出口（uncertain）
+  const boundaryForward = ['依赖片段外信息', '不要勉强给结论', '`"uncertain": true`'];
+  for (final m in boundaryForward) {
+    if (!boundary.contains(m)) {
+      fail(
+        '§7-P3 不过：窗口边界节内缺「$m」'
+        '⇒ 该节可能已被改成硬判（方向与 P003 相反）。',
+      );
+    }
+  }
+  if (!p003.contains('片段外的句子') || !p003.contains('`"uncertain": true`')) {
+    fail(
+      '§7-P3 不过：P003 行未与窗口边界节同向 —— '
+      '缺「片段外的句子」或 `"uncertain": true`。',
+    );
+  }
+}
+
 void main() {
   test('常量级 prompt 体积锚点：三块常量字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -430,6 +509,7 @@ void main() {
     final current = collected.anchors;
     _selfCheck(current, collected.guideText);
     _contentLint(collected.guideText);
+    _p003WindowBranchCheck(collected.chunkPrompt, collected.guideText);
     _payloadCheck();
 
     // ── ② 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────

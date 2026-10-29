@@ -827,9 +827,33 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    ⚠️ **本批是真实提额**：guide new 2875 越过 H4-A 刚创的在产峰值 2831（+44）
 #    ⇒ 不得写成「额度回收」。占 kChunkSystemPrompt 48.8%（每块都付）。
 #    ★ 内容牙 L1–L4 落在 `test/services/prompt_const_anchor_test.dart`（不新增用例）。
+# ★ 2026-10-29 第二十四次重贴实测值（kChunkSystemPrompt 5893→5962 +69 ·
+#    chunkExceptionGuideBlock 2875→2944 +69；suffix 977 不动）：
+#    方向 = `T-20261028-01`（舰长批准「甲 / 不加 / 批 +69」· 报批稿
+#    `.ai/reports/2026-10-29-报批稿-P003例外窗口失效路径.md` §2－§3）：
+#    P003 例外的**失败路径**由「指不出依据⇒例外不成立，按正文判定」改为
+#    「指不出依据时，若缺的是**片段外**的句子（切换前一条被上一片段截走）
+#    ⇒标 `"uncertain": true`（缺前文），交合并阶段裁决；**其余**指不出依据
+#    ⇒例外不成立，按正文判定」—— 把与 `_kChunkWindowBoundary` 相反的指令拉回同向。
+#    **不动 ③ 的引文要求**、**不动兜底句**（实例 2 另立卡）、**不改窗口边界节**。
+#    归类**新增类**：`:439` 行内片段 old 50 字符 → new 119 字符 = **+69**，
+#    与两键实测 Δ 逐位一致（2875+69=2944 / 5893+69=5962，取自重冻写模式运行时打印值）。
+#    （报批稿 §2 以「片段 + 行尾兜底句」为计量窗口记作 84 → 153，Δ 同为 +69；
+#    两种窗口都对得上，绝对数不同不是矛盾。）
+#    两键同增同值互证（装配式 `$_kChunkExceptionGuide` 在
+#    `progressive_diagnosis.dart:610` 只出现 1 次，两侧分隔符固定）。
+#    ⚠️ fnv 照抄运行时打印串（`toRadixString(16)` **不补零**）：本次 chunk 16 位
+#    `7456e36b367d69e3`；guide 打印 **15 位** `bfcf419cdafe28f`
+#    （真值 0x0bfcf419cdafe28f）⇒ 补零会让 guide 比对恒红（十九次同型）。
+#    ⚠️ meta 三值不变：exceptionIds 31 · exceptionLineCount 31 · guideLineCount 34
+#    （原位单行替换，行数不动；重冻写模式实测打印确认）。
+#    ⚠️ **本批是真实提额**：guide new 2944 越过 H5 刚创的在产峰值 2875（+69）
+#    ⇒ 不得写成「额度回收」。占 kChunkSystemPrompt 49.4%（每块都付）。
+#    ★ 判据 §7-P1 / §7-P3（文本级）落在 `test/services/prompt_const_anchor_test.dart`
+#    的 `_p003WindowBranchCheck`（不新增用例）。P2/P4（行为级）**未验**（无 key，E2）。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (5893, 'f62af4dabe1ff8'),
-    'chunkExceptionGuideBlock': (2875, '1aa76708c389a1f6'),
+    'kChunkSystemPrompt': (5962, '7456e36b367d69e3'),
+    'chunkExceptionGuideBlock': (2944, 'bfcf419cdafe28f'),
     'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
 }
 
