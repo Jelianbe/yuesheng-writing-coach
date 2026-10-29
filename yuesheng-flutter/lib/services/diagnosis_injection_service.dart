@@ -39,6 +39,7 @@ import 'package:writingcoach/services/prompt_sanitizer.dart';
 import 'package:writingcoach/services/chat_message_types.dart';
 import 'package:writingcoach/services/chat_service_diagnosis_focus.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/feedback_tier.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
 import 'package:writingcoach/services/chat_gates.dart';
@@ -467,12 +468,34 @@ class DiagnosisInjectionService {
       trainingResult: parsed.trainingResult,
     );
     await callbacks.onComplete(parsed.finalContent, parsed.messageId);
-    // ADR-0010：内容已落库，**不走 onError**（那条会清空已显示的字）；
+    // ADR-0010 / ADR-0011：内容已落库，**不走 onError**（那条会清空已显示的字）；
     // 只打「未见 [DONE]」标记 —— 对端主动关流时这条回复可能不完整。
+    // 顺序：先落库（跨重启保留）→ 后通知 UI（内存 + 气泡状态行）。
     if (!sawDone && parsed.finalContent.isNotEmpty) {
+      await _persistTruncatedMark(parsed.messageId);
       callbacks.onStreamTruncated?.call(parsed.messageId);
     }
     debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
+  }
+
+  /// ADR-0011：断流标记落库。失败**只留痕不上抛** ——
+  /// 外层 `_sendMessageCore` 的 catch 会走 `_handleSendError` → `setError()`
+  /// 清空 `streamingContent`，把用户已看到的字抹掉（撞 R-009）。
+  /// 最坏结果退回 ADR-0010 的内存态（本次会话可见、重启不可见）。
+  Future<void> _persistTruncatedMark(String messageId) async {
+    try {
+      await _flow.markMessageTruncated(messageId);
+    } catch (e, st) {
+      ErrorHandler.instance.captureError(
+        level: 'error',
+        category: 'diagnosis',
+        message:
+            '[ADR-0011] 断流标记落库失败（UI 仍通知，退回内存态）'
+            ' | messageId=$messageId',
+        context: <String, dynamic>{'messageId': messageId, 'error': '$e'},
+        stack: st.toString(),
+      );
+    }
   }
 }
 

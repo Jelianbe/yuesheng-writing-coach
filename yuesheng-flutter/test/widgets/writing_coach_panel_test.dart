@@ -754,6 +754,7 @@ void main() {
         }),
         timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         messageType: 'diagnosis_result',
+        truncated: 0,
       );
       container
           .read(writingCoachStoreProvider(chapterId).notifier)
@@ -1157,6 +1158,7 @@ void main() {
           content: '这段写得怎么样',
           timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           messageType: 'text',
+          truncated: 0,
         ),
       );
       await tester.pump();

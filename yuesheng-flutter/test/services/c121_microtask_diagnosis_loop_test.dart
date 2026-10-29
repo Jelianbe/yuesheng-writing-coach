@@ -358,6 +358,7 @@ void main() {
       );
       expect(feedback.id, completeId);
       expect(feedback.content, contains('先不急着改全篇'), reason: '内容不得被清空/截断');
+      expect(feedback.truncated, 1, reason: 'ADR-0011：判定点未落库 ⇒ 红（服务侧写入点）');
     });
 
     test('有 isDone ⇒ 不打标记（不误报）', () async {
@@ -366,6 +367,14 @@ void main() {
 
       expect(events, hasLength(1), reason: '只有 complete，无 truncated');
       expect(events.single, startsWith('complete:'));
+
+      // ADR-0011 A3 的真红驱动：把判定条件从 `!sawDone` 改成恒写 ⇒ 这行必为 1 ⇒ 红。
+      // （migration_v49_test 的库层用例不触碰本条件，不能替代这条。）
+      final messages = await sessionRepo.listMessages(sessionId);
+      final persisted = messages.firstWhere(
+        (m) => m.role == 'assistant' && m.messageType != 'diagnosis_result',
+      );
+      expect(persisted.truncated, 0, reason: '完整回复不得被持久化为「可能不完整」');
     });
   });
 }

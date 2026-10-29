@@ -233,6 +233,7 @@ void main() {
       content: jsonEncode(payload.toJson()),
       timestamp: 0,
       messageType: 'session_harvest',
+      truncated: 0,
     );
     await tester.pumpWidget(
       MaterialApp(

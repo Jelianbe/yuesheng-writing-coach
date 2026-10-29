@@ -74,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 48;
+  int get schemaVersion => 49;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -302,7 +302,10 @@ class AppDatabase extends _$AppDatabase {
       // C147（记录条目目标位置 v45）：守卫上移到 45（v45 块对 from=44 存量库可达，ALTER 加 target_section 列）
       // ADR-0003 阶段一前置（v46）：守卫上移到 46（v46 块对 from=45 存量库可达，
       // 把 legacy 症候 ID 按 kSyndromeMergeMap 单跳改写为规范 ID）
-      if (from >= 46) return;
+      // ADR-0011（2026-10-29）：守卫 46 → 49。此前停在 46 ⇒ v47/v48 对 from>=46
+      // 的库**整段跳过**（探针实测 user_version=48 但表与两列均缺失）。
+      // v47/v48/v49 三块均幂等 + 只增不减，故一次性放行到 49 安全。
+      if (from >= 49) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1364,6 +1367,25 @@ class AppDatabase extends _$AppDatabase {
               "CHECK (form_structure IN ('expository','interruption','narrative'))",
             );
           }
+        }
+      }
+
+      // v49（ADR-0011 · T-20261029-03）：messages 加断流标记列。
+      // 1 = 该回复结束前未见 [DONE]（对端主动关流，内容可能不完整）；
+      // 0 = 正常。存量行一律 0（不回头猜测历史内容是否完整）。
+      if (from < 49) {
+        // ⚠️ 幂等保底（范式同 v40 / v42 / v48）：
+        //    ① 表存在性守卫——极老版本库若没有 messages 表，直接 ALTER 会抛
+        //       「no such table」，升级链路断裂；该表由后续建表路径负责，本块跳过。
+        //    ② 列存在性守卫——避免重复 ALTER 抛「duplicate column name」。
+        final msgCols = await customSelect(
+          "SELECT name FROM pragma_table_info('messages')",
+        ).get();
+        final msgNames = msgCols.map((r) => r.read<String>('name')).toSet();
+        if (msgCols.isNotEmpty && !msgNames.contains('truncated')) {
+          await customStatement(
+            'ALTER TABLE messages ADD COLUMN truncated INTEGER NOT NULL DEFAULT 0',
+          );
         }
       }
     },

@@ -481,6 +481,14 @@ class SessionRepository {
             .write(MessagesCompanion(content: Value(content)));
       });
 
+  /// ADR-0011：把「该回复可能不完整」（流式未见 `[DONE]`）落库，跨重启保留。
+  /// 只置标记位，**不动** content —— 与 ADR-0010 的「只影响展示」一致。
+  Future<void> markMessageTruncated(String messageId) =>
+      guardRepoWrite('session', 'markMessageTruncated', () async {
+        await (_db.update(_db.messages)..where((t) => t.id.equals(messageId)))
+            .write(const MessagesCompanion(truncated: Value(1)));
+      });
+
   /// 列出会话所有消息（按 timestamp ASC）
   /// 复刻 listMessages(sessionId)
   /// 注：RN 真源为 `ORDER BY timestamp, id`，但 id 为随机 UUID v4（无时间前缀），

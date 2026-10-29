@@ -2359,6 +2359,18 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _truncatedMeta = const VerificationMeta(
+    'truncated',
+  );
+  @override
+  late final GeneratedColumn<int> truncated = GeneratedColumn<int>(
+    'truncated',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2368,6 +2380,7 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     timestamp,
     messageType,
     referencesJson,
+    truncated,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2434,6 +2447,12 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         ),
       );
     }
+    if (data.containsKey('truncated')) {
+      context.handle(
+        _truncatedMeta,
+        truncated.isAcceptableOrUnknown(data['truncated']!, _truncatedMeta),
+      );
+    }
     return context;
   }
 
@@ -2471,6 +2490,10 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         DriftSqlType.string,
         data['${effectivePrefix}references_json'],
       ),
+      truncated: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}truncated'],
+      )!,
     );
   }
 
@@ -2488,6 +2511,7 @@ class Message extends DataClass implements Insertable<Message> {
   final int timestamp;
   final String messageType;
   final String? referencesJson;
+  final int truncated;
   const Message({
     required this.id,
     required this.sessionId,
@@ -2496,6 +2520,7 @@ class Message extends DataClass implements Insertable<Message> {
     required this.timestamp,
     required this.messageType,
     this.referencesJson,
+    required this.truncated,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2509,6 +2534,7 @@ class Message extends DataClass implements Insertable<Message> {
     if (!nullToAbsent || referencesJson != null) {
       map['references_json'] = Variable<String>(referencesJson);
     }
+    map['truncated'] = Variable<int>(truncated);
     return map;
   }
 
@@ -2523,6 +2549,7 @@ class Message extends DataClass implements Insertable<Message> {
       referencesJson: referencesJson == null && nullToAbsent
           ? const Value.absent()
           : Value(referencesJson),
+      truncated: Value(truncated),
     );
   }
 
@@ -2539,6 +2566,7 @@ class Message extends DataClass implements Insertable<Message> {
       timestamp: serializer.fromJson<int>(json['timestamp']),
       messageType: serializer.fromJson<String>(json['messageType']),
       referencesJson: serializer.fromJson<String?>(json['referencesJson']),
+      truncated: serializer.fromJson<int>(json['truncated']),
     );
   }
   @override
@@ -2552,6 +2580,7 @@ class Message extends DataClass implements Insertable<Message> {
       'timestamp': serializer.toJson<int>(timestamp),
       'messageType': serializer.toJson<String>(messageType),
       'referencesJson': serializer.toJson<String?>(referencesJson),
+      'truncated': serializer.toJson<int>(truncated),
     };
   }
 
@@ -2563,6 +2592,7 @@ class Message extends DataClass implements Insertable<Message> {
     int? timestamp,
     String? messageType,
     Value<String?> referencesJson = const Value.absent(),
+    int? truncated,
   }) => Message(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
@@ -2573,6 +2603,7 @@ class Message extends DataClass implements Insertable<Message> {
     referencesJson: referencesJson.present
         ? referencesJson.value
         : this.referencesJson,
+    truncated: truncated ?? this.truncated,
   );
   Message copyWithCompanion(MessagesCompanion data) {
     return Message(
@@ -2587,6 +2618,7 @@ class Message extends DataClass implements Insertable<Message> {
       referencesJson: data.referencesJson.present
           ? data.referencesJson.value
           : this.referencesJson,
+      truncated: data.truncated.present ? data.truncated.value : this.truncated,
     );
   }
 
@@ -2599,7 +2631,8 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('content: $content, ')
           ..write('timestamp: $timestamp, ')
           ..write('messageType: $messageType, ')
-          ..write('referencesJson: $referencesJson')
+          ..write('referencesJson: $referencesJson, ')
+          ..write('truncated: $truncated')
           ..write(')'))
         .toString();
   }
@@ -2613,6 +2646,7 @@ class Message extends DataClass implements Insertable<Message> {
     timestamp,
     messageType,
     referencesJson,
+    truncated,
   );
   @override
   bool operator ==(Object other) =>
@@ -2624,7 +2658,8 @@ class Message extends DataClass implements Insertable<Message> {
           other.content == this.content &&
           other.timestamp == this.timestamp &&
           other.messageType == this.messageType &&
-          other.referencesJson == this.referencesJson);
+          other.referencesJson == this.referencesJson &&
+          other.truncated == this.truncated);
 }
 
 class MessagesCompanion extends UpdateCompanion<Message> {
@@ -2635,6 +2670,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<int> timestamp;
   final Value<String> messageType;
   final Value<String?> referencesJson;
+  final Value<int> truncated;
   final Value<int> rowid;
   const MessagesCompanion({
     this.id = const Value.absent(),
@@ -2644,6 +2680,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.timestamp = const Value.absent(),
     this.messageType = const Value.absent(),
     this.referencesJson = const Value.absent(),
+    this.truncated = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MessagesCompanion.insert({
@@ -2654,6 +2691,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.timestamp = const Value.absent(),
     this.messageType = const Value.absent(),
     this.referencesJson = const Value.absent(),
+    this.truncated = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sessionId = Value(sessionId),
@@ -2667,6 +2705,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<int>? timestamp,
     Expression<String>? messageType,
     Expression<String>? referencesJson,
+    Expression<int>? truncated,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2677,6 +2716,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (timestamp != null) 'timestamp': timestamp,
       if (messageType != null) 'message_type': messageType,
       if (referencesJson != null) 'references_json': referencesJson,
+      if (truncated != null) 'truncated': truncated,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2689,6 +2729,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Value<int>? timestamp,
     Value<String>? messageType,
     Value<String?>? referencesJson,
+    Value<int>? truncated,
     Value<int>? rowid,
   }) {
     return MessagesCompanion(
@@ -2699,6 +2740,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       timestamp: timestamp ?? this.timestamp,
       messageType: messageType ?? this.messageType,
       referencesJson: referencesJson ?? this.referencesJson,
+      truncated: truncated ?? this.truncated,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2727,6 +2769,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (referencesJson.present) {
       map['references_json'] = Variable<String>(referencesJson.value);
     }
+    if (truncated.present) {
+      map['truncated'] = Variable<int>(truncated.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2743,6 +2788,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('timestamp: $timestamp, ')
           ..write('messageType: $messageType, ')
           ..write('referencesJson: $referencesJson, ')
+          ..write('truncated: $truncated, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -23844,6 +23890,7 @@ typedef $$MessagesTableCreateCompanionBuilder =
       Value<int> timestamp,
       Value<String> messageType,
       Value<String?> referencesJson,
+      Value<int> truncated,
       Value<int> rowid,
     });
 typedef $$MessagesTableUpdateCompanionBuilder =
@@ -23855,6 +23902,7 @@ typedef $$MessagesTableUpdateCompanionBuilder =
       Value<int> timestamp,
       Value<String> messageType,
       Value<String?> referencesJson,
+      Value<int> truncated,
       Value<int> rowid,
     });
 
@@ -23973,6 +24021,11 @@ class $$MessagesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get truncated => $composableBuilder(
+    column: $table.truncated,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$SessionsTableFilterComposer get sessionId {
     final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -24086,6 +24139,11 @@ class $$MessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get truncated => $composableBuilder(
+    column: $table.truncated,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SessionsTableOrderingComposer get sessionId {
     final $$SessionsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -24140,6 +24198,9 @@ class $$MessagesTableAnnotationComposer
     column: $table.referencesJson,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get truncated =>
+      $composableBuilder(column: $table.truncated, builder: (column) => column);
 
   $$SessionsTableAnnotationComposer get sessionId {
     final $$SessionsTableAnnotationComposer composer = $composerBuilder(
@@ -24256,6 +24317,7 @@ class $$MessagesTableTableManager
                 Value<int> timestamp = const Value.absent(),
                 Value<String> messageType = const Value.absent(),
                 Value<String?> referencesJson = const Value.absent(),
+                Value<int> truncated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MessagesCompanion(
                 id: id,
@@ -24265,6 +24327,7 @@ class $$MessagesTableTableManager
                 timestamp: timestamp,
                 messageType: messageType,
                 referencesJson: referencesJson,
+                truncated: truncated,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -24276,6 +24339,7 @@ class $$MessagesTableTableManager
                 Value<int> timestamp = const Value.absent(),
                 Value<String> messageType = const Value.absent(),
                 Value<String?> referencesJson = const Value.absent(),
+                Value<int> truncated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MessagesCompanion.insert(
                 id: id,
@@ -24285,6 +24349,7 @@ class $$MessagesTableTableManager
                 timestamp: timestamp,
                 messageType: messageType,
                 referencesJson: referencesJson,
+                truncated: truncated,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

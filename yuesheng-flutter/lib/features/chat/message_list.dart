@@ -531,6 +531,7 @@ class _MessageListState extends ConsumerState<MessageList> {
           content: widget.streamingContent,
           timestamp: 0,
           messageType: 'chat',
+          truncated: 0,
         ),
       });
     }

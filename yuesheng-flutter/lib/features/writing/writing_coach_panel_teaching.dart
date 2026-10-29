@@ -199,6 +199,7 @@ class WritingCoachTeachingController {
       content: buildDiagnosisUserMessageContent(isSelection),
       timestamp: now ~/ 1000,
       messageType: 'chat',
+      truncated: 0,
     );
   }
 

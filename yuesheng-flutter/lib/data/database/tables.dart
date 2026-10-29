@@ -135,6 +135,9 @@ class Messages extends Table {
   // v22 新增：本消息携带的 @ 引用快照（JSON 数组
   // [{refType, refId, manuscriptId, title}]），用于气泡底部引用徽章展示
   TextColumn get referencesJson => text().nullable()();
+  // v49（ADR-0011）：断流标记 —— 流式回复缺 [DONE] 而结束时置 1。
+  // 二值语义（0=正常 / 1=可能不完整），不用可空列以免引入无人消费的第三态。
+  IntColumn get truncated => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};

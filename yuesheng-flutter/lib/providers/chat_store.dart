@@ -9,8 +9,8 @@
 //   - streamingContent：流式累加的临时内容（完成后清空）
 //   - error：最近一次错误（UI 显示用）
 //   - failedMessageIds：发送失败的消息 ID 集合（纯内存状态，不持久化）
-//   - truncatedMessageIds：未见结束标记的消息 ID 集合（ADR-0010；纯内存，
-//     重启后不保留 —— 落库需加列，见该卡限制）
+//   - truncatedMessageIds：未见结束标记的消息 ID 集合。判定源自 ADR-0010（内存态），
+//     ADR-0011 起落库到 messages.truncated，重启 / 切会话回来仍在（见 setMessages 水合）
 //
 // 状态转换契约：
 //   setStreaming(true)  → 清空 streamingContent + 清空 error
@@ -112,8 +112,20 @@ class ChatStore extends StateNotifier<ChatState> {
     );
   }
 
+  /// 整批替换消息列表（切会话 / 重进会话的入口）。
+  ///
+  /// ADR-0011：断流标记以 DB 为准重建 —— `messages.truncated != 0` 的行回到
+  /// `truncatedMessageIds`，故重启后标记仍在。这是 chat / writing 两个对话面
+  /// 共用的唯一入口，一处即可全链路生效；`setSessionId` 的清空逻辑不变
+  /// （切会话先清，再由 `listMessages → setMessages` 重新水合）。
   void setMessages(List<Message> messages) {
-    state = state.copyWith(messages: messages);
+    state = state.copyWith(
+      messages: messages,
+      truncatedMessageIds: {
+        for (final m in messages)
+          if (m.truncated != 0) m.id,
+      },
+    );
   }
 
   void addMessage(Message message) {

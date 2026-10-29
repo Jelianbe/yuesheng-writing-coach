@@ -228,6 +228,7 @@ class WritingCoachMessageList extends ConsumerWidget {
       content: chatState.streamingContent,
       timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       messageType: 'chat',
+      truncated: 0,
     );
     final streamBubble = MessageBubble(message: streamMsg, isStreaming: true);
     // 批次49：流式气泡顶部加阶段角标（与 message_list 一致）

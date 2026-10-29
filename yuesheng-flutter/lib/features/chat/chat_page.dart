@@ -458,6 +458,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
             content: text,
             timestamp: now,
             messageType: kNoviceMessageType,
+            truncated: 0,
           ),
         );
 
@@ -521,6 +522,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
             content: content,
             timestamp: now,
             messageType: kNoviceMessageType,
+            truncated: 0,
           ),
         );
   }

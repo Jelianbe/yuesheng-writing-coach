@@ -41,6 +41,7 @@ void main() {
         content: 'Hello World',
         timestamp: 0,
         messageType: 'chat',
+        truncated: 0,
       );
       notifier.completeStreaming(msg);
       expect(container.read(chatStoreProvider).isStreaming, false);
@@ -86,6 +87,7 @@ void main() {
         content: '最终回复',
         timestamp: 1700000000,
         messageType: 'chat',
+        truncated: 0,
       );
       await tester.pumpWidget(
         MaterialApp(
@@ -155,6 +157,7 @@ void main() {
           content: '历史消息1',
           timestamp: 0,
           messageType: 'chat',
+          truncated: 0,
         ),
         Message(
           id: 'm2',
@@ -163,6 +166,7 @@ void main() {
           content: '历史消息2',
           timestamp: 1,
           messageType: 'chat',
+          truncated: 0,
         ),
       ];
       await tester.pumpWidget(
@@ -238,6 +242,7 @@ void main() {
         content: fullContent,
         timestamp: 1700000001,
         messageType: 'chat',
+        truncated: 0,
       );
       notifier.completeStreaming(msg);
       expect(container.read(chatStoreProvider).isStreaming, false);

@@ -649,6 +649,11 @@ class DiagnosisFlowHandler {
     return messageId;
   }
 
+  /// ADR-0011：断流标记落库（转接 `SessionRepository.markMessageTruncated`）。
+  /// 由 `DiagnosisInjectionService` 在判定「未见 [DONE]」时就地调用，先库后 UI。
+  Future<void> markMessageTruncated(String messageId) =>
+      _sessionRepo.markMessageTruncated(messageId);
+
   /// 私有 helper：解析主引用（提取自 commitDiagnosisFromContent）。
   Future<({String? refType, String? refId})> _resolvePrimaryRef(
     String sessionId,

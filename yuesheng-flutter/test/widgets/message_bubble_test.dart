@@ -23,6 +23,7 @@ Message _msg({
   required String content,
   String messageType = 'chat',
   String? referencesJson,
+  int truncated = 0,
 }) {
   return Message(
     id: 'm1',
@@ -32,6 +33,7 @@ Message _msg({
     timestamp: 1700000000,
     messageType: messageType,
     referencesJson: referencesJson,
+    truncated: truncated,
   );
 }
 

@@ -21,6 +21,7 @@ Message _msg({
   required String id,
   required String role,
   required String content,
+  int truncated = 0,
 }) {
   return Message(
     id: id,
@@ -29,6 +30,7 @@ Message _msg({
     content: content,
     timestamp: 1700000000,
     messageType: 'chat',
+    truncated: truncated,
   );
 }
 
@@ -165,6 +167,34 @@ void main() {
       // 纯内存状态：切会话即清空（跨会话不残留，重启亦不保留）
       notifier.setSessionId('session-B');
       expect(container.read(chatStoreProvider).isTruncated('a1'), isFalse);
+    });
+
+    test('#9 ADR-0011 setMessages 从 DB 列水合 truncatedMessageIds', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setSessionId('session-A');
+      notifier.setMessages([
+        _msg(id: 'a1', role: 'assistant', content: '半截', truncated: 1),
+        _msg(id: 'a2', role: 'assistant', content: '完整'),
+      ]);
+      expect(
+        container.read(chatStoreProvider).isTruncated('a1'),
+        isTrue,
+        reason: '去掉 setMessages 里的水合 ⇒ 红（ADR-0011 A1 内存侧）',
+      );
+      expect(container.read(chatStoreProvider).isTruncated('a2'), isFalse);
+      expect(container.read(chatStoreProvider).messages, hasLength(2));
+
+      // 切走即清空（既有语义不变），切回再由 DB 列表重新水合
+      notifier.setSessionId('session-B');
+      expect(container.read(chatStoreProvider).isTruncated('a1'), isFalse);
+      notifier.setSessionId('session-A');
+      notifier.setMessages([
+        _msg(id: 'a1', role: 'assistant', content: '半截', truncated: 1),
+      ]);
+      expect(container.read(chatStoreProvider).isTruncated('a1'), isTrue);
     });
 
     test('#8 B14 切换会话清空流式状态（防止跨会话 stream 泄漏）', () {

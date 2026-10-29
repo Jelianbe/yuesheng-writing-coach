@@ -25,7 +25,9 @@
 //   46 → 47（E-8：对话思考题回收表 reflection_question）
 //   47 → 48（治理续批第二批：active_problem 加形态两列
 //            form_fact_count / form_structure）
+//   48 → 49（ADR-0011：messages 加断流标记列 truncated；同批把 onUpgrade
+//            守卫 46 → 49，修复 v47/v48 对 from>=46 的库静默跳过）
 // ─────────────────────────────────────────────────────────────
 
 /// 当前 drift `schemaVersion`（= `AppDatabase.schemaVersion`）的测试侧镜像。
-const int kSchemaHead = 48;
+const int kSchemaHead = 49;
