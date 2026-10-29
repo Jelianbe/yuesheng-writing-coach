@@ -571,13 +571,16 @@ class ChatService {
 const _kMainChatCallContext = LlmCallContext(purpose: LlmCallPurpose.mainChat);
 
 extension ChatServiceSendRun on ChatService {
-  Future<({String fullContent, bool inDiagnosisBlock})> _streamLlm({
+  Future<StreamOutcome> _streamLlm({
     required List<ChatMessage> messages,
     required SendMessageCallbacks callbacks,
     required SendMessageOptions options,
   }) async {
     // 8. 流式调用 + 拦截诊断块
     String fullContent = '';
+    // ADR-0010：终态判据 —— `isDone` 帧仅当某次尝试真见过 `[DONE]` 才投递
+    // （LlmClient._flushIsDone「恰好一次」契约），缺失 ⇒ 对端主动关流。
+    bool sawDone = false;
     // ★ 两个标志**刻意分离**（ADR-C105 v5 P1-2）：
     //   - `blockIntercepted`：已进入「协议块拦截模式」，从标记处起停止转发（**任何**标记）。
     //   - `inDiagnosisBlock`：本轮**确实发起了诊断**（仅 `[YS_DIAGNOSIS]` / ```diagnosis）。
@@ -595,6 +598,7 @@ extension ChatServiceSendRun on ChatService {
     _llmClient.markCallContext(_kMainChatCallContext);
     await _llmClient.streamChat(messages, (response) {
       if (response.isDone) {
+        sawDone = true;
         debugPrint('[ChatService] 步骤8: streamChat 收到 [DONE]');
         return;
       }
@@ -701,7 +705,11 @@ extension ChatServiceSendRun on ChatService {
         );
       }
     }
-    return (fullContent: fullContent, inDiagnosisBlock: inDiagnosisBlock);
+    return (
+      fullContent: fullContent,
+      inDiagnosisBlock: inDiagnosisBlock,
+      sawDone: sawDone,
+    );
   }
 }
 
@@ -773,8 +781,6 @@ extension ChatServiceSend on ChatService {
         callbacks: callbacks,
         options: options,
       );
-      final fullContent = streamResult.fullContent;
-      final inDiagnosisBlock = streamResult.inDiagnosisBlock;
       // 9-11. 解析 + 提交 + 训练 + onComplete（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
       // （ADR-0004 步 5 批 1：诊断簇已抽出独立类 + R-019 减负，此处改调本文件
       //   的转接 helper `_runDiagnosisFlow`，避免主链被 13 行参数撑过 50 行）
@@ -782,8 +788,7 @@ extension ChatServiceSend on ChatService {
         sessionId: sessionId,
         ctx: ctx,
         content: content,
-        fullContent: fullContent,
-        inDiagnosisBlock: inDiagnosisBlock,
+        stream: streamResult,
         callbacks: callbacks,
         options: options,
       );
@@ -800,16 +805,14 @@ extension ChatServiceSend on ChatService {
     required String sessionId,
     required _SendContext ctx,
     required String content,
-    required String fullContent,
-    required bool inDiagnosisBlock,
+    required StreamOutcome stream,
     required SendMessageCallbacks callbacks,
     required SendMessageOptions options,
   }) async {
     await _diagnosisService.runDiagnosisFlow(
       sessionId: sessionId,
       content: content,
-      fullContent: fullContent,
-      inDiagnosisBlock: inDiagnosisBlock,
+      stream: stream,
       primaryRef: ctx.primaryRef,
       chapterContent: ctx.chapterContent,
       trainingSyndromeId: ctx.trainingSyndromeId,

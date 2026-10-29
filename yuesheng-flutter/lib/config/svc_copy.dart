@@ -64,6 +64,9 @@ String kStreamIdleInterruptMessage(int seconds) =>
 String kStreamConnectTimeoutMessage(int seconds) =>
     '模型响应超时（超过 $seconds 秒未返回首个字符）';
 
+/// 已投递内容但未收到结束标记（对端主动关流）：内容可能不完整。
+const String kStreamTruncatedMessage = '回复中断（未收到结束标记），这条内容可能不完整';
+
 // ── 服务层兜底 / 异常提示 ──
 
 /// 编辑观察统一兜底（API/解析/校验失败时给用户，取消除外）。

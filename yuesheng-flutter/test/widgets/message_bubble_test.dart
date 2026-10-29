@@ -14,6 +14,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/svc_copy.dart' show kStreamTruncatedMessage;
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/widgets/message_bubble.dart';
 
@@ -182,6 +183,56 @@ void main() {
       );
 
       expect(find.text('保存到文件'), findsNothing);
+    });
+
+    // ── ADR-0010：内容可能不完整（未见结束标记）──
+    testWidgets('ADR-0010：isTruncated → 加断流提示行，正文保留', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MessageBubble(
+              message: _msg(role: 'assistant', content: '只写了一半的回复'),
+              isTruncated: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(kStreamTruncatedMessage), findsOneWidget);
+      expect(find.text('只写了一半的回复'), findsOneWidget, reason: '已落库正文不得被清空');
+    });
+
+    testWidgets('ADR-0010：isTruncated → 不显示「保存到文件」', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MessageBubble(
+              message: _msg(role: 'assistant', content: '只写了一半的回复'),
+              isTruncated: true,
+              onSaveToFile: (m) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('保存到文件'), findsNothing, reason: '残缺稿不应被导出');
+      expect(find.text(kStreamTruncatedMessage), findsOneWidget);
+    });
+
+    testWidgets('ADR-0010：未标记 isTruncated → 无断流提示行', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MessageBubble(
+              message: _msg(role: 'assistant', content: '完整回复'),
+              onSaveToFile: (m) {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(kStreamTruncatedMessage), findsNothing);
+      expect(find.text('保存到文件'), findsOneWidget);
     });
 
     group('批次71：@ 引用徽章', () {

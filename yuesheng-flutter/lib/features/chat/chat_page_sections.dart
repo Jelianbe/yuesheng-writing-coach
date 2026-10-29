@@ -65,6 +65,7 @@ class ChatMessageSection extends ConsumerWidget {
       streamingContent: chatState.streamingContent,
       streamStageLabel: chatState.streamStageLabel,
       failedMessageIds: chatState.failedMessageIds,
+      truncatedMessageIds: chatState.truncatedMessageIds,
       forceScrollToBottom: forceScrollToBottom,
       onRetry: messages.handleRetry,
       onDelete: messages.handleDelete,

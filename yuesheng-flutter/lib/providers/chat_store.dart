@@ -9,6 +9,8 @@
 //   - streamingContent：流式累加的临时内容（完成后清空）
 //   - error：最近一次错误（UI 显示用）
 //   - failedMessageIds：发送失败的消息 ID 集合（纯内存状态，不持久化）
+//   - truncatedMessageIds：未见结束标记的消息 ID 集合（ADR-0010；纯内存，
+//     重启后不保留 —— 落库需加列，见该卡限制）
 //
 // 状态转换契约：
 //   setStreaming(true)  → 清空 streamingContent + 清空 error
@@ -36,6 +38,9 @@ class ChatState {
   final String? error;
   final Set<String> failedMessageIds;
 
+  /// 未见结束标记（`[DONE]`）的 assistant 消息 id（ADR-0010）。
+  final Set<String> truncatedMessageIds;
+
   const ChatState({
     this.currentSessionId,
     this.messages = const [],
@@ -44,10 +49,14 @@ class ChatState {
     this.streamStageLabel,
     this.error,
     this.failedMessageIds = const {},
+    this.truncatedMessageIds = const {},
   });
 
   /// 判断消息是否发送失败
   bool isFailed(String messageId) => failedMessageIds.contains(messageId);
+
+  /// 判断消息是否「内容可能不完整」（未见结束标记）
+  bool isTruncated(String messageId) => truncatedMessageIds.contains(messageId);
 
   /// copyWith：可空字段无法用「传 null」表达清空（null 表示「不修改」），
   /// 故 error / streamStageLabel 各配一个独立的 clear 标志显式清空。
@@ -61,6 +70,7 @@ class ChatState {
     bool clearError = false,
     bool clearStreamStageLabel = false,
     Set<String>? failedMessageIds,
+    Set<String>? truncatedMessageIds,
   }) {
     return ChatState(
       currentSessionId: currentSessionId ?? this.currentSessionId,
@@ -72,6 +82,7 @@ class ChatState {
           : (streamStageLabel ?? this.streamStageLabel),
       error: clearError ? null : (error ?? this.error),
       failedMessageIds: failedMessageIds ?? this.failedMessageIds,
+      truncatedMessageIds: truncatedMessageIds ?? this.truncatedMessageIds,
     );
   }
 }
@@ -97,6 +108,7 @@ class ChatStore extends StateNotifier<ChatState> {
       streamingContent: '',
       clearStreamStageLabel: true,
       clearError: true,
+      truncatedMessageIds: const {},
     );
   }
 
@@ -205,6 +217,14 @@ class ChatStore extends StateNotifier<ChatState> {
   void clearMessageFailed(String messageId) {
     final newFailedIds = {...state.failedMessageIds}..remove(messageId);
     state = state.copyWith(failedMessageIds: newFailedIds, clearError: true);
+  }
+
+  /// 标记「内容可能不完整」（ADR-0010）：对端主动关流、未见 `[DONE]`。
+  /// 只影响展示，**不动**已落库内容（区别于 setError）。
+  void markMessageTruncated(String messageId) {
+    state = state.copyWith(
+      truncatedMessageIds: {...state.truncatedMessageIds, messageId},
+    );
   }
 
   void clearError() {

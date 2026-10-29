@@ -21,11 +21,15 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../config/app_palette.dart';
+import '../config/svc_copy.dart' show kStreamTruncatedMessage;
 
 class MessageBubble extends StatelessWidget {
   final Message message;
   final bool isStreaming;
   final bool isFailed;
+
+  /// ADR-0010：未见结束标记（`[DONE]`）—— 内容可能不完整，只加提示行。
+  final bool isTruncated;
   final void Function(String messageId)? onRetry;
   final void Function(Message message)? onLongPress;
 
@@ -41,6 +45,7 @@ class MessageBubble extends StatelessWidget {
     required this.message,
     this.isStreaming = false,
     this.isFailed = false,
+    this.isTruncated = false,
     this.onRetry,
     this.onLongPress,
     this.onSaveToFile,
@@ -177,6 +182,7 @@ class MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildAssistantBubbleBody(context),
+          if (isTruncated) _buildTruncatedNotice(context),
           if (!isStreaming) ..._buildAssistantMetaRow(context),
         ],
       ),
@@ -216,6 +222,26 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  /// ADR-0010：未见结束标记的提示行（正文与已落库内容**不截断、不改写**）
+  Widget _buildTruncatedNotice(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xxs),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 12, color: context.palette.danger),
+          const SizedBox(width: 4),
+          Text(
+            kStreamTruncatedMessage,
+            style: AppTextStyles.microCaption.copyWith(
+              color: context.palette.danger,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _buildAssistantMetaRow(BuildContext context) {
     return [
       const SizedBox(height: 4),
@@ -230,7 +256,8 @@ class MessageBubble extends StatelessWidget {
             ),
           ),
           // 操作区：保存到文件（对齐 RN messageMetaRow.actionBtnGroup）
-          if (onSaveToFile != null) ...[
+          // ADR-0010：内容可能不完整时不提供「保存到文件」（避免导出残缺稿）
+          if (onSaveToFile != null && !isTruncated) ...[
             const SizedBox(width: 12),
             _buildSaveToFileBtn(context),
           ],

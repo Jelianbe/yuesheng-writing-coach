@@ -64,9 +64,12 @@ import 'package:writingcoach/services/chat_message_types.dart'
 /// 预设文本 = 教练安全反馈（症候识别 + 训练引导，无代写）+ [YS_DIAGNOSIS] 块。
 class _CoachSimLlmClient extends LlmClient {
   final String _fullResponse;
+
+  /// ADR-0010：false = 模拟「有内容但对端未发 `[DONE]` 就关流」。
+  final bool emitDone;
   int callCount = 0;
 
-  _CoachSimLlmClient(this._fullResponse);
+  _CoachSimLlmClient(this._fullResponse, {this.emitDone = true});
 
   @override
   Future<void> streamChat(
@@ -78,7 +81,7 @@ class _CoachSimLlmClient extends LlmClient {
     callCount++;
     // 一次推完（单 chunk 即可；拦截逻辑对单 chunk 与跨 chunk 等价）。
     callback(LlmStreamResponse(content: _fullResponse, isDone: false));
-    callback(const LlmStreamResponse(content: '', isDone: true));
+    if (emitDone) callback(const LlmStreamResponse(content: '', isDone: true));
   }
 }
 
@@ -306,5 +309,63 @@ void main() {
           '单条 L1 症候不达 Teacher 触发线（L2/L3 或 ≥3 条），'
           '冷启动首诊不应追加第二次 LLM 调用',
     );
+  });
+
+  // ── ADR-0010：未见结束标记 → 只打标记，不动已落库内容 ──
+  group('ADR-0010 断流标记（onStreamTruncated）', () {
+    const plainReply = '先不急着改全篇。挑「他很着急」这一处，把它落到一个身体动作上。';
+
+    Future<List<String>> run(
+      LlmClient llm, {
+      void Function(String messageId)? onTruncated,
+    }) async {
+      final events = <String>[];
+      final service = buildChatService(llm);
+      await service.sendMessage(
+        sessionId,
+        '闹钟响了三遍他才睁眼。天花板有一块水渍。他很着急，怕迟到，抓起外套就往外冲。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (content, id) {
+            events.add('complete:$id');
+            expect(content, contains('先不急着改全篇'), reason: '正文必须照常落库');
+          },
+          onStreamTruncated: (id) {
+            events.add('truncated:$id');
+            onTruncated?.call(id);
+          },
+          onError: (e) => fail('不应报错：$e'),
+        ),
+        defaultOptions,
+      );
+      return events;
+    }
+
+    test('无 isDone（对端主动关流）⇒ onComplete 之后打标记，正文不变', () async {
+      final llm = _CoachSimLlmClient(plainReply, emitDone: false);
+      final events = await run(llm);
+
+      expect(events, hasLength(2), reason: '恰好一条 complete + 一条 truncated');
+      expect(events[0], startsWith('complete:'));
+      expect(events[1], startsWith('truncated:'));
+      final completeId = events[0].split(':').last;
+      final truncatedId = events[1].split(':').last;
+      expect(truncatedId, completeId, reason: '标记必须挂在刚落库的那条 assistant 消息上');
+
+      final messages = await sessionRepo.listMessages(sessionId);
+      final feedback = messages.firstWhere(
+        (m) => m.role == 'assistant' && m.messageType != 'diagnosis_result',
+      );
+      expect(feedback.id, completeId);
+      expect(feedback.content, contains('先不急着改全篇'), reason: '内容不得被清空/截断');
+    });
+
+    test('有 isDone ⇒ 不打标记（不误报）', () async {
+      final llm = _CoachSimLlmClient(plainReply);
+      final events = await run(llm);
+
+      expect(events, hasLength(1), reason: '只有 complete，无 truncated');
+      expect(events.single, startsWith('complete:'));
+    });
   });
 }

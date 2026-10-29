@@ -47,6 +47,9 @@ class MessageList extends ConsumerStatefulWidget {
   /// 显示阶段化文案；null = 默认「正在思考…」）
   final String? streamStageLabel;
   final Set<String> failedMessageIds;
+
+  /// ADR-0010：未见结束标记的消息（内容可能不完整，只加提示行）
+  final Set<String> truncatedMessageIds;
   final void Function(String messageId)? onRetry;
   final void Function(String messageId)? onDelete;
 
@@ -129,6 +132,7 @@ class MessageList extends ConsumerStatefulWidget {
     required this.streamingContent,
     this.streamStageLabel,
     this.failedMessageIds = const {},
+    this.truncatedMessageIds = const {},
     this.onRetry,
     this.onDelete,
     this.activePracticeTask,
@@ -636,9 +640,10 @@ class _MessageListState extends ConsumerState<MessageList> {
     final msg = item['data'] as Message;
     final isStreamingBubble = item['type'] == 'streaming';
     final isFailed = widget.failedMessageIds.contains(msg.id);
+    final isTruncated = widget.truncatedMessageIds.contains(msg.id);
     final cardItem = _buildCardItem(msg, isStreamingBubble, isFailed);
     if (cardItem != null) return cardItem;
-    return _buildBubbleItem(msg, isStreamingBubble, isFailed);
+    return _buildBubbleItem(msg, isStreamingBubble, isFailed, isTruncated);
   }
 
   Widget _buildThinkingIndicatorItem() {
@@ -687,11 +692,17 @@ class _MessageListState extends ConsumerState<MessageList> {
     );
   }
 
-  Widget _buildBubbleItem(Message msg, bool isStreamingBubble, bool isFailed) {
+  Widget _buildBubbleItem(
+    Message msg,
+    bool isStreamingBubble,
+    bool isFailed,
+    bool isTruncated,
+  ) {
     final streamBubble = MessageBubble(
       message: msg,
       isStreaming: isStreamingBubble,
       isFailed: isFailed,
+      isTruncated: isTruncated,
       onRetry: isFailed ? widget.onRetry : null,
       onLongPress: _showMessageActions,
       onSaveToFile: widget.onSaveToFile,

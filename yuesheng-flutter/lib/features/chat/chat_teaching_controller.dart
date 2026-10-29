@@ -139,6 +139,13 @@ class ChatTeachingController {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },
       onComplete: (fullContent, messageId) => _onStreamComplete(sessionId, gen),
+      // ADR-0010：未见结束标记 —— 只打展示标记，不动已落库内容
+      onStreamTruncated: (messageId) {
+        if (!isCurrentSession() || !isCurrentGeneration()) return;
+        host.ref
+            .read(chatStoreProvider.notifier)
+            .markMessageTruncated(messageId);
+      },
       onError: (error) {
         if (!isCurrentSession() || !isCurrentGeneration()) return;
         host.ref.read(chatStoreProvider.notifier).setError(error);

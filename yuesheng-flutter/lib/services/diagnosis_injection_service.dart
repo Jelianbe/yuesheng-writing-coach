@@ -331,8 +331,7 @@ class DiagnosisInjectionService {
   Future<void> runDiagnosisFlow({
     required String sessionId,
     required String content,
-    required String fullContent,
-    required bool inDiagnosisBlock,
+    required StreamOutcome stream,
     required ReferenceItem? primaryRef,
     required String? chapterContent,
     required String? trainingSyndromeId,
@@ -346,8 +345,8 @@ class DiagnosisInjectionService {
     final parsed = await _parseAndPersistDiagnosis(
       sessionId: sessionId,
       content: content,
-      fullContent: fullContent,
-      inDiagnosisBlock: inDiagnosisBlock,
+      fullContent: stream.fullContent,
+      inDiagnosisBlock: stream.inDiagnosisBlock,
       primaryRef: primaryRef,
       chapterContent: chapterContent,
       callbacks: callbacks,
@@ -370,6 +369,7 @@ class DiagnosisInjectionService {
       sessionId: sessionId,
       content: content,
       parsed: parsed,
+      sawDone: stream.sawDone,
       trainingSyndromeId: trainingSyndromeId,
       activeProblems: activeProblems,
       currentSubphase: currentSubphase,
@@ -448,6 +448,7 @@ class DiagnosisInjectionService {
     // 同 _commitDiagnosisAndSuggestions：dynamic → 具体类型（严格模式
     // argument_type_not_assignable ×4）。
     required ParseAndPersistResult parsed,
+    required bool sawDone,
     required String? trainingSyndromeId,
     required List<ActiveProblemView> activeProblems,
     required TeachingSubphase? currentSubphase,
@@ -466,6 +467,11 @@ class DiagnosisInjectionService {
       trainingResult: parsed.trainingResult,
     );
     await callbacks.onComplete(parsed.finalContent, parsed.messageId);
+    // ADR-0010：内容已落库，**不走 onError**（那条会清空已显示的字）；
+    // 只打「未见 [DONE]」标记 —— 对端主动关流时这条回复可能不完整。
+    if (!sawDone && parsed.finalContent.isNotEmpty) {
+      callbacks.onStreamTruncated?.call(parsed.messageId);
+    }
     debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
   }
 }

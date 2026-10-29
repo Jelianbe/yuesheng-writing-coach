@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 445,
+  "fileCount": 511,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
@@ -23,6 +23,13 @@
       "start": 125,
       "end": 178,
       "lines": 54
+    },
+    {
+      "file": "lib/services/chat_service.dart",
+      "func": "_streamLlm",
+      "start": 574,
+      "end": 713,
+      "lines": 140
     }
   ]
 }

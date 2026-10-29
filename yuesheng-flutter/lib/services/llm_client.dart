@@ -574,6 +574,10 @@ class LlmClient {
   /// deepseek 系「空流」（零 content token 且正常收尾）→ 分级降级：
   /// 尝试 2 注入 [LlmConfig.teachingStreamFallbackExtraBody] 兜底重试，
   /// 见 [_streamAttemptLoop]。
+  /// ADR-0010：终态判据由 `isDone` 帧承载 —— 它**仅当某次尝试真见过
+  /// `[DONE]`** 才投递（见 [_flushIsDone] 的「恰好一次」契约）；调用方据此
+  /// 区分「干净结束」与「已出内容但对端主动关流」。签名不变（既有
+  /// `Future<void>` 让 8 处测试替身 override 免于返工）。
   Future<void> streamChat(
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {

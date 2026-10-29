@@ -15,6 +15,13 @@ import 'package:writingcoach/services/llm_client.dart' show ChatContentBlock;
 import 'package:writingcoach/types/teaching_types.dart'
     show AttitudeLevel, TeachingMode, TeachingPhase, TrainingResult;
 
+/// 主回复流式结果（ADR-0010：`sawDone` = 本次是否见过 `[DONE]` 终态标记）。
+typedef StreamOutcome = ({
+  String fullContent,
+  bool inDiagnosisBlock,
+  bool sawDone,
+});
+
 /// 流式回调
 class SendMessageCallbacks {
   final void Function(String delta) onStream;
@@ -42,6 +49,11 @@ class SendMessageCallbacks {
   /// 语义：主回复与诊断已完成，仅教学建议被中止。
   final void Function()? onTeacherCancelled;
 
+  /// 流已结束但未收到结束标记（内容可能不完整，ADR-0010）。
+  /// 在 [onComplete] **之后**触发，携带该条 assistant 消息 id —— 供 UI 打标记，
+  /// **不动**已落库内容（不走 onError：那条会清空已显示的字）。
+  final void Function(String messageId)? onStreamTruncated;
+
   const SendMessageCallbacks({
     required this.onStream,
     required this.onComplete,
@@ -51,6 +63,7 @@ class SendMessageCallbacks {
     this.onUserMessagePersisted,
     this.onTeacherPhase,
     this.onTeacherCancelled,
+    this.onStreamTruncated,
   });
 }
 

@@ -152,6 +152,21 @@ void main() {
       expect(container.read(chatStoreProvider).error, isNull);
     });
 
+    test('#8 ADR-0010 markMessageTruncated：标记 / 查询 / 切会话清空', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setSessionId('session-A');
+      notifier.markMessageTruncated('a1');
+      expect(container.read(chatStoreProvider).isTruncated('a1'), isTrue);
+      expect(container.read(chatStoreProvider).isTruncated('a2'), isFalse);
+
+      // 纯内存状态：切会话即清空（跨会话不残留，重启亦不保留）
+      notifier.setSessionId('session-B');
+      expect(container.read(chatStoreProvider).isTruncated('a1'), isFalse);
+    });
+
     test('#8 B14 切换会话清空流式状态（防止跨会话 stream 泄漏）', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
