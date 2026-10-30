@@ -42,6 +42,14 @@ class DiagnosisInput {
   /// NO_OP 去重 + status='confirmed'。可选命名参数默认 false，不破坏既有构造点。
   final bool isTeachingRound;
 
+  /// ★ ADR-0012（T-20261030-01 · v50）：轮次级排除记录（从未报出、判了否）。
+  ///
+  /// 轮次级（与 syndromes 同级），落 diagnosis_results.excluded_json（JSON 文本）。
+  /// 可选，缺省 const []——无排除轮次与改造前完全一致（零行为变更）。
+  /// ⚠️ B4 硬边界：绝不写入 active_problems / rejected 名册；UPSERT 循环
+  /// 只遍历 [syndromes]，本字段是独立 List（.ai/adr/0012 §4）。
+  final List<ParsedExclusion> excluded;
+
   DiagnosisInput({
     required this.sessionId,
     required this.messageId,
@@ -58,6 +66,7 @@ class DiagnosisInput {
     this.focusReason,
     this.teachingMode,
     this.isTeachingRound = false,
+    this.excluded = const [],
   });
 }
 
@@ -193,6 +202,13 @@ class DiagnosisRepository {
               currentTeachingFocusId: Value(input.currentTeachingFocusId),
               focusReason: Value(input.focusReason),
               status: Value(targetStatus),
+              // ADR-0012（v50）：轮次级排除记录落 JSON 文本列。
+              // 空列表写 '[]'（与 syndromes/suggestedActions 同形态）；
+              // B4：本字段绝不进 active_problems UPSERT 循环（:208-288 只遍历
+              // input.syndromes）。
+              excludedJson: Value(
+                jsonEncode(input.excluded.map((e) => e.toJson()).toList()),
+              ),
             ),
           );
 
@@ -979,4 +995,30 @@ class DiagnosisRepository {
     }
     return [];
   }
+
+  /// ★ ADR-0012（v50）：把 diagnosis_results.excluded_json（JSON 文本）解码回
+  /// [ParsedExclusion] 列表。循 [_parseSyndromes] 先例（边界层 try/catch +
+  /// logDecodeFailure 留痕，R-028）：
+  ///   - null / 空串 ⇒ const []（存量行恒 NULL，读回空不崩）；
+  ///   - 畸形 JSON ⇒ 留痕后退化为 const []（静默降级必留痕）。
+  List<ParsedExclusion> _parseExcludedList(String? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map<String, dynamic>>()
+            .map(ParsedExclusion.fromJson)
+            .toList();
+      }
+    } catch (e, st) {
+      logDecodeFailure(field: 'diagnosis.excluded_json', error: e, stack: st);
+    }
+    return const [];
+  }
+
+  /// ★ ADR-0012（v50）：一行级读取入口——L3 呈现层（T-20261030-02 折叠）
+  /// 对历史 DiagnosisRow 取轮次级排除记录的唯一入口。纯函数、零新查询。
+  List<ParsedExclusion> excludedOf(DiagnosisRow row) =>
+      _parseExcludedList(row.excludedJson);
 }

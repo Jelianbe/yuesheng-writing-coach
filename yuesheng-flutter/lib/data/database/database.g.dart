@@ -2998,6 +2998,17 @@ class $DiagnosisResultsTable extends DiagnosisResults
     requiredDuringInsert: false,
     defaultValue: const Constant('confirmed'),
   );
+  static const VerificationMeta _excludedJsonMeta = const VerificationMeta(
+    'excludedJson',
+  );
+  @override
+  late final GeneratedColumn<String> excludedJson = GeneratedColumn<String>(
+    'excluded_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3017,6 +3028,7 @@ class $DiagnosisResultsTable extends DiagnosisResults
     currentTeachingFocusId,
     focusReason,
     status,
+    excludedJson,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3159,6 +3171,15 @@ class $DiagnosisResultsTable extends DiagnosisResults
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('excluded_json')) {
+      context.handle(
+        _excludedJsonMeta,
+        excludedJson.isAcceptableOrUnknown(
+          data['excluded_json']!,
+          _excludedJsonMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3240,6 +3261,10 @@ class $DiagnosisResultsTable extends DiagnosisResults
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      excludedJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}excluded_json'],
+      ),
     );
   }
 
@@ -3267,6 +3292,7 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
   final String? currentTeachingFocusId;
   final String? focusReason;
   final String status;
+  final String? excludedJson;
   const DiagnosisRow({
     required this.id,
     required this.sessionId,
@@ -3285,6 +3311,7 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
     this.currentTeachingFocusId,
     this.focusReason,
     required this.status,
+    this.excludedJson,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3324,6 +3351,9 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
       map['focus_reason'] = Variable<String>(focusReason);
     }
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || excludedJson != null) {
+      map['excluded_json'] = Variable<String>(excludedJson);
+    }
     return map;
   }
 
@@ -3362,6 +3392,9 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
           ? const Value.absent()
           : Value(focusReason),
       status: Value(status),
+      excludedJson: excludedJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(excludedJson),
     );
   }
 
@@ -3392,6 +3425,7 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
       ),
       focusReason: serializer.fromJson<String?>(json['focusReason']),
       status: serializer.fromJson<String>(json['status']),
+      excludedJson: serializer.fromJson<String?>(json['excludedJson']),
     );
   }
   @override
@@ -3417,6 +3451,7 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
       ),
       'focusReason': serializer.toJson<String?>(focusReason),
       'status': serializer.toJson<String>(status),
+      'excludedJson': serializer.toJson<String?>(excludedJson),
     };
   }
 
@@ -3438,6 +3473,7 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
     Value<String?> currentTeachingFocusId = const Value.absent(),
     Value<String?> focusReason = const Value.absent(),
     String? status,
+    Value<String?> excludedJson = const Value.absent(),
   }) => DiagnosisRow(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
@@ -3466,6 +3502,7 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
         : this.currentTeachingFocusId,
     focusReason: focusReason.present ? focusReason.value : this.focusReason,
     status: status ?? this.status,
+    excludedJson: excludedJson.present ? excludedJson.value : this.excludedJson,
   );
   DiagnosisRow copyWithCompanion(DiagnosisResultsCompanion data) {
     return DiagnosisRow(
@@ -3504,6 +3541,9 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
           ? data.focusReason.value
           : this.focusReason,
       status: data.status.present ? data.status.value : this.status,
+      excludedJson: data.excludedJson.present
+          ? data.excludedJson.value
+          : this.excludedJson,
     );
   }
 
@@ -3526,7 +3566,8 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
           ..write('createdAt: $createdAt, ')
           ..write('currentTeachingFocusId: $currentTeachingFocusId, ')
           ..write('focusReason: $focusReason, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('excludedJson: $excludedJson')
           ..write(')'))
         .toString();
   }
@@ -3550,6 +3591,7 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
     currentTeachingFocusId,
     focusReason,
     status,
+    excludedJson,
   );
   @override
   bool operator ==(Object other) =>
@@ -3571,7 +3613,8 @@ class DiagnosisRow extends DataClass implements Insertable<DiagnosisRow> {
           other.createdAt == this.createdAt &&
           other.currentTeachingFocusId == this.currentTeachingFocusId &&
           other.focusReason == this.focusReason &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.excludedJson == this.excludedJson);
 }
 
 class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
@@ -3592,6 +3635,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
   final Value<String?> currentTeachingFocusId;
   final Value<String?> focusReason;
   final Value<String> status;
+  final Value<String?> excludedJson;
   final Value<int> rowid;
   const DiagnosisResultsCompanion({
     this.id = const Value.absent(),
@@ -3611,6 +3655,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
     this.currentTeachingFocusId = const Value.absent(),
     this.focusReason = const Value.absent(),
     this.status = const Value.absent(),
+    this.excludedJson = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DiagnosisResultsCompanion.insert({
@@ -3631,6 +3676,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
     this.currentTeachingFocusId = const Value.absent(),
     this.focusReason = const Value.absent(),
     this.status = const Value.absent(),
+    this.excludedJson = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        sessionId = Value(sessionId),
@@ -3653,6 +3699,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
     Expression<String>? currentTeachingFocusId,
     Expression<String>? focusReason,
     Expression<String>? status,
+    Expression<String>? excludedJson,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3674,6 +3721,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
         'current_teaching_focus_id': currentTeachingFocusId,
       if (focusReason != null) 'focus_reason': focusReason,
       if (status != null) 'status': status,
+      if (excludedJson != null) 'excluded_json': excludedJson,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3696,6 +3744,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
     Value<String?>? currentTeachingFocusId,
     Value<String?>? focusReason,
     Value<String>? status,
+    Value<String?>? excludedJson,
     Value<int>? rowid,
   }) {
     return DiagnosisResultsCompanion(
@@ -3717,6 +3766,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
           currentTeachingFocusId ?? this.currentTeachingFocusId,
       focusReason: focusReason ?? this.focusReason,
       status: status ?? this.status,
+      excludedJson: excludedJson ?? this.excludedJson,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3777,6 +3827,9 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (excludedJson.present) {
+      map['excluded_json'] = Variable<String>(excludedJson.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3803,6 +3856,7 @@ class DiagnosisResultsCompanion extends UpdateCompanion<DiagnosisRow> {
           ..write('currentTeachingFocusId: $currentTeachingFocusId, ')
           ..write('focusReason: $focusReason, ')
           ..write('status: $status, ')
+          ..write('excludedJson: $excludedJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -24493,6 +24547,7 @@ typedef $$DiagnosisResultsTableCreateCompanionBuilder =
       Value<String?> currentTeachingFocusId,
       Value<String?> focusReason,
       Value<String> status,
+      Value<String?> excludedJson,
       Value<int> rowid,
     });
 typedef $$DiagnosisResultsTableUpdateCompanionBuilder =
@@ -24514,6 +24569,7 @@ typedef $$DiagnosisResultsTableUpdateCompanionBuilder =
       Value<String?> currentTeachingFocusId,
       Value<String?> focusReason,
       Value<String> status,
+      Value<String?> excludedJson,
       Value<int> rowid,
     });
 
@@ -24635,6 +24691,11 @@ class $$DiagnosisResultsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get excludedJson => $composableBuilder(
+    column: $table.excludedJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$SessionsTableFilterComposer get sessionId {
     final $$SessionsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -24748,6 +24809,11 @@ class $$DiagnosisResultsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get excludedJson => $composableBuilder(
+    column: $table.excludedJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SessionsTableOrderingComposer get sessionId {
     final $$SessionsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -24847,6 +24913,11 @@ class $$DiagnosisResultsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumn<String> get excludedJson => $composableBuilder(
+    column: $table.excludedJson,
+    builder: (column) => column,
+  );
+
   $$SessionsTableAnnotationComposer get sessionId {
     final $$SessionsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -24918,6 +24989,7 @@ class $$DiagnosisResultsTableTableManager
                 Value<String?> currentTeachingFocusId = const Value.absent(),
                 Value<String?> focusReason = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> excludedJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DiagnosisResultsCompanion(
                 id: id,
@@ -24937,6 +25009,7 @@ class $$DiagnosisResultsTableTableManager
                 currentTeachingFocusId: currentTeachingFocusId,
                 focusReason: focusReason,
                 status: status,
+                excludedJson: excludedJson,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -24958,6 +25031,7 @@ class $$DiagnosisResultsTableTableManager
                 Value<String?> currentTeachingFocusId = const Value.absent(),
                 Value<String?> focusReason = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> excludedJson = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DiagnosisResultsCompanion.insert(
                 id: id,
@@ -24977,6 +25051,7 @@ class $$DiagnosisResultsTableTableManager
                 currentTeachingFocusId: currentTeachingFocusId,
                 focusReason: focusReason,
                 status: status,
+                excludedJson: excludedJson,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

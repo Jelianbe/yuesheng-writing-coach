@@ -759,6 +759,9 @@ class DiagnosisFlowHandler {
       targetRefType: refType,
       targetRefId: refId,
       isTeachingRound: isTeachingRound,
+      // ADR-0012（v50）：轮次级排除记录透传落库（唯一映射行；
+      // ParsedDiagnosis.excluded 批 2 已落，此处只是抄进 DiagnosisInput）。
+      excluded: diagnosis.excluded,
     );
   }
 

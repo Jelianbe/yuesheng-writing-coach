@@ -27,7 +27,9 @@
 //            form_fact_count / form_structure）
 //   48 → 49（ADR-0011：messages 加断流标记列 truncated；同批把 onUpgrade
 //            守卫 46 → 49，修复 v47/v48 对 from>=46 的库静默跳过）
+//   49 → 50（ADR-0012：diagnosis_results 加 excluded_json 列——轮次级排除记录
+//            [{syndrome_id, reason?}] 落库，nullable 无默认；守卫 49 → 50）
 // ─────────────────────────────────────────────────────────────
 
 /// 当前 drift `schemaVersion`（= `AppDatabase.schemaVersion`）的测试侧镜像。
-const int kSchemaHead = 49;
+const int kSchemaHead = 50;

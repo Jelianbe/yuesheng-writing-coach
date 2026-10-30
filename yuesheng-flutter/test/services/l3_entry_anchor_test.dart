@@ -276,6 +276,46 @@ void _assertVolumeFloor(
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// P003 手册面文本牙（T-20261029-05 · 短链 FID 同形误伤收窄批 · R-027 舰长已批）
+//
+// 字节级锚点只证「P003 段变了/没变」，不证「变成了什么」：
+//   收窄被写回裸禁令、后果句被删、收紧侧被吃掉，len/fnv 同样会变 ⇒ 锚点拦不住方向。
+// 本牙打在 getSyndromeContent(['P003']) 切片上，钉住收窄后口径的关键句：
+//   牙1 收窄在位 · 牙2 后果句接豁免方向 · 牙3 收紧侧（R-009：放宽不得吃掉真缺陷）·
+//   牙4 :242 定义连带收窄 · 牙5 :251 示例理由对齐 · 牙6 裸禁令不得复活（J1 反向面）。
+// ★ 只加牙、不新增用例；牙面逐字量见 .ai/reports/2026-10-30-29-05-短链FID同形误伤-报批稿.md §6.1。
+// ─────────────────────────────────────────────────────────────
+void _p003ManualTeeth() {
+  final s = getSyndromeContent(['P003']);
+  const mustContain = [
+    '不含叙述者代述的他人内心', // 牙1：条件句已收窄（反向写回裸禁令 ⇒ 牙1+牙6 双红）
+    '推断归属人物、可错⇒不构成漂移', // 牙2：后果句接到豁免方向
+    '叙述者以断定口吻陈述超出感知者认知的事实⇒仍判漂移', // 牙3：收紧侧未被吃掉
+    '叙述者代述的他人内心活动', // 牙4：:242 L1 越界点定义连带收窄（J2 第二条）
+    '叙述者直接代述他人内心', // 牙5：:251 示例理由连带对齐（J2 第三条）
+  ];
+  const mustNotContain = [
+    '只要不包含他人内心、', // 牙6：裸禁令不得复活（J1 反向面）
+  ];
+  final missing = [
+    for (final t in mustContain)
+      if (!s.contains(t)) t,
+  ];
+  final revived = [
+    for (final t in mustNotContain)
+      if (s.contains(t)) t,
+  ];
+  if (missing.isNotEmpty || revived.isNotEmpty) {
+    fail(
+      '[l3-anchor] P003 手册面文本牙未通过：\n'
+      '  缺：${missing.isEmpty ? '∅' : missing.join(' / ')}\n'
+      '  裸口径复活：${revived.isEmpty ? '∅' : revived.join(' / ')}\n'
+      '  ★ 收窄被写回裸禁令 / 后果句被删 / 收紧侧被吃掉 / :242/:251 残留裸口径。',
+    );
+  }
+}
+
 void main() {
   test('L3 词条级锚点：syndrome / technique / training 逐条字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -311,6 +351,9 @@ void main() {
     expect(first, second, reason: 'L3 检索非确定性');
 
     final current = _buildCurrent();
+
+    // P003 手册面文本牙（收窄口径在位校验；重冻分支也先过牙 ⇒ 坏文本进不了基线）。
+    _p003ManualTeeth();
 
     if (updating) {
       // ── 基线非退化判据（T-20261024-15 · 重建分支专属）──────────────

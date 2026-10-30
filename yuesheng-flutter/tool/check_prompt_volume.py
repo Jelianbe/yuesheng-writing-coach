@@ -694,10 +694,15 @@ MSG_SEQ_SEGMENTS = os.path.join(
 #   9,397 → **9,600**（三例同 Δ **+203**）。来源 = P034 五条「不判」逐字追加到首轮
 #   判据块末尾（176 字符清单行 + 23 字符标题 + 4 字符分隔 = 203）。
 #   未改 header（「以下四条」仍指前四段整段判据）；P034 被用户关闭时不注入。
+# ★ 2026-10-30 第二十四次重贴实测值（`T-20261029-05` 短链 FID 同形误伤收窄批 ·
+#   R-027 舰长批）：9,600 → **9,687**（三例同 Δ **+87**，逐字吻合手册三行改字总量）。
+#   来源 = L3 手册 P003 段（syndrome_kb_content_manual_1.dart :221/:242/:251 原位改字）
+#   流入首轮判据块注入面。⚠️ 本批红因 = 门 2 msgseq 锚点抓到 8 处漂移才发现：
+#   钉表读的是快照、快照与钉表互相一致即绿，派生量型漂移对本脚本不可见（L-26）。
 BYPASS_REDLINE = {
-    'p1_yuesheng_diagnosis[1]': 9600,
-    'p2_yuesheng_diagnosis[1]': 9600,
-    'p2_yuesheng_diagnosis_fulltext[1]': 9600,
+    'p1_yuesheng_diagnosis[1]': 9687,
+    'p2_yuesheng_diagnosis[1]': 9687,
+    'p2_yuesheng_diagnosis_fulltext[1]': 9687,
 }
 
 

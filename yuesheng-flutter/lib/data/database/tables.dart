@@ -179,6 +179,14 @@ class DiagnosisResults extends Table {
       .withDefault(const Constant('confirmed'))
       .check(status.isIn(const ['confirmed', 'pending', 'replaced']))();
 
+  // v50（ADR-0012 · T-20261030-01）：轮次级排除记录 JSON 文本数组。
+  // 形状 [{syndrome_id, reason?}]（复用 ParsedExclusion.toJson，
+  // lib/types/teaching_types.dart:444-447）。nullable 无默认 ⇒ 存量行恒 NULL
+  // ⇒ 读侧解码为 const []（行为等同 v48 两列先例）。
+  // B4 硬边界：本列与 active_problems（含 confirmation_status='rejected' /
+  // evidence_confidence）三态同名不同义，绝不互写（.ai/adr/0012 §4）。
+  TextColumn get excludedJson => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 

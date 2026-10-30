@@ -74,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 49;
+  int get schemaVersion => 50;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -305,7 +305,9 @@ class AppDatabase extends _$AppDatabase {
       // ADR-0011（2026-10-29）：守卫 46 → 49。此前停在 46 ⇒ v47/v48 对 from>=46
       // 的库**整段跳过**（探针实测 user_version=48 但表与两列均缺失）。
       // v47/v48/v49 三块均幂等 + 只增不减，故一次性放行到 49 安全。
-      if (from >= 49) return;
+      // ADR-0012（2026-10-30）：守卫 49 → 50（v50 块对 from=49 存量库可达，
+      // 幂等 ALTER 加 diagnosis_results.excluded_json 列）。
+      if (from >= 50) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1385,6 +1387,30 @@ class AppDatabase extends _$AppDatabase {
         if (msgCols.isNotEmpty && !msgNames.contains('truncated')) {
           await customStatement(
             'ALTER TABLE messages ADD COLUMN truncated INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+      }
+
+      // v50（ADR-0012 · T-20261030-01）：diagnosis_results 加 excluded_json 列
+      // （轮次级排除记录 JSON 文本数组 [{syndrome_id, reason?}]）。
+      //
+      // nullable 无默认 ⇒ 存量行恒 NULL ⇒ 读侧解码为 const []（范式同 v48
+      // form_fact_count，不回头猜测历史轮次排除了什么）。
+      // B4 硬边界：本列与 active_problems（confirmation_status='rejected' /
+      // evidence_confidence）三态同名不同义，绝不互写。
+      if (from < 50) {
+        // ⚠️ 幂等保底（范式同 v42 :1219-1230 / v49 :1376-1390）：
+        //    ① 表存在性守卫——极老版本库若没有 diagnosis_results 表，直接
+        //       ALTER 会抛「no such table」，升级链路断裂；该表由后续建表
+        //       路径负责，本块跳过即可（行为等同 v1）。
+        //    ② 列存在性守卫——避免重复 ALTER 抛「duplicate column name」。
+        final drCols = await customSelect(
+          "SELECT name FROM pragma_table_info('diagnosis_results')",
+        ).get();
+        final drNames = drCols.map((r) => r.read<String>('name')).toSet();
+        if (drCols.isNotEmpty && !drNames.contains('excluded_json')) {
+          await customStatement(
+            'ALTER TABLE diagnosis_results ADD COLUMN excluded_json TEXT',
           );
         }
       }
