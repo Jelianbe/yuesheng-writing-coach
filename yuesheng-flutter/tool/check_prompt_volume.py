@@ -316,6 +316,18 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   方向 = **新增字符**（协议示例加 `excluded` 数组行 + 伪问题段说明排除项用法，
   模型据此可输出"考虑过但未报出"的相近症候；零新增症候编号、零教学内容改写）。
 
+· 2026-10-30 第二十次（T-20261024-06 merge 链 excluded 传播 · 形态甲，
+  DECISIONS §4-378 舰长批 R-027）：**CONST_REDLINE kChunkSystemPrompt +245**
+  （6100→6345，fnv 576903d657a60464→6cc995ee715d6ed）。
+  方向 = **分片输出协议加 excluded 字段说明段**（_kChunkOutputFormat notes 对象增
+  `"excluded"` 行 + excluded 字段说明段，分片侧「判了否」结构化留痕，对位 uncertain
+  ADR-C153）。值来源 = UPDATE_SNAPSHOTS=true flutter test 写模式运行时打印。
+  对照组三键实测零变化：chunkExceptionGuideBlock 3082/24ab03bbc9115ff8 ·
+  kDiagnosisProtocolSuffix 1038/b4ae395807abdc6 · chunkWindowMetaSample 32/5510c8ce2f3b4552。
+  merge 输出要求（_kMergeOutputRequirement 807→902，+95）**无锚点看守**（存量缺口，
+  走 E1 实测登记，不新增红线键）。E2 估算回填：分片模板估 +60~80 实测 +245、
+  merge 要求估 +30~50 实测 +95（说明段写长了，登记不扩范围）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -905,7 +917,13 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    ★ 内容牙 牙1–牙5 落在同文件 `_p003FidBranchCheck`（不新增用例）。行为验收
 #    挂 `T-20261024-19`，本批**无 key 未验**（E2），不得自宣「误伤下降」。
 CONST_REDLINE = {
-    'kChunkSystemPrompt': (6100, '576903d657a60464'),
+    # ★ 2026-10-30 第十八次重钉：6100→6345（+245），fnv 576903d657a60464→6cc995ee715d6ed。
+    # 方向 = T-20261024-06（形态甲）：_kChunkOutputFormat notes 对象增 excluded 字段行
+    # + excluded 字段说明段（分片侧「判了否」结构化留痕，对位 uncertain）。值来源 =
+    # UPDATE_SNAPSHOTS=true flutter test test/services/prompt_const_anchor_test.dart
+    # 写模式运行时打印（len=6345 fnv=6cc995ee715d6ed）。对照组 chunkExceptionGuideBlock /
+    # kDiagnosisProtocolSuffix / chunkWindowMetaSample 三项逐键实测零变化。
+    'kChunkSystemPrompt': (6345, '6cc995ee715d6ed'),
     'chunkExceptionGuideBlock': (3082, '24ab03bbc9115ff8'),
     # ★ 2026-10-30 第十七次重钉：977→1038（+61），fnv 609c7814d5bcc86d→b4ae395807abdc6。
     # 方向 = T-20261024-05 批2：suffix 模板 syndromes 数组后增 excluded 行（行内续接

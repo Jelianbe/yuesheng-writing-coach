@@ -73,12 +73,25 @@ class ChunkNote {
   /// 缺了本字段，后者就没有输入源。
   final bool uncertain;
 
+  /// ★ 分片阶段**判了否**这条近邻（T-20261024-06 形态甲，2026-10-30）。
+  ///
+  /// 与 [uncertain] 是**同一类留痕的两端**——[uncertain] 标「判不了」（依赖
+  /// 片段外信息），本字段标「在本片可自证范围内，这条近邻查过、判定不成立」。
+  /// 缺了它，分片侧模型逐块诊断时的「排除判断」不落盘，merge 长期视图拿不到
+  /// 「本轮还考虑过什么」——与 uncertain 不带则丢失去同族（ADR-C153 §3）。
+  ///
+  /// 语义 ≠ confirmationStatus='rejected'（报过、弱证据退回）——本字段是
+  /// **从未报出、判了否**的轮次级记录，不得写入 activeProblems（设计批 §4.2 B4）。
+  /// 形状复用轮次级 [ParsedExclusion]（{syndromeId, reason}，不输出 name）。
+  final List<ParsedExclusion> excluded;
+
   const ChunkNote({
     required this.syndromeId,
     required this.description,
     required this.evidence,
     required this.severity,
     this.uncertain = false,
+    this.excluded = const [],
   });
 }
 
@@ -477,12 +490,15 @@ const String _kChunkOutputFormat = '''请输出JSON格式的笔记，不要包�
       "description": "简要描述观察到的问题，在原文中的位置",
       "evidence": ["具体例句1", "具体例句2"],
       "severity": "L1",
-      "uncertain": false
+      "uncertain": false,
+      "excluded": [{"syndrome_id": "P0XX", "reason": "本片查过但判定不成立的一句话理由"}]
     }
   ]
 }
 
-uncertain 字段说明：按上面「片段窗口边界」一节，该条判据的成立与否依赖片段外信息时置 true，并在 description 里简述缺哪类信息（缺前文铺垫 / 缺后文解释 / 缺片段外人物关系 / 缺全文节奏比例 / 缺角色长期状态）。缺省 false。''';
+uncertain 字段说明：按上面「片段窗口边界」一节，该条判据的成立与否依赖片段外信息时置 true，并在 description 里简述缺哪类信息（缺前文铺垫 / 缺后文解释 / 缺片段外人物关系 / 缺全文节奏比例 / 缺角色长期状态）。缺省 false。
+
+excluded 字段说明：本片诊断时考虑过、但在本片证据下判定不成立的相近症候（同类型、共用判定要点的近邻），逐条列你**查过却不报**的，每条一句话理由（≤40字）；没有则输出空数组 []。它记录的是「判了否」，与 uncertain「判不了」是两回事——缺片段外信息而判不了的仍标 uncertain，不得写进 excluded。''';
 
 /// FIX-1（2026-09-23）：分块合并输出约束——自然语言正文 + 顶层字段格式。
 /// 根因：旧 prompt 结尾只要求协议标记，模型可省略自然语言正文且 suggested_actions
@@ -497,6 +513,7 @@ const String _kMergeOutputRequirement = '''输出结构说明（下面两部分�
 - confidence (number): 0-1 置信度——★ §1-20：模型自报 confidence 已废除（禁止重新引入）；
   本字段为协议兼容保留（活性审查 D1 / §4-215 裁7②），可省略；解析侧缺省 0.0
 - root_cause_analysis / next_focus / feedback_summary: 可选
+- excluded (object[]): 可选——透传各分片笔记里的排除记录（每条 {"syndrome_id","reason"}），按分片原样保留、不重判、不跨片二选一；没有则省略
 - overall (object): 整体判定（结构完整度诊断，非文学打分、不给分数），仅当已诊断章节覆盖度足够时输出：
   - verdict (string): 三档之一「结构完整」「基本完整」「存在结构性缺口」
   - reasons (string[]): 1-3 条核心理由，须引用上面的结构画像或已报症候证据
@@ -709,6 +726,11 @@ List<String> _buildChunkNotesBlocks(
               // ★ 必须带进 merge（ADR-C153 §3）：不带则 merge 读到的仍是一堆
               // 肯定结论，分片侧的「我判不了」就在这一步丢失 ⇒ 又一个声明≠生效。
               'uncertain': n.uncertain,
+              // ★ 必须带进 merge（T-20261024-06 形态甲，对位 uncertain ADR-C153 §3）：
+              // 不带则分片侧的「判了否」在这一步丢失 ⇒ 长期视图拿不到「本轮还考虑过什么」。
+              'excluded': n.excluded
+                  .map((e) => {'syndrome_id': e.syndromeId, 'reason': e.reason})
+                  .toList(),
             },
           )
           .toList();
@@ -1308,6 +1330,25 @@ Future<String> _runMergePhase({
 /// 而失效方向恰好是「把判不了的当成判得了」——正是要防的那一侧。
 ///
 /// 只认肯定语义（true / "true" / "True" / "1" / 1）；其余一律 false（缺省）。
+/// 分片 excluded 列表安全读（T-20261024-06 形态甲）。循批 2 轮次级 `_parseExcludedList`
+/// 同型三件套：null / 非 List ⇒ const []；元素类型守卫（非 Map 丢弃）；
+/// syndrome_id / reason 非 String 按空串。不抛异常（本函数在 `_parseChunkNotes` 的
+/// try 内，抛异常会连带丢掉整块笔记——与 `_parseUncertainFlag` 同纪律）。
+List<ParsedExclusion> _parseChunkExcludedList(Object? raw) {
+  if (raw is! List) return const <ParsedExclusion>[];
+  return raw
+      .whereType<Map<String, dynamic>>()
+      .map(
+        (e) => ParsedExclusion(
+          syndromeId: e['syndrome_id'] is String
+              ? e['syndrome_id'] as String
+              : '',
+          reason: e['reason'] is String ? e['reason'] as String : '',
+        ),
+      )
+      .toList();
+}
+
 /// 不抛异常：本函数在 `_parseChunkNotes` 的 try 内，抛异常会连带丢掉整块笔记。
 bool _parseUncertainFlag(Object? raw) {
   if (raw is bool) return raw;
@@ -1335,6 +1376,7 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
                   const [],
               severity: n['severity'] as String? ?? 'L1',
               uncertain: _parseUncertainFlag(n['uncertain']),
+              excluded: _parseChunkExcludedList(n['excluded']),
             ),
           )
           // L3 白名单：severity 越界（非 L1/L2/L3）→ 剔除该条并留痕。
