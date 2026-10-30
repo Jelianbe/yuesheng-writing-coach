@@ -265,12 +265,17 @@ Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
             '用例键齐备，但内容体积（单调代理）为 0'
             '（所有 `len` / `length` 均为 0、且无叶字符串）';
       } else {
-        final hollows = findHollowLenFnvFamilies(cases);
+        // 本快照没有长度/指纹节点（T-20261030-08 缺口 B）⇒ len+fnv 网恒空；
+        // 塌陷形态是「块齐、ID 仍在，但语义字段全空」，由结构化用例网接住。
+        final hollows = <String>[
+          ...findHollowLenFnvFamilies(cases),
+          ...findHollowStructuredCases(cases),
+        ];
         if (hollows.isNotEmpty) {
-          kind = '族内全零长度但 fnv 非空';
+          kind = '族内全零长度 / 用例语义字段全空';
           why =
-              '${hollows.length} 个 len+fnv 节点族族内 len 全 0、fnv 非空'
-              '（空壳基线，与「体积为 0」同罪）：${hollows.take(3).join(' / ')}';
+              '${hollows.length} 处空壳（长度族全 0 但指纹非空，或用例除'
+              ' id/file 外无任何非空字符串）：${hollows.take(3).join(' / ')}';
         } else {
           return cases;
         }
@@ -286,7 +291,8 @@ Map<String, dynamic>? _loadBaselineCases(File file, {required bool exists}) {
       '  本次形态：$kind\n'
       '  判定依据：$why\n'
       '  ★ 可解析但不可用 = ① 空 `cases` ② 顶层只有 `meta` / `version`'
-      ' ③ **键齐但所有长度均为 0** ④ **族内 len 全 0 但 fnv 非空**。\n'
+      ' ③ **键齐但所有长度均为 0** ④ **族内长度全 0 但指纹非空**'
+      ' ⑤ **用例除 id/file 外无任何非空字符串**。\n'
       '    前三者让下限退化为 0、④ 让下限来自非内容量 ⇒ F3 对任何内容恒绿（fail-open），与「文件损坏」同罪。\n'
       '  两条出口：\n'
       '    ① 恢复基线：git checkout -- $kSnapshotPath\n'
@@ -484,4 +490,64 @@ void main() {
     print('[snapshot] 比对通过：47 例结构化决策与基线一致 ✓');
     expect(diffs, isEmpty);
   });
+
+  // ── 空壳网有牙（T-20261030-08 缺口 B）────────────────────────────────
+  // 本快照没有长度/指纹节点 ⇒ len+fnv 网恒空；塌陷形态是「块齐、ID 仍在，
+  // 语义字段全空」。本用例只在**内存里**变异（不落盘、不碰快照）。
+  test('结构化用例空壳网有牙（内存变异）', () {
+    final snapshot =
+        jsonDecode(File(kSnapshotPath).readAsStringSync())
+            as Map<String, dynamic>;
+    final cases = snapshot['cases'] as Map<String, dynamic>;
+    expect(findHollowStructuredCases(cases), isEmpty, reason: '真实基线每例都应有语义内容');
+    expect(
+      findHollowLenFnvFamilies(cases),
+      isEmpty,
+      reason: '本快照没有 len+fnv 形节点，旧网本就恒空',
+    );
+
+    final hollow = jsonDecode(jsonEncode(cases)) as Map<String, dynamic>;
+    for (final v in hollow.values) {
+      _wipeSemantic(v);
+    }
+    final hits = findHollowStructuredCases(hollow);
+    expect(hits.length, hollow.length, reason: '语义字段全空后每一例都必须判红');
+
+    final oneAlive = jsonDecode(jsonEncode(hollow)) as Map<String, dynamic>;
+    (oneAlive['A1'] as Map<String, dynamic>)['teacher'] = {
+      'teachingDecision': 'train',
+      'hasTask': true,
+      'taskTargetSyndromeId': 'P001',
+      'taskType': 'rewrite',
+    };
+    expect(
+      findHollowStructuredCases(oneAlive).length,
+      hollow.length - 1,
+      reason: '只恢复一例 ⇒ 只该少一例红灯',
+    );
+  });
+}
+
+/// 内存变异：把字符串清空、把字符串数组清空（结构与键保留）。
+void _wipeSemantic(Object? node) {
+  if (node is Map) {
+    for (final k in node.keys.toList()) {
+      final v = node[k];
+      if (v is String && !kStructuralCaseKeys.contains(k)) {
+        node[k] = '';
+      } else {
+        _wipeSemantic(v);
+      }
+    }
+  } else if (node is List) {
+    for (var i = 0; i < node.length; i++) {
+      final v = node[i];
+      if (v is String) {
+        node[i] = '';
+      } else {
+        _wipeSemantic(v);
+      }
+    }
+    node.clear();
+  }
 }

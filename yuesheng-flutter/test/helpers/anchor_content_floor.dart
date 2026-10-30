@@ -134,13 +134,15 @@ void _walkVolume(Object? node, _VolumeAcc acc, String? key) {
 // | `message_sequence_anchor.json` | 44 | ✅ 有牙 |
 // | `injection_segments_anchor.json` | 10 | ✅ 有牙 |
 // | `prompt_const_anchor.json` | 4 | ✅ 有牙 |
-// | `student_profile_anchor.json` | **0**（是 3 个 `{hash, length}`） | ⚪ 恒不红 —— 已登记另卡裁定（T-20261030-05 完成标记）|
-// | `teaching_loop_snapshot.json` | **0**（47 例结构化决策树，无长度/指纹形节点） | ⚪ 恒不红 —— **本行是本次审查新增登记**（原卡只写了 student_profile）|
+// | `student_profile_anchor.json` | **0**（是 3 个 `{hash, length}`） | ✅ 有牙（第二形态网 `findHollowLengthHashFamilies`，2026-10-30 补）|
+// | `teaching_loop_snapshot.json` | **0**（47 例结构化决策树，无长度/指纹形节点） | ✅ 有牙（第三形态网 `findHollowStructuredCases`，2026-10-30 补）|
 //
-// ⇒ 「5 读取方」是**接线数**，不是**看守面**。前一份快照由 `length`/`hash` 形空壳
-// 塌陷时，本网看不见；那两份的 F3 由 F1（每例条数）+ F2（叶值非空）兜，**不是**由本网兜。
+// ⇒ 「5 读取方」是**接线数**，不是**看守面**。2026-10-30 补牙后**三个形态各有一张网**：
+//   `{len,fnv}` / `{length,hash}` / 结构化用例（语义字段全空）。每张网只认自己的形态 ——
+//   不做「任何整数都算内容」的泛化，否则时间戳 / 自增 ID 会把空壳撑大。
 // 判据出处：`.ai/reports/2026-10-30-审查-F3空壳族负向验证.dart` 的 V7 组读数
-// （正臂 R1 = 7 份真实快照全不红；反臂 V7 = 把 len 全置 0 后逐份应有红）。
+// （正臂 R1 = 7 份真实快照全不红；反臂 V7 = 把 len 全置 0 后逐份应有红），
+// 以及 `T-20261030-08` 缺口 B 的两条新负向臂（内存变异，不落盘）。
 //
 // ## 合法例外（防误红，与 python 侧逐字对齐）
 //
@@ -206,4 +208,119 @@ void _collectShapedFamilies(
     }
     if (shaped.length >= 2) out.add(_ShapedFamily(path, shaped));
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 空壳网第二形态：`{length:int, hash:String}`（T-20261030-08 缺口 B）
+//
+// `student_profile_anchor.json` 的 3 个用例是 `{hash, length}` 形，不是
+// `{len, fnv}` ⇒ 原有的 `findHollowLenFnvFamilies` 对它**恒返回空**（接线但无牙）。
+// 塌陷形态与前者同罪：`length` 全 0、`hash`（定长指纹）仍非空 ⇒
+// 体积里只剩指纹与 role 之类定长串 ⇒ F3 的 50% 下限由非内容量撑出来 ⇒ 恒绿。
+//
+// 合法例外与 len+fnv 族一致：族需 ≥2 个形孩子；单节点长度 0 是合法空串形态。
+// ─────────────────────────────────────────────────────────────
+
+/// 扫描 `root` 子树，返回 `{length,hash}` 形节点中**全零长度**的违规族。
+List<String> findHollowLengthHashFamilies(Object? root) {
+  final families = <_ShapedFamily>[];
+  _collectLengthHashFamilies(root, 'root', families);
+  final violators = <String>[];
+  for (final f in families) {
+    final lens = f.members.map((m) => m['length'] as int).toList();
+    final hashes = f.members.map((m) => m['hash'] as String).toList();
+    if (lens.every((l) => l == 0) && hashes.any((h) => h.isNotEmpty)) {
+      violators.add('${f.path}（${f.members.length} 节点族）');
+    }
+  }
+  return violators;
+}
+
+void _collectLengthHashFamilies(
+  Object? node,
+  String path,
+  List<_ShapedFamily> out,
+) {
+  if (node is Map) {
+    final shaped = <Map<String, dynamic>>[];
+    final others = <MapEntry<Object?, Object?>>[];
+    for (final e in node.entries) {
+      final v = e.value;
+      if (v is Map && v['length'] is int && v['hash'] is String) {
+        shaped.add(Map<String, dynamic>.from(v));
+      } else {
+        others.add(e);
+      }
+    }
+    if (shaped.length >= 2) out.add(_ShapedFamily(path, shaped));
+    for (final e in others) {
+      _collectLengthHashFamilies(e.value, '$path.${e.key}', out);
+    }
+  } else if (node is List) {
+    final shaped = <Map<String, dynamic>>[];
+    for (var i = 0; i < node.length; i++) {
+      final v = node[i];
+      if (v is Map && v['length'] is int && v['hash'] is String) {
+        shaped.add(Map<String, dynamic>.from(v));
+      } else {
+        _collectLengthHashFamilies(v, '$path[$i]', out);
+      }
+    }
+    if (shaped.length >= 2) out.add(_ShapedFamily(path, shaped));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 空壳网第三形态：结构化决策树（T-20261030-08 缺口 B）
+//
+// `teaching_loop_snapshot.json` 的 47 例里**没有任何长度/指纹节点** ⇒ 前两张网
+// 对它都恒返回空；而它自身只有 F1（结构块齐）与 F2（ID 叶非空）：
+// 「块齐、ID 仍在，但每条语义字段全空」的塌陷基线能同时躲过 F1/F2，
+// 体积又因 `id` / `file` 两列恒非空而不为 0 ⇒ F3 下限同样被非内容量撑住。
+//
+// 判据：对**每个**用例，除结构键（`id` / `file` / `meta`）外必须至少有一个
+// **非空字符串**（含字符串数组里的元素）。一个用例的语义字段全空 = 该例对
+// 判据面零贡献，等于基线里没有这一例。
+//
+// 为什么把 `id` / `file` 排除：它们是 fixture 名的复写，塌陷时照样仍在；
+// 计入就成了「用文件名证明内容还在」——与本文件开头「定长附属字段不计」同一口径。
+// 布尔与数字**不计**（塌陷时 `false` / `0` 仍在，计数等于给空壳背书）。
+// ─────────────────────────────────────────────────────────────
+
+/// `cases` 里语义字段全空的用例路径（空 = 全部用例都有内容）。
+List<String> findHollowStructuredCases(Map<String, dynamic> cases) {
+  final violators = <String>[];
+  for (final e in cases.entries) {
+    final v = e.value;
+    if (v is! Map) {
+      violators.add('cases.${e.key}（不是对象）');
+      continue;
+    }
+    if (!_hasSemanticContent(v)) violators.add('cases.${e.key}');
+  }
+  return violators;
+}
+
+/// 结构键：恒非空、与内容无关，不计「语义内容」。
+const Set<String> kStructuralCaseKeys = {'id', 'file', 'meta'};
+
+bool _hasSemanticContent(Object? node) {
+  if (node is Map) {
+    for (final e in node.entries) {
+      final k = e.key;
+      if (k is String && kStructuralCaseKeys.contains(k) && e.value is String) {
+        continue;
+      }
+      if (_hasSemanticContent(e.value)) return true;
+    }
+    return false;
+  }
+  if (node is List) {
+    for (final v in node) {
+      if (_hasSemanticContent(v)) return true;
+    }
+    return false;
+  }
+  if (node is String) return node.trim().isNotEmpty;
+  return false; // bool / num / null：结构量，不计内容
 }
