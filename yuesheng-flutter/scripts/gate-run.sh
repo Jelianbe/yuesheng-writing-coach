@@ -145,6 +145,33 @@ if DIRTY_STATUS="$(git status --porcelain -uall 2>/dev/null)"; then
   fi
 fi
 
+# ---- P6：判据脚本的内容指纹（T-20261025-11 件3 · 2026-10-31）----
+# 【回答什么】`head` + `dirty_count` 仍回答不了「这一轮的判据脚本是哪一份」——
+#   同一个路径可以在 20 分钟内被改 4 次（已实证），同一个 head 的两轮可能跑的
+#   不是同一份脚本。
+# 【为什么在**起跑前**算】要回答「这一轮**实际启动**的是哪一份内容」。跑完再算，
+#   若中途有人改了脚本，记下的是**改后**的字节，而执行的是改前 —— 正是本件要防的错。
+# 【算法】唯一表达式 `b.replace(b'\r\n', b'\n')`（PRACTICES A3b 第 22 条，逐字照抄）。
+#   工作区是 CRLF、索引是 LF ⇒ 归一后两侧同串，跨 checkout 可复核。
+#   **不得**用 `tr -d '\r'` 之类「删所有 CR」的等价变体（对含孤立 CR 的文件会分叉）。
+# 【读不到写 `null`】不写 `0`：0 是合法摘要值，「没算」与「算出来是零」必须可区分。
+#   向后兼容：旧行没有这三个键 ⇒ JSON 消费方读到 `null`/`absent`，不会崩。
+# 【覆盖】判据真源 `gate.sh` + 测试执行器 `_run_flutter_test.sh` + **记录器自身**
+#   `gate-run.sh`（否则「记录装置自己变了」仍在盲区）。
+# 【不影响结论】写失败一律吞掉（与 dirty_count 同），记录装置永不让门禁变红或变绿。
+_PY_SHA=""
+if command -v python3 >/dev/null 2>&1; then _PY_SHA=python3
+elif command -v python >/dev/null 2>&1; then _PY_SHA=python
+fi
+_sha256_lf_json() {
+  if [ -z "$_PY_SHA" ] || [ ! -f "$1" ]; then printf 'null'; return; fi
+  _h="$("$_PY_SHA" -c 'import sys,hashlib;b=open(sys.argv[1],"rb").read();print(hashlib.sha256(b.replace(b"\r\n",b"\n")).hexdigest())' "$1" 2>/dev/null)" || _h=""
+  if [ -n "$_h" ]; then printf '"%s"' "$_h"; else printf 'null'; fi
+}
+SCRIPT_SHA_LF_JSON="$(_sha256_lf_json "$ROOT/scripts/_run_flutter_test.sh")"
+GATE_SHA_LF_JSON="$(_sha256_lf_json "$ROOT/scripts/gate.sh")"
+RUNNER_SHA_LF_JSON="$(_sha256_lf_json "$ROOT/scripts/gate-run.sh")"
+
 "${CMD[@]}"
 RC=$?
 T1=$(date +%s)
@@ -155,8 +182,10 @@ HITS_AFTER=$HITS_BEFORE
 HITS_ADDED=$((HITS_AFTER - HITS_BEFORE))
 
 HEAD="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-printf '{"ts":"%s","profile":"%s","rc":%d,"dur_s":%d,"head":"%s","hits_added":%d,"dirty_count":%d}\n' \
+
+printf '{"ts":"%s","profile":"%s","rc":%d,"dur_s":%d,"head":"%s","hits_added":%d,"dirty_count":%d,"script_sha256_lf":%s,"gate_sha256_lf":%s,"runner_sha256_lf":%s}\n' \
   "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$PROFILE" "$RC" "$DUR" "$HEAD" "$HITS_ADDED" "$DIRTY_COUNT" \
+  "$SCRIPT_SHA_LF_JSON" "$GATE_SHA_LF_JSON" "$RUNNER_SHA_LF_JSON" \
   >> "$RUNS_LOG" 2>/dev/null || true
 
 echo "--------------------------------------------------"

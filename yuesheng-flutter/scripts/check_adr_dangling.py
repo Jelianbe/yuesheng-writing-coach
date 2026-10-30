@@ -68,6 +68,35 @@ def _git(*args: str) -> str | None:
     return r.stdout.strip() if r.returncode == 0 else None
 
 
+def _git_at(cwd: str, *args: str) -> str | None:
+    try:
+        r = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
+                           text=True, timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def tracked_paths() -> set[str]:
+    """受跟踪文件的 **REPO_ROOT 相对路径**（`.ai` 是独立子仓 ⇒ 单独取再补前缀）。
+
+    T-20261025-15 方案 2 的数据源：扫描面不缩小（悬空检出不变），
+    但读数必须拆 `tracked / untracked` 两段，见 `§4-388`。
+    """
+    out: set[str] = set()
+    out.update((_git("ls-files") or "").splitlines())
+    ai_root = os.path.join(REPO_ROOT, ".ai")
+    out.update(".ai/" + p for p in (_git_at(ai_root, "ls-files") or "").splitlines())
+    return out
+
+
+def split_counts(refs: dict[str, set[str]], tracked: set[str]) -> tuple[int, int]:
+    """(tracked 文件对, untracked 文件对) —— 与 `total` 同为去重的「编号 × 文件」对。"""
+    tr = sum(1 for files in refs.values() for p in files if p in tracked)
+    total = sum(len(v) for v in refs.values())
+    return tr, total - tr
+
+
 def existing_adrs() -> set[str]:
     if not os.path.isdir(ADR_DIR):
         return set()
@@ -131,6 +160,8 @@ def main() -> int:
     refs = scan_refs()
     exist = existing_adrs()
     idx = index_adrs()
+    tracked = tracked_paths()
+    n_tracked, n_untracked = split_counts(refs, tracked)
 
     # G1 空扫 fail-closed
     if not refs:
@@ -174,7 +205,8 @@ def main() -> int:
             print(f"[EXEMPT] {num} 悬空但已登记豁免：{EXEMPT[num]}")
             print(f"         引用处（{len(dangling[num])} 个文件）已如实登记，非笔误。")
             continue
-        sample = sorted(dangling[num])[:6]
+        sample = [f"{p}（{'tracked' if p in tracked else 'untracked'}）"
+                  for p in sorted(dangling[num])[:6]]
         more = f" …等 {len(dangling[num])} 个" if len(dangling[num]) > 6 else ""
         fails.append(
             f"ADR-{num} 被引{len(dangling[num])} 处但 `.ai/adr/` 下无实体文件"
@@ -196,8 +228,9 @@ def main() -> int:
               f"（照实登记，禁止沉默）")
         return 1
 
-    total = sum(len(v) for v in refs.values())
-    print(f"[PASS] ADR 引用守卫：{len(refs)} 个编号 / {total} 处引用，"
+    total = n_tracked + n_untracked
+    print(f"[PASS] ADR 引用守卫：{len(refs)} 个编号 / {total} 处引用"
+          f"（tracked {n_tracked} / untracked {n_untracked}），"
           f"无未豁免的悬空引用（实体 {len(exist)} 个：{sorted(exist)}）。")
     return 0
 
