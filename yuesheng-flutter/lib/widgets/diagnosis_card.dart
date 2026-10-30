@@ -173,6 +173,12 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   /// W-49：本轮反馈总结（轮次级，一段话）。null / 空串 ⇒ 不渲染。
   final String? feedbackSummary;
 
+  /// T-20261024-05 批2：本轮"考虑过但未报出"的相近症候（轮次级）。
+  ///
+  /// 空列表 ⇒ 不渲染「本轮还考虑过」区（不造空区）。渲染时 syndrome_id
+  /// 反查注册表取名，未知 ID 回退原串；reason 非空才现。
+  final List<ParsedExclusion> excluded;
+
   const DiagnosisCard({
     super.key,
     required this.syndromeCount,
@@ -188,6 +194,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     this.focusCandidates,
     this.rootCauseAnalysis,
     this.feedbackSummary,
+    this.excluded = const [],
   });
 
   /// 便利构造：从 Message.content 的 JSON 解析 payload 渲染
@@ -216,6 +223,8 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         // W-49：轮次级两字段（旧消息 JSON 无这两个 key ⇒ 为 null ⇒ 不渲染）。
         rootCauseAnalysis: payload.rootCauseAnalysis,
         feedbackSummary: payload.feedbackSummary,
+        // T-20261024-05 批2：旧消息 JSON 无 excluded key ⇒ 默认 const [] ⇒ 不渲染。
+        excluded: payload.excluded,
       );
     } catch (_) {
       // 兜底：空诊断卡
@@ -416,6 +425,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       children: [
         _buildHeader(),
         _buildTagRow(),
+        // T-20261024-05 批2：「本轮还考虑过」——症候列表之后、整体判定之前。
+        _buildExcludedSection(),
         // P1-7：常驻弱提示——条目≠总评（prompt 里只写给模型听，UI 反而渲染成
         // 「严重度评估」让学员当成整篇总评）。
         _buildNotOverallHint(),
@@ -423,41 +434,48 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         // 置 P1-7 提示**上方**：该提示的「总评」指逐条症候清单，本区是
         // 显式的结构画像结论，语义分区明示后不矛盾（报批确认点 4）。
         _buildOverallSection(),
-        SizeTransition(
-          sizeFactor: CurvedAnimation(
-            parent: _expandAnim,
-            curve: AppMotion.curveFade,
-          ),
-          alignment: Alignment.topCenter,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              0,
-              AppSpacing.lg,
-              AppSpacing.lg,
-            ),
-            child: Column(
-              children: [
-                Divider(height: 1, color: context.palette.border),
-                const SizedBox(height: 12),
-                _buildReasoningSection(),
-                const SizedBox(height: 12),
-                _buildLogicChainHint(),
-                _buildSyndromesDetail(),
-                // W-22 G1/G3：候选焦点区（位置口径见 _focusCandidatesSlots）。
-                ..._focusCandidatesSlots(),
-                if (widget.suggestedActions.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _buildRewriteBlock(),
-                ],
-                // W-49：本轮小结（轮次级收束话语）。置于展开区末尾、
-                // 读者层弱提示之前 —— 先看完「诊断了什么 / 为什么」，再读总结。
-                ..._buildTailSlots(),
-              ],
-            ),
-          ),
-        ),
+        _buildExpandedSection(),
       ],
+    );
+  }
+
+  /// 展开区（R-019 从 [_buildCardBody] 拆出：SizeTransition 动画块内聚，
+  /// 含分隔线 / 推理区 / 逻辑链提示 / 症候详情 / 候选焦点 / 改写块 / 尾部小结）。
+  /// 纯搬运，行为不变。
+  Widget _buildExpandedSection() {
+    return SizeTransition(
+      sizeFactor: CurvedAnimation(
+        parent: _expandAnim,
+        curve: AppMotion.curveFade,
+      ),
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.lg,
+        ),
+        child: Column(
+          children: [
+            Divider(height: 1, color: context.palette.border),
+            const SizedBox(height: 12),
+            _buildReasoningSection(),
+            const SizedBox(height: 12),
+            _buildLogicChainHint(),
+            _buildSyndromesDetail(),
+            // W-22 G1/G3：候选焦点区（位置口径见 _focusCandidatesSlots）。
+            ..._focusCandidatesSlots(),
+            if (widget.suggestedActions.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildRewriteBlock(),
+            ],
+            // W-49：本轮小结（轮次级收束话语）。置于展开区末尾、
+            // 读者层弱提示之前 —— 先看完「诊断了什么 / 为什么」，再读总结。
+            ..._buildTailSlots(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -979,6 +997,48 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               height: 1.4,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  /// T-20261024-05 批2：「本轮还考虑过」——模型考虑过但未报出的相近症候。
+  ///
+  /// 视觉做弱（灰字小字，同 [_buildLogicChainHint]），不与报出的症候抢注意力。
+  /// syndrome_id 反查注册表取名，未知 ID 回退原串（数据诚实）；reason 非空才现。
+  /// 空列表 ⇒ 不渲染（不造空区）。
+  Widget _buildExcludedSection() {
+    final excluded = widget.excluded;
+    if (excluded.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '本轮还考虑过',
+            style: context.text.caption.copyWith(
+              color: context.palette.textTertiary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          ...excluded.map((e) {
+            final name = syndromeNameOf(e.syndromeId) ?? e.syndromeId;
+            final reason = e.reason.trim();
+            return Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                reason.isEmpty ? '· $name' : '· $name：$reason',
+                style: context.text.caption.copyWith(
+                  color: context.palette.textTertiary,
+                  fontSize: 11,
+                  height: 1.4,
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );

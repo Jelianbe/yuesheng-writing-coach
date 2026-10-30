@@ -235,6 +235,7 @@ class ChatService {
       '"intervention_value": "high|medium|low（与 severity 独立，按干预价值三判据评定，缺省 low）", '
       '"form_fact_count": "可选：整数（仅量形式症候，如 P002）", '
       '"form_structure": "可选：expository|interruption|narrative（仅量形式症候）"}], '
+      '"excluded": [{"syndrome_id": "P017", "reason": "排除理由（可选）"}], '
       '"suggested_actions": ["A009"], "confidence": 0.8, '
       '"root_cause_analysis": "根因（可选）", "next_focus": "下步焦点（可选）", '
       '"teaching_plan": {"current_teaching_focus_id": "P001", "focus_reason": "可选：为什么选它（一句话）", "next_step": "可选：识别出症候时的训练目标，如把情绪词换成具体动作（可观测：下一轮情绪词减少、细节增多）"}, '

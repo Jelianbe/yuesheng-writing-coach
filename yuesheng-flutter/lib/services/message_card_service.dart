@@ -74,6 +74,12 @@ class DiagnosisResultCardPayload {
   /// null / 空串 ⇒ 不渲染。
   final String? feedbackSummary;
 
+  /// T-20261024-05 批2：轮次级排除列表（模型"考虑过但未报出"的相近症候）。
+  ///
+  /// 由 [ParsedDiagnosis.excluded] 透传（只传递、不加工）。空列表 ⇒ 卡片
+  /// 不渲染「本轮还考虑过」区（数据诚实，不造空区）。
+  final List<ParsedExclusion> excluded;
+
   const DiagnosisResultCardPayload({
     required this.syndromeCount,
     required this.syndromes,
@@ -85,6 +91,7 @@ class DiagnosisResultCardPayload {
     this.focusCandidates,
     this.rootCauseAnalysis,
     this.feedbackSummary,
+    this.excluded = const [],
   });
 
   factory DiagnosisResultCardPayload.fromJson(Map<String, dynamic> json) {
@@ -132,6 +139,16 @@ class DiagnosisResultCardPayload {
         json['feedbackSummary'],
         json['feedback_summary'],
       ),
+      // T-20261024-05 批2：轮次级排除列表透传（与 syndromes 同款宽容 Map 写法）。
+      excluded:
+          (json['excluded'] as List<dynamic>?)
+              ?.map(
+                (e) => ParsedExclusion.fromJson(
+                  Map<String, dynamic>.from(e as Map),
+                ),
+              )
+              .toList() ??
+          const [],
     );
   }
 
@@ -155,6 +172,9 @@ class DiagnosisResultCardPayload {
       'root_cause_analysis': rootCauseAnalysis,
     if (feedbackSummary != null && feedbackSummary!.isNotEmpty)
       'feedbackSummary': feedbackSummary,
+    // T-20261024-05 批2：空列表不落 key（与 focusCandidates 同款往返稳定约定）。
+    if (excluded.isNotEmpty)
+      'excluded': excluded.map((e) => e.toJson()).toList(),
   };
 }
 

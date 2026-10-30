@@ -1480,6 +1480,8 @@ class DiagnosisFlowHandler {
           // W-49：轮次级两字段透传（产出/落库/导出早已通，只是没进卡片）。
           rootCauseAnalysis: diagnosis.rootCauseAnalysis,
           feedbackSummary: diagnosis.feedbackSummary,
+          // T-20261024-05 批2：轮次级排除列表透传（只传递不加工）。
+          excluded: diagnosis.excluded,
         ),
       );
     } catch (e, s) {

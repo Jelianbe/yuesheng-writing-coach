@@ -292,6 +292,30 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   即不成立 + 有标记/本窗全知仍困惑则仍判漂移」，把手册 `:221`/`:223` 三原理投影
   进分块链，消除两链路判据分叉；零新增症候、零题材词、行数不动）。
 
+· 2026-10-30 第十九次（T-20261024-05 批2 excluded 字段全链 · 已批定稿，
+  报批稿 `.ai/reports/2026-10-29-报批稿-T20261024-05-批2-excluded全链.md`，
+  归类**新增类**——模型多输出一个可选轮次级 `excluded` 数组）：
+  **REDLINE diagnosis 两组各 +107**（57597→57704 / 55814→55921）、
+  **force 组 66329 不动**（force 场景不加载 L2 诊断索引）。
+  **CONST_REDLINE kDiagnosisProtocolSuffix +61**（977→1038，
+  fnv 609c7814d5bcc86d→b4ae395807abdc6）。
+  **USER_FACE_REDLINE 两键各 +61**（fulltext[3] 1583→1644，
+  fnv 100f00a384794e7d→4c74e83aee3f265c；nofulltext[3] 1521→1582，
+  fnv 49d7de888531ca6d→6c29c09e0ac47f8c）。
+  **段表 protocolSuffix 两段各 +61**（977→1038，同 fnv；其余段 studentBody 8 /
+  fullTextBlock 62·0 / directExplain 349 / fadingBlock 185 全 +0）。
+  逐键对账：index 模板（_kIndexFooter）= excluded 行（2 空格缩进 +63）+
+  伪问题段末句批 B 改写（净 +44）= syndrome-diagnosis-index skill 指纹
+  6213→6320（+107），与 diagnosis 两组 Δ +107 逐位一致；suffix 行（行内续接
+  无前导缩进）+61 与 kDiagnosisProtocolSuffix 实测 +61 逐位一致。
+  对照组 7 组实测 +0（git diff skill_prompt_anchor.json 只动 diagnosis 两组 +
+  syndrome-diagnosis-index 三键，证明只进诊断场景）。
+  ⚠️ 报批稿④原写「重冻该 case」单数、⑥判据5「仅 fulltext 变」——实测
+     fulltext 与 nofulltext **两 case 均变**（suffix 注入诊断请求 user 消息，
+     两 case 都带），以实测为准，单数措辞判误已登记施工报告。
+  方向 = **新增字符**（协议示例加 `excluded` 数组行 + 伪问题段说明排除项用法，
+  模型据此可输出"考虑过但未报出"的相近症候；零新增症候编号、零教学内容改写）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -434,8 +458,14 @@ REDLINE = {
     # 55857→55814；force 组 66329 不动 —— force 场景不加载 L2 诊断索引）。
     # 方向 = B 包「P022 退出单章短链面」（R-027 舰长 2026-10-28「都批」）：注入点
     # 剔除 `| P022 |` 索引行（42 字符 + 行间 \n = 43），库常量保留行。
-    'diagnosis_yuesheng': 57597,
-    'diagnosis_p1_yuesheng': 55814,
+    # ★ 2026-10-30 第十七次重贴实测值（diagnosis 两组各 +107：57597→57704 /
+    # 55814→55921；force 组 66329 不动 —— force 场景不加载 L2 诊断索引）。
+    # 方向 = T-20261024-05 批2「excluded 字段全链」：① index JSON 示例 syndromes
+    # 数组后增 excluded 行（2 空格缩进，+63）+ 伪问题段末句批 B 改写（净 +44）=
+    # syndrome-diagnosis-index skill 指纹 6213→6320（+107）；逐键对账见头注第十七次。
+    # 对照组 7 组实测 +0（git diff 证明只动 diagnosis 两组 + syndrome-diagnosis-index）。
+    'diagnosis_yuesheng': 57704,
+    'diagnosis_p1_yuesheng': 55921,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
@@ -877,7 +907,11 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 CONST_REDLINE = {
     'kChunkSystemPrompt': (6100, '576903d657a60464'),
     'chunkExceptionGuideBlock': (3082, '24ab03bbc9115ff8'),
-    'kDiagnosisProtocolSuffix': (977, '609c7814d5bcc86d'),
+    # ★ 2026-10-30 第十七次重钉：977→1038（+61），fnv 609c7814d5bcc86d→b4ae395807abdc6。
+    # 方向 = T-20261024-05 批2：suffix 模板 syndromes 数组后增 excluded 行（行内续接
+    # 形态，无前导缩进）。值来源 = UPDATE_SNAPSHOTS=true flutter test
+    # test/services/prompt_const_anchor_test.dart 写模式运行时打印（len=1038）。
+    'kDiagnosisProtocolSuffix': (1038, 'b4ae395807abdc6'),
 }
 
 # 下限自检：读数低于此值 ⇒ 疑量到空串 / 别的对象（不是「省了字」）。
@@ -984,8 +1018,11 @@ def _check_consts(out):
 
 # 键 = `快照名[消息下标]`；值 = (实测 len 上限, 冻结时的 fnv)。贴实测、余量 +0。
 USER_FACE_REDLINE = {
-    'p2_yuesheng_diagnosis_fulltext[3]': (1583, '100f00a384794e7d'),
-    'p2_yuesheng_diagnosis_nofulltext[3]': (1521, '49d7de888531ca6d'),
+    # ★ 2026-10-30 第十七次重钉：fulltext[3] 1583→1644（+61）fnv 100f00a384794e7d→4c74e83aee3f265c；
+    #   nofulltext[3] 1521→1582（+61）fnv 49d7de888531ca6d→6c29c09e0ac47f8c。
+    #   方向 = T-20261024-05 批2 suffix 模板增 excluded 行（+61）；两 case 均注入 suffix ⇒ 两键同增。
+    'p2_yuesheng_diagnosis_fulltext[3]': (1644, '4c74e83aee3f265c'),
+    'p2_yuesheng_diagnosis_nofulltext[3]': (1582, '6c29c09e0ac47f8c'),
 }
 
 # 下限自检：注入后的 user 消息必须**至少**装得下协议后缀本体，否则说明
@@ -1012,14 +1049,14 @@ USER_FACE_SEGMENTS = {
     'p2_yuesheng_diagnosis_fulltext': {
         'studentBody': (8, '2b56b05e131f4426'),
         'fullTextBlock': (62, 'f1d182190e275c1'),
-        'protocolSuffix': (977, '609c7814d5bcc86d'),
+        'protocolSuffix': (1038, 'b4ae395807abdc6'),
         'directExplain': (349, '5d479de78f67ea3c'),
         'fadingBlock': (185, '10523563b3b11eaf'),
     },
     'p2_yuesheng_diagnosis_nofulltext': {
         'studentBody': (8, '2b56b05e131f4426'),
         'fullTextBlock': (0, '4bf29ce484222325'),
-        'protocolSuffix': (977, '609c7814d5bcc86d'),
+        'protocolSuffix': (1038, 'b4ae395807abdc6'),
         'directExplain': (349, '5d479de78f67ea3c'),
         'fadingBlock': (185, '10523563b3b11eaf'),
     },

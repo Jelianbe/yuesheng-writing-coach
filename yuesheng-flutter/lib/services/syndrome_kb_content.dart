@@ -106,6 +106,7 @@ $kFormFieldCriteria
       "form_structure": "可选：expository | interruption | narrative（仅量形式症候）"
     }
   ],
+  "excluded": [{"syndrome_id": "P017", "reason": "排除理由（可选）"}],
   "suggested_actions": ["A0XX"],
   // ★ §1-20：模型自报 confidence 已废除（禁止重新引入）；本字段为协议兼容保留
   //   （活性审查 D1 / §4-215 裁7②）。解析侧已降级可选（缺省 0.0）——模型可省略。
@@ -124,7 +125,7 @@ $kFormFieldCriteria
 ## 排除的"伪问题"
 
 如果文本中有"看起来像问题但实际是合理写法"的地方，在自然说明部分提及，
-简要说明为什么不是问题。JSON 中不需要包含排除项。''';
+简要说明为什么不是问题。JSON 中的排除项见 excluded 字段：列出你考虑过但排除的相近症候及一句话理由；自然说明部分仍面向作者简述。''';
 
 /// ★★ ADR-0003 阶段一 A3 批**独立成块**（2026-10-05，舰长批准后自检追加）。
 ///

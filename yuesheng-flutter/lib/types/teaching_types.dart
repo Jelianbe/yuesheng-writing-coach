@@ -392,6 +392,13 @@ class ParsedDiagnosis {
   /// 其余字段路径，与 styleProfile 同型。
   final OverallDiagnosis? overall;
 
+  /// T-20261024-05 批2：轮次级排除列表（模型本轮"考虑过但未报出"的相近症候）。
+  ///
+  /// 轮次级（与 syndromes 同级，**非症候级**——故不加到 [Syndrome]）。
+  /// 可选，缺省 const []：无 excluded 键时解析结果与改造前完全一致（零行为变更）。
+  /// 空列表 = 本轮无排除项，渲染区不造空区（数据诚实）。
+  final List<ParsedExclusion> excluded;
+
   const ParsedDiagnosis({
     required this.syndromes,
     required this.suggestedActions,
@@ -406,7 +413,38 @@ class ParsedDiagnosis {
     this.focusReason,
     this.styleProfile,
     this.overall,
+    this.excluded = const [],
   });
+}
+
+/// T-20261024-05 批2：轮次级排除项——模型本轮考虑过但未报出的相近症候及一句话理由。
+///
+/// 轮次级，与 syndromes 同级；解析安全读取同 reader_impact 先例
+/// （[Syndrome.fromJson]：非 String 按缺失，空串 = 无理由）。候选集 C 是
+/// validator 侧注册表现算的机器口径，不入协议/模型/库（设计批 §3.3）。
+class ParsedExclusion {
+  /// 被排除的症候 ID（P0xx）。空串 = 模型给了非字符串 ID，按缺失。
+  final String syndromeId;
+
+  /// 一句话排除理由（可选）。空串 = 无理由，渲染时不展示理由行。
+  final String reason;
+
+  const ParsedExclusion({required this.syndromeId, this.reason = ''});
+
+  factory ParsedExclusion.fromJson(Map<String, dynamic> json) {
+    return ParsedExclusion(
+      syndromeId: json['syndrome_id'] is String
+          ? json['syndrome_id'] as String
+          : '',
+      reason: json['reason'] is String ? json['reason'] as String : '',
+    );
+  }
+
+  // W-15-B 约定：reason 空串不落 key（往返稳定，同 reader_impact 口径）。
+  Map<String, dynamic> toJson() => {
+    'syndrome_id': syndromeId,
+    if (reason.isNotEmpty) 'reason': reason,
+  };
 }
 
 /// 活跃症候视图（focus-resolver 用）

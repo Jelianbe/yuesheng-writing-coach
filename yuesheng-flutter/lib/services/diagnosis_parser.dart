@@ -421,13 +421,11 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   final syndromeErr = _validateSyndromes(obj['syndromes'], syndromes, notes);
   if (syndromeErr != null) return _DiagnosisValidation.reject(syndromeErr);
 
-  // suggested_actions 必填，string[]
-  final suggestedActionsRaw = obj['suggested_actions'];
-  if (suggestedActionsRaw is! List ||
-      suggestedActionsRaw.any((a) => a is! String)) {
+  // suggested_actions 必填，string[]（R-019 拆出 _validateStringList）
+  final suggestedActions = _validateStringList(obj['suggested_actions']);
+  if (suggestedActions == null) {
     return const _DiagnosisValidation.reject('suggested_actions_invalid');
   }
-  final suggestedActions = suggestedActionsRaw.cast<String>();
 
   // ★ §1-20 / 活性审查 D1（§4-215 裁7②）：confidence 降级可选，校验拆出（R-019）。
   final confidenceResult = _validateConfidence(obj['confidence']);
@@ -441,9 +439,10 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   final plan = _parseTeachingPlan(obj, syndromes, notes);
   final styleProfile = _parseStyleProfile(obj);
   final overall = _parseOverall(obj, notes); // ADR-0006：H-3 判据在 helper 内落地
+  // T-20261024-05 批2：轮次级排除列表（R-019 拆出 _parseExcludedList，同型三件套）
+  final excluded = _parseExcludedList(obj);
   // 兼容性策略（§4-260④ 2026-10-25）：next_focus 优先，null 回退 teaching_plan.next_step —— 与 validator 链（diagnosis_validator.dart:458-460）口径一致；生产链本就落 validator
   final finalNextFocus = texts.nextFocus ?? plan.teachingPlanNextStep;
-
   return _DiagnosisValidation.ok(
     _buildParsedDiagnosis(
       syndromes,
@@ -455,6 +454,7 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
       plan,
       styleProfile,
       overall,
+      excluded,
     ),
     notes,
   );
@@ -472,6 +472,33 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   return (err: null, value: raw.toDouble());
 }
 
+/// T-20261024-05 批2：轮次级排除列表安全读（R-019 从 `_validateDiagnosis` 拆出）。
+///
+/// 与 reader_impact / teaching_plan 同型三件套：null / 非 List 按缺失 ⇒ const []；
+/// 元素类型守卫（非 Map 丢弃）；syndrome_id / reason 非 String 按空串。纯读无副作用。
+List<ParsedExclusion> _parseExcludedList(Map<String, dynamic> obj) {
+  final raw = obj['excluded'];
+  if (raw is! List) return const <ParsedExclusion>[];
+  return raw
+      .whereType<Map<String, dynamic>>()
+      .map(
+        (e) => ParsedExclusion(
+          syndromeId: e['syndrome_id'] is String
+              ? e['syndrome_id'] as String
+              : '',
+          reason: e['reason'] is String ? e['reason'] as String : '',
+        ),
+      )
+      .toList();
+}
+
+/// 必填 string[] 校验（R-019 从 `_validateDiagnosis` 拆出）。非 List / 含非 String
+/// 元素 ⇒ 返回 null（调用方按 reject 处理）；通过 ⇒ 强转 List\<String\>。
+List<String>? _validateStringList(dynamic raw) {
+  if (raw is! List || raw.any((a) => a is! String)) return null;
+  return raw.cast<String>();
+}
+
 /// 组装 ParsedDiagnosis（R-019 拆出，纯装配无逻辑）。
 ParsedDiagnosis _buildParsedDiagnosis(
   List<Syndrome> syndromes,
@@ -483,6 +510,7 @@ ParsedDiagnosis _buildParsedDiagnosis(
   _TeachingPlanFields plan,
   WritingStyleProfile? styleProfile,
   OverallDiagnosis? overall,
+  List<ParsedExclusion> excluded,
 ) {
   return ParsedDiagnosis(
     syndromes: syndromes,
@@ -498,6 +526,7 @@ ParsedDiagnosis _buildParsedDiagnosis(
     focusReason: plan.focusReason,
     styleProfile: styleProfile,
     overall: overall,
+    excluded: excluded,
   );
 }
 

@@ -114,6 +114,66 @@ List<String> validateSyndromeMutexWarnings(List<String> syndromeIds) {
   return warnings;
 }
 
+/// T-20261024-05 批2：excluded 字段三项观测级校验（warning 级，循
+/// [validateSyndromeMutexWarnings] 先例，不阻断落库、不影响 valid 判定）。
+///
+/// 对本轮 excluded 列表逐项观测：① ID 格式（锚定 P0xx，复用公开真源
+/// [kAnchoredSyndromeIdRe]——非 parser 私有别名 `_kSyndromeIdRe`）；
+/// ② ID 不在轮次候选集 C 内；③ ID 与本轮 syndromes 重复。
+/// 候选集 C 为推导值（注册表现算），不入协议/模型/库，纯观测用。
+List<String> validateExcludedWarnings(
+  Map<String, dynamic> raw,
+  List<String> parsedSyndromeIds,
+) {
+  final notes = <String>[];
+  final excludedRaw = raw['excluded'];
+  if (excludedRaw is! List) return notes; // 缺失/非列表：无可观测项
+  final syndromeIdSet = parsedSyndromeIds.toSet();
+  final candidateSet = _buildExcludedCandidateSet(syndromeIdSet);
+  for (final item in excludedRaw) {
+    if (item is! Map) continue;
+    final id = item['syndrome_id'];
+    if (id is! String) continue; // 非字符串：parser 侧已按空串缺失，这里不观测
+    // ① ID 格式（复用公开真源锚定正则，非 parser 私有别名）
+    if (!kAnchoredSyndromeIdRe.hasMatch(id)) {
+      notes.add('excluded.id=$id 格式不符 P0xx 锚定（观测）');
+    }
+    // ③ 与 syndromes 重复
+    if (syndromeIdSet.contains(id)) {
+      notes.add('excluded.id=$id 已在本轮 syndromes 内（无需重复排除）');
+      continue;
+    }
+    // ② 不在候选集 C
+    if (!candidateSet.contains(id)) {
+      notes.add('excluded.id=$id 不在本轮候选集内（观测）');
+    }
+  }
+  return notes;
+}
+
+/// T-20261024-05 批2：轮次候选集 C（纯推导，不入协议/模型/库）。
+///
+/// C = ⋃（与 syndromes 命中症候 type 同组 且 techniques 交集非空的注册表症候）
+///   ∪（与 syndromes 命中互斥对的注册表症候）。
+Set<String> _buildExcludedCandidateSet(Set<String> syndromeIdSet) {
+  final c = <String>{};
+  for (final rec in kSyndromeRegistry) {
+    if (!syndromeIdSet.contains(rec.id)) continue;
+    final recTech = rec.techniques.toSet();
+    for (final other in kSyndromeRegistry) {
+      if (other.type == rec.type &&
+          other.techniques.toSet().intersection(recTech).isNotEmpty) {
+        c.add(other.id);
+      }
+    }
+    for (final pair in _kMutexSyndromePairs) {
+      if (pair[0] == rec.id) c.add(pair[1]);
+      if (pair[1] == rec.id) c.add(pair[0]);
+    }
+  }
+  return c;
+}
+
 /// 真拦截类型集合：V-03 + V-04
 const Set<String> _kBlockingFixTypes = {'V-03', 'V-04'};
 
@@ -217,10 +277,13 @@ DiagnosisValidationResult validateDiagnosisSchema(dynamic raw) {
   }
   // 批次4（4.1 O6）：互斥症候 warning 级提示（不阻断，观察误伤率）
   final mutexWarnings = validateSyndromeMutexWarnings(parsedSyndromeIds);
+  // T-20261024-05 批2：excluded 三项观测级 note（同 warning 通道，不影响
+  // valid/error 判定——与互斥 warning 同型，只观测不拦截）。
+  final excludedWarnings = validateExcludedWarnings(raw, parsedSyndromeIds);
   return DiagnosisValidationResult(
     valid: true,
     errors: const [],
-    warnings: mutexWarnings,
+    warnings: [...mutexWarnings, ...excludedWarnings],
     data: raw,
   );
 }
@@ -431,16 +494,8 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
 
   final teaching = _resolveTeachingPlan(data);
 
-  // ADR-C64：以下可选字段 schema **不校验类型**（validateDiagnosisSchema 的
-  // 校验在 :154 就结束了，只覆盖 syndromes / suggested_actions / confidence）。
-  // 这些字段原本是硬 cast，模型把 next_focus 输出成数字即抛 TypeError；
-  // 而抛错点在 validateDiagnosisOutput 返回之前（:268 早于 :273），
-  // 会**连带丢掉 validateNaturalLanguage 已算好的清洗结果**——
-  // 后果是 V-03 编号泄漏拦截失效、用户直接看到 P010 这类裸编号
-  // （ADR-C64 §1.2 实测）。
-  //
-  // 改安全读取：非 String 一律按缺失处理。漂移本身不静默消失，
-  // 由 _collectOptionalFieldDrifts 产出 warning。
+  // ADR-C64：可选字段 schema 不校验类型、原硬 cast 改安全读取（非 String 按缺失）；
+  // 漂移由 _collectOptionalFieldDrifts 产 warning。详 _readOptionalRawFields doc。
   final raw = _readOptionalRawFields(data, teaching.plan);
 
   // N3-a（ADR-C65）：与 parser 侧同款校验——prompt 三处明写「必须从本轮
@@ -472,6 +527,9 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
     focusReason: raw.focusReasonRaw is String ? raw.focusReasonRaw : null,
     styleProfile: _parseStyleProfile(data),
     overall: _parseOverall(data),
+    // T-20261024-05 批2：轮次级排除列表安全读（生产链由本装配覆盖 parser 结果，
+    // 故 excluded 必须在此同型读取；无键 ⇒ const []，零行为变更）。详 _parseExcluded doc。
+    excluded: _parseExcluded(data),
   );
 }
 
@@ -536,6 +594,24 @@ List<Syndrome> _parseSyndromes(Map<String, dynamic> data) {
     final m = s as Map<String, dynamic>;
     return Syndrome.fromJson(m);
   }).toList();
+}
+
+/// T-20261024-05 批2：excluded 轮次级列表安全读（与 parser 链同型三件套：
+/// null/非 List 按缺失 ⇒ const []；类型守卫；空串按缺失）。
+List<ParsedExclusion> _parseExcluded(Map<String, dynamic> data) {
+  final raw = data['excluded'];
+  if (raw is! List) return const <ParsedExclusion>[];
+  return raw
+      .whereType<Map<String, dynamic>>()
+      .map(
+        (e) => ParsedExclusion(
+          syndromeId: e['syndrome_id'] is String
+              ? e['syndrome_id'] as String
+              : '',
+          reason: e['reason'] is String ? e['reason'] as String : '',
+        ),
+      )
+      .toList();
 }
 
 /// teaching_plan.next_step 安全读取（R-019 拆出：_mapToParsedDiagnosis）。
