@@ -1,6 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
+  "fileLimit": 300,
   "fileCount": 511,
   "violations": [
     {
@@ -48,9 +49,551 @@
     {
       "file": "lib/services/progressive_diagnosis.dart",
       "func": "_chunkParagraphs",
-      "start": 262,
-      "end": 312,
+      "start": 275,
+      "end": 325,
       "lines": 51
+    }
+  ],
+  "fileViolations": [
+    {
+      "file": "lib/config/app_palette.dart",
+      "lines": 591
+    },
+    {
+      "file": "lib/config/shared_constants.dart",
+      "lines": 507
+    },
+    {
+      "file": "lib/data/database/database.dart",
+      "lines": 1544
+    },
+    {
+      "file": "lib/data/database/tables.dart",
+      "lines": 1224
+    },
+    {
+      "file": "lib/data/repositories/app_state_repository.dart",
+      "lines": 1067
+    },
+    {
+      "file": "lib/data/repositories/chapter_repository.dart",
+      "lines": 510
+    },
+    {
+      "file": "lib/data/repositories/character_fact_repository.dart",
+      "lines": 468
+    },
+    {
+      "file": "lib/data/repositories/diagnosis_repository.dart",
+      "lines": 1024
+    },
+    {
+      "file": "lib/data/repositories/edit_diff_event_repository.dart",
+      "lines": 357
+    },
+    {
+      "file": "lib/data/repositories/reference_repository.dart",
+      "lines": 640
+    },
+    {
+      "file": "lib/data/repositories/session_repository.dart",
+      "lines": 613
+    },
+    {
+      "file": "lib/data/repositories/student_model_repository.dart",
+      "lines": 419
+    },
+    {
+      "file": "lib/data/repositories/world_fact_repository.dart",
+      "lines": 301
+    },
+    {
+      "file": "lib/features/app_settings/api_config_page.dart",
+      "lines": 966
+    },
+    {
+      "file": "lib/features/app_settings/coach_selector_card.dart",
+      "lines": 1352
+    },
+    {
+      "file": "lib/features/app_settings/editor_settings_sheet.dart",
+      "lines": 828
+    },
+    {
+      "file": "lib/features/app_settings/free_tier_guide_page.dart",
+      "lines": 497
+    },
+    {
+      "file": "lib/features/app_settings/project_settings_page.dart",
+      "lines": 616
+    },
+    {
+      "file": "lib/features/app_settings/settings_page.dart",
+      "lines": 1209
+    },
+    {
+      "file": "lib/features/character/character_detail_page.dart",
+      "lines": 692
+    },
+    {
+      "file": "lib/features/character/character_detail_sections.dart",
+      "lines": 364
+    },
+    {
+      "file": "lib/features/character/character_dialogs.dart",
+      "lines": 604
+    },
+    {
+      "file": "lib/features/character/character_list_view.dart",
+      "lines": 553
+    },
+    {
+      "file": "lib/features/chat/chat_diagnosis_controller.dart",
+      "lines": 366
+    },
+    {
+      "file": "lib/features/chat/chat_header.dart",
+      "lines": 658
+    },
+    {
+      "file": "lib/features/chat/chat_input.dart",
+      "lines": 419
+    },
+    {
+      "file": "lib/features/chat/chat_page.dart",
+      "lines": 564
+    },
+    {
+      "file": "lib/features/chat/chat_page_body.dart",
+      "lines": 379
+    },
+    {
+      "file": "lib/features/chat/chat_reference_controller.dart",
+      "lines": 301
+    },
+    {
+      "file": "lib/features/chat/chat_teaching_controller.dart",
+      "lines": 320
+    },
+    {
+      "file": "lib/features/chat/message_list.dart",
+      "lines": 773
+    },
+    {
+      "file": "lib/features/chat/partial_agreement_card.dart",
+      "lines": 385
+    },
+    {
+      "file": "lib/features/chat/practice_launcher.dart",
+      "lines": 325
+    },
+    {
+      "file": "lib/features/chat/reference_bar.dart",
+      "lines": 719
+    },
+    {
+      "file": "lib/features/chat/reference_picker.dart",
+      "lines": 729
+    },
+    {
+      "file": "lib/features/chat/save_to_file_sheet.dart",
+      "lines": 321
+    },
+    {
+      "file": "lib/features/chat/session_drawer.dart",
+      "lines": 547
+    },
+    {
+      "file": "lib/features/chat/task_panel.dart",
+      "lines": 311
+    },
+    {
+      "file": "lib/features/chat/work_import_sheet.dart",
+      "lines": 346
+    },
+    {
+      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
+      "lines": 384
+    },
+    {
+      "file": "lib/features/growth/diagnostic_reference_page.dart",
+      "lines": 309
+    },
+    {
+      "file": "lib/features/growth/growth_diagnosis_prefs_card.dart",
+      "lines": 342
+    },
+    {
+      "file": "lib/features/growth/growth_page.dart",
+      "lines": 791
+    },
+    {
+      "file": "lib/features/growth/observation_audit_card.dart",
+      "lines": 336
+    },
+    {
+      "file": "lib/features/growth/training_pass_rate_card.dart",
+      "lines": 302
+    },
+    {
+      "file": "lib/features/growth/writing_curve_chart.dart",
+      "lines": 378
+    },
+    {
+      "file": "lib/features/manuscript/file_section.dart",
+      "lines": 340
+    },
+    {
+      "file": "lib/features/manuscript/manuscript_growth_tab.dart",
+      "lines": 368
+    },
+    {
+      "file": "lib/features/onboarding/onboarding_flow.dart",
+      "lines": 312
+    },
+    {
+      "file": "lib/features/world/world_dialogs.dart",
+      "lines": 341
+    },
+    {
+      "file": "lib/features/world/world_fact_detail_page.dart",
+      "lines": 501
+    },
+    {
+      "file": "lib/features/world/world_fact_list_view.dart",
+      "lines": 594
+    },
+    {
+      "file": "lib/features/writing/chapter_tree_drawer.dart",
+      "lines": 909
+    },
+    {
+      "file": "lib/features/writing/search_replace_sheet.dart",
+      "lines": 681
+    },
+    {
+      "file": "lib/features/writing/version_time_machine_sheet.dart",
+      "lines": 530
+    },
+    {
+      "file": "lib/features/writing/writing_coach_panel.dart",
+      "lines": 353
+    },
+    {
+      "file": "lib/features/writing/writing_coach_panel_diagnosis_runner.dart",
+      "lines": 323
+    },
+    {
+      "file": "lib/features/writing/writing_coach_panel_message_list.dart",
+      "lines": 327
+    },
+    {
+      "file": "lib/features/writing/writing_editor_view.dart",
+      "lines": 389
+    },
+    {
+      "file": "lib/features/writing/writing_menu_sheet.dart",
+      "lines": 339
+    },
+    {
+      "file": "lib/features/writing/writing_page.dart",
+      "lines": 385
+    },
+    {
+      "file": "lib/features/writing/writing_page_scaffold.dart",
+      "lines": 362
+    },
+    {
+      "file": "lib/features/writing/blocked_text/block_editable_view.dart",
+      "lines": 419
+    },
+    {
+      "file": "lib/providers/chapter_providers.dart",
+      "lines": 351
+    },
+    {
+      "file": "lib/providers/session_providers.dart",
+      "lines": 404
+    },
+    {
+      "file": "lib/providers/writing_providers.dart",
+      "lines": 779
+    },
+    {
+      "file": "lib/router/app_router.dart",
+      "lines": 435
+    },
+    {
+      "file": "lib/services/chat_context_builder.dart",
+      "lines": 1046
+    },
+    {
+      "file": "lib/services/chat_service.dart",
+      "lines": 1102
+    },
+    {
+      "file": "lib/services/database_backup_service.dart",
+      "lines": 384
+    },
+    {
+      "file": "lib/services/diagnosis_committer.dart",
+      "lines": 1349
+    },
+    {
+      "file": "lib/services/diagnosis_flow_handler.dart",
+      "lines": 1786
+    },
+    {
+      "file": "lib/services/diagnosis_injection_service.dart",
+      "lines": 559
+    },
+    {
+      "file": "lib/services/diagnosis_integration_service.dart",
+      "lines": 548
+    },
+    {
+      "file": "lib/services/diagnosis_parser.dart",
+      "lines": 725
+    },
+    {
+      "file": "lib/services/diagnosis_service.dart",
+      "lines": 400
+    },
+    {
+      "file": "lib/services/diagnosis_validator.dart",
+      "lines": 776
+    },
+    {
+      "file": "lib/services/editor_validator.dart",
+      "lines": 599
+    },
+    {
+      "file": "lib/services/evaluation_service.dart",
+      "lines": 671
+    },
+    {
+      "file": "lib/services/fact_stale_service.dart",
+      "lines": 474
+    },
+    {
+      "file": "lib/services/file_parser.dart",
+      "lines": 444
+    },
+    {
+      "file": "lib/services/focus_resolver.dart",
+      "lines": 543
+    },
+    {
+      "file": "lib/services/growth_service.dart",
+      "lines": 561
+    },
+    {
+      "file": "lib/services/intent_classifier.dart",
+      "lines": 423
+    },
+    {
+      "file": "lib/services/llm_client.dart",
+      "lines": 1293
+    },
+    {
+      "file": "lib/services/mention_parser.dart",
+      "lines": 398
+    },
+    {
+      "file": "lib/services/message_assembly_service.dart",
+      "lines": 543
+    },
+    {
+      "file": "lib/services/message_card_service.dart",
+      "lines": 1039
+    },
+    {
+      "file": "lib/services/message_injector.dart",
+      "lines": 2532
+    },
+    {
+      "file": "lib/services/phase_mapper_resolver.dart",
+      "lines": 318
+    },
+    {
+      "file": "lib/services/progressive_diagnosis.dart",
+      "lines": 1568
+    },
+    {
+      "file": "lib/services/progress_service.dart",
+      "lines": 341
+    },
+    {
+      "file": "lib/services/prompt_assembly_service.dart",
+      "lines": 433
+    },
+    {
+      "file": "lib/services/setting_library_service.dart",
+      "lines": 321
+    },
+    {
+      "file": "lib/services/skills_l1_core_p1.dart",
+      "lines": 304
+    },
+    {
+      "file": "lib/services/skills_l1_core_p2.dart",
+      "lines": 333
+    },
+    {
+      "file": "lib/services/skills_l1_core_p3.dart",
+      "lines": 345
+    },
+    {
+      "file": "lib/services/skill_dispatcher.dart",
+      "lines": 507
+    },
+    {
+      "file": "lib/services/story_structure_profile.dart",
+      "lines": 313
+    },
+    {
+      "file": "lib/services/student_profile.dart",
+      "lines": 506
+    },
+    {
+      "file": "lib/services/student_profile_compute.dart",
+      "lines": 312
+    },
+    {
+      "file": "lib/services/student_profile_format.dart",
+      "lines": 375
+    },
+    {
+      "file": "lib/services/style_fingerprint.dart",
+      "lines": 412
+    },
+    {
+      "file": "lib/services/syndrome_kb_content.dart",
+      "lines": 314
+    },
+    {
+      "file": "lib/services/syndrome_kb_content_manual_1.dart",
+      "lines": 324
+    },
+    {
+      "file": "lib/services/syndrome_kb_content_manual_2.dart",
+      "lines": 321
+    },
+    {
+      "file": "lib/services/syndrome_kb_content_manual_6.dart",
+      "lines": 631
+    },
+    {
+      "file": "lib/services/syndrome_learner_notes.dart",
+      "lines": 342
+    },
+    {
+      "file": "lib/services/syndrome_registry.dart",
+      "lines": 988
+    },
+    {
+      "file": "lib/services/teacher_validator.dart",
+      "lines": 579
+    },
+    {
+      "file": "lib/services/technique_kb_content_lib_3.dart",
+      "lines": 308
+    },
+    {
+      "file": "lib/services/training_evaluator.dart",
+      "lines": 610
+    },
+    {
+      "file": "lib/services/training_few_shot_library.dart",
+      "lines": 700
+    },
+    {
+      "file": "lib/services/training_input_builder.dart",
+      "lines": 613
+    },
+    {
+      "file": "lib/services/training_kb_content_4.dart",
+      "lines": 388
+    },
+    {
+      "file": "lib/services/p0_verify/anchor.dart",
+      "lines": 465
+    },
+    {
+      "file": "lib/services/p0_verify/arm_parity.dart",
+      "lines": 332
+    },
+    {
+      "file": "lib/services/p0_verify/assertion.dart",
+      "lines": 498
+    },
+    {
+      "file": "lib/types/teaching_types.dart",
+      "lines": 935
+    },
+    {
+      "file": "lib/widgets/adopt_suggestion_sheet.dart",
+      "lines": 340
+    },
+    {
+      "file": "lib/widgets/append_chapters_page.dart",
+      "lines": 680
+    },
+    {
+      "file": "lib/widgets/diagnosis_card.dart",
+      "lines": 2367
+    },
+    {
+      "file": "lib/widgets/evaluation_report_panel.dart",
+      "lines": 471
+    },
+    {
+      "file": "lib/widgets/file_viewer_modal.dart",
+      "lines": 304
+    },
+    {
+      "file": "lib/widgets/gen_ui_card.dart",
+      "lines": 640
+    },
+    {
+      "file": "lib/widgets/m2_recall_bar.dart",
+      "lines": 313
+    },
+    {
+      "file": "lib/widgets/material_upload_sheet.dart",
+      "lines": 492
+    },
+    {
+      "file": "lib/widgets/message_bubble.dart",
+      "lines": 399
+    },
+    {
+      "file": "lib/widgets/outline_confirmation_card.dart",
+      "lines": 407
+    },
+    {
+      "file": "lib/widgets/outline_content_view.dart",
+      "lines": 860
+    },
+    {
+      "file": "lib/widgets/phase_summary_card.dart",
+      "lines": 390
+    },
+    {
+      "file": "lib/widgets/practice_task_card.dart",
+      "lines": 460
+    },
+    {
+      "file": "lib/widgets/progress_detail_page.dart",
+      "lines": 883
+    },
+    {
+      "file": "lib/widgets/syndrome_detail_modal.dart",
+      "lines": 532
+    },
+    {
+      "file": "lib/widgets/teacher_suggestion_card.dart",
+      "lines": 602
     }
   ]
 }

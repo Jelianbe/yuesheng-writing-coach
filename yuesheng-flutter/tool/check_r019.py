@@ -14,6 +14,12 @@ secrets / **本脚本 R-019**），**本脚本自身即门禁 5**，由 `scripts
 `--baseline tool/r019_baseline.json` 调用。因此上文「四道门禁无一检查 R-019」
 的问题**已闭合**，此处保留仅为记录沿革。
 
+【2026-10-30 扩展（T-20261030-04）】本脚本同时承担**文件级 ≤ 300 行**检查：
+R-019 正文声明的「文件 ≤ 300 行」此前**无机器执行点**（`.ai/rules/README.md §四`
+登记缺口：check_r019 只统计函数行数，看守面 5/97）。同一次扫描内输出
+**fileViolations**（基线 key = 文件路径，存量豁免、只卡新增，与函数级同哲学），
+**不新增门禁道**——仍由门禁 5（同一条 `--baseline` 调用）一并执行。
+
 注意：本脚本**不做任何拆分**。仓库历史上曾有 `tool/r019_split.py`（part 分片
 + 逐字节保真），但该做法已被 X-025-ARCH 定性为**伪拆分**并回退 13 个 commit，
 其 .py 已删（仅剩 __pycache__ 产物）。AGENTS.md 现明令：
@@ -302,6 +308,10 @@ def main():
         help='把生成文件（*.g.dart / *.freezed.dart）也计入。默认**排除**——'
              '它们由 build_runner 产出，改了会被重新生成覆盖，'
              'R-019 约束的是人工代码，计入只会让债务数字虚高且永不可清偿。')
+    ap.add_argument(
+        '--file-limit', type=int, default=300,
+        help='文件级行数阈值（默认 300；2026-10-30 T-20261030-04 起，'
+             '与函数级同一扫描同一门禁 5 调用，key=文件路径）')
     args = ap.parse_args()
 
     # 生成文件后缀：Drift / Freezed / json_serializable 的产物。
@@ -311,6 +321,7 @@ def main():
     GEN_SUFFIXES = ('.g.dart', '.freezed.dart')
 
     all_hits = []
+    all_file_hits = []   # 文件级（2026-10-30 T-20261030-04）：超 --file-limit 的文件
     file_count = 0
     gen_skipped = 0
     for root, dirs, files in os.walk(args.dir):
@@ -324,9 +335,21 @@ def main():
             file_count += 1
             if file_count % 100 == 0:
                 # 进度输出：首版跑了 15 分钟无任何输出，看起来像挂死
-                print('  ...已扫 %d 个文件，累计命中 %d'
-                      % (file_count, len(all_hits)), flush=True)
-            all_hits.extend(scan_file(os.path.join(root, fn), args.limit))
+                print('  ...已扫 %d 个文件，累计命中 %d（文件级 %d）'
+                      % (file_count, len(all_hits), len(all_file_hits)), flush=True)
+            fpath = os.path.join(root, fn)
+            all_hits.extend(scan_file(fpath, args.limit))
+            # 文件级物理行数（splitlines：不含末尾空串，与编辑器显示一致）
+            try:
+                with io.open(fpath, encoding='utf-8', errors='replace') as f:
+                    n_lines = len(f.read().splitlines())
+            except OSError:
+                n_lines = 0
+            if n_lines > args.file_limit:
+                all_file_hits.append({
+                    'file': fpath.replace('\\', '/'),
+                    'lines': n_lines,
+                })
 
     # 债务止血模式：只报基线之外的新增项
     #
@@ -366,6 +389,14 @@ def main():
             kept.extend(
                 sorted(by_key[k], key=lambda r: -r['lines'])[:need])
         report_hits = kept
+
+        # 文件级基线过滤（2026-10-30 T-20261030-04）：key = 文件路径（身份），
+        # 与函数级同哲学——存量超 300 行文件一律豁免，只卡**新增**超线文件。
+        base_file_set = {v['file'] for v in base.get('fileViolations', [])}
+        report_file_hits = [h for h in all_file_hits
+                            if h['file'] not in base_file_set]
+    else:
+        report_file_hits = all_file_hits
 
     # 终端展示用过滤后结果；`all_hits`（全量）仅用于落盘，绝不就地覆盖。
     report_hits = sorted(report_hits, key=lambda r: -r['lines'])
@@ -410,6 +441,25 @@ def main():
             print('  %-58s %d 个（最长 %d 行）'
                   % (f, len(rs), max(x['lines'] for x in rs)))
 
+    # ── 文件级 ≤ --file-limit 行（2026-10-30 T-20261030-04）──
+    print('')
+    print('─' * 68)
+    print('文件级 ≤ %d 行（R-019 文件声明；基线模式下只卡新增）' % args.file_limit)
+    report_file_hits = sorted(report_file_hits, key=lambda r: -r['lines'])
+    if not report_file_hits:
+        print('无**新增**超 %d 行文件 ✓（全量 %d 个超线文件均已在基线内豁免）'
+              % (args.file_limit, len(all_file_hits))
+              if args.baseline else '无超 %d 行文件 ✓' % args.file_limit)
+    else:
+        if args.baseline:
+            print('★超 %d 行的**新增**文件：%d 个（存量 %d 个已在基线内）'
+                  % (args.file_limit, len(report_file_hits), len(all_file_hits)))
+        else:
+            print('★超 %d 行的文件（全量模式）：%d 个'
+                  % (args.file_limit, len(report_file_hits)))
+        for r in report_file_hits:
+            print('  %-6d 行  %s' % (r['lines'], r['file']))
+
     if args.json:
         # ⚠️ 落盘一律**全量**（R-019 V4.14 的教训）：report_hits 此时已被基线
         # 过滤过，若落它，`--baseline X --json X` 重生成基线就等于把存量债务
@@ -423,16 +473,19 @@ def main():
         with io.open(args.json, 'w', encoding='utf-8', newline='\n') as f:
             f.write(json.dumps({
                 'dir': args.dir, 'limit': args.limit,
+                'fileLimit': args.file_limit,
                 'fileCount': file_count, 'violations': all_hits,
+                'fileViolations': all_file_hits,
             }, ensure_ascii=False, indent=2))
         print('\n已落盘：%s' % args.json)
         print('  （--json 落的是全量结果 %d 条，非基线过滤后的 %d 条）'
               % (len(all_hits), len(report_hits)))
+        print('  （文件级全量 %d 条 fileViolations 一并落盘）' % len(all_file_hits))
 
     # 退出码语义（止血模式下只卡新增）：
-    #   全量模式 → 有任何超限即 1
-    #   止血模式 → 仅当存在**基线外新增**时 1；存量豁免不影响退出码
-    return 1 if report_hits else 0
+    #   全量模式 → 有任何超限（函数或文件级）即 1
+    #   止血模式 → 仅当存在**基线外新增**（函数或文件级）时 1；存量豁免不影响退出码
+    return 1 if (report_hits or report_file_hits) else 0
 
 
 if __name__ == '__main__':
