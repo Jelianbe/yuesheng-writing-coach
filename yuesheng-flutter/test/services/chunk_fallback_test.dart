@@ -85,6 +85,63 @@ void main() {
       }
     });
 
+    test('P6 中英标点混合：中英句末同时成界，无缺口、覆盖完整、非末块收尾于句末', () {
+      // 无换行整篇，中英句末标点交替（全角「。」「！」与半角 ". " "?" ";"）。
+      const unit = '雨停了。The rain stopped. 她说：“走！”Go now? Fine; 好…';
+      final src = List<String>.generate(120, (i) => '$i$unit').join();
+      expect(src.contains('\n'), isFalse, reason: '语料必须是整篇无换行');
+      expect(src.length, greaterThan(kDiagnosisChunkSize));
+
+      final chunks = splitContent(src);
+      expect(chunks.length, greaterThan(1), reason: '中英混合长稿同样不得整段成块');
+
+      // ★ 注意：`splitContent` 的输出**不是** `join('')` 可还原的 —— 块间 overlap
+      // 是设计语义（块头重复前块尾）。不变量是「无缺口 + 全部落在子串上 +
+      // 首 0 / 末 源长」，不是「拼起来等于原文」（P2 的无损属于
+      // `splitSentencesOrHardCut` 那一层，两者不可混用）。
+      final cov = computeChunkCoverage(src, chunks);
+      expect(cov.every((c) => c.located), isTrue, reason: '块必须是原文逐字子串');
+      expect(cov.first.start, 0);
+      expect(cov.last.end, src.length);
+      var cursor = 0;
+      for (var i = 0; i < chunks.length; i++) {
+        expect(src.contains(chunks[i]), isTrue, reason: '块[$i] 不是原文子串');
+        expect(
+          cov[i].start,
+          lessThanOrEqualTo(cursor),
+          reason: '块[$i] 起点在上一块终点之后 ⇒ 出现缺口',
+        );
+        cursor = cov[i].end > cursor ? cov[i].end : cursor;
+      }
+      expect(cursor, src.length, reason: '末端未被覆盖 ⇒ 尾部丢失');
+
+      for (var i = 0; i < chunks.length - 1; i++) {
+        final tail = chunks[i].substring(chunks[i].length - 1);
+        expect(
+          _kEnders.contains(tail) || tail == '.',
+          isTrue,
+          reason: '非末块尾必须落在句末标点上（英文句点仅在后接空白时成界）',
+        );
+      }
+      for (var i = 0; i < chunks.length; i++) {
+        final lim = i == chunks.length - 1
+            ? kDiagnosisChunkSize + kDiagnosisMinLastChunk
+            : kDiagnosisChunkSize;
+        expect(chunks[i].length, lessThanOrEqualTo(lim), reason: '块长越界');
+      }
+    });
+
+    test('P7 英文句点只认「后接空白/行尾」：小数点不断句，". " 断句', () {
+      // 反向：v1.2.3 / 3.14 不得成界
+      const s = '版本 v1.2.3 已发布，共 3.14 万字节。下一段。';
+      final parts = splitSentencesOrHardCut(s);
+      expect(parts.length, 2, reason: '小数点/版本号被当句末 ⇒ 句中切成两段');
+      expect(parts.first.endsWith('。'), isTrue);
+      expect(parts.join(), s);
+      // 正向：英文 ". " 与行尾 "." 成界
+      expect(splitSentencesOrHardCut('One. Two.'), <String>['One.', ' Two.']);
+    });
+
     test('P5 无任何标点 ⇒ 硬切兜底（6000→2×3000，20000→7 块上限 3000）', () {
       final six = '风' * 6000;
       expect(splitContent(six).map((c) => c.length).toList(), <int>[
@@ -96,6 +153,12 @@ void main() {
       expect(chunks.length, 7);
       expect(chunks.every((c) => c.length <= kDiagnosisChunkSize), isTrue);
       expect(chunks.join(), twenty);
+
+      // 末块合并（空分隔符分支）：6200 = 3000 + 3000 + 200（< MINL）⇒ 并入前块。
+      // 若该分支退化成 `last.split('')`（按码元切再 join）⇒ 尾部 200 字丢失。
+      final merged = splitContent('风' * 6200);
+      expect(merged.map((c) => c.length).toList(), <int>[3000, 3200]);
+      expect(merged.join(), '风' * 6200, reason: '末块合并丢字');
     });
   });
 
