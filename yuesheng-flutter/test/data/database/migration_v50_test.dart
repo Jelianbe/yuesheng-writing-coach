@@ -6,6 +6,11 @@
 //   M2 幂等：同一库连开两次不抛错、列仍在
 //   M3 边界：无 diagnosis_results 表的库 → 表存在性守卫跳过，升级不抛错
 //
+// ★ 2026-10-30 审查补牙（挂在 M1，**不新增用例**）：
+//   `_checkGuardEqualsSchemaVersion()` —— `onUpgrade` 早退守卫值必须 == `schemaVersion`
+//   且全文件恰好一处。把 `database.dart:281-290` 那段「契约」注释变成机器执行点
+//   （ADR-0011 的静默跳过就是缺这条机器闸）。
+//
 // ⚠️ M1 的夹具是**手写 v49 DDL**（diagnosis_results 无 excluded_json 列），
 //    用前先删同名临时文件：`flutter test` 跨轮次残留会撞 `table already exists`。
 // ─────────────────────────────────────────────────────────────
@@ -103,9 +108,64 @@ Future<Set<String>> _columns(AppDatabase db, String table) async {
   return rows.map((r) => r.read<String>('name')).toSet();
 }
 
+// ★ 审查补牙（2026-10-30 · 零新用例，钉在 M1 内）：
+//   `onUpgrade` 的早退守卫值必须**等于** `schemaVersion`。
+//   `database.dart:281-290` 把这条写成「契约」，但**注释不是执行点**——ADR-0011
+//   实测过违反形态：守卫停在 46 而 schemaVersion 已到 48 ⇒ `from ∈ [46, 48)` 的
+//   存量库被**整段静默跳过**，drift 照写新 user_version，用户看到「已是最新」而
+//   新表/新列根本没建（不是报错，是静默）。此前唯一的拦截是「每个新版本各写一份
+//   夹具测试」= **约定**，漏写一份就漏拦一次（v47/v48 正是这样漏掉的）。
+//   本牙把它变成与版本号无关的恒成立断言 ⇒ 下次 bump 只改 `schemaVersion`
+//   不改守卫，M1 直接红。
+String _databaseSource() {
+  for (final candidate in <String>[
+    'lib/data/database/database.dart',
+    '../lib/data/database/database.dart',
+  ]) {
+    final f = File(candidate);
+    if (f.existsSync()) return f.readAsStringSync();
+  }
+  // 宁可红，也不要静默跳过（与 backup_retention_test 同源写法）
+  fail(
+    '找不到 lib/data/database/database.dart（CWD=${Directory.current.path}）'
+    '⇒ 守卫契约无法核对，本例判红',
+  );
+}
+
+void _checkGuardEqualsSchemaVersion() {
+  final src = _databaseSource();
+  final ver = RegExp(
+    r'int\s+get\s+schemaVersion\s*=>\s*(\d+)\s*;',
+  ).firstMatch(src);
+  final guards = RegExp(
+    r'if\s*\(\s*from\s*>=\s*(\d+)\s*\)\s*return\s*;',
+  ).allMatches(src).toList();
+  expect(ver, isNotNull, reason: 'schemaVersion 声明形态变了 ⇒ 本契约需同步更新');
+  expect(
+    guards,
+    hasLength(1),
+    reason:
+        'onUpgrade 的早退守卫应**恰好一处**；'
+        '多处 ⇒ 无法确定哪个是版本闸门（本牙按「唯一」设计，多处即判红）',
+  );
+  final head = int.parse(ver!.group(1)!);
+  final guard = int.parse(guards.single.group(1)!);
+  expect(
+    guard,
+    head,
+    reason:
+        '守卫 $guard < schemaVersion $head ⇒ `from ∈ [$guard, $head)` 的存量库'
+        '被整段静默跳过（新列不建、user_version 照写）；'
+        '守卫 $guard > $head ⇒ 本回调永不执行。两种都判红。',
+  );
+}
+
 void main() {
   group('v50 diagnosis_results.excluded_json（ADR-0012）', () {
     test('M1 v49 存量库升级：加列 / 存量行恒 NULL / syndromes 逐字不变 / 版本升到 head', () async {
+      // 先核源码级契约，再开库：闸门写歪时不必等迁移跑完就能看到。
+      _checkGuardEqualsSchemaVersion();
+
       final db = await _openPath(createV49DbFile());
 
       expect(

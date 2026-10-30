@@ -122,6 +122,26 @@ void _walkVolume(Object? node, _VolumeAcc acc, String? key) {
 // 此时体积仍 > 0（`role` / `fnv` 叶串贡献，message_sequence 实测 820）⇒
 // `floor = ceil(820/2) = 410` ⇒ 内容全空也 `820 ≥ 410` ⇒ F3 恒绿（fail-open）。
 //
+// ## 覆盖边界（2026-10-30 主理人审查实测补登 · E1）
+//
+// 本网接线在 **5 个读取方**，但**判别力只有 3 个** —— 另 2 份快照的 schema 里
+// 根本没有 `{len:int, fnv:String}` 形节点，调用恒返回空 = 那里的牙**永不红**：
+//
+// | 快照 | len+fnv 形节点 | 本网 |
+// |:--|--:|:--|
+// | `skill_prompt_anchor.json` | 59 | ✅ 有牙（V7 实测：len 全置 0 ⇒ `root.prompt` 等 4 族红）|
+// | `l3_entry_anchor.json` | 110 | ✅ 有牙 |
+// | `message_sequence_anchor.json` | 44 | ✅ 有牙 |
+// | `injection_segments_anchor.json` | 10 | ✅ 有牙 |
+// | `prompt_const_anchor.json` | 4 | ✅ 有牙 |
+// | `student_profile_anchor.json` | **0**（是 3 个 `{hash, length}`） | ⚪ 恒不红 —— 已登记另卡裁定（T-20261030-05 完成标记）|
+// | `teaching_loop_snapshot.json` | **0**（47 例结构化决策树，无长度/指纹形节点） | ⚪ 恒不红 —— **本行是本次审查新增登记**（原卡只写了 student_profile）|
+//
+// ⇒ 「5 读取方」是**接线数**，不是**看守面**。前一份快照由 `length`/`hash` 形空壳
+// 塌陷时，本网看不见；那两份的 F3 由 F1（每例条数）+ F2（叶值非空）兜，**不是**由本网兜。
+// 判据出处：`.ai/reports/2026-10-30-审查-F3空壳族负向验证.dart` 的 V7 组读数
+// （正臂 R1 = 7 份真实快照全不红；反臂 V7 = 把 len 全置 0 后逐份应有红）。
+//
 // ## 合法例外（防误红，与 python 侧逐字对齐）
 //
 // **单节点** len=0 + fnv 非空是合法空串形态（`l3Inject.empty` /
