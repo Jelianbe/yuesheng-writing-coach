@@ -1,7 +1,9 @@
 // ─────────────────────────────────────────────────────────────
 // 锚点重建下限 · 共用度量（T-20261024-15 · L4 支撑层）
 //
-// ★ 本文件只放**一件**通用工具：JSON 子树「内容体积（单调代理）」遍历 + 累加。
+// ★ 本文件放**两件**通用工具：
+//   ① JSON 子树「内容体积（单调代理）」遍历 + 累加（`anchorMeasureVolume`）；
+//   ② 空壳 len+fnv 族扫描（`findHollowLenFnvFamilies`，T-20261030-05）。
 //   三条判据（F1 每例条数 / F2 叶值非空 / F3 比率下限）**留在各自锚点测试文件里**
 //   —— 四份快照的 schema 互不相同（消息序列 / 长度+指纹分节 / 结构化决策树 /
 //   长度+指纹词条），把它们统一成一套判据 = 伪抽象：下一份新快照接入时会被
@@ -106,4 +108,82 @@ void _walkVolume(Object? node, _VolumeAcc acc, String? key) {
     return;
   }
   // null / bool / double（`confidence` 一类的比率量）：不随内容塌陷变化，不计体积。
+}
+
+// ─────────────────────────────────────────────────────────────
+// 空壳 len+fnv 族扫描（T-20261030-05 · 与 python 侧 T-20261025-07
+// `_check_hollow_families` 同判据族，异层：python 读落盘快照，dart 在重冻路径上
+// 先于写盘拦）。
+//
+// ## 判据
+//
+// 族 = 容器（Map / List）中 **≥2 个孩子**是 `{len:int, fnv:String}` 形节点。
+// 族内**所有 `len == 0` 且存在非空 `fnv`** ⇒ 空壳基线（与「体积为 0」同罪）：
+// 此时体积仍 > 0（`role` / `fnv` 叶串贡献，message_sequence 实测 820）⇒
+// `floor = ceil(820/2) = 410` ⇒ 内容全空也 `820 ≥ 410` ⇒ F3 恒绿（fail-open）。
+//
+// ## 合法例外（防误红，与 python 侧逐字对齐）
+//
+// **单节点** len=0 + fnv 非空是合法空串形态（`l3Inject.empty` /
+// `injection_segments` nofulltext.fullTextBlock，fnv=`4bf29ce484222325`
+// = 空串 FNV 指纹）——族需 ≥2 个形孩子，单节点不成族；族内另有 len>0 兄弟
+// ⇒ 不构成「全零」。
+// ─────────────────────────────────────────────────────────────
+
+/// 扫描 `root` 子树，返回**违规族**的可读路径列表（空 = 无空壳族）。
+///
+/// 违规族 = 族内所有 `len == 0` 且至少一个 `fnv` 非空。
+List<String> findHollowLenFnvFamilies(Object? root) {
+  final families = <_ShapedFamily>[];
+  _collectShapedFamilies(root, 'root', families);
+  final violators = <String>[];
+  for (final f in families) {
+    final lens = f.members.map((m) => m['len'] as int).toList();
+    final fnvs = f.members.map((m) => m['fnv'] as String).toList();
+    if (lens.every((l) => l == 0) && fnvs.any((f) => f.isNotEmpty)) {
+      violators.add('${f.path}（${f.members.length} 节点族）');
+    }
+  }
+  return violators;
+}
+
+class _ShapedFamily {
+  final String path;
+  final List<Map<String, dynamic>> members;
+  const _ShapedFamily(this.path, this.members);
+}
+
+void _collectShapedFamilies(
+  Object? node,
+  String path,
+  List<_ShapedFamily> out,
+) {
+  if (node is Map) {
+    final shaped = <Map<String, dynamic>>[];
+    final others = <MapEntry<Object?, Object?>>[];
+    for (final e in node.entries) {
+      final v = e.value;
+      if (v is Map && v['len'] is int && v['fnv'] is String) {
+        shaped.add(Map<String, dynamic>.from(v));
+      } else {
+        others.add(e);
+      }
+    }
+    if (shaped.length >= 2) out.add(_ShapedFamily(path, shaped));
+    for (final e in others) {
+      final k = e.key;
+      _collectShapedFamilies(e.value, '$path.$k', out);
+    }
+  } else if (node is List) {
+    final shaped = <Map<String, dynamic>>[];
+    for (var i = 0; i < node.length; i++) {
+      final v = node[i];
+      if (v is Map && v['len'] is int && v['fnv'] is String) {
+        shaped.add(Map<String, dynamic>.from(v));
+      } else {
+        _collectShapedFamilies(v, '$path[$i]', out);
+      }
+    }
+    if (shaped.length >= 2) out.add(_ShapedFamily(path, shaped));
+  }
 }

@@ -245,7 +245,7 @@
     }
   },
   "l3Inject": {
-    "syndrome_P003": {
+    "syndrome_P001": {
       "len": 1882,
       "fnv": "a336386c9bee6a4"
     },
@@ -253,7 +253,7 @@
       "len": 810,
       "fnv": "3fcbffa5b42a19e7"
     },
-    "both_P003_P007_T001": {
+    "both_P001_P005_T001": {
       "len": 3304,
       "fnv": "297ae07c19b4d245"
     },

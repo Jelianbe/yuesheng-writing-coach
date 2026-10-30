@@ -196,7 +196,15 @@ Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
               '分节齐备，但内容体积（单调代理）为 0'
               '（所有 `len` 均为 0，且无叶字符串）';
         } else {
-          return sections;
+          final hollows = findHollowLenFnvFamilies(sections);
+          if (hollows.isNotEmpty) {
+            kind = '族内全零长度但 fnv 非空';
+            why =
+                '${hollows.length} 个 len+fnv 节点族族内 len 全 0、fnv 非空'
+                '（空壳基线，与「体积为 0」同罪）：${hollows.take(3).join(' / ')}';
+          } else {
+            return sections;
+          }
         }
       }
     }
@@ -209,8 +217,9 @@ Map<String, dynamic>? _loadBaselineSections(File file, {required bool exists}) {
       '$kL3AnchorPath\n'
       '  本次形态：$kind\n'
       '  判定依据：$why\n'
-      '  ★ 可解析但不可用 = ① 缺分节 ② 顶层只有 `meta` ③ **分节齐备但所有 `len` 均为 0**。\n'
-      '    三者都让下限退化为 0 ⇒ F3 对任何内容恒绿（fail-open），与「文件损坏」同罪。\n'
+      '  ★ 可解析但不可用 = ① 缺分节 ② 顶层只有 `meta` ③ **分节齐备但所有 `len` 均为 0**'
+      ' ④ **族内 len 全 0 但 fnv 非空**。\n'
+      '    前三者让下限退化为 0、④ 让下限来自非内容量 ⇒ F3 对任何内容恒绿（fail-open），与「文件损坏」同罪。\n'
       '  两条出口：\n'
       '    ① 恢复基线：git checkout -- $kL3AnchorPath\n'
       '    ② 确认要丢弃旧基线：ALLOW_FLOORLESS_REBUILD=true'
