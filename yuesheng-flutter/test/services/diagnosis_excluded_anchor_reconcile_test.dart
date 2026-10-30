@@ -7,7 +7,8 @@
 // 与报批稿 ④ 的先验逐键吻合。
 //
 // 钉值依据（锚点基线，02-前置实测 §1 现场实测）：
-//   · message_sequence 对照组 7 组 user = (22, e44e287a4ac8d8f) —— suffix 只进诊断场景
+//   · message_sequence 对照组 8 组 user = (22, e44e287a4ac8d8f) —— suffix 只进诊断场景
+//     （T-20261027-05 A1 起诊断注入组为 3 case：fulltext / nofulltext / attachment）
 //   · fulltext user 旧值 (1583, 100f00a384794e7d) / nofulltext 旧值 (1521, 49d7de888531ca6d)
 //   · prompt_const_anchor kDiagnosisProtocolSuffix 旧值 (977, 609c7814d5bcc86d)
 //   · skill_prompt diagnosis_p1_yuesheng 旧 fnv 4b6d0c4dc911feec
@@ -49,6 +50,9 @@ const String kForceFnv = '59d41af06ebfcd7f';
 
 const String kFulltextCase = 'p2_yuesheng_diagnosis_fulltext';
 const String kNoFulltextCase = 'p2_yuesheng_diagnosis_nofulltext';
+// T-20261027-05 A1：附件例同样注入协议后缀（文本 len 与 nofulltext 逐值相同），
+// ⇒ 必须从对照组移出、并入诊断注入组（否则 S1 会把 1582 当成「22 的对照组漂移」）。
+const String kAttachmentCase = 'p2_yuesheng_diagnosis_attachment';
 const String kP1Case = 'p1_yuesheng_diagnosis';
 
 Map<String, dynamic> _readJson(String path) =>
@@ -92,14 +96,20 @@ void main() {
     test('S1 对照组红线：7 组非诊断 case 的 user 消息零漂移 (22, e44e287a4ac8d8f)', () {
       final controlCases = msgSeq.keys
           .where((k) => k != 'meta')
-          .where((k) => k != kFulltextCase && k != kNoFulltextCase)
+          .where(
+            (k) =>
+                k != kFulltextCase &&
+                k != kNoFulltextCase &&
+                k != kAttachmentCase,
+          )
           .toList();
       expect(
         controlCases,
         hasLength(8),
         reason:
-            '对照组应为 8 组（10 case − 诊断注入 2 case；'
-            'p1/p2 普通诊断 case 的 user 消息实测仍 22 —— suffix 只注入完整章两 case）',
+            '对照组应为 8 组（11 case − 诊断注入 3 case：fulltext / nofulltext / '
+            'attachment；p1/p2 普通诊断 case 的 user 消息实测仍 22 —— '
+            'suffix 只注入带诊断注入的 case）',
       );
       for (final c in controlCases) {
         final user = _userMsg(
@@ -121,10 +131,11 @@ void main() {
       }
     });
 
-    test('S2 诊断两 case：user 消息钉死新基线（重冻后逐键等值）', () {
+    test('S2 诊断三 case：user 消息钉死新基线（重冻后逐键等值）', () {
       for (final entry in {
         kFulltextCase: (kFulltextUserLen, kFulltextUserFnv),
         kNoFulltextCase: (kNoFulltextUserLen, kNoFulltextUserFnv),
+        kAttachmentCase: (kNoFulltextUserLen, kNoFulltextUserFnv),
       }.entries) {
         final user = _userMsg(
           (msgSeq[entry.key] as List).cast<Map<String, dynamic>>(),

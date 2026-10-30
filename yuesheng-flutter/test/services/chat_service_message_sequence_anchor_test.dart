@@ -110,6 +110,11 @@ class _Case {
 
   /// 待诊断全文；默认 null（不触发诊断协议注入）。
   final String? chapterFullText;
+
+  /// 附件面（T-20261027-05 A1）：非 0 时给本条 user 消息挂一个
+  /// `image_url` 内容块，payload 长度 = 该值（`data:` 前缀另计）。
+  /// 只用于把「附件不进 `content`」这个盲区纳入有序快照。
+  final int attachmentChars;
   const _Case(
     this.name,
     this.phase,
@@ -118,6 +123,7 @@ class _Case {
     this.isBeginner, {
     this.content = _kContent,
     this.chapterFullText,
+    this.attachmentChars = 0,
   });
 }
 
@@ -183,6 +189,17 @@ const List<_Case> _kCases = [
     TeachingSubphase.diagnosis,
     false,
     content: '请诊断我这段文字',
+  ),
+  // T-20261027-05 A1：附件面（`contentBlocks.image_url`）的体积**不在 content 里**
+  // ⇒ 旧读数对该面完全盲。本用例与 nofulltext **只差一个附件维度**。
+  _Case(
+    'p2_yuesheng_diagnosis_attachment',
+    TeachingPhase.p2PracticeLoop,
+    AttitudeLevel.yuesheng,
+    TeachingSubphase.diagnosis,
+    false,
+    content: '请诊断我这段文字',
+    attachmentChars: 400000,
   ),
   _Case(
     'p3_yuesheng_advanced',
@@ -251,16 +268,32 @@ ChatService _buildChatService(AppDatabase db, LlmClient llmClient) {
   );
 }
 
-/// 逐条序列指纹：`[{role, len, fnv}, ...]`（有序）。
-List<Map<String, Object>> _sequence(List<ChatMessage> messages) => messages
-    .map(
-      (m) => <String, Object>{
-        'role': m.role,
-        'len': m.content.length,
-        'fnv': _fnv1a64(m.content).toRadixString(16),
-      },
-    )
-    .toList();
+/// 逐条序列指纹：`[{role, len, fnv, (blocksLen, blocksFnv)}, ...]`（有序）。
+///
+/// `blocksLen` / `blocksFnv` **仅在消息带 contentBlocks 时出现** ⇒ 纯文本消息的
+/// 既有条目逐字节不变（不重写旧快照）。附件面体积只能从这里读到：
+/// `len` 量的是 `content`，附件在 `contentBlocks` 里（T-20261027-05 A1）。
+List<Map<String, Object>> _sequence(List<ChatMessage> messages) => messages.map(
+  (m) {
+    final rec = <String, Object>{
+      'role': m.role,
+      'len': m.content.length,
+      'fnv': _fnv1a64(m.content).toRadixString(16),
+    };
+    final blocks = m.contentBlocks;
+    if (blocks != null && blocks.isNotEmpty) {
+      final payload = blocks
+          .map(
+            (b) =>
+                '${b.type}\u0000${b.type == 'image_url' ? b.imageUrl : b.text}',
+          )
+          .join('\u0001');
+      rec['blocksLen'] = payload.length;
+      rec['blocksFnv'] = _fnv1a64(payload).toRadixString(16);
+    }
+    return rec;
+  },
+).toList();
 
 /// 单例捕获结果：消息序列 + （若发生了注入）五段读数（ADR-0009）。
 typedef _Capture = ({List<Map<String, Object>> seq, Map<String, Object>? segs});
@@ -310,6 +343,13 @@ Future<_Capture> _captureOne(_Case c) async {
         phase: c.phase,
         attitude: c.attitude,
         chapterFullText: c.chapterFullText,
+        attachmentBlocks: c.attachmentChars > 0
+            ? <ChatContentBlock>[
+                ChatContentBlock.imageUrl(
+                  'data:image/jpeg;base64,${'A' * c.attachmentChars}',
+                ),
+              ]
+            : null,
       ),
       subphase: c.subphase,
     );

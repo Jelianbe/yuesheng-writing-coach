@@ -335,6 +335,26 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   依据见常量级段下方 MERGE 节头注）。同批另补 T-20261025-07 空壳基线形态网
   （len+fnv 节点族「族内全零 len + 非空 fnv ⇒ fail」，补 dart 重建下限残留形态）。
 
+· 2026-10-31 补守登记（T-20261027-05 A1 · 附件面）：`len` 只量
+  `ChatMessage.content` 文本，**附件进 `contentBlocks`** ⇒ 同一句正文可带 0 字
+  也可带 400 KB 图而 `len` 逐值不动。新增 `USER_FACE_BLOCKS_REDLINE`
+  （blocksLen 上限 + blocksFnv）与 `_check_user_blocks` 双向覆盖
+  （带块必须有钉 / 钉了必须真有块）。新例
+  `p2_yuesheng_diagnosis_attachment[3]`：文本 len=1582（与 nofulltext 逐值相同
+  —— 附件不改变文本注入面，这正是 `len` 测不到附件的证据）·
+  blocksLen=401621 · blocksFnv=3fa689916c5551c1。同批该键并入
+  `USER_FACE_REDLINE`（否则覆盖扫描判「注入已发生却无上限」）与
+  `USER_FACE_SEGMENTS`（五段与 nofulltext 逐值相同）。
+
+· 2026-10-31 同批补守（T-20261027-05 A2 · 分块链）：`buildChunkMessages` 的
+  user 消息装的是**章节正文**，此前零读数。新增快照
+  `chunk_message_anchor.json`（锚点测试走生产同一条 `splitContent →
+  buildChunkMessages` 实测）与 `CHUNK_USER_REDLINE` / `_check_chunk_user`：
+  形状钉（分块边界 + 正文字节）+ 派生关系（`len(user)==chunkCount` ·
+  `chunkCount==1 ⇒ len==sourceLen` · `len>sourceLen ⇒ 红`）。
+  实测：3 段×1199 → 2×2400；无分隔符 6000 → 6000；无分隔符 20000 → 20000
+  （后者把「无分隔符整段成块」的现状钉住；真加切分上限另立 T-20261031-02）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -614,6 +634,14 @@ def main():
     # 钉表键，看不见钉表外的 user 消息；本调用补这个方向（仍在本道内，不加道数）。
     _check_user_face_coverage(out)
 
+    # T-20261027-05 A1：附件面（`contentBlocks`）—— `len` 测不到附件，
+    # 只钉文本等于「附件可无限长、可换内容不报」。双向覆盖，不加道数。
+    _check_user_blocks(out)
+
+    # T-20261027-05 A2：分块链 user 消息（章节正文）—— 快照外最大的一处
+    # 注入面，此前零读数。形状钉 + 双向覆盖，仍在本道内、不加道数。
+    _check_chunk_user(out)
+
     if '--json' in sys.argv:
         print('\n' + json.dumps(out, ensure_ascii=False, indent=2))
 
@@ -678,6 +706,12 @@ MSG_SEQ = os.path.join(ROOT, 'test', 'snapshots', 'message_sequence_anchor.json'
 # 看守，加新键要动 fail-closed 判据 ⇒ 另立文件，零改动旧判据。
 MSG_SEQ_SEGMENTS = os.path.join(
     ROOT, 'test', 'snapshots', 'injection_segments_anchor.json')
+
+# 分块链 user 消息的形状快照（T-20261027-05 A2）。
+# 分块链装的是**章节正文**，与 chat_service 边界是两条装配路径 ⇒ 单独一份快照，
+# 由 `test/services/chunk_message_anchor_test.dart` 走生产同一条
+# `splitContent → buildChunkMessages` 实测写出（非源码字面量推算）。
+CHUNK_MSG = os.path.join(ROOT, 'test', 'snapshots', 'chunk_message_anchor.json')
 
 # 键 = `快照名[消息下标]`；值 = 实测字符数（贴实测、余量 +0）。
 # 三例同块 ⇒ 三值必须相等，且有结构断言兜底（见 _check_bypass）。
@@ -1226,6 +1260,34 @@ USER_FACE_REDLINE = {
     #   方向 = T-20261024-05 批2 suffix 模板增 excluded 行（+61）；两 case 均注入 suffix ⇒ 两键同增。
     'p2_yuesheng_diagnosis_fulltext[3]': (1644, '4c74e83aee3f265c'),
     'p2_yuesheng_diagnosis_nofulltext[3]': (1582, '6c29c09e0ac47f8c'),
+    #   2026-10-31 T-20261027-05 A1：附件例并入本表（与 nofulltext **逐值相同**——
+    #   附件不改文本注入面；不并入则覆盖扫描判「注入已发生却无上限」）。
+    'p2_yuesheng_diagnosis_attachment[3]': (1582, '6c29c09e0ac47f8c'),
+}
+
+# ── 附件面（T-20261027-05 A1）──────────────────────────────────────────
+# 为什么单开一张表：`len` 只量 `ChatMessage.content` 文本，**附件进的是
+# `contentBlocks`**（`ChatContentBlock.text` / `.imageUrl`）⇒ 同一句正文
+# 可以带 0 字也可以带 400 KB 图，`len` **逐值不动**（本批 attachment 例与
+# nofulltext 例都是 1582）。没有这张表，「附件体积」在门禁里完全不可见。
+#
+# 键 = `快照名[消息下标]`；值 = (实测 blocksLen 上限, 冻结时的 blocksFnv)。
+# blocksLen / blocksFnv 由锚点测试对 `contentBlocks` 按
+# `type \u0000 payload` + `\u0001` 拼接后取值（不是图片字节数，是拼接串长度）。
+USER_FACE_BLOCKS_REDLINE = {
+    'p2_yuesheng_diagnosis_attachment[3]': (401621, '3fa689916c5551c1'),
+}
+
+# ── 分块链 user 消息（T-20261027-05 A2）────────────────────────────────
+# 键 = `快照名[chunk 下标].user`；值 = (实测 len 上限, 冻结 fnv)。
+# ★ 这是**形状钉**（分块边界 + 正文逐字节），不是正文长度上限 —— 正文长度由
+#   用户输入决定；`single_paragraph_20000` 一例把「无分隔符长段整段成块」的
+#   现状钉住（见 chunk_message_anchor_test.dart 头注：真加切分上限须另立卡）。
+CHUNK_USER_REDLINE = {
+    'paragraphs_3x1199[0]': (2400, '43580d2a1d54585d'),
+    'paragraphs_3x1199[1]': (2400, '43580d2a1d54585d'),
+    'single_paragraph_6000[0]': (6000, '2106492fa36fbfe5'),
+    'single_paragraph_20000[0]': (20000, '4482fe1bfde789a5'),
 }
 
 # 下限自检：注入后的 user 消息必须**至少**装得下协议后缀本体，否则说明
@@ -1257,6 +1319,15 @@ USER_FACE_SEGMENTS = {
         'fadingBlock': (185, '10523563b3b11eaf'),
     },
     'p2_yuesheng_diagnosis_nofulltext': {
+        'studentBody': (8, '2b56b05e131f4426'),
+        'fullTextBlock': (0, '4bf29ce484222325'),
+        'protocolSuffix': (1038, 'b4ae395807abdc6'),
+        'directExplain': (349, '5d479de78f67ea3c'),
+        'fadingBlock': (185, '10523563b3b11eaf'),
+    },
+    # T-20261027-05 A1：附件例五段与 nofulltext **逐值相同** —— 这本身是证据：
+    # 附件只走 `contentBlocks`，不改变文本注入面（所以必须另立 blocks 钉表）。
+    'p2_yuesheng_diagnosis_attachment': {
         'studentBody': (8, '2b56b05e131f4426'),
         'fullTextBlock': (0, '4bf29ce484222325'),
         'protocolSuffix': (1038, 'b4ae395807abdc6'),
@@ -1428,6 +1499,155 @@ def _check_user_face_coverage(out):
                 print('  %-40s %6d  未注入未钉 OK' % (key, act))
     print('  扫描 %d 条 role=user 消息，其中 %d 条 len ≥ %d（协议后缀本体）'
           % (n_user, n_big, threshold))
+
+
+def _check_user_blocks(out):
+    """附件面（`contentBlocks`）：blocksLen 上限 + blocksFnv + 双向覆盖。
+
+    `_check_user_face` 量的是 `content` 文本；附件（`ChatContentBlock.text` /
+    `.imageUrl`）不在其中 ⇒ 只钉文本等于「附件可以无限长、且可换内容不报」。
+    本函数补两个方向：
+      · 钉表键：blocksLen 必须 == 上限（`_pin_verdict`，pin==actual）且 fnv 逐字相等；
+      · 覆盖：快照里任何 user 消息只要带块（blocksLen>0）就必须在钉表里；
+        钉表键必须真的带块（否则钉了个空对象 = 假看守，fail-closed）。
+    快照只在**带附件时**写 blocksLen ⇒ 缺字段 = 无附件，不是「量不到」；
+    但钉表键缺字段 = 事故（与 `_check_user_face` 对缺失路径的口径一致）。
+    ⚠️ 覆盖边界：只扫 `message_sequence_anchor.json` 已入库用例（同 `_check_bypass`）。
+    """
+    print('\n=== 附件面 contentBlocks（T-20261027-05 A1）===')
+    if not os.path.exists(MSG_SEQ):
+        print('  ★快照缺失：%s' % MSG_SEQ)
+        out['violations'].append('message_sequence 快照缺失 ⇒ 附件面不可判')
+        return
+    d = json.load(io.open(MSG_SEQ, encoding='utf-8'))
+
+    for key, (lim, fnv_frozen) in sorted(USER_FACE_BLOCKS_REDLINE.items()):
+        msg = _resolve_msg(d, key)
+        if msg is None:
+            print('  %-40s ★快照中无此路径' % key)
+            out['violations'].append('%s: 快照缺该路径（附件面）' % key)
+            continue
+        act = msg.get('blocksLen')
+        fnv = msg.get('blocksFnv')
+        if not isinstance(act, int) or act <= 0:
+            print('  %-40s ★钉了附件上限但快照无 blocksLen' % key)
+            out['violations'].append(
+                '%s: 钉了附件上限却无 blocksLen>0 ⇒ 假看守（附件没进快照）' % key)
+            continue
+        out.setdefault('user_blocks_actual', {})[key] = act
+        _, tag = _pin_verdict(out, key + '.blocks', act, lim, '上限')
+        print('  %-40s %6d  上限 %6d  余量 %+6d  %s'
+              % (key + '.blocks', act, lim, lim - act, tag))
+        if fnv != fnv_frozen:
+            print('  %-40s ★blocksFnv %s ≠ 冻结 %s' % (key, fnv, fnv_frozen))
+            out['violations'].append(
+                '%s: blocksFnv %s ≠ 冻结 %s ⇒ 附件字节变了（等长替换或重冻未重钉）'
+                % (key, fnv, fnv_frozen))
+
+    pinned = set(USER_FACE_BLOCKS_REDLINE)
+    n_blocks = 0
+    for case in sorted(d):
+        seq = d[case]
+        if not isinstance(seq, list):
+            continue
+        for i, msg in enumerate(seq):
+            if not isinstance(msg, dict) or msg.get('role') != 'user':
+                continue
+            act = msg.get('blocksLen')
+            if not isinstance(act, int) or act <= 0:
+                continue  # 无附件（或非 int ⇒ 由 _check_user_face 的 len 口径兜）
+            key = '%s[%d]' % (case, i)
+            n_blocks += 1
+            if key in pinned:
+                print('  %-40s %6d  已钉附件上限 OK' % (key, act))
+            else:
+                print('  %-40s %6d  ★带附件却无上限' % (key, act))
+                out['violations'].append(
+                    '%s: blocksLen=%d ⇒ 带附件却无上限'
+                    '（未列入 USER_FACE_BLOCKS_REDLINE）' % (key, act))
+    print('  扫描 %d 条带附件 role=user 消息' % n_blocks)
+
+
+def _check_chunk_user(out):
+    """分块链 user 消息：逐 chunk (len,fnv) 钉 + 结构/覆盖自检（T-20261027-05 A2）。
+
+    三道判据缺一不可：
+      ① 快照缺失 / 零例 ⇒ FAIL（缺失是事故；空扫不是通过）；
+      ② 钉表键 ⇄ 快照条目**双向相等**（少 = 覆盖缩水；多 = 残留或钉错对象）；
+      ③ 逐键 `len == 上限`（pin==actual，`_pin_verdict`）+ fnv 逐字相等。
+    另加**派生关系**（不另立钉，改结构时自动跟随）：
+      · `len(user) == chunkCount`（记录条数与实际块数脱钩 = 半截读数）；
+      · `chunkCount == 1 ⇒ user[0].len == sourceLen`（未切分 ⇒ 正文整段）；
+      · 任一 `user.len > sourceLen` ⇒ 红（块不可能比源文长）。
+    """
+    print('\n=== 分块链 user 消息（T-20261027-05 A2）===')
+    if not os.path.exists(CHUNK_MSG):
+        print('  ★快照缺失：%s' % CHUNK_MSG)
+        out['violations'].append('chunk_message 快照缺失 ⇒ 分块链 user 面不可判')
+        return
+    d = json.load(io.open(CHUNK_MSG, encoding='utf-8'))
+
+    pinned = set(CHUNK_USER_REDLINE)
+    seen = set()
+    for case in sorted(d):
+        node = d[case]
+        if case == 'meta' or not isinstance(node, dict):
+            continue
+        user = node.get('user')
+        source_len = node.get('sourceLen')
+        chunk_count = node.get('chunkCount')
+        if not isinstance(user, list) or not user:
+            print('  %-40s ★无 user 读数（空扫不是通过）' % case)
+            out['violations'].append('%s: 快照无 user 读数' % case)
+            continue
+        if len(user) != chunk_count:
+            print('  %-40s ★user 条数 %d ≠ chunkCount %s'
+                  % (case, len(user), chunk_count))
+            out['violations'].append(
+                '%s: user 条数 %d ≠ chunkCount %s ⇒ 记录与块数脱钩'
+                % (case, len(user), chunk_count))
+        if chunk_count == 1 and isinstance(source_len, int):
+            if user[0].get('len') != source_len:
+                print('  %-40s ★未切分但 user.len %s ≠ sourceLen %d'
+                      % (case, user[0].get('len'), source_len))
+                out['violations'].append(
+                    '%s: chunkCount=1 但 user.len %s ≠ sourceLen %d ⇒ 正文被改写/截断'
+                    % (case, user[0].get('len'), source_len))
+        for i, msg in enumerate(user):
+            key = '%s[%d]' % (case, i)
+            seen.add(key)
+            act = msg.get('len')
+            fnv = msg.get('fnv')
+            if not isinstance(act, int):
+                print('  %-40s ★缺 int 型 len' % key)
+                out['violations'].append('%s: 缺 int 型 len' % key)
+                continue
+            if isinstance(source_len, int) and act > source_len:
+                print('  %-40s ★块长 %d > 源长 %d' % (key, act, source_len))
+                out['violations'].append(
+                    '%s: 块长 %d > 源长 %d ⇒ 装配混入了块外内容'
+                    % (key, act, source_len))
+            if key not in pinned:
+                print('  %-40s %6d  ★未钉（新增块/边界变了）' % (key, act))
+                out['violations'].append(
+                    '%s: len=%d 未列入 CHUNK_USER_REDLINE ⇒ 分块链新增读数面'
+                    '没有上限（重钉须对账）' % (key, act))
+                continue
+            lim, fnv_frozen = CHUNK_USER_REDLINE[key]
+            _, tag = _pin_verdict(out, key, act, lim, '上限')
+            print('  %-40s %6d  上限 %6d  余量 %+6d  %s'
+                  % (key, act, lim, lim - act, tag))
+            if fnv != fnv_frozen:
+                print('  %-40s ★fnv %s ≠ 冻结 %s' % (key, fnv, fnv_frozen))
+                out['violations'].append(
+                    '%s: fnv %s ≠ 冻结 %s ⇒ 正文字节变了' % (key, fnv, fnv_frozen))
+    stale = sorted(pinned - seen)
+    if stale:
+        print('  ★钉表 %d 键在快照中不存在：%s' % (len(stale), stale))
+        out['violations'].append(
+            'CHUNK_USER_REDLINE 有 %d 键在快照中不存在 ⇒ 钉错对象/快照缩水：%s'
+            % (len(stale), ', '.join(stale)))
+    print('  扫描 %d 个 chunk 的 user 消息（钉表 %d 键）' % (len(seen), len(pinned)))
 
 
 if __name__ == '__main__':
