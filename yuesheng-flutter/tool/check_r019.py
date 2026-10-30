@@ -64,6 +64,16 @@ import sys
 
 DEFAULT_LIMIT = 50
 
+# 文件级行数棘轮容差（2026-10-30 T-20261030-08 缺口 A）。
+# 取 0 的理由：
+#   ① 基线记的是**登记时刻的确切行长**，不是「大致量级」。留 5 行 ⇒ 每个豁免
+#      文件每批可无痕变胖 5 行，135 个文件合起来敞口 675 行，棘轮形同虚设；
+#   ② 本检查只在收尾门禁跑，且「一批一 commit」已提供天然的一档粒度，
+#      不需要再给单次 commit 留缓冲；
+#   ③ 确有正当增长时走**重生成基线 + 负向验证**这条显式路径，让增长出现在
+#      diff 里，而不是被容差吞掉。
+FILE_LINE_TOLERANCE = 0
+
 # 控制流关键字：出现在 `(` 之前的标识符若命中，说明这不是函数签名
 CONTROL_KEYWORDS = {
     'if', 'else', 'for', 'while', 'switch', 'try', 'catch', 'finally',
@@ -365,6 +375,7 @@ def main():
     #    这正是「假绿」的一种：基线自己把自己清空了。
     report_hits = all_hits
     baseline_total = 0
+    baseline_errors = []   # 基线条目损坏（fail-closed，见文件级过滤处）
     if args.baseline:
         with io.open(args.baseline, encoding='utf-8') as f:
             base = json.load(f)
@@ -390,11 +401,34 @@ def main():
                 sorted(by_key[k], key=lambda r: -r['lines'])[:need])
         report_hits = kept
 
-        # 文件级基线过滤（2026-10-30 T-20261030-04）：key = 文件路径（身份），
-        # 与函数级同哲学——存量超 300 行文件一律豁免，只卡**新增**超线文件。
-        base_file_set = {v['file'] for v in base.get('fileViolations', [])}
-        report_file_hits = [h for h in all_file_hits
-                            if h['file'] not in base_file_set]
+        # 文件级基线过滤（2026-10-30 T-20261030-04；T-20261030-08 加行数棘轮）：
+        # key = 文件路径（身份）+ 登记时的行数（量）。
+        #   · 身份：基线里没有的文件一旦超线 ⇒ 新增；
+        #   · 量：基线里有的文件，当前 > 登记值 + FILE_LINE_TOLERANCE ⇒ 变胖；
+        #   · 变瘦不报 —— 只卡变胖不卡变瘦，避免正当拆分收益被反向误伤。
+        # fail-closed：基线条目读不到整数 lines ⇒ 判红，绝不把「读不到数」当「无违规」。
+        base_file_lines = {}
+        bad_files = set()
+        for v in base.get('fileViolations', []):
+            n = v.get('lines')
+            if isinstance(n, bool) or not isinstance(n, int) or n < 0:
+                bad_files.add(v.get('file'))
+                baseline_errors.append(
+                    '%s：fileViolations 缺可读 lines（实测 %r）'
+                    % (v.get('file'), n))
+                continue
+            base_file_lines[v['file']] = n
+        report_file_hits = []
+        for h in all_file_hits:
+            if h['file'] in bad_files:
+                continue
+            base_n = base_file_lines.get(h['file'])
+            if base_n is None:
+                report_file_hits.append(
+                    dict(h, base_lines=None, kind='new'))
+            elif h['lines'] > base_n + FILE_LINE_TOLERANCE:
+                report_file_hits.append(
+                    dict(h, base_lines=base_n, kind='grown'))
     else:
         report_file_hits = all_file_hits
 
@@ -444,10 +478,11 @@ def main():
     # ── 文件级 ≤ --file-limit 行（2026-10-30 T-20261030-04）──
     print('')
     print('─' * 68)
-    print('文件级 ≤ %d 行（R-019 文件声明；基线模式下只卡新增）' % args.file_limit)
+    print('文件级 ≤ %d 行（R-019 文件声明；基线模式下卡新增文件 + 变胖，容差 %d 行）'
+          % (args.file_limit, FILE_LINE_TOLERANCE))
     report_file_hits = sorted(report_file_hits, key=lambda r: -r['lines'])
     if not report_file_hits:
-        print('无**新增**超 %d 行文件 ✓（全量 %d 个超线文件均已在基线内豁免）'
+        print('无**新增/变胖**超 %d 行文件 ✓（全量 %d 个超线文件均未超基线登记值）'
               % (args.file_limit, len(all_file_hits))
               if args.baseline else '无超 %d 行文件 ✓' % args.file_limit)
     else:
@@ -458,7 +493,21 @@ def main():
             print('★超 %d 行的文件（全量模式）：%d 个'
                   % (args.file_limit, len(report_file_hits)))
         for r in report_file_hits:
-            print('  %-6d 行  %s' % (r['lines'], r['file']))
+            if r.get('kind') == 'grown':
+                print('  %-6d 行  %s  （基线 %d → 现 %d，容差 %d）'
+                      % (r['lines'], r['file'], r['base_lines'],
+                         r['lines'], FILE_LINE_TOLERANCE))
+            else:
+                print('  %-6d 行  %s' % (r['lines'], r['file']))
+
+    if baseline_errors:
+        print('')
+        print('★基线损坏（fail-closed）：%d 条 fileViolations 读不到可读的行数'
+              % len(baseline_errors))
+        for e in baseline_errors[:20]:
+            print('  ' + e)
+        if len(baseline_errors) > 20:
+            print('  ...（其余 %d 条略）' % (len(baseline_errors) - 20))
 
     if args.json:
         # ⚠️ 落盘一律**全量**（R-019 V4.14 的教训）：report_hits 此时已被基线
@@ -484,8 +533,9 @@ def main():
 
     # 退出码语义（止血模式下只卡新增）：
     #   全量模式 → 有任何超限（函数或文件级）即 1
-    #   止血模式 → 仅当存在**基线外新增**（函数或文件级）时 1；存量豁免不影响退出码
-    return 1 if (report_hits or report_file_hits) else 0
+    #   止血模式 → 存在**基线外新增**（函数或文件级）或**基线条目损坏**时 1；
+    #              存量豁免不影响退出码
+    return 1 if (report_hits or report_file_hits or baseline_errors) else 0
 
 
 if __name__ == '__main__':
