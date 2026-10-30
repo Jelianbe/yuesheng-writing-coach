@@ -328,6 +328,13 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   走 E1 实测登记，不新增红线键）。E2 估算回填：分片模板估 +60~80 实测 +245、
   merge 要求估 +30~50 实测 +95（说明段写长了，登记不扩范围）。
 
+· 2026-10-30 补守登记（T-20261030-03 · L4 护栏批）：`_kMergeOutputRequirement`
+  结束「无锚点看守」状态 —— 本文件新增 MERGE_REDLINE 源码字面量双钉
+  (902, 54e615da5a167a6d)（纯字面量无插值 == 运行时值，python 提取与
+  buildMergePrompt 运行时探针双路 E1 一致；扩快照超授权故不走快照通道，
+  依据见常量级段下方 MERGE 节头注）。同批另补 T-20261025-07 空壳基线形态网
+  （len+fnv 节点族「族内全零 len + 非空 fnv ⇒ fail」，补 dart 重建下限残留形态）。
+
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
   `json.load`），**它从不构建 prompt** ⇒ 快照不重冻时读数永远是**上一次重冻时的旧值**。
@@ -391,6 +398,9 @@ A2 批已补 `beginner_p3_yuesheng_forceSceneFirst`（66,237 = 65,628 + 609）�
   `_kChunkExceptionGuide`，同文件 `:406`）。**B3b-1 要改的就是它。**
 · `kDiagnosisProtocolSuffix` —— 拼在诊断轮次**旁路 system 消息**上的协议文本
   （`chat_service.dart:227`；`T-20261024-13` 缺口 1 的对象）。
+· `_kMergeOutputRequirement` —— 分块链 merge 输出要求常量（库私有，
+  `progressive_diagnosis.dart`）。**2026-10-30 补守**（T-20261030-03，关闭
+  24-06 登记缺口）：纯字面量无插值 ⇒ 源码字面量双钉（非快照通道，头注见 MERGE 节）。
 
 **本段覆盖什么**：这三块常量的**字符数与字节指纹（FNV-1a 64）**是否变化、
 是否超上限。等价于「体积与字节未变」这一条可判读。
@@ -421,6 +431,7 @@ A2 批已补 `beginner_p3_yuesheng_forceSceneFirst`（66,237 = 65,628 + 609）�
 import io
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -586,6 +597,12 @@ def main():
     # T-20261025-03 §二（B3b-0）：buildSystemPromptV2 之外的常量 —— 分块链 +
     # 例外表 + 协议 suffix。数据源是独立快照（运行时切片，非源码正则）。
     _check_consts(out)
+
+    # T-20261030-03：merge 输出要求常量永久看守（源码字面量 len+fnv 双钉）。
+    _check_merge_requirement(out)
+
+    # T-20261025-07：空壳基线形态网（族内全零 len + 非空 fnv ⇒ fail）。
+    _check_hollow_families(out)
 
     # T-20261024-13 缺口 1：注入后的 user 消息面 —— 有指纹、此前无上限。
     _check_user_face(out)
@@ -942,6 +959,87 @@ CONST_FLOOR = {
 }
 
 
+# ─────────────────────────────────────────────────────────────
+# merge 输出要求常量永久看守（T-20261030-03 · 关闭 24-06 登记缺口）
+#
+# ⚠️ 数据源与上方 CONST_REDLINE 四键**不同**：那四键读运行时快照；
+#   本键读**源码字面量**。为什么不扩快照（现场核实后裁定）：
+#   · prompt_const_anchor.json 天然不覆盖本常量（仅 4 键）；扩快照 = 改
+#     test/services/prompt_const_anchor_test.dart 的 _buildCurrent()，
+#     超本卡授权（24-06 §四已登记「不新增红线键（超授权），需永久看守另立支撑卡」）。
+#   · 本常量是**纯 '''...''' 字面量**（无插值 `$`、无转义序列）⇒ 源码字面量
+#     逐字符 == Dart 运行时 String.length。2026-10-30 双路 E1 交叉一致：
+#     python 源码提取 len=902 / fnv=54e615da5a167a6d；运行时探针
+#     buildMergePrompt(const []) 切片同值（len=902 / fnv=54e615da5a167a6d）。
+#   · ⚠️ 失效条件：本常量一旦加入 `$` 插值或 `\n` 类转义，「源码字面量 == 运行时」
+#     分家 ⇒ 本看守读数失真，须改走快照通道（扩 dart 测试 + 快照键），不得继续用本段。
+#
+# ★ 首钉（2026-10-30 · T-20261030-03）：(902, '54e615da5a167a6d')。
+#   方向 = 24-06（T-20261024-06）施工后定稿值（807→902，+95；该批已批已提交 75e2ab18）。
+#   fnv 口径 = 与 dart 侧 _fnv1a64 逐位同实现（FNV-1a 64 · UTF-16 codeUnits 迭代 ·
+#   终值 & 0x7fffffffffffffff · toRadixString(16) 不补零）——
+#   自校验锚点：_fnv1a64('') 必须 == '4bf29ce484222325'
+#   （== injection_segments_anchor.json 空 fullTextBlock / l3Inject.empty 实测空串指纹）。
+MERGE_REDLINE = {
+    '_kMergeOutputRequirement': (902, '54e615da5a167a6d'),
+}
+MERGE_SRC = os.path.join(ROOT, 'lib', 'services', 'progressive_diagnosis.dart')
+_MERGE_LITERAL_RE = re.compile(
+    r"const String _kMergeOutputRequirement = '''(.*?)'''", re.S)
+
+
+def _fnv1a64_dart(s):
+    """与 test/services/prompt_const_anchor_test.dart 的 _fnv1a64 逐位同实现。
+
+    FNV-1a 64：偏移基数 0xcbf29ce484222325，按 UTF-16 codeUnits 逐字节异或乘
+    0x100000001b3；代理对拆高低代理；终值 & 0x7fffffffffffffff；hex 小写不补零。
+    """
+    h = 0xcbf29ce484222325
+    for ch in s:
+        cu = ord(ch)
+        if cu > 0xFFFF:  # 非 BMP：拆 UTF-16 代理对（dart codeUnits 口径）
+            cp = cu - 0x10000
+            for su in (0xD800 + (cp >> 10), 0xDC00 + (cp & 0x3FF)):
+                h ^= su
+                h = (h * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
+            continue
+        h ^= cu
+        h = (h * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
+    return hex(h & 0x7FFFFFFFFFFFFFFF)[2:]
+
+
+def _check_merge_requirement(out):
+    """merge 输出要求常量：源码字面量 len+fnv 双钉（T-20261030-03）。"""
+    print('\n=== merge 输出要求常量看守（T-20261030-03 · 源码字面量双钉）===')
+    if not os.path.exists(MERGE_SRC):
+        print('  ★源码缺失：%s' % MERGE_SRC)
+        out['violations'].append(
+            'progressive_diagnosis.dart 缺失 ⇒ merge 常量看守不可判')
+        return
+    src = io.open(MERGE_SRC, encoding='utf-8').read()
+    m = _MERGE_LITERAL_RE.search(src)
+    if not m:
+        print('  ★抽取失败：_kMergeOutputRequirement 字面量锚点未命中')
+        out['violations'].append(
+            '_kMergeOutputRequirement 源码字面量锚点未命中 ⇒ '
+            '改名/改形态（含加插值），须重核本看守口径')
+        return
+    body = m.group(1)
+    lim, fnv_frozen = MERGE_REDLINE['_kMergeOutputRequirement']
+    act = len(body)
+    fnv = _fnv1a64_dart(body)
+    out.setdefault('merge_actual', {})['_kMergeOutputRequirement'] = act
+    _, tag = _pin_verdict(out, '_kMergeOutputRequirement', act, lim, '上限')
+    print('  %-26s %6d  上限 %6d  余量 %+6d  %s'
+          % ('_kMergeOutputRequirement', act, lim, lim - act, tag))
+    if fnv != fnv_frozen:
+        print('  %-26s ★fnv %s ≠ 冻结 %s' % (
+            '_kMergeOutputRequirement', fnv, fnv_frozen))
+        out['violations'].append(
+            '_kMergeOutputRequirement: fnv %s ≠ 冻结 %s ⇒ 字节变了（等长替换）'
+            % (fnv, fnv_frozen))
+
+
 def _check_consts(out):
     """常量级体积：逐键比上限 + 比字节指纹 + 下限自检。"""
     print('\n=== 常量级 prompt 体积（buildSystemPromptV2 之外 · B3b-0）===')
@@ -990,6 +1088,88 @@ def _check_consts(out):
             print('  %-26s ★%d 字符，低于下限 %d' % (key, act, floor))
             out['violations'].append(
                 '%s: %d 低于下限 %d ⇒ 疑量错对象' % (key, act, floor))
+
+
+# ─────────────────────────────────────────────────────────────
+# 空壳基线形态网（T-20261025-07 · F3 残留形态 · python 侧补拦）
+#
+# 判据：**一个 len+fnv 节点族内所有 len == 0 且存在非空 fnv ⇒ 必须 fail**
+# （与「体积为 0」同罪）。
+#
+# 背景（dart 侧实况，2026-10-30 现场核）：锚点重建下限（
+# test/helpers/anchor_content_floor.dart）按「叶字符串长度 + len/length 整数」累加
+# baselineVolume。dart 提交 58e0301b 堵住了「baselineVolume==0 ⇒ floor=0 ⇒ 恒绿」；
+# 但「键齐、len 全 0、fnv 非空」时空壳基线仍有 fnv/role 叶串体积
+# （message_sequence 实测 820）⇒ floor=ceil(820/2)=410 ⇒ 内容全空也 820 ≥ 410 ⇒ 仍恒绿。
+# 本道在 python 侧补拦：快照一旦被重冻成该形态直接红，不等 dart 比率判据。
+#
+# 合法例外（判据按「族内全零」生效，防误红）：**单节点** len=0 + fnv 非空是合法
+# 空串形态（l3Inject.empty / injection_segments nofulltext.fullTextBlock，
+# fnv=4bf29ce484222325 = 空串指纹）——它们所在族内另有 len>0 的兄弟节点，
+# 不构成「全零」。族 = 含 ≥2 个 {len:int, fnv:str} 形孩子的容器（dict 或 list）。
+HOLLOW_SNAPSHOTS = (
+    ('skill_prompt_anchor.json', 'test/snapshots/skill_prompt_anchor.json'),
+    ('message_sequence_anchor.json', 'test/snapshots/message_sequence_anchor.json'),
+    ('injection_segments_anchor.json', 'test/snapshots/injection_segments_anchor.json'),
+    ('prompt_const_anchor.json', 'test/snapshots/prompt_const_anchor.json'),
+)
+
+
+def _collect_shaped_families(node, path, families):
+    """递归收集 len+fnv 节点族：容器（dict/list）中 ≥2 个孩子是 {len:int, fnv:str}。"""
+    if isinstance(node, dict):
+        shaped, others = [], []
+        for k, v in node.items():
+            if (isinstance(v, dict) and isinstance(v.get('len'), int)
+                    and isinstance(v.get('fnv'), str)):
+                shaped.append((str(k), v))
+            else:
+                others.append((str(k), v))
+        if len(shaped) >= 2:
+            families.append((path, shaped))
+        for k, v in others:
+            _collect_shaped_families(v, '%s.%s' % (path, k), families)
+    elif isinstance(node, list):
+        shaped, others = [], []
+        for i, v in enumerate(node):
+            if (isinstance(v, dict) and isinstance(v.get('len'), int)
+                    and isinstance(v.get('fnv'), str)):
+                shaped.append(('[%d]' % i, v))
+            else:
+                others.append((i, v))
+        if len(shaped) >= 2:
+            families.append((path, shaped))
+        for i, v in others:
+            _collect_shaped_families(v, '%s[%d]' % (path, i), families)
+
+
+def _check_hollow_families(out):
+    """空壳基线形态网：族内全零 len + 非空 fnv ⇒ fail（T-20261025-07）。"""
+    print('\n=== 空壳基线形态网（T-20261025-07 · 族内全零 len + 非空 fnv）===')
+    for label, rel in HOLLOW_SNAPSHOTS:
+        p = os.path.join(ROOT, rel.replace('/', os.sep))
+        if not os.path.exists(p):
+            continue  # 缺失已由各自主判据 fail-closed，此处不重复报
+        try:
+            d = json.load(io.open(p, encoding='utf-8'))
+        except ValueError:
+            print('  ★%s：JSON 解析失败（主判据已报，此处不重复）' % label)
+            continue
+        families = []
+        _collect_shaped_families(d, label, families)
+        for fpath, members in families:
+            lens = [m[1]['len'] for m in members]
+            fnvs = [m[1]['fnv'] for m in members]
+            all_zero = bool(lens) and all(x == 0 for x in lens)
+            if all_zero and any(fnv for fnv in fnvs):
+                print('  ★%s：%d 个节点族 len 全 0、fnv 非空 ⇒ 空壳基线'
+                      % (fpath, len(members)))
+                out['violations'].append(
+                    '%s: 族内 %d 个节点 len 全 0 且 fnv 非空 ⇒ 空壳基线'
+                    '（T-20261025-07 F3 残留形态）' % (fpath, len(members)))
+            else:
+                print('  %s：%d 节点，全零=%s OK'
+                      % (fpath, len(members), '是' if all_zero else '否'))
 
 
 # ─────────────────────────────────────────────────────────────

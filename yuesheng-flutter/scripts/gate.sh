@@ -1035,7 +1035,11 @@ else
   #   6 探针覆盖「真源加字段 / DTO 加字段 / 呈现面接上 / 渲染被禁字段 / 豁免到期 / 复原」。
   if [ -f "$ROOT/scripts/_selftest_surface_visibility.py" ]; then
     if "$PY_BIN" scripts/_selftest_surface_visibility.py > "$SURFACE_SELFTEST_LOG" 2>&1; then
-      echo "  [PASS] S1 守卫负向验证（6 探针：非恒绿非恒红）"
+      # ★★ 前缀是 [INFO] 而不是 [PASS]（2026-10-30 T-20261025-16，与 :1111 证据链自测同处理）：
+      #   本层是 WARN 级守卫、不计入门禁道数；[PASS] 的既定含义是「判定通过并计入 tally」。
+      #   断言只保留可观测的一件事：rc=0。旧版那行声称「非恒绿非恒红」——实测自测层被
+      #   强制绿（m1）或删掉探针（m2）时它一字不变 ⇒ 把结论写进输出 = 在没有证据处盖章。
+      echo "  [INFO] S1 守卫自测 rc=0（守卫对 6 类输入有反应；自测层是否可静默不在本行证明范围）"
     else
       echo "  [WARN] S1 守卫负向验证失败——守卫可能已恒绿或恒红，详见 $SURFACE_SELFTEST_LOG"
       cat "$SURFACE_SELFTEST_LOG"

@@ -16,9 +16,18 @@
 | P6 | 全部复原 | rc=0 | 探针无污染 |
 
 ★ 探针全部在**副本**上做（不碰真源）⇒ 不污染仓库。
+
+★ 自测层自身的兜底（2026-10-30 T-20261025-16 补，照 _selftest_gate_evidence.py 先例）：
+  · 哨兵 `_check_can_report_failure()`：check() 被改成恒绿 ⇒ rc=1（变异 m1 已实测）。
+  · 清单自断言 EXPECTED_CHECK_NAMES：删掉/改名任一 check() 调用 ⇒ rc=1 且指名（m2 已实测）。
+  · 「6/6」旧字面量已改为从实跑条数取（len(RAN)）。
+  残余风险：**必须同时改坏 check() 与哨兵**才会静默——有意的低代价兜底，不再往上加；
+  再往上就是自指涉递归。增删/改名任何一条 check() 调用，必须同笔改 EXPECTED_CHECK_*。
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import re
 import shutil
@@ -38,6 +47,29 @@ DTO = REPO / "lib" / "services" / "message_card_service.dart"
 CARD = REPO / "lib" / "widgets" / "diagnosis_card.dart"
 
 FAILS = []
+RAN = []  # 实跑的 check() 名清单（清单自断言用；哨兵自己那条不计入，见 _check_can_report_failure）
+
+# ---------------- 期望的检查清单（R3 自断言的锚 · T-20261025-16）----------------
+# 【为什么要有它】删掉一条 check()、或注释掉一次调用，只要剩下的都通过，输出与
+#   「全过」外观一字不差 —— 「覆盖变少」与「覆盖完好」同形（旧版实测：删 P5 两条
+#   仍 rc=0 且照样印 6/6）。条数 + 名称集合双比对，删一条、或「删一加一」都能被抓。
+# 【增删/改名任何一条 check() 调用，必须同笔改这里】这是有意的：让它红，好过静默少测。
+EXPECTED_CHECK_COUNT = 13
+EXPECTED_CHECK_NAMES = (
+    "P0 原状 rc=0",
+    "P0 断链仅剩 nextFocus（豁免登记中，不误报）",
+    "P1 真源新增字段 ⇒ rc=1",
+    "P1 报红点名 selftestProbeField",
+    "P2 DTO 清单外字段 ⇒ rc=1",
+    "P2 报红点名 selftestGhostField",
+    "P3 豁免混入已贯通字段 ⇒ rc=1",
+    "P3 报红指出豁免名存实亡",
+    "P4 渲染 confidence ⇒ rc=1",
+    "P4 报红指出违反设计性不露正典",
+    "P5 豁免到期 ⇒ rc=1",
+    "P5 报红点名逾期天数",
+    "P6 复原后 rc=0",
+)
 
 
 def run(base: Path) -> tuple:
@@ -49,10 +81,57 @@ def run(base: Path) -> tuple:
 
 
 def check(name: str, cond: bool, detail: str = "") -> None:
+    RAN.append(name)
     tag = "OK  " if cond else "FAIL"
     print("  [%s] %s%s" % (tag, name, ("  ← " + detail) if detail and not cond else ""))
     if not cond:
         FAILS.append(name)
+
+
+def _check_can_report_failure() -> bool:
+    """哨兵（R2 兜底 · T-20261025-16）：直接验 check() 还能不能**报告失败**。
+
+    【为什么不复用 FAILS 汇总】FAILS 是从 check() 的 cond 算出来的。若 check() 被改成
+      恒绿（`pass`），FAILS 恒空 —— 让嫌疑人自己作证，永远判无罪。这里改成：往
+      FAILS / RAN 各塞一条**已知必失败**的记录，直接读回它是不是真落进去了。
+    【为什么不经别的环节】只依赖两表的**追加**与**末元素取值**，不依赖汇总、不依赖
+      退出码计算 ⇒ 不会被同一条篡改带走。
+    【不污染汇总】末尾 `del` 把哨兵自己抹掉；EXPECTED_CHECK_COUNT 不受影响。
+    【输出不污染】打印重定向掉，否则正常跑会多一行 `FAIL __SANITY__` 引人误查。
+    【能变红（已实测）】把 check() 里的 `FAILS.append(name)` 改成 `pass`（= 变异 m1）
+      ⇒ 追加不发生 ⇒ 返回 False ⇒ 汇总前直接 rc=1。
+    """
+    n0f, n0r = len(FAILS), len(RAN)
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        check("__SANITY__", False, "哨兵：本行必须被记 FAIL（不参与汇总）")
+    ok = (len(FAILS) == n0f + 1 and FAILS[-1] == "__SANITY__"
+          and len(RAN) == n0r + 1 and RAN[-1] == "__SANITY__")
+    del FAILS[n0f:]
+    del RAN[n0r:]
+    return ok
+
+
+def self_check_manifest(names) -> list:
+    """R3：把实跑的 check() 名字与 EXPECTED_CHECK_NAMES 对齐。返回问题列表（空 = 通过）。
+
+    ★ 它自己不产生 check() 调用 ⇒ 不会像「哨兵自计数」那样自指涉抵消。
+    【能变红（已实测）】删掉 P5 那 2 条调用 ⇒ 「条数不符 11 ≠ 13」
+      +「少了一条：P5 豁免到期 ⇒ rc=1, P5 报红点名逾期天数」。
+    """
+    problems = []
+    if len(names) != EXPECTED_CHECK_COUNT:
+        problems.append("条数不符：实跑 %d 条 / 期望 %d 条" % (len(names), EXPECTED_CHECK_COUNT))
+    dup = [n for n in sorted(set(names)) if names.count(n) > 1]
+    if dup:
+        problems.append("检查名重复：%s" % ", ".join(dup))
+    missing = [n for n in EXPECTED_CHECK_NAMES if n not in names]
+    if missing:
+        problems.append("少了一条：%s" % ", ".join(missing))
+    extra = [n for n in names if n not in EXPECTED_CHECK_NAMES]
+    if extra:
+        problems.append("多了一条（不在期望清单里）：%s" % ", ".join(extra))
+    return problems
 
 
 def make_copy(tmp: Path) -> Path:
@@ -188,10 +267,31 @@ def main() -> int:
         shutil.rmtree(tmp, ignore_errors=True)
 
     print("")
+
+    # ── 哨兵（R2 兜底）：必须在汇总之前；check() 恒绿 ⇒ 本次「全绿」无意义 ──
+    if not _check_can_report_failure():
+        print("-" * 60)
+        print("FAIL 自检哨兵：check() 已不能报告失败 ⇒ 本次「全绿」无意义，不计入通过")
+        print("     ⇒ 处置：先修 check()；**不要**把本行当噪声跳过 ——")
+        print("        它意味着上面每一行 OK 都不可信。")
+        return 1
+
+    # ── 清单自断言（R3）：条数 + 名称集合双比对 ──
+    manifest = self_check_manifest(RAN)
+    if manifest:
+        for p in manifest:
+            print("[FAIL] 检查清单自断言：%s" % p)
+        print("⇒ 实跑清单与 EXPECTED_CHECK_* 不一致。**先别改常量** ——")
+        print("   先确认删掉的那条是真不需要了，再同笔改常量；顺手改常量等于把")
+        print("   「覆盖被缩小」这件事改成了「符合预期」。")
+        return 1
+
     if FAILS:
         print("SELFTEST_FAIL（%d 项）：%s" % (len(FAILS), ", ".join(FAILS)))
         return 1
-    print("SELFTEST_OK：6/6 探针全过（证明 S1 守卫非恒绿非恒红）")
+    n = len(RAN)
+    print("SELFTEST_OK：%d/%d 检查全过（守卫对 6 类输入有反应；自测层是否可静默不在本行证明范围）"
+          % (n - len(FAILS), n))
     return 0
 
 
