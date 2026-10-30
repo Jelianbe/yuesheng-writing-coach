@@ -240,8 +240,12 @@ List<ChunkCoverage> computeChunkCoverage(String content, List<String> chunks) {
 ///
 /// 原子性：单段超长（首段即 ≥ SIZE）时**整段成块**，不再按字符硬切——
 /// 段落是分块算法的边界，段内不再切。修复批次 H 侦察的同步死循环缺陷
-/// （ADR-C73 §2）。**两级分隔符都切不出段（整篇无换行）时仍整段成块**：
-/// 此时不存在段落边界，字符硬切会造出句中断崖，属另一项设计取舍，H6 不动。
+/// （ADR-C73 §2）。
+///
+/// 第三级降级（T-20261031-02 · `§4-392`）：两级分隔符都切不出段（整篇无换行）
+/// 时，不再整段成块，改按**句末标点**切句（标点随句保留 ⇒ 块仍是原文逐字
+/// 子串，覆盖区间反查不受影响）；单句仍 ≥ SIZE 时按 SIZE 硬切兜底（病态输入，
+/// 代价是可能句中截断，见报批稿 §7-1）。有换行稿的路径**一字不动**。
 List<String> splitContent(String content) {
   if (content.length <= kDiagnosisChunkSize) {
     return [content];
@@ -254,12 +258,56 @@ List<String> splitContent(String content) {
     paragraphs = content.split(separator);
   }
   if (paragraphs.length == 1) {
+    // 第三级：无换行长稿 ⇒ 按句末标点切；单句仍超长时按 SIZE 硬切兜底。
+    // 块文本仍是原文逐字子串（标点随句保留、join('') 无损还原）。
+    paragraphs = splitSentencesOrHardCut(content);
+    separator = '';
+  }
+  if (paragraphs.length == 1) {
     return [content];
   }
 
   final (chunks, spans) = _chunkParagraphs(paragraphs, separator);
-  _mergeSmallLastChunk(chunks, spans, paragraphs.length, separator);
+  _mergeSmallLastChunk(chunks, spans, paragraphs, separator);
   return chunks;
+}
+
+/// 第三级降级：按句末标点（。！？…；!?，以及「后接空白/行尾」的 .）切句，
+/// 保留标点；单句长度 ≥ [kDiagnosisChunkSize] 时按 SIZE 硬切。
+///
+/// 硬切是**病态输入兜底**（中文长文几乎不出现千字无标点）：优先保界，
+/// 代价是可能出现句中截断——该分支的失效面已登记（报批稿 §7-1）。
+/// join('') 可逐字还原原文 ⇒ 覆盖区间反查（`computeChunkCoverage`）不受影响。
+List<String> splitSentencesOrHardCut(String content) {
+  final sentences = <String>[];
+  var start = 0;
+  for (var i = 0; i < content.length; i++) {
+    if (!_isSentenceEnd(content, i)) continue;
+    sentences.add(content.substring(start, i + 1));
+    start = i + 1;
+  }
+  if (start < content.length) sentences.add(content.substring(start));
+  return [
+    for (final s in sentences)
+      if (s.length <= kDiagnosisChunkSize)
+        s
+      else
+        for (var i = 0; i < s.length; i += kDiagnosisChunkSize)
+          s.substring(
+            i,
+            i + kDiagnosisChunkSize < s.length
+                ? i + kDiagnosisChunkSize
+                : s.length,
+          ),
+  ];
+}
+
+/// 句末标点判定：中文句末/分号一律算；ASCII `.` 仅在后接空白或行尾时算
+/// （避免把小数、缩写、域名切开）。
+bool _isSentenceEnd(String text, int i) {
+  const ends = '。！？…；!?';
+  if (ends.contains(text[i])) return true;
+  return text[i] == '.' && (i + 1 >= text.length || text[i + 1].trim().isEmpty);
 }
 
 /// 按段落 + overlap 切块，返回 (块文本列表, 每块段索引区间 [start, end))。
@@ -371,7 +419,7 @@ int _overlapStartIndex(
 void _mergeSmallLastChunk(
   List<String> chunks,
   List<({int start, int end})> spans,
-  int paragraphCount,
+  List<String> paragraphs,
   String separator,
 ) {
   if (chunks.length < 2) return;
@@ -381,8 +429,14 @@ void _mergeSmallLastChunk(
   final lastStart = spans.last.start;
   final prevEnd = spans[spans.length - 2].end;
   final dupCount =
-      (prevEnd < paragraphCount ? prevEnd : paragraphCount) - lastStart;
-  if (dupCount <= 0) {
+      (prevEnd < paragraphs.length ? prevEnd : paragraphs.length) - lastStart;
+  if (separator.isEmpty) {
+    // 第三级降级（句切）：分隔符为空时 `last.split('')` 按**码元**切，
+    // skip(dupCount) 会跳字符而不是跳段 ⇒ 改按段索引取值重建（T-20261031-02）。
+    final from = lastStart + dupCount;
+    final kept = paragraphs.sublist(from.clamp(0, paragraphs.length)).join();
+    chunks[chunks.length - 2] = '${chunks[chunks.length - 2]}$kept';
+  } else if (dupCount <= 0) {
     chunks[chunks.length - 2] = '${chunks[chunks.length - 2]}$separator$last';
   } else {
     final kept = last.split(separator).skip(dupCount).join(separator);

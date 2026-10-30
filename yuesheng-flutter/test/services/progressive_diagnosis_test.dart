@@ -214,17 +214,18 @@ void main() {
       expect(chunks.single, exact);
     });
 
-    test(r'#6 单段超长（>= SIZE 且无 \n\n）不挂死，整段成块', () {
+    test(r'#6 无换行超长（>= SIZE 且无 \n\n、\n）不挂死，第三级降级成块', () {
       // 死循环判据（ADR-C73 §2）：批次 H 实锤，单段 ≥3000 + 总长 >3000
       // 会让 while(startIndex < paragraphs.length) 永真（endIndex=startIndex
       // → overlapStart ≤ startIndex → startIndex 不变）。
-      // 修复后：首段即超阈值时强制 endIndex = startIndex + 1，整段成块。
-      // 用例必须秒过（>60s 即变异命中，挂死型拦截由 _verify_batch_h_coverage
-      // 兜底）。
-      final longSingle = 'X' * 4000; // 单段 4000 字符，无段落边界
+      // T-20261031-02 起，无换行稿走第三级降级（无标点 ⇒ 按 SIZE 硬切），
+      // 不再整段成块；本用例同时守住「不挂死」与「块有界且无损」。
+      final longSingle = 'X' * 4000; // 无任何分隔符与标点
       final chunks = splitContent(longSingle);
       expect(chunks, isNotEmpty);
-      expect(chunks.single, longSingle); // 整段成块
+      expect(chunks.length, greaterThan(1)); // 不再整段成块
+      expect(chunks.join(), longSingle); // 逐字无损
+      expect(chunks.every((c) => c.length <= kDiagnosisChunkSize), isTrue);
     });
 
     test(r'#7 字符串中间夹杂 \n\n 但首段即 ≥ SIZE → 首段成块 + 后续正常切', () {

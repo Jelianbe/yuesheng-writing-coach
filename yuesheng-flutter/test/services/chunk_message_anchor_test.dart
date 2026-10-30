@@ -11,9 +11,9 @@
 //   路径，逐 chunk 记录 user 消息的 (len, fnv)，并记录源文本长度。
 //   ⇒ 改分块阈值 / 改切法 / 改装配（正文被前置标签污染）都会现形。
 //
-// ★ 这些是**形状钉**，不是内容上限：正文长度由用户输入决定（`single_paragraph_*`
-//   一例就是「无分隔符长段整段成块」的现有行为，见 `splitContent` 的单段原子性）。
-//   真加切分上限属行为变更，须另立卡 —— 本测试把现状钉住，变更时红灯逼重钉。
+// ★ 这些是**形状钉**，不是内容上限：正文长度由用户输入决定。T-20261031-02
+//   起，整篇无换行的稿件走第三级降级（句末切分 / 单句硬切），块长回到阈值内
+//   ——`single_paragraph_*` 与 `prose_no_newline_*` 两组用例正是钉住这条边界。
 //
 // 用法：
 //   flutter test test/services/chunk_message_anchor_test.dart
@@ -43,6 +43,10 @@ int _fnv1a64(String s) {
 /// 合成语料：只有「长度 + 分隔符」两个维度参与分块，字符本身无意义。
 String _p(int n) => '风' * n;
 
+/// 拟真语料：中文句末标点切句（T-20261031-02 第三级降级的真实触发面）。
+const String _kSent = '他推开门，屋里没有人，只有桌上的茶还冒着热气。窗外的雨下得更急了，檐水连成一条线。';
+String _prose(int n) => (_kSent * (n ~/ _kSent.length + 1)).substring(0, n);
+
 class _Case {
   final String name;
   final String content;
@@ -55,9 +59,12 @@ final List<_Case> _kCases = <_Case>[
     'paragraphs_3x1199',
     <String>[_p(1199), _p(1199), _p(1199)].join('\n\n'),
   ),
-  // 无分隔符长段：`splitContent` 的既有行为是**整段成一块**（不可再分的原子）。
+  // 无分隔符且无标点：第三级降级的**硬切兜底**（T-20261031-02）。
   _Case('single_paragraph_6000', _p(6000)),
   _Case('single_paragraph_20000', _p(20000)),
+  // 无换行但带中文句末标点：句切降级（真实长稿形态）。
+  _Case('prose_no_newline_6000', _prose(6000)),
+  _Case('prose_no_newline_20000', _prose(20000)),
 ];
 
 /// 一个用例的读数：源长 + 块数 + 逐 chunk 的 user 消息 (len, fnv)。

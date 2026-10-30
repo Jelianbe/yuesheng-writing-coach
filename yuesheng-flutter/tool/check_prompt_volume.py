@@ -352,8 +352,13 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   buildChunkMessages` 实测）与 `CHUNK_USER_REDLINE` / `_check_chunk_user`：
   形状钉（分块边界 + 正文字节）+ 派生关系（`len(user)==chunkCount` ·
   `chunkCount==1 ⇒ len==sourceLen` · `len>sourceLen ⇒ 红`）。
-  实测：3 段×1199 → 2×2400；无分隔符 6000 → 6000；无分隔符 20000 → 20000
-  （后者把「无分隔符整段成块」的现状钉住；真加切分上限另立 T-20261031-02）。
+  实测（T-20261027-05 A2 当批）：3 段×1199 → 2×2400；无分隔符 6000 → 6000；
+  无分隔符 20000 → 20000（当批把「无分隔符整段成块」的现状钉住）。
+  · 2026-10-31 后续批（T-20261031-02 · `§4-392`）：第三级「句末切分 + 单句
+    硬切」落地后实测 3×1199 → 2×2400（不变）· 无标点 6000 → 2×3000 ·
+    无标点 20000 → 6×3000+2000 · 中文句末稿 6000 → 2993+3212 ·
+    20000 → 6×2993+3272 ⇒ 钉表按实测重钉（`single_paragraph_*` 全键 +
+    新增 `prose_no_newline_*` 两例）。
 
 ⚠️★ **2026-10-06 实测发现的根因：本脚本可能长期处于「假绿」**（读数纪律升级）
   数据源 = `test/snapshots/skill_prompt_anchor.json`（`:80` `ANCHOR` + `:105`
@@ -1286,8 +1291,25 @@ USER_FACE_BLOCKS_REDLINE = {
 CHUNK_USER_REDLINE = {
     'paragraphs_3x1199[0]': (2400, '43580d2a1d54585d'),
     'paragraphs_3x1199[1]': (2400, '43580d2a1d54585d'),
-    'single_paragraph_6000[0]': (6000, '2106492fa36fbfe5'),
-    'single_paragraph_20000[0]': (20000, '4482fe1bfde789a5'),
+    # T-20261031-02 第三级降级（句末切分 / 单句硬切）后的实测值：
+    'single_paragraph_6000[0]': (3000, '406095dc9bff0305'),
+    'single_paragraph_6000[1]': (3000, '406095dc9bff0305'),
+    'single_paragraph_20000[0]': (3000, '406095dc9bff0305'),
+    'single_paragraph_20000[1]': (3000, '406095dc9bff0305'),
+    'single_paragraph_20000[2]': (3000, '406095dc9bff0305'),
+    'single_paragraph_20000[3]': (3000, '406095dc9bff0305'),
+    'single_paragraph_20000[4]': (3000, '406095dc9bff0305'),
+    'single_paragraph_20000[5]': (3000, '406095dc9bff0305'),
+    'single_paragraph_20000[6]': (2000, '167d3db812ddb165'),
+    'prose_no_newline_6000[0]': (2993, '65149fde9de81cee'),
+    'prose_no_newline_6000[1]': (3212, '7bb401f1bed4f153'),
+    'prose_no_newline_20000[0]': (2993, '65149fde9de81cee'),
+    'prose_no_newline_20000[1]': (2993, '65149fde9de81cee'),
+    'prose_no_newline_20000[2]': (2993, '65149fde9de81cee'),
+    'prose_no_newline_20000[3]': (2993, '65149fde9de81cee'),
+    'prose_no_newline_20000[4]': (2993, '65149fde9de81cee'),
+    'prose_no_newline_20000[5]': (2993, '65149fde9de81cee'),
+    'prose_no_newline_20000[6]': (3272, '717169e221290031'),
 }
 
 # 下限自检：注入后的 user 消息必须**至少**装得下协议后缀本体，否则说明

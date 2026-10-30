@@ -18,21 +18,97 @@
   },
   "single_paragraph_6000": {
     "sourceLen": 6000,
-    "chunkCount": 1,
+    "chunkCount": 2,
     "user": [
       {
-        "len": 6000,
-        "fnv": "2106492fa36fbfe5"
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
+      },
+      {
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
       }
     ]
   },
   "single_paragraph_20000": {
     "sourceLen": 20000,
-    "chunkCount": 1,
+    "chunkCount": 7,
     "user": [
       {
-        "len": 20000,
-        "fnv": "4482fe1bfde789a5"
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
+      },
+      {
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
+      },
+      {
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
+      },
+      {
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
+      },
+      {
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
+      },
+      {
+        "len": 3000,
+        "fnv": "406095dc9bff0305"
+      },
+      {
+        "len": 2000,
+        "fnv": "167d3db812ddb165"
+      }
+    ]
+  },
+  "prose_no_newline_6000": {
+    "sourceLen": 6000,
+    "chunkCount": 2,
+    "user": [
+      {
+        "len": 2993,
+        "fnv": "65149fde9de81cee"
+      },
+      {
+        "len": 3212,
+        "fnv": "7bb401f1bed4f153"
+      }
+    ]
+  },
+  "prose_no_newline_20000": {
+    "sourceLen": 20000,
+    "chunkCount": 7,
+    "user": [
+      {
+        "len": 2993,
+        "fnv": "65149fde9de81cee"
+      },
+      {
+        "len": 2993,
+        "fnv": "65149fde9de81cee"
+      },
+      {
+        "len": 2993,
+        "fnv": "65149fde9de81cee"
+      },
+      {
+        "len": 2993,
+        "fnv": "65149fde9de81cee"
+      },
+      {
+        "len": 2993,
+        "fnv": "65149fde9de81cee"
+      },
+      {
+        "len": 2993,
+        "fnv": "65149fde9de81cee"
+      },
+      {
+        "len": 3272,
+        "fnv": "717169e221290031"
       }
     ]
   }

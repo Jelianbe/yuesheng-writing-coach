@@ -12,6 +12,10 @@
 //   E2E-4: 10000 字极长文（极端输入）仍秒级返回
 //   E2E-5: 50000 字超长文（远超实际）鲁棒性兜底
 //
+// ★ T-20261031-02（`§4-392`）起，无换行长文不再整段成块：走第三级降级
+//   （句末切分 / 单句硬切），E2E-1/4/5 的判据由「块 == 全文」改为
+//   「块数 > 1 且 join 还原全文、每块 ≤ SIZE（末块可带一次合并）」。
+//
 // 性能阈值取保守值（2-5 秒），实测远超此基线；阈值用于拦截「退化」、
 // 不拦截正常实现——任何满足 batch I 修复要求的实现都应轻松通过。
 // ─────────────────────────────────────────────────────────────
@@ -27,21 +31,27 @@ void main() {
       // 真机最坏场景：用户复制整篇没分段的长文粘贴
       // 长度 5000 > kDiagnosisChunkSize=3000，且无段落边界
       // 批次 H 侦察实证：未修复时会**同步死循环**（timeout 失效）
-      // 修复后（ADR-C73 §2）：整段成块并推进 startIndex，秒级返回
+      // 修复后（ADR-C73 §2）不再死循环；T-20261031-02 起改走第三级降级。
       final long = '甲乙丙丁戊己庚辛壬癸' * 500; // 500 × 10 = 5000 字符
 
       final sw = Stopwatch()..start();
       final chunks = splitContent(long);
       sw.stop();
 
-      expect(chunks, isNotEmpty, reason: '不应返回空（修复后整段成块）');
+      expect(chunks, isNotEmpty, reason: '不应返回空');
       expect(
         sw.elapsedMilliseconds,
         lessThan(2000),
         reason: '5000 字应在 2 秒内完成（原死循环会无限挂死）',
       );
-      // 单段原子性：整段成块
-      expect(chunks.single, long, reason: '单段超长整段成块，不切字符');
+      // T-20261031-02：无标点长文按 SIZE 硬切兜底（5000 ⇒ 3000+2000）。
+      expect(chunks.length, greaterThan(1), reason: '整篇无换行不得再整段成块');
+      expect(chunks.join(), long, reason: '切块必须无损（可逐字还原）');
+      expect(
+        chunks.every((c) => c.length <= kDiagnosisChunkSize),
+        isTrue,
+        reason: '每块不得超 SIZE',
+      );
     });
 
     test('E2E-2 8000 字多段长文（典型分段写作）切片合理、末段不丢', () {
@@ -126,14 +136,20 @@ void main() {
         lessThan(2000),
         reason: '10000 字应在 2 秒内完成',
       );
-      // 无段落边界 → 单段原子性：整段成块
-      expect(chunks.single, fullContent);
+      // T-20261031-02：无段落边界 ⇒ 第三级降级（此处无标点 ⇒ 硬切兜底）。
+      expect(chunks.length, greaterThan(1), reason: '极端长文应切成多块');
+      expect(chunks.join(), fullContent, reason: '切块必须无损');
+      expect(
+        chunks.every((c) => c.length <= kDiagnosisChunkSize),
+        isTrue,
+        reason: '每块不得超 SIZE',
+      );
     });
 
     test('E2E-5 50000 字超长文（远超实际）鲁棒性兜底不挂死', () {
       // 边界鲁棒性：远超实际场景的输入仍能在合理时间内返回
       // 注：50000 字 > kDiagnosisMinLastChunk=500 但 < 整段 SIZE；
-      // 由于无段落边界，仍触发单段原子路径
+      // 无段落边界 ⇒ 第三级降级（无标点时按 SIZE 硬切兜底）
       final long = '穗' * 50000;
 
       final sw = Stopwatch()..start();
@@ -146,8 +162,14 @@ void main() {
         lessThan(5000),
         reason: '50000 字应在 5 秒内完成（退化告警）',
       );
-      // 单段原子：整段成块
-      expect(chunks.single, long);
+      // T-20261031-02：无标点 ⇒ 硬切兜底；块数随长度增长（此处须仍为多块）。
+      expect(chunks.length, greaterThan(1), reason: '50000 字不得整段成块');
+      expect(chunks.join(), long, reason: '切块必须无损');
+      expect(
+        chunks.every((c) => c.length <= kDiagnosisChunkSize),
+        isTrue,
+        reason: '每块不得超 SIZE',
+      );
     });
   });
 }

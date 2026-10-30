@@ -49,8 +49,8 @@
     {
       "file": "lib/services/progressive_diagnosis.dart",
       "func": "_chunkParagraphs",
-      "start": 275,
-      "end": 325,
+      "start": 323,
+      "end": 373,
       "lines": 51
     }
   ],
@@ -417,7 +417,7 @@
     },
     {
       "file": "lib/services/progressive_diagnosis.dart",
-      "lines": 1568
+      "lines": 1622
     },
     {
       "file": "lib/services/progress_service.dart",
