@@ -554,6 +554,33 @@ void main() {
       getSkill('coaching-actions-v2')?.content ?? '',
     ].join('\n');
 
+    // ───────────────────────────────────────────────────────────
+    // ★ T-20261031-14：本判据的抽取式**不得**以「症」结尾作锚。
+    //
+    // 24-17 把 lib/ 内以「症」结尾的硬编码名字全部去掉了末字，于是「要求名字
+    // 以『症』结尾」的抽取式在 allKb 上**零命中** ⇒ `bad` 恒空 ⇒ 断言恒绿。
+    // U2 实测（2026-10-31）：严格式 0 命中；去掉「症」锚后 554 命中（覆盖
+    // 39/39 个 ID），其中「名字属于另一个 ID」的错配 **0** 条 ⇒ 配对还在，
+    // 只是形态变了。⇒ 判据改为**反查**（不再以「症」为锚），三条子判据：
+    //
+    //   R-A 跨 ID 错配：全库 `P0XX + 中文 token`，token 若恰好是**别的 ID** 的
+    //       别名 ⇒ 红（0.3.6 重编号残留的主形态）。
+    //   R-B 旧形态残留：token 以「症」结尾 ⇒ 红（旧名一律在白名单外，V3）。
+    //   R-C 名字槽位：标题行 `### P0XX 名字` 的名字必须是该 ID 的别名 ⇒ 改名
+    //       未同步注册表即红（#15 只查标题存在且唯一，不查名字对不上）。
+    //
+    // 白名单口径（V3）：`kLegacySyndromeNames`（24-07 过渡件，31 条旧名）已随
+    // 24-17 清扫删除（现场核：`grep -rn kLegacySyndromeNames lib/ test/` 无该
+    // 符号，只剩退役档案里的注释提到）⇒ 允许集 = **注册表现行字段**
+    // （name / shortName / v1·v2 动作显示名，及去「症」形态）。⇒ 任何旧名
+    // （含「现行名 + 症」形态）都落在白名单外 ⇒ 必红，不会因白名单被复活。
+    //
+    // 已知边界（不是缺陷，是取舍）：叙述文本里 157 条 `P0XX + 叙述词`（如
+    // 「P001 优先」「P006 是风格问题」）不属任何别名 ⇒ R-A 跳过，不判红。
+    // 若强行要求「全库每个 token 都必须是别名」，现行四库立刻误红 157 条；
+    // 而按「表格单元格/列表行首」判名字槽又误红 40 条（消歧裁决表 `| P001 优先 |`）。
+    // ⇒ 严格性只落在**标题槽位**（78/78 命中现行名，零误红）。
+    // ───────────────────────────────────────────────────────────
     test('#13 症候「ID↔名字」一致性：全库 P0XX 后的名字必须匹配注册表', () {
       final nameById = {for (final s in kSyndromeRegistry) s.id: s.name};
       final aliases = <String, Set<String>>{
@@ -563,28 +590,230 @@ void main() {
             s.shortName,
             s.name.replaceAll(RegExp(r'症$'), ''),
             s.shortName.replaceAll(RegExp(r'症$'), ''),
+            // 动作库渲染的是 v1/v2 动作显示名（`v1ActionDisplayName` /
+            // `v2ActionDisplayName`），不并入 ⇒ coaching-actions-v2 必假红。
+            s.v1ActionDisplayName,
+            s.v2ActionDisplayName,
           },
       };
-      // 只认「P0XX + 以“症”结尾的名字 + 边界」；跳过「P018 为基础症候」
-      // 「P001-P023 全部症候」这类范围/叙述文本（其后不是边界）。
+      // 别名 → 拥有它的 ID 集合（反查「这条名字属于谁」）
+      final ownerOf = <String, Set<String>>{};
+      aliases.forEach((id, set) {
+        for (final a in set) {
+          ownerOf.putIfAbsent(a, () => <String>{}).add(id);
+        }
+      });
+
+      // 抽取式：`P0XX + 紧跟的中文 token（2–12 字）+ 边界`。**不再要求以
+      // 「症」结尾**（那正是 24-17 消除的形态）。边界前置断言保留，用于跳过
+      // 「P018 为基础症候」「P001-P023 全部症候」这类范围/叙述文本。
       final re = RegExp(
+        r'(P\d{3})\s*[（(]?\s*([\u4e00-\u9fff][\u4e00-\u9fffA-Za-z0-9/·]{1,11})'
+        r'(?=[、，,。；;）)|:：\s]|$)',
+        multiLine: true,
+      );
+      // 旧形态：`P0XX + 以「症」结尾的 token`（清扫批要消灭的形态）
+      final legacyRe = RegExp(
         r'(P\d{3})\s*[（(]?\s*([\u4e00-\u9fff][\u4e00-\u9fffA-Za-z0-9/·]{1,11}?症)'
         r'(?=[、，,。；;）)|:：\s]|$)',
         multiLine: true,
       );
-      final bad = <String>[];
-      for (final m in re.allMatches(allKb)) {
-        final id = m.group(1)!;
-        final tok = m.group(2)!;
-        final al = aliases[id];
-        if (al == null) continue; // 非法 ID 由 #9 兜底
-        if (!al.contains(tok)) bad.add('$id +「$tok」（应为「${nameById[id]}」）');
-      }
-      expect(
-        bad,
-        isEmpty,
-        reason: '症候 ID 与名字不一致（0.3.6 重编号残留）:\n${bad.join('\n')}',
+      // 名字槽位：标题行 `### P0XX 名字`（症候手册 `###` / 训练库 `##`）
+      final headRe = RegExp(
+        r'^(#{1,6})[ \t]+(P\d{3})[ \t]+(.*)$',
+        multiLine: true,
       );
+
+      // 失败信息里带上下文，直接指认是哪一处
+      String snippet(String kb, int start, int end) {
+        final a = (start - 14).clamp(0, kb.length);
+        final b = (end + 14).clamp(0, kb.length);
+        return kb.substring(a, b).replaceAll('\n', '⏎');
+      }
+
+      int lineOf(String kb, int offset) {
+        var n = 1;
+        var i = kb.indexOf('\n');
+        while (i >= 0 && i < offset) {
+          n++;
+          i = kb.indexOf('\n', i + 1);
+        }
+        return n;
+      }
+
+      // ── R-A：跨 ID 错配（token 是别的 ID 的名字 ⇒ 必红）──
+      List<String> crossIdBad(String kb) {
+        final bad = <String>[];
+        for (final m in re.allMatches(kb)) {
+          final id = m.group(1)!;
+          final tok = m.group(2)!;
+          final al = aliases[id];
+          if (al == null) continue; // 非法 ID 由 #9 兜底
+          if (al.contains(tok)) continue; // 该 ID 自己的别名，合法
+          final owners = ownerOf[tok];
+          if (owners == null || owners.isEmpty) continue; // 叙述文本，非名字（见上文边界）
+          bad.add(
+            '第 ${lineOf(kb, m.start)} 行 $id +「$tok」← 该名字属于 '
+            '${owners.join("/")}（$id 应为「${nameById[id]}」）…'
+            '「${snippet(kb, m.start, m.end)}」',
+          );
+        }
+        return bad;
+      }
+
+      // ── R-B：旧形态残留（以「症」结尾 ⇒ 白名单外 ⇒ 必红）──
+      List<String> legacyBad(String kb) {
+        final bad = <String>[];
+        for (final m in legacyRe.allMatches(kb)) {
+          bad.add(
+            '第 ${lineOf(kb, m.start)} 行 ${m.group(1)} +「${m.group(2)}」'
+            '（旧形态末字「症」，应去掉）…「${snippet(kb, m.start, m.end)}」',
+          );
+        }
+        return bad;
+      }
+
+      // ── R-C：名字槽位（标题行名字必须是该 ID 的别名）──
+      List<String> headingBad(String kb) {
+        final bad = <String>[];
+        for (final m in headRe.allMatches(kb)) {
+          final id = m.group(2)!;
+          final rest = m.group(3)!.trim();
+          final al = aliases[id];
+          if (al == null) continue;
+          if (al.contains(rest)) continue;
+          bad.add(
+            '第 ${lineOf(kb, m.start)} 行 $id 标题名「$rest」不在允许别名集'
+            '（应为「${nameById[id]}」）',
+          );
+        }
+        return bad;
+      }
+
+      // ── 正向：现行四库零误差（V1）──
+      final crossIdList = crossIdBad(allKb);
+      expect(
+        crossIdList,
+        isEmpty,
+        reason:
+            '症候 ID 与名字不一致（0.3.6 重编号残留）:\n'
+            '${crossIdList.join('\n')}',
+      );
+      final legacyList = legacyBad(allKb);
+      expect(
+        legacyList,
+        isEmpty,
+        reason:
+            '库内仍带旧形态末字「症」（24-17 清扫回归）:\n'
+            '${legacyList.join('\n')}',
+      );
+      final headingList = headingBad(allKb);
+      expect(
+        headingList,
+        isEmpty,
+        reason: '症候段标题名与注册表不一致:\n${headingList.join('\n')}',
+      );
+
+      // ── 反空转：抽取面被抽空时上面三条会恒绿，故先钉住「面非空」──
+      final hitIds = <String>{
+        for (final m in re.allMatches(allKb))
+          if (aliases.containsKey(m.group(1))) m.group(1)!,
+      };
+      expect(
+        hitIds.length,
+        kSyndromeRegistry.length,
+        reason:
+            '每个注册表 ID 都必须在全库里至少出现一次「ID + 中文 token」'
+            '（实到 ${hitIds.length}/${kSyndromeRegistry.length}）——'
+            '少一个就说明抽取面漏了该 ID，上面三条对该 ID 恒绿',
+      );
+      final headingHitIds = <String>{
+        for (final m in headRe.allMatches(allKb))
+          if (aliases.containsKey(m.group(2))) m.group(2)!,
+      };
+      expect(
+        headingHitIds.length,
+        kSyndromeRegistry.length,
+        reason:
+            '每个注册表 ID 都必须有段标题（实到 '
+            '${headingHitIds.length}/${kSyndromeRegistry.length}）——'
+            '标题锚一旦失配，R-C 就空转',
+      );
+
+      // ── 负向自测（V2 / U3）：每条子判据各证一次「会红」，并证合法形态不误红 ──
+      // 断言不只「非空」，还要求命中的正是这条注入 —— 否则换个原因红了也算通过。
+      // N1 跨 ID 错配：把 P010 的名字接到 P001 后面 ⇒ 必须红
+      final n1 = crossIdBad('$allKb\n| P001 张力不足 | 注入的错配行 |\n');
+      expect(
+        n1,
+        isNotEmpty,
+        reason: '注入「P001 张力不足」（张力不足属 P010）后仍不红 ⇒ R-A 无鉴别力',
+      );
+      expect(
+        n1.first,
+        allOf(contains('P001 +「张力不足」'), contains('P010')),
+        reason: '红了，但不是因为这条注入（R-A 判红原因对不上）: ${n1.first}',
+      );
+      // N1b 同一形态的另一种：`P001 信息倾泻`
+      //     —— 卡面 §三 把它写成「不误红」的合法形态（理由「P001 的
+      //     v2ActionName 就是信息倾泻」），但现场事实是：
+      //       · P001 现行名 = 情绪标签化（`syndrome_registry.dart:288-290`）；
+      //       · 信息倾泻 = P002 的 name，`v2ActionName: '信息倾泻'` 也在 P002
+      //         记录内（`:305-321`，下一条记录 P003 起于 `:323`）；
+      //       · 退役档案记 `P004 信息倾泻症（含原 P001 世界观膨胀子类型）→ P002`
+      //         （`syndrome_retirement.dart:103`）⇒ 历史上信息倾泻在 P004/P002
+      //         一侧，从未属于 P001。
+      //     ⇒ `P001 信息倾泻` **是**跨 ID 冒充，必红；卡面那条「不误红」样本
+      //       本身即错配形态，若按它放行等于把护栏对主形态免疫。
+      final n1b = crossIdBad('$allKb\n- P001 信息倾泻，\n');
+      expect(
+        n1b,
+        isNotEmpty,
+        reason: '注入「P001 信息倾泻」（信息倾泻属 P002）后仍不红 ⇒ R-A 无鉴别力',
+      );
+      expect(
+        n1b.first,
+        allOf(contains('P001 +「信息倾泻」'), contains('P002')),
+        reason: '红了，但不是因为这条注入（R-A 判红原因对不上）: ${n1b.first}',
+      );
+      // N1c 旧形态：注回末字「症」⇒ 必须红
+      final n1c = legacyBad('$allKb\n- P002 信息倾泻症，\n');
+      expect(n1c, isNotEmpty, reason: '注入旧形态「P002 信息倾泻症」后仍不红 ⇒ R-B 无鉴别力（恒绿）');
+      expect(
+        n1c.first,
+        contains('P002 +「信息倾泻症」'),
+        reason: '红了，但不是因为这条注入（R-B 判红原因对不上）: ${n1c.first}',
+      );
+      // N1d 名字槽位：标题被改名而未同步注册表 ⇒ 必须红
+      final n1d = headingBad('$allKb\n### P001 情绪标签\n');
+      expect(n1d, isNotEmpty, reason: '标题改成「情绪标签」后仍不红 ⇒ R-C 无鉴别力');
+      expect(
+        n1d.first,
+        contains('标题名「情绪标签」'),
+        reason: '红了，但不是因为这条注入（R-C 判红原因对不上）: ${n1d.first}',
+      );
+      // N2 合法形态不得误红（这是「不误红」的正确样本，替换卡面那个误标项）：
+      //     现行名 / v2 动作显示名（动作库真实渲染形态）/ 表格行内配对。
+      //     ⚠️ `OC 平面化` 这类**以拉丁字母起头**的名字，R-A 的抽取式抓不到
+      //     （token 首字符类限定为汉字）⇒ 由 R-C 标题槽位覆盖（P008 亦在
+      //     上面的 39/39 覆盖里）。此边界不改抽取式：放宽首字符会引入
+      //     `P001 A007` 这类动作编号噪声。
+      const legit =
+          '\n- P002 信息倾泻，\n'
+          '- P005 句式单一，\n'
+          '- P001 情绪标签化，\n'
+          '| P006 语言堆砌 | 合法配对 |\n';
+      expect(
+        crossIdBad('$allKb$legit'),
+        isEmpty,
+        reason: '合法配对被误红 ⇒ R-A 过严（每条别名都在白名单内）',
+      );
+      expect(
+        legacyBad('$allKb$legit'),
+        isEmpty,
+        reason: '合法配对（不含「症」）被误红 ⇒ R-B 过严',
+      );
+      expect(headingBad('$allKb$legit'), isEmpty, reason: '合法标题被误红 ⇒ R-C 过严');
     });
 
     test('#14 手写「技法索引」表行内症候 ID 不重复（0.3.6 去重回归）', () {
