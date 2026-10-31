@@ -26,6 +26,7 @@ import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/session_providers.dart';
+import '../../services/chapter_position.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../services/story_structure_profile.dart';
 import '../../services/syndrome_tracker.dart';
@@ -173,6 +174,8 @@ class ChatDiagnosisController {
     // 诊断编辑器：短文本链路（单次 sendMessage）也用同一启用集
     host.ref.read(chatServiceProvider).disabledSyndromeIds =
         diagPrefs?.effectiveDisabledIds ?? const {};
+    // W-45 窄改① / 件2：位次一次读取，分块与回退共用（null ⇒ 不注入、不过滤）。
+    final position = await _positionOf(chapter);
     final progressive = await runProgressiveDiagnosis(
       content: chapter.content,
       title: chapter.title,
@@ -182,6 +185,8 @@ class ChatDiagnosisController {
       // ADR-0006：结构画像（覆盖度不足/事件表空 ⇒ 空串，零行为变更）
       structureProfile: await _structureProfileText(chapter),
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
+      chapterOrder: position?.order,
+      totalChapters: position?.total,
       mergeTemperature: await _mergeTemperature(),
       activeSyndromeIds: await _activeSyndromeIds(bootstrap.sessionId),
       onContent: (delta) {
@@ -198,7 +203,7 @@ class ChatDiagnosisController {
         '请诊断本章：《${chapter.title}》',
         stageLabel: '正在诊断本章…',
         chapterFullText: chapter.content,
-        chapterPosition: await _resolveChapterPosition(chapter),
+        chapterPosition: position,
       );
     }
   }
@@ -218,29 +223,12 @@ class ChatDiagnosisController {
         );
   }
 
-  /// W-45 窄改①：算出被诊断章节在全书中的真实位次（1 基）与总章数。
-  ///
-  /// **不直传 `Chapters.sortOrder`** —— 实测该列 0 基且 0/1 混用
-  /// （`outputs/ev3.db` 中 `233efaae` 的「第一章 风起」存的是 `sort_order=1`），
-  /// 直传会把第一章说成第二章。这里改为按 [ChapterRepository.listChapters]
-  /// 的排序结果取索引 ⇒ 与存储基值无关。
-  ///
-  /// 返回 null（章不在列表中 / 查询失败）⇒ 调用方按 null 走「不注入」分支，
-  /// **不猜、不兜底造位次**。
-  Future<({int order, int total})?> _resolveChapterPosition(
-    Chapter chapter,
-  ) async {
-    try {
-      final all = await ChapterRepository(
-        host.ref.read(appDatabaseProvider),
-      ).listChapters(chapter.manuscriptId);
-      final idx = all.indexWhere((c) => c.id == chapter.id);
-      if (idx < 0 || all.isEmpty) return null;
-      return (order: idx + 1, total: all.length);
-    } catch (_) {
-      return null;
-    }
-  }
+  /// 真实位次的本地入口（仓库构造注入 `resolveChapterPosition`，R-019 计数留白）。
+  Future<({int order, int total})?> _positionOf(Chapter chapter) =>
+      resolveChapterPosition(
+        ChapterRepository(host.ref.read(appDatabaseProvider)),
+        chapter,
+      );
 
   /// 诊断收尾：复位流式标志并回读消息列表。
   Future<void> _finalizeDiagnosis(String sessionId) async {

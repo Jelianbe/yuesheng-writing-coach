@@ -21,6 +21,7 @@ import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/config/shared_constants.dart';
+import 'package:writingcoach/services/position_semantics.dart';
 
 export 'package:writingcoach/contracts/teaching_capability.dart';
 
@@ -108,24 +109,21 @@ const String kPositionGuidanceConstSection = _kPositionGuidance;
 /// 1. **覆盖「过短 ⇒ 判全局」**：原文把 `<1000 字` 当作「位置不可判」的证据；
 ///    有了真实位次，字数不再是位置证据 —— 否则本次改动对短文本**完全无效**，
 ///    而短文本正是 `<1000` 字那 130 格（命中率 39.2%）的主体。
-/// 2. **位次映射三档写死**：`第1章⇒开头`、`末章⇒结尾`、其余⇒中段。
+/// 2. **位次映射三档**：`前三章⇒开头`（`end` 优先，Q2 乙）、`末章⇒结尾`、其余⇒中段。
 ///    单章书（order==total==1）⇒ 全局（此时「开头」与「结尾」同真，无从区分）。
 /// 3. **不覆盖内容形态**：仅当本章**自身文本**明显是另一档时才允许改判，
 ///    且必须写明理由。位次是章级事实，段级形态是更细的证据，允许后者细化前者。
 String buildKnownPositionBlock(int order, int total) {
-  final String band;
-  if (total <= 1) {
-    band = '**全局**（全书仅此一章，无「开头/结尾」之分）';
-  } else if (order <= 1) {
-    band = '**开头**';
-  } else if (order >= total) {
-    band = '**结尾**';
-  } else {
-    band = '**中段**';
-  }
+  final band = positionBandOf(order, total);
+  final label = switch (band) {
+    'global' => '**全局**（全书仅此一章，无「开头/结尾」之分）',
+    'end' => '**结尾**',
+    'beginning' => '**开头**',
+    _ => '**中段**',
+  };
   return '''## 本次诊断对象的真实位置（系统已核对，优先于上文推测）
 
-本段文本取自全书第 **$order** 章，共 **$total** 章 ⇒ 位置 = $band。
+本段文本取自全书第 **$order** 章，共 **$total** 章 ⇒ 位置 = $label。
 
 **这一判定比上文「内容过短（< 1000 字）难以判断 ⇒ 判全局」更可信，直接采用它。**
 文本长度不是位置证据：篇幅短的章节同样处在全书第 $order 章这个位置。

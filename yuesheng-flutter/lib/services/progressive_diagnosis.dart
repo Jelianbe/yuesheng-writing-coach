@@ -33,6 +33,14 @@ import 'intervention_value.dart'
 import 'token_budget_guard.dart'; // W-15-B B1：merge 预算预检（estimate + 报告同构）
 import 'output_whitelist.dart'; // L3：severity 白名单归一化
 import '../types/teaching_types.dart';
+import 'chunk_messages.dart';
+import 'chunk_prompt.dart';
+import 'position_semantics.dart';
+
+// 分块 prompt 与消息装配已按 R-019 职责级分解到独立文件（T-20261025-06 件2）；
+// export 保证既有 `import progressive_diagnosis.dart` 的消费者零改动。
+export 'chunk_messages.dart';
+export 'chunk_prompt.dart';
 
 // ── 常量（对齐 RN shared-constants.ts DIAGNOSIS_CHUNK）──
 /// 触发分块诊断的字符阈值
@@ -447,246 +455,6 @@ void _mergeSmallLastChunk(
   chunks.removeLast();
 }
 
-// ── 单块系统提示词（对齐 RN CHUNK_SYSTEM_PROMPT）──
-//
-// ADR-C69：症候清单原为硬编码 P001-P017（19 条），而注册表已有 39 条
-// （P001-P029），导致分块路径漏掉后段 20 个症候——且 anchor 测试覆盖不到本
-// 文件（不在 skill_registry 内），缺陷潜伏至今。现改由注册表派生，扩容自动
-// 跟随；一致性由 progressive_chunk_syndrome_coverage_test.dart 兜底。
-
-/// ★ T-20261021-03 读数批（ADR-C155）：分块下系统性退化为 uncertain 的判据集。
-///
-/// 读数依据（`.ai/reports/2026-10-23-分块链读数.md` §三）：干净名家语料
-/// 18 块 × 39 判据 = 701 条判定中，这 6 条 uncertain 率 33%–100%
-/// （P022 18/18 全退化 · P020 16/18 · P019 10/18 · P012 8/18 ·
-/// P011 7/18 · P033 6/18），其余 33 条 18/18 判定稳定（全 miss）。
-/// 形态一致：全部是**跨章/跨片依赖判据**（全文节奏比例 / 跨章长线 /
-/// 章末收束 / 章首开篇 / 冲突场次前史）——窗口边界纪律下无法在片内自证。
-///
-/// 处置（ADR-C155 裁定 = 乙形态 + 丙为先）：
-/// - 从分块 prompt 的「判定要点清单」**排除**这 6 条（不注入判定要点）；
-/// - 但在「跨章依赖判据」节**显式留痕**（点名 + uncertain 指引）——
-///   排除而非静默不选（B4），且是 ADR-C153 窗口边界规则的具体化
-///   （规则早已存在，本清单把实测退化者点名，零结构改动）。
-///
-/// ⚠️ 注册表新增症候时：若其成立依赖片段外信息（跨章比例 / 前史 /
-/// 后文解释 / 角色长期状态），须同步加入本常量——否则会自动进入要点
-/// 清单（默认假设「片内可判定」），重蹈「注入只会制造噪声」。
-const Set<String> kChunkDegradedCriteriaIds = {
-  'P011',
-  'P012',
-  'P019',
-  'P020',
-  'P022',
-  'P033',
-};
-
-/// 症候 ID 的连续范围说明，形如 `P001-P029`。
-///
-/// ADR-C69：merge prompt 原硬编码「P001-P020」，与注册表（P001-P029）不符，
-/// 会压制后段症候的输出。改由同一真源派生，杜绝两套范围。
-String _syndromeIdRange([Set<String> disabled = const {}]) {
-  final ids =
-      kSyndromeRegistry
-          .where((s) => !disabled.contains(s.id))
-          .map((s) => s.id)
-          .toList()
-        ..sort();
-  if (ids.isEmpty) return '（无可用症候）';
-  return '${ids.first}-${ids.last}';
-}
-
-/// 例外情况指引（RN 移植，逐字保留）。
-///
-/// 末条为 ADR-C69 新增的兜底：这些例外只覆盖 P001-P017，注册表扩到 P029 后
-/// 后段症候没有对应例外，补一句通用兜底避免"零例外"导致的过度诊断。
-const String _kChunkExceptionGuide = '''例外情况指引（以下场景通常不应判定为症候）：
-- P001例外：隐喻表达（"冰冷的眼神""心头一热"）、有具体动作支撑的情绪词、紧凑叙事中的快速过渡；非人类/非常规思维的角色设定
-- P002例外：角色的内心自省（角色在评价自己，非作者补设定）、角色对地点/势力的随口判断
-- P003例外（须指认）：首问能否确定本窗信息的感知者——"感知者"＝本窗中信息落在其认知范围内的那个主体（人，或"叙述者"）；"感知来源句"＝不含引号、能从中指认该感知者的陈述句（纯环境句不算）。满足即不构成漂移，本条豁免均以此为前提。①第三人称全知为中文网文默认叙事风格，本窗内一致保持即不构成，须指出本窗内的统摄性叙述句（该句同时给出≥2 人的信息）；②限制视角中的客观环境描写、角色对自身经历的回忆与对所处环境的评价，须指认不含叙述者代述的他人内心且能辨明是叙述者讲述还是当前视角人物感知；②补：无引号句含推测/预期词（只怕、大概、万一、多半、还得、来不及等），且推断可归属本窗感知者（以"谁在推测"定句主，所述可以是他人）⇒作人物可错推断，即不构成漂移；叙述者以断定口吻陈述超出感知者认知的事实⇒仍判；句首"其实""原来""殊不知"不得单独作豁免凭据；③有显式切换标记（如"他不知道的是""原来""其实""而此时""与此同时""而另一边"、明确换视角人物），须在本窗正文中逐字摘引两条句子——切换前一条、切换后一条；两条不得同句，且不得取自引号内的人物台词；再分别指出两条各自的感知者，二者不同。只摘引一条即视为指不出依据。指不出依据时，若缺的是片段外的句子（切换前一条被上一片段截走）⇒标 `"uncertain": true`（缺前文），交合并阶段裁决；其余指不出依据⇒例外不成立，按正文判定；但有标记或本窗全知而仍无法确定感知者（如本窗某人未作介绍，其内心材料又与既有视角人物逐点重合）⇒仍判漂移
-- P004例外：情绪沉淀段落、氛围描写的节奏变化、关键揭示前的屏息时刻
-- P005例外：极简风格的刻意选择（海明威式短句叙事是风格而非缺陷）、信息密集段落中以传递信息为目标的句式趋同、限制视角下反映角色思维重复的心理描写
-- P006例外：情感爆发点的浓墨重彩、作者刻意特定风格
-- P007例外：悬疑叙事中动机故意模糊、功能性配角
-- P009例外：剧本/对白主导文体、法庭剧/审讯场景
-- P010例外：日常向/温馨向作品、悬疑铺垫章节
-- P013例外：情绪高潮替代动作高潮的文学型叙事
-- P014例外：喜剧/荒诞向作品中刻意设计的巧合（前提是风格一致）
-- P015例外：角色因重大事件（如创伤、顿悟）导致的刻意转变，且有明确铺垫
-- P016例外：蒙太奇/意识流/碎片化叙事手法
-- P018例外：刻意排比/刻意节奏下的高频连接词重复、符合口语习惯的高频词、故事层同动作多次发生的事件重复（不判为语言层啰嗦）
-- P032例外：学术/法律等本就框式表达的文体（类型约定）、角色人设故意用书面/翻译腔说话（角色声线功能）、有意借用外来语制造异域感（作者主动选择且有中文缓冲）
-- P034判界（关键，防误路由）：同一句/相邻小句出现两个以上"他/她/它"而就近可及人物≥2、读者判不出每个指谁（典型如"他骂了他一顿"，两个他分属不同人物），或连续省略主语致就近候选≥2 → **必须报 P034（代词指代不清/零回指过载症）**，即使句中有重复字面。区别于 P018（P018 是同一字无差别紧邻重复/打字连写"他他"、连接词反复，读者不因"指谁"困惑）与 P023（P023 是世界观设定前后矛盾，不是"他指谁"解歧）
-- P034例外：有明确话题锚/单一主语链的连续零回指合法——同一小话题下单主角行动链（连续零主语省略、就近候选恒为 1，如"他推开门，走进来，坐下端起碗"）、对话轮内紧邻动作省略说话人、上句刚出现唯一专名且就近候选仅 1 个，不构成指称过载
-- P008例外（须指认）：仅限非主角——须指出该配角本窗全部出场句、且其中无独立欲望句或决定句；喜剧类型化夸张、寓言符号化角色另计。指不出⇒例外不成立，按正文判定
-- P017例外：蒙太奇/时间压缩（刻意快速推进且后有场景落地）、快节奏动作序列的快速切场、非关键时间段的过渡性概括（"一路无话，三日后抵达"）、"这是一个关于……的故事"式框架开头。裁决问句：改好这段需**加**内容 ⇒ P017，需**减** ⇒ P002，都不需要 ⇒ 都不报
-- P021例外：快速过渡/时间跳跃段（是 P017 而非 P021）；角色内心独白与议论性段落本就无需具象化；语言精炼但信息完整（描写密度不足而叙事完整）属范畴错配
-- P023例外（须指认）：角色不知道≠设定矛盾（转 P003）；能力变化须指出铺垫句位置；留白须指出该规则在本窗无陈述句。指不出⇒例外不成立，按正文判定
-- P024例外（须指认）：须指出代价句或限制句位置（冲突仍在）；规则未闭合不先判，但须指出未闭合的规则名；信息差下的能力隐藏（转 P003）。指不出⇒例外不成立，按正文判定
-- P025例外（须指认）：须指出≥1处与主线无关的出场句，且该句含性格标记（口头禅/习惯动作/偏好）；一次性跑腿报信角色本就短暂；群像有集体辨识度即可，不要求每点立体。指不出⇒例外不成立，按正文判定
-- P026例外（须指认）：须指出该独白收敛到的决策句位置；心理悬疑/权谋中内心推算即剧情本体；少量点睛独白。指不出⇒例外不成立，按正文判定
-- P027例外（须指认）：须指出该支线在本窗的回收点位置，或该支线人物的独立欲望句；单元剧支线即爽点单元。指不出⇒例外不成立，按正文判定
-- P028例外（须指认）：须指出≥1处决策句或代价句（被动中主动）；侦探/悬疑须指出观察者在本窗的观察动作句；隐忍须指出等待时机的目标句；群像须指出≥2个各有欲望句的主视角。指不出⇒例外不成立，按正文判定
-- P029例外：先归位——这局没有布局者（反派本人）时本症候**根本不在报域**（症结归 P010/P007）；布局者行为有读者读得到的账（自身目标＋前史因果＋不可让渡的代价＋行为与执念一致）即不报；局中人/被算计者的蠢、连败、不申辩一律不得作为判定依据
-- P030例外（须指认）：须指出两处声线差异标记（人称/句长/词汇域）且分属不同叙述者；独白用角色腔与叙述声线分开看。指不出⇒例外不成立，按正文判定
-- P031例外（须指认）：须指出同一冲突同时驱动两类类型要素的句（内核统一）；文学实验须指出被实验的类型边界名；系列多品类按单本判。指不出⇒例外不成立，按正文判定
-- P033例外：刻意的循环/复沓结构（主题需轮回感且有自觉变奏设计）；日常流/治愈系本就低冲突，不靠升级驱动；看似重复实则每轮换维度（上轮外部危机、下轮内部信任崩塌＝升级）
-- P038例外（须指认）：须指出顺序理据句（为何先果后因）；意识流须指出联想链的触发词；空间全景白描须指出单向的整体→局部层级句序（≥2层，不得回跳）。指不出⇒例外不成立，按正文判定
-- P039例外：留白/停顿/氛围描写不是稀碎——留白是"作者有意不写、让读者填补"且删掉会破坏叙事，稀碎是"写了等于没写"、删掉叙事不受影响；无信息增量链（不揭示新事实、不改变角色状态、不制造张力）才是稀碎
-- 上面未列出的症候：例外情况以症候诊断手册为准；判定尺度与上述一致——只在读者体验确实会受损时才算症候''';
-
-/// 单块输出格式（纯静态，与症候清单分离）。
-const String _kChunkOutputFormat = '''请输出JSON格式的笔记，不要包含markdown代码块标记，只输出纯JSON对象：
-{
-  "notes": [
-    {
-      "syndromeId": "P001",
-      "description": "简要描述观察到的问题，在原文中的位置",
-      "evidence": ["具体例句1", "具体例句2"],
-      "severity": "L1",
-      "uncertain": false,
-      "excluded": [{"syndrome_id": "P0XX", "reason": "本片查过但判定不成立的一句话理由"}]
-    }
-  ]
-}
-
-uncertain 字段说明：按上面「片段窗口边界」一节，该条判据的成立与否依赖片段外信息时置 true，并在 description 里简述缺哪类信息（缺前文铺垫 / 缺后文解释 / 缺片段外人物关系 / 缺全文节奏比例 / 缺角色长期状态）。缺省 false。
-
-excluded 字段说明：本片诊断时考虑过、但在本片证据下判定不成立的相近症候（同类型、共用判定要点的近邻），逐条列你**查过却不报**的，每条一句话理由（≤40字）；没有则输出空数组 []。它记录的是「判了否」，与 uncertain「判不了」是两回事——缺片段外信息而判不了的仍标 uncertain，不得写进 excluded。''';
-
-/// FIX-1（2026-09-23）：分块合并输出约束——自然语言正文 + 顶层字段格式。
-/// 根因：旧 prompt 结尾只要求协议标记，模型可省略自然语言正文且 suggested_actions
-/// 无格式约束 → 整块被拒（suggested_actions_invalid）→ 空输出兜底「诊断完成」。
-const String _kMergeOutputRequirement = '''输出结构说明（下面两部分缺任一，合并解析会失败）：
-1. 先输出面向学员的自然语言诊断正文——直接可读的诊断总结与教学建议（核心结论、最值得先改的一点、鼓励性收尾），不得省略；
-2. 再输出 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 包裹的标准诊断 JSON 块。
-
-[YS_DIAGNOSIS] 块顶层字段要求：
-- syndromes (object[]): 症候列表（格式见上），必填
-- suggested_actions (string[]): 建议动作编号数组（如 ["A009","A005"]），必填且必须为字符串数组
-- confidence (number): 0-1 置信度——★ §1-20：模型自报 confidence 已废除（禁止重新引入）；
-  本字段为协议兼容保留（活性审查 D1 / §4-215 裁7②），可省略；解析侧缺省 0.0
-- root_cause_analysis / next_focus / feedback_summary: 可选
-- excluded (object[]): 可选——透传各分片笔记里的排除记录（每条 {"syndrome_id","reason"}），按分片原样保留、不重判、不跨片二选一；没有则省略
-- overall (object): 整体判定（结构完整度诊断，非文学打分、不给分数），仅当已诊断章节覆盖度足够时输出：
-  - verdict (string): 三档之一「结构完整」「基本完整」「存在结构性缺口」
-  - reasons (string[]): 1-3 条核心理由，须引用上面的结构画像或已报症候证据
-  - keep (string): 最值得保持的一点（1 条）
-  - priority (string[]): 建议先改的顺序（1-3 条）
-  - coverage (string): 复述覆盖度声明（如「基于已诊断 3/20 章」），必填；缺此项 overall 无效
-
-请输出标准诊断格式，包含 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 标记。''';
-
-/// ★ 窗口边界声明（2026-10-21，ADR-C153）：分片阶段的**前提**，不是例外清单。
-///
-/// 为什么不写成例外清单（逐条点名 P0xx「以下不判……」）：那 6 条高风险豁免
-/// （P019/P020/P022/P035/P036/P037）的成立条件**都不需要指认任何位置**——
-/// 类型自证、意图自证、跨片依赖。任何文本都能套用，列进清单等于给每个分片
-/// 发一张免责模板，最坏情况是剧情组真阳性掉一大截，掉的还是「章末无钩子、
-/// 长线无牵引」那批最该报的。
-///
-/// 为什么这么写能覆盖同 6 条 + P012/P037 跨章清单：
-/// 「跨片依赖类不可判」是**一条规则**，6 条例外是它的 6 个具体表现。按规则写 =
-/// 一次消解；按例外写 = 6 次重复且各有遗漏。规则还顺带覆盖将来新增的同类判据。
-///
-/// 与 merge 阶段的分工：分片阶段只做**块内可自证**的判定；跨片归并、交叉引用、
-/// 因果一律留给 merge（那里能看到全部分片 + 原文覆盖区间）。merge 侧对应机制
-/// 是既有的 `pending_context`（W-15-B，已有完整消费链），本块不重复发明，
-/// 只补 merge 侧没有的**前半段**：分片阶段不能因为看不到前文就把
-/// 「这里像是有问题」写成肯定结论。
-const String _kChunkWindowBoundary = '''## 片段窗口边界（判读前提，先读这一节）
-你读到的是全章的一个片段，**看不到片段之外的内容**。因此：
-- 只依据本片段内可指认的证据判定。看不到前文铺垫、后文解释、片段外人物关系时，
-  **既不得据此否定，也不得据此肯定**。
-- 若某条判据的成立与否依赖片段外信息（前文伏笔、后文解释、跨片段的人物关系、
-  全文节奏比例、角色的长期状态），本片段阶段**无法判定**：不要勉强给结论，
-  在该条 note 上标 `"uncertain": true` 并简述缺哪类信息，交由合并阶段裁决。
-- 「本片段看不出问题」不等于「本章没问题」，也不等于「本章有问题」。
-- 只有一条分片时（片段 1/1），本章即全文，跨片段前提不成立，按常规判定。
-''';
-
-/// 「块内可自证」的对照说明 —— 不新增判据，只举例说明上面的规则怎么用。
-const String _kChunkSelfContainedProbe =
-    '''- 可在片段内指认位置的（局部措辞、局部节奏、局部视角跳变、局部设定堆积）：照常判。
-- 可由片段自身自证的（类型通用件的辨识性、类型固有节奏、体裁约定）：照常判。''';
-
-/// 「跨章依赖判据」节：点名 [kChunkDegradedCriteriaIds] + uncertain 指引。
-///
-/// ADR-C155（T-20261021-03 读数批）：这 6 条在分块形态下 uncertain 率
-/// 33%–100%（P022 18/18 全退化），成立与否依赖片段外信息 ⇒ 片内原理上
-/// 判不了。**不是豁免**（ADR-C153 已否决例外清单路线），是把窗口边界
-/// 规则应用到实测退化者：遇到疑似形态直接标 uncertain 交合并阶段，
-/// 勿在片内推测。用户禁用某条时同步剔除（R-009 用户主权）。
-String _chunkDegradedCriteriaBlock([Set<String> disabled = const {}]) {
-  final rows =
-      kSyndromeRegistry
-          .where((s) => kChunkDegradedCriteriaIds.contains(s.id))
-          .where((s) => !disabled.contains(s.id))
-          .map((s) => '- ${s.id} ${s.name}')
-          .toList()
-        ..sort();
-  if (rows.isEmpty) return '';
-  return '''跨章依赖判据（片段内不可判定，直接标 uncertain）：
-以下症候的成立与否依赖片段之外的信息（全文节奏比例、跨章长线、章末收束、章首开篇、冲突场次前史），在本片段阶段无法自证：
-${rows.join('\n')}
-遇到以上形态的可疑迹象时，不要勉强给结论：在该条 note 上标 "uncertain": true 并简述缺哪类信息，交由合并阶段裁决。''';
-}
-
-/// 分块 prompt 的「判定要点」行：`- <ID> <病名>（<关键词>）：<一句话判定要点>`。
-///
-/// ADR-C155 裁定 = **乙形态**（原则 + 判据条目，不注入负例 few-shot）：
-/// 读数批的判读依据是 39 条判据**原文**（61514 字符）；原文 verbatim
-/// （丙形态）按 33 条折算 ≈52000 字符/片，token 成本随片数爆炸 ⇒ 否。
-/// 乙形态从注册表现成字段（keyword + oneLine）派生，零新内容维护面。
-/// 排除 [kChunkDegradedCriteriaIds]（那些走「跨章依赖判据」节）。
-List<String> _activeSyndromeCriteriaLines([Set<String> disabled = const {}]) {
-  final rows =
-      kSyndromeRegistry
-          .where((s) => !disabled.contains(s.id))
-          .where((s) => !kChunkDegradedCriteriaIds.contains(s.id))
-          .map((s) => '- ${s.id} ${s.name}（${s.keyword}）：${s.oneLine}')
-          .toList()
-        ..sort();
-  return rows;
-}
-
-/// 构造单块系统提示词：症候清单由注册表派生（ADR-C69）。
-///
-/// 每行 4 个，沿用 RN 逐字移植时的紧凑排布，避免 39 条摊成 39 行。
-/// [disabled] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
-/// 分块链路教学方式指令（与 teaching-mode skill 组语义一致，但分块旁路不走
-/// skill_dispatcher，故在此内联注入）。socratic=引导发现；direct=直给结论。
-String _kTeachingModeChunkInstruction(TeachingMode mode) => switch (mode) {
-  TeachingMode.socratic =>
-    '\n\n## 教学风格（疑问式）\n- 指出问题时优先用提问引导学员自己发现，不要一次性倾倒全部结论；'
-        '长文更应聚焦最核心的 1-2 个问题让学员先动手。',
-  TeachingMode.direct => '\n\n## 教学风格（直接说）\n- 直接给出诊断结论与可操作改法，不绕弯、不铺垫。',
-  _ => '',
-};
-
-String _buildChunkSystemPrompt([
-  Set<String> disabled = const {},
-  TeachingMode teachingMode = TeachingMode.socratic,
-]) {
-  final criteriaLines = _activeSyndromeCriteriaLines(disabled);
-  final degradedBlock = _chunkDegradedCriteriaBlock(disabled);
-  return '''你是一个专业的写作诊断助手。请阅读以下文本片段，识别其中存在的写作问题。
-
-症候判定要点（逐条核对，不要强行匹配）：
-${criteriaLines.join('\n')}
-
-${degradedBlock == '' ? '' : '$degradedBlock\n\n'}$_kChunkWindowBoundary
-$_kChunkSelfContainedProbe
-
-$_kChunkExceptionGuide
-
-$_kChunkOutputFormat${_kTeachingModeChunkInstruction(teachingMode)}''';
-}
-
-/// 单块系统提示词（全启用默认值）：症候清单由注册表派生，调用处无需感知（ADR-C69）。
-/// 运行时按用户启用集构造请用 [_buildChunkSystemPrompt]。
-final String kChunkSystemPrompt = _buildChunkSystemPrompt();
-
 // ── JSON 提取（对齐 RN extractJson：优先 code block，否则按括号平衡）──
 
 /// 从 LLM 返回的文本中提取第一个顶层 JSON 对象字符串。
@@ -715,6 +483,44 @@ String extractJson(String text) {
   }
   return '{}';
 }
+
+/// 症候 ID 的连续范围说明，形如 `P001-P029`。
+///
+/// ADR-C69：merge prompt 原硬编码「P001-P020」，与注册表（P001-P029）不符，
+/// 会压制后段症候的输出。改由同一真源派生，杜绝两套范围。
+String _syndromeIdRange([Set<String> disabled = const {}]) {
+  final ids =
+      kSyndromeRegistry
+          .where((s) => !disabled.contains(s.id))
+          .map((s) => s.id)
+          .toList()
+        ..sort();
+  if (ids.isEmpty) return '（无可用症候）';
+  return '${ids.first}-${ids.last}';
+}
+
+/// FIX-1（2026-09-23）：分块合并输出约束——自然语言正文 + 顶层字段格式。
+/// 根因：旧 prompt 结尾只要求协议标记，模型可省略自然语言正文且 suggested_actions
+/// 无格式约束 → 整块被拒（suggested_actions_invalid）→ 空输出兜底「诊断完成」。
+const String _kMergeOutputRequirement = '''输出结构说明（下面两部分缺任一，合并解析会失败）：
+1. 先输出面向学员的自然语言诊断正文——直接可读的诊断总结与教学建议（核心结论、最值得先改的一点、鼓励性收尾），不得省略；
+2. 再输出 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 包裹的标准诊断 JSON 块。
+
+[YS_DIAGNOSIS] 块顶层字段要求：
+- syndromes (object[]): 症候列表（格式见上），必填
+- suggested_actions (string[]): 建议动作编号数组（如 ["A009","A005"]），必填且必须为字符串数组
+- confidence (number): 0-1 置信度——★ §1-20：模型自报 confidence 已废除（禁止重新引入）；
+  本字段为协议兼容保留（活性审查 D1 / §4-215 裁7②），可省略；解析侧缺省 0.0
+- root_cause_analysis / next_focus / feedback_summary: 可选
+- excluded (object[]): 可选——透传各分片笔记里的排除记录（每条 {"syndrome_id","reason"}），按分片原样保留、不重判、不跨片二选一；没有则省略
+- overall (object): 整体判定（结构完整度诊断，非文学打分、不给分数），仅当已诊断章节覆盖度足够时输出：
+  - verdict (string): 三档之一「结构完整」「基本完整」「存在结构性缺口」
+  - reasons (string[]): 1-3 条核心理由，须引用上面的结构画像或已报症候证据
+  - keep (string): 最值得保持的一点（1 条）
+  - priority (string[]): 建议先改的顺序（1-3 条）
+  - coverage (string): 复述覆盖度声明（如「基于已诊断 3/20 章」），必填；缺此项 overall 无效
+
+请输出标准诊断格式，包含 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 标记。''';
 
 // ── Merge prompt：注入 SKILL + 合并规则（对齐 RN buildMergePrompt）──
 
@@ -886,7 +692,7 @@ syndrome 对象格式要求：
 - form_structure (string): 可选；仅量形式症候——expository=论文式/说明书结构 / interruption=读者关切时刻被打断 / narrative=叙事流内
 - pending_context (bool): 缺省 false；见「跨片因果提示」
 
-$_kMergeOutputRequirement${_kTeachingModeChunkInstruction(teachingMode)}''';
+$_kMergeOutputRequirement${kTeachingModeChunkInstruction(teachingMode)}''';
 }
 
 /// 简易 JSON 编码器（仅用于合并 prompt 中展示 notes，不做校验）。
@@ -1241,6 +1047,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   CancelToken? cancelToken,
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
+  int? chapterOrder,
+  int? totalChapters,
   double? mergeTemperature,
   Set<String> activeSyndromeIds = const {},
   MergePromptSnapshotWriter? snapshotWriter,
@@ -1250,6 +1058,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   }
 
   // 1. 分块（W-15-A：同步计算覆盖区间，验收②）
+  // T-20261025-06 件2：位次 band（拿不到 ⇒ null ⇒ 判据全集 = 现行为）。
+  final positionBand = positionBandOrNull(chapterOrder, totalChapters);
   final chunks = splitContent(content);
   final chunkCoverage = computeChunkCoverage(content, chunks);
   onProgress?.call('分块完成', 0, chunks.length);
@@ -1270,6 +1080,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
       onProgress: onProgress,
       disabledSyndromeIds: disabledSyndromeIds,
       teachingMode: teachingMode,
+      positionBand: positionBand,
     );
     if (!result.success) failedChunks++;
     chunkResults.add(result);
@@ -1462,72 +1273,6 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
 
 // ── 单块分析：空内容分级降级（ADR-C80）──
 
-/// 分块链「窗口元信息」消息正文（`T-20261027-01` **H9** 文案 + **H8** 形状）。
-///
-/// **只声明系统确实知道的两件事**：这条片段取自哪条来源记录、它是第几块。
-/// 旧标签「`章节标题：<title>`」把**记录标题**当成**片段内容的章节归属** ——
-/// 系统并不知道后者：`Chapters` 只有 `title`（自由文本，可为空）与 `sortOrder`
-/// （记录在书中的位置），没有章号；用户把多章抄进一条记录时，那两者都只代表
-/// **记录**，不代表块内正文（`tables.dart:41`）。离线采样器同一模板同理：
-/// 语料只有作品名，没有章节标题（`tool/build_chunk_sim_tasks.py:96`）。
-///
-/// ⇒ 改为中性声明 + 「可能含多章」，把「本窗正文是什么」交回片段正文自己。
-/// 标题为空时整行省略（`chapters.title` 默认空串，不是异常态）。
-///
-/// **H8（2026-10-29 · 批八）**：本串**不再与正文拼在同一条 user 消息里**。
-/// 它是「关于这条输入的说明」，不是「这条输入的内容」——混在正文前时，
-/// 「可能含多章」这句窗口断言直接压在 P003「谁在看」的判定域上（§1.2 机理）。
-/// ⇒ 单独成一条 system 消息，正文那条逐字节 == 片段本体。
-/// **文案一字未改**：H8 只改形状，改字须另走 R-027。
-///
-/// 形状先例：短链首轮判据块同为「主 system + 独立 system 消息」（`w17` ⑧），
-/// 生产链已有三条 system 相邻（`message_sequence_anchor.json` = `SSSUS`）。
-String buildChunkWindowMeta({
-  required String recordTitle,
-  required int chunkIndex,
-  required int chunkCount,
-}) {
-  final head = recordTitle.isEmpty ? '' : '来源记录：$recordTitle（本片段可能含多章）\n\n';
-  return '$head文本片段 ${chunkIndex + 1}/$chunkCount：';
-}
-
-/// 单块分析的 messages（尝试 1 与兜底重试共用同一组消息）。
-///
-/// **H8**：三条 —— 主 system（字节不变）· 窗口元信息（独立成条）· 纯正文。
-/// 公开 + `@visibleForTesting`：注入形状需要机器执行点（角色序列 + 逐条内容），
-/// 只靠「总条数」守不住「放对了哪条角色」。
-@visibleForTesting
-List<ChatMessage> buildChunkMessages(
-  String title,
-  String chunk,
-  int chunkIndex,
-  int chunkCount, {
-  Set<String> disabledSyndromeIds = const {},
-  TeachingMode teachingMode = TeachingMode.socratic,
-}) {
-  return [
-    // ADR-C69：kChunkSystemPrompt 改由注册表派生（非 const），此处 const 去掉。
-    // 诊断编辑器：按用户启用集运行时构造 prompt（空集 = 全启用默认）。
-    ChatMessage(
-      role: 'system',
-      content:
-          disabledSyndromeIds.isEmpty && teachingMode == TeachingMode.socratic
-          ? kChunkSystemPrompt
-          : _buildChunkSystemPrompt(disabledSyndromeIds, teachingMode),
-    ),
-    ChatMessage(
-      role: 'system',
-      content: buildChunkWindowMeta(
-        recordTitle: title,
-        chunkIndex: chunkIndex,
-        chunkCount: chunkCount,
-      ),
-    ),
-    // H8：正文那条**只装正文** —— 标签不再前置污染「这段是谁在看」的观察对象。
-    ChatMessage(role: 'user', content: chunk),
-  ];
-}
-
 /// 单块分析（ADR-C80 分级降级）：
 ///
 /// 尝试 1 = 应用现参数（推理开启，质量优先，成功路径零变更）；content 为空
@@ -1546,6 +1291,7 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
   required ProgressCallback? onProgress,
   Set<String> disabledSyndromeIds = const {},
   TeachingMode teachingMode = TeachingMode.socratic,
+  String? positionBand,
 }) async {
   final messages = buildChunkMessages(
     title,
@@ -1554,6 +1300,7 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
     chunkCount,
     disabledSyndromeIds: disabledSyndromeIds,
     teachingMode: teachingMode,
+    positionBand: positionBand,
   );
   try {
     // TH 九批：分块分析（含 fallback 重发）同属诊断链路 —— 每次调用前

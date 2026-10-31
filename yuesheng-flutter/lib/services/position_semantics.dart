@@ -26,3 +26,46 @@ const Map<String, String> kPositionSemantics = {
   'serial': '判它需要看连续多章',
   'local': '判它只需章内局部片段',
 };
+
+/// 位次 band（T-20261025-06 Q2 乙 · 2026-10-31 舰长批）：`beginning` 覆盖前三章。
+///
+/// **顺序敏感**：`end` 先于 `beginning` —— 三章书里第 3 章同时满足
+/// `order>=total` 与 `order<=min(3,total)`，必须先归结尾（Q2 乙的前提）。
+/// 单章书（total<=1）⇒ `global`：开头/中段/结尾同真，无从区分（Q3 乙）。
+String positionBandOf(int order, int total) {
+  if (total <= 1) return 'global';
+  if (order >= total) return 'end';
+  if (order <= (total < 3 ? total : 3)) return 'beginning';
+  return 'middle';
+}
+
+/// band ⇒ 本块允许参与判定的 `position` 值集合（Q1/Q2/Q3 乙）。
+///
+/// - 位次轴：只允许与 band 同档的那一个值（单章书三值全允许）；
+/// - 通配 `global` / 规模轴 `chapter`、`local`：不约束位置 ⇒ 全部允许；
+/// - `serial`：跨章证据，单章提交下**记为不可判**（仍注入、由分块侧标
+///   `uncertain` 交合并）—— Q1 乙 的口径是「不入分母」，不是「不问」。
+/// - `null`（拿不到位次）⇒ 全允许 = 现行为（不过滤）。
+Set<String> allowedPositionsForBand(String? band) => switch (band) {
+  'beginning' => const {'beginning', 'global', 'chapter', 'local', 'serial'},
+  'middle' => const {'middle', 'global', 'chapter', 'local', 'serial'},
+  'end' => const {'end', 'global', 'chapter', 'local', 'serial'},
+  _ => const {
+    'beginning',
+    'middle',
+    'end',
+    'global',
+    'chapter',
+    'local',
+    'serial',
+  },
+};
+
+/// 两个字段齐全且合法（1 基、`total>=1`）才返回 band；否则 null（= 不过滤）。
+///
+/// 与 `_knownPositionBlockOrNull` 同一条 fail-closed 纪律：半截信息判不了位置，
+/// 不得据此筛判据。
+String? positionBandOrNull(int? order, int? total) {
+  if (order == null || total == null || order < 1 || total < 1) return null;
+  return positionBandOf(order, total);
+}

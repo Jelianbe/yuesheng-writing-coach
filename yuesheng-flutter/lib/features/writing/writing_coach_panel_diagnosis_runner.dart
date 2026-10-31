@@ -9,7 +9,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/diagnosis_temperature.dart';
@@ -27,23 +27,14 @@ import '../../services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import '../../services/chat_service.dart';
 import '../../services/chapter_completion_querier.dart';
+import '../../services/chapter_position.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../services/session_harvest_assembler.dart';
 import '../../services/story_structure_profile.dart';
 import '../../types/teaching_types.dart';
+import 'diagnosis_complete_snack.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
 import 'writing_coach_panel_host.dart';
-
-/// 诊断完成提示（短时 floating SnackBar，不遮挡后续操作）。
-void showDiagnosisCompleteSnack(BuildContext context) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('诊断完成'),
-      duration: Duration(milliseconds: 1200),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
-}
 
 /// 诊断链路执行器（分块 + 单次 + 流式回调 + 取消/错误复位）。
 class WritingCoachDiagnosisRunner {
@@ -55,16 +46,22 @@ class WritingCoachDiagnosisRunner {
 
   String get _chapterId => _host.chapterId;
 
-  /// ADR-0006：构建结构画像文本（失败/降级 ⇒ null ⇒ 调用方按空串处理）。
-  Future<String?> _buildProfileText() async {
+  /// ADR-0006 + T-20261025-06 件2：一次读取同时产出结构画像与真实位次
+  /// （失败/降级 ⇒ null ⇒ 调用方按空串 / 无位次处理）。
+  Future<({String? profile, ({int order, int total})? position})?>
+  _buildProfileFacts() async {
     final db = _ref.read(appDatabaseProvider);
-    final chapter = await ChapterRepository(db).getChapter(_chapterId);
+    final chapterRepo = ChapterRepository(db);
+    final chapter = await chapterRepo.getChapter(_chapterId);
     if (chapter == null) return null;
-    return buildStoryStructureProfileText(
-      eventFactRepo: EventFactRepository(db),
-      chapterRepo: ChapterRepository(db),
-      diagnosisRepo: DiagnosisRepository(db),
-      manuscriptId: chapter.manuscriptId,
+    return (
+      profile: await buildStoryStructureProfileText(
+        eventFactRepo: EventFactRepository(db),
+        chapterRepo: chapterRepo,
+        diagnosisRepo: DiagnosisRepository(db),
+        manuscriptId: chapter.manuscriptId,
+      ),
+      position: await resolveChapterPosition(chapterRepo, chapter),
     );
   }
 
@@ -102,8 +99,6 @@ class WritingCoachDiagnosisRunner {
   }
 
   /// 长度路由执行：先分块链路（长文本），null（≤THRESHOLD）则单次 sendMessage。
-  /// ADR-0006：结构画像文本（失败/降级 ⇒ 空串）。
-  Future<String> _profileText() async => (await _buildProfileText()) ?? '';
 
   /// W-18 用户温度档（merge 段；灵活档 ⇒ null ⇒ 请求体逐字节不变）。
   Future<double?> _mergeTemperature() async => mergeTemperatureFor(
@@ -133,22 +128,22 @@ class WritingCoachDiagnosisRunner {
     final diagPrefs = await AppStateRepository(
       _ref.read(appDatabaseProvider),
     ).getDiagnosisPrefs();
-    // ADR-0006：结构画像（覆盖度不足/事件表空 ⇒ 空串，零行为变更）。
-    final profileText = await _profileText();
+    // ADR-0006：结构画像 + 件2 位次同一次读取（拿不到 ⇒ 空串 / 不过滤）。
+    final facts = await _buildProfileFacts();
     final progressive = await runProgressiveDiagnosis(
       content: content,
       title: title,
       llmClient: _ref.read(llmClientProvider),
       sessionId: sid,
       teachingMode: _host.teachingMode,
-      structureProfile: profileText,
+      structureProfile: facts?.profile ?? '',
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
+      chapterOrder: facts?.position?.order,
+      totalChapters: facts?.position?.total,
       mergeTemperature: await _mergeTemperature(),
-      onContent: (delta) {
-        _ref
-            .read(writingCoachStoreProvider(_chapterId).notifier)
-            .appendStreamingContent(delta);
-      },
+      onContent: (delta) => _ref
+          .read(writingCoachStoreProvider(_chapterId).notifier)
+          .appendStreamingContent(delta),
       // ADR-C87 延伸：分块诊断中途可取消（每块前/合并前检查）
       cancelToken: cancelToken,
     );

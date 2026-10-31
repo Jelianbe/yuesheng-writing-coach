@@ -62,6 +62,9 @@ String _readSrc(String relPath) {
 int _count(String src, String needle) => needle.allMatches(src).length;
 
 const String kProgressive = 'lib/services/progressive_diagnosis.dart';
+// T-20261025-06 件2：单块 messages 装配按 R-019 职责级分解到 chunk_messages.dart，
+// ⑤ 的源码级断言必须跟随生效位置（否则扫不到 `? kChunkSystemPrompt` 恒红）。
+const String kChunkMessages = 'lib/services/chunk_messages.dart';
 
 /// 注册表内全部未退役症候 ID（升序）——真源，与被测代码同源同法
 List<String> activeSyndromeIds() {
@@ -269,13 +272,13 @@ void main() {
 
   group('⑤ 生效性：分块链路真的用了 kChunkSystemPrompt', () {
     test('analyzeChunk 的调用处引用该常量', () {
-      final src = _readSrc(kProgressive);
+      final src = _readSrc(kChunkMessages);
       // 诊断编辑器：空集时走全启用默认 kChunkSystemPrompt，非空时运行时构造。
       expect(
         _count(src, '? kChunkSystemPrompt'),
         1,
         reason:
-            '$kProgressive 中 analyzeChunk 应以 kChunkSystemPrompt 作为 system '
+            '$kChunkMessages 中 analyzeChunk 应以 kChunkSystemPrompt 作为 system '
             'message 的空集默认分支，出现 1 次。\n'
             '（ADR-C69 §4：即使清单派生正确，若链路没用上也白搭）',
       );

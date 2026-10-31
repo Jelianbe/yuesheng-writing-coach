@@ -15,7 +15,6 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/contracts/teaching_capability.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -114,9 +113,12 @@ void main() {
 
   group('W-45 窄改① · 映射逻辑单元判据（buildKnownPositionBlock 直测）', () {
     test('三档边界：首/末/中，含 total==1 特例', () {
+      // T-20261025-06 Q2 乙（2026-10-31 舰长批）：开头覆盖前三章 ⇒ (2,3)、(3,3)
+      // 中 (3,3) 因 end 优先归结尾；(2,3) 由旧期望「中段」改为「开头」。
       expect(buildKnownPositionBlock(1, 3), contains('位置 = **开头**'));
-      expect(buildKnownPositionBlock(2, 3), contains('位置 = **中段**'));
+      expect(buildKnownPositionBlock(2, 3), contains('位置 = **开头**'));
       expect(buildKnownPositionBlock(3, 3), contains('位置 = **结尾**'));
+      expect(buildKnownPositionBlock(4, 5), contains('位置 = **中段**'));
       expect(buildKnownPositionBlock(1, 1), contains('全书仅此一章'));
     });
 
