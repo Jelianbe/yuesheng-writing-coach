@@ -26,6 +26,246 @@ import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
 import 'package:writingcoach/types/character_types.dart';
 
+// ─────────────────────────────────────────────────────────────
+// #19 护栏判定内核（T-20261031-20 加固）
+//
+// 抽成文件级私有件（而非写在用例体内）的理由：负向自测要在**内存副本**上
+// 复用**同一份**判定逻辑。若判定逻辑只存在于用例体内，负向自测就得复制一份
+// —— 复制件与正件会漂移，负向自测就成了「测另一份代码」（假绿）。
+// ─────────────────────────────────────────────────────────────
+
+/// `#19` 首选行正则 —— **格式解耦**版。
+///
+/// 旧式 `\*\*推荐教学动作\*\*：首选 (A\d{3})` 把**书写格式**钉死：全角冒号、
+/// 冒号后无空格、「首选」紧邻编号。手册一旦改成半角冒号 / 去掉加粗 / 写成
+/// 「首选动作 A011」，旧式正则就 miss ⇒ 报「缺行」—— **内容没错却红**（假红）。
+///
+/// 本式容忍：加粗有无、全/半角冒号、冒号与「首选」间空白、「首选动作」写法。
+/// ★ 放宽的鉴别力不是靠「读代码相信」：`#19` 用例内的负向自测会把同一批变体
+///   喂给**收紧回旧式**的正则做对照，断言旧式确实判缺行 ⇒ 证明放宽真的生效。
+final RegExp _kGuard19PreferredRe = RegExp(
+  r'推荐教学动作\*{0,2}\s*[：:]\s*首选(?:动作)?\s*(A\d{3})',
+);
+
+/// 动作编号（`A\d{3}`）抽取用。手册一行里除首选外的**全部**动作编号都算备选
+/// —— 兼容「备选 A0xx」「+ A0xx」「或 A0xx」「/ A0xx」等各写法。
+final RegExp _kGuard19ActionCodeRe = RegExp(r'A\d{3}');
+
+/// `#19` 缺行白名单：L3 抽段内确实没有「推荐教学动作」行的 ID。
+///
+/// ⚠️ 取**空集**（P013 经**运行期真源** `getSyndromeContent(['P013'])` 抽段核实：
+/// 该行在场且首选 A007 == 注册表首位）。稿 E1-9「P013 手册段无该行」是按 part
+/// 文件静态量段得出的 —— P013 段被切在 `manual_2` 末与 `manual_3` 头之间。
+const Set<String> kGuard19NoPreferredLineWhitelist = <String>{};
+
+/// `#19` 备选越界例外：手册备选集合 ⊄ 注册表 `actions` 的**已登记**条目。
+///
+/// 粒度 = (症候 ID, 动作编号) 对 —— 只有这一对被豁免；该症候再越界别的编号
+/// 仍必红。**不是按 ID 整条豁免**。
+///
+/// ⚠️ `P006/A008` = **实测发现的内容侧不一致**（非测试侧问题）：
+///   手册 `syndrome_kb_content_manual_2.dart:54` 写「首选 A011 场景裁剪，备选 A008
+///   对话瘦身 或 A006 感官全开 / A016 高频词清扫」，而注册表
+///   `syndrome_registry.dart:387` 的 P006 `actions` = A011/A006/A016 —— **无 A008**
+///   ⇒ 手册给 P006 推荐的退路在系统侧不存在。
+///   **本卡不碰内容侧**（卡 §六）⇒ 登记为例外 + 双向陈旧判据：
+///   内容侧一旦裁定（补进注册表 或 从手册删掉），本例外即陈旧 ⇒ 判据必红 ⇒
+///   强制清理。解锁条件可判，不留永久豁免。
+const Map<String, Set<String>> kGuard19AlternativeExempt = {
+  'P006': {'A008'},
+};
+
+/// `#19` 判定内核：手册段（首选 + 备选）vs 注册表 `actions`。
+///
+/// 返回违规描述列表（空 = 通过）。判据三条：
+///   ① 段内**全部**首选行须存在、同值、且 == `actions.first`；
+///   ② 段内**备选**（首选之外的动作编号）须 ⊆ `actions`；
+///   ③ 例外集双向：陈旧即红（防例外变成永久豁免）。
+///
+/// [preferredRe] 供负向自测注入「收紧回旧式」的正则做对照；默认用解耦版。
+List<String> _judgeGuard19({
+  required String id,
+  required String section,
+  required List<String> actions,
+  RegExp? preferredRe,
+}) {
+  final bad = <String>[];
+  final re = preferredRe ?? _kGuard19PreferredRe;
+  // 只看「推荐教学动作」所在的行 —— 段内正文别处提到的 A 编号不是备选。
+  final lines = section.split('\n').where((l) => l.contains('推荐教学动作')).toList();
+  final matches = <RegExpMatch>[];
+  for (final l in lines) {
+    matches.addAll(re.allMatches(l));
+  }
+  if (matches.isEmpty) {
+    if (!kGuard19NoPreferredLineWhitelist.contains(id)) {
+      bad.add('$id 手册段缺「首选 Axxx」行且不在白名单');
+    }
+    return bad;
+  }
+  if (kGuard19NoPreferredLineWhitelist.contains(id)) {
+    bad.add('$id 已在白名单但手册行回来了 ⇒ 白名单陈旧，须删该成员');
+    return bad;
+  }
+  final vals = matches.map((m) => m.group(1)!).toSet();
+  if (vals.length > 1) {
+    bad.add('$id 手册段 ${matches.length} 条首选行取值不一致(${vals.join('/')}) ⇒ 先定谁权威');
+    return bad;
+  }
+  if (vals.single != actions.first) {
+    bad.add('$id 手册首选=${vals.single} 注册表首位=${actions.first} ⇒ 分歧');
+  }
+  // 备选侧（缺口三）：手册列出的备选编号必须都在注册表 actions 内。
+  final manualAlts = <String>{};
+  for (final l in lines) {
+    final m = re.firstMatch(l);
+    if (m == null) continue;
+    // 位置法剔除**首选那一次**出现（而非按编号值剔除）—— 同一编号既作首选又
+    // 作备选时（`首选 A006 … 或 A006 …`）备选侧仍须被核对。
+    final rest = l.replaceRange(m.start, m.end, '');
+    for (final c in _kGuard19ActionCodeRe.allMatches(rest)) {
+      manualAlts.add(c.group(0)!);
+    }
+  }
+  final exempt = kGuard19AlternativeExempt[id] ?? const <String>{};
+  for (final alt in manualAlts) {
+    if (actions.contains(alt) || exempt.contains(alt)) continue;
+    bad.add('$id 手册备选=$alt 不在注册表 actions(${actions.join("/")}) ⇒ 分歧');
+  }
+  for (final e in exempt) {
+    if (actions.contains(e)) {
+      bad.add('$id 例外 $e 已在注册表 actions 内 ⇒ 例外陈旧，须删该成员');
+    } else if (!manualAlts.contains(e)) {
+      bad.add('$id 例外 $e 手册已不再写该备选 ⇒ 例外陈旧，须删该成员');
+    }
+  }
+  return bad;
+}
+
+/// `#19` 负向自测：三条**内存副本**变异必须各被检出并点名，且三种**格式变体**
+/// 必须仍判绿（格式解耦 ⇒ 不假红）。
+///
+/// ★ 为什么内嵌在既有用例里（不新增 `test(...)`）：新增用例会改门禁 2 的
+///   **例集指纹**（用例名集合的 sha256）⇒ 须一次显式重钉基线。本函数由既有的
+///   `#19` 用例调用 ⇒ 用例名与用例数均不变 ⇒ 指纹输入不变。
+/// ★ 为什么只动内存副本：`lib/` 与手册**零改动** ⇒ 无恢复风险、不污染门禁读数。
+void _guard19NegativeSelfTest() {
+  final p006 = kSyndromeRegistry.firstWhere((s) => s.id == 'P006');
+  final p010 = kSyndromeRegistry.firstWhere((s) => s.id == 'P010');
+  final p013 = kSyndromeRegistry.firstWhere((s) => s.id == 'P013');
+
+  // B1 首选改值 ⇒ 必红，且点名「手册首选=X 注册表首位=Y」
+  final s006 = getSyndromeContent(['P006']);
+  final b1 = s006.replaceFirst('首选 A011', '首选 A006');
+  expect(b1, isNot(s006), reason: 'B1 变异未生效（首选串未命中）⇒ 本例无效');
+  final b1Bad = _judgeGuard19(id: 'P006', section: b1, actions: p006.actions);
+  expect(b1Bad.length, 1, reason: 'B1 预判命中 1 条，实际 ${b1Bad.length}：$b1Bad');
+  expect(
+    b1Bad.single,
+    contains('手册首选=A006 注册表首位=A011'),
+    reason: 'B1 未点名分歧双方 ⇒ 判据可能只报了别的错',
+  );
+
+  // B2 首选行删掉 ⇒ 必红，报「缺行且不在白名单」
+  final s010 = getSyndromeContent(['P010']);
+  final b2 = s010.split('\n').where((l) => !l.contains('推荐教学动作')).join('\n');
+  expect(b2, isNot(s010), reason: 'B2 变异未生效（首选行未删）⇒ 本例无效');
+  final b2Bad = _judgeGuard19(id: 'P010', section: b2, actions: p010.actions);
+  expect(b2Bad.length, 1, reason: 'B2 预判命中 1 条，实际 ${b2Bad.length}：$b2Bad');
+  expect(
+    b2Bad.single,
+    contains('缺「首选 Axxx」行且不在白名单'),
+    reason: 'B2 未报缺行 ⇒ 缺行分支无牙',
+  );
+
+  // B4 手册备选改成不在 actions 里的编号 ⇒ 必红（缺口三的牙）
+  final s013 = getSyndromeContent(['P013']);
+  final b4 = s013.replaceFirst('备选 A009', '备选 A099');
+  expect(b4, isNot(s013), reason: 'B4 变异未生效（备选串未命中）⇒ 本例无效');
+  final b4Bad = _judgeGuard19(id: 'P013', section: b4, actions: p013.actions);
+  expect(b4Bad.length, 1, reason: 'B4 预判命中 1 条，实际 ${b4Bad.length}：$b4Bad');
+  expect(
+    b4Bad.single,
+    contains('手册备选=A099 不在注册表 actions'),
+    reason: 'B4 未点名越界备选 ⇒ 备选侧判据无牙',
+  );
+
+  // B4b 注册表**收缩**方向：手册备选仍在、注册表把它删了 ⇒ 必红。
+  //   （B4 测的是「手册新增越界备选」；这条测「注册表删掉手册仍写的备选」——
+  //   两者是 ⊆ 判据的两个方向，缺一则 ⊆ 只挡住一半。）
+  final b4b = _judgeGuard19(
+    id: 'P013',
+    section: s013,
+    actions: p013.actions.where((a) => a != 'A009').toList(),
+  );
+  expect(b4b.length, 1, reason: 'B4b 预判命中 1 条，实际 ${b4b.length}：$b4b');
+  expect(
+    b4b.single,
+    contains('手册备选=A009 不在注册表 actions'),
+    reason: 'B4b 未点名被收缩的备选 ⇒ ⊆ 判据只挡住一个方向',
+  );
+
+  // B5/B6 豁免集的**双向陈旧**必须有牙 —— 否则例外会变成永久豁免。
+  //   B5：注册表已把 A008 补进 P006 ⇒ 例外失效 ⇒ 红。
+  final b5 = _judgeGuard19(
+    id: 'P006',
+    section: s006,
+    actions: [...p006.actions, 'A008'],
+  );
+  expect(b5.length, 1, reason: 'B5 预判命中 1 条，实际 ${b5.length}：$b5');
+  expect(
+    b5.single,
+    contains('例外 A008 已在注册表 actions 内 ⇒ 例外陈旧'),
+    reason: 'B5 未报例外陈旧 ⇒ 豁免可被内容侧修复后长期留存（无牙）',
+  );
+
+  //   B6：手册不再写 A008 这个备选 ⇒ 例外失效 ⇒ 红。
+  final b6section = s006.replaceFirst('A008 对话瘦身 ', '');
+  expect(b6section, isNot(s006), reason: 'B6 变异未生效（A008 备选串未命中）⇒ 本例无效');
+  final b6 = _judgeGuard19(
+    id: 'P006',
+    section: b6section,
+    actions: p006.actions,
+  );
+  expect(b6.length, 1, reason: 'B6 预判命中 1 条，实际 ${b6.length}：$b6');
+  expect(
+    b6.single,
+    contains('例外 A008 手册已不再写该备选 ⇒ 例外陈旧'),
+    reason: 'B6 未报例外陈旧 ⇒ 豁免可被内容侧修复后长期留存（无牙）',
+  );
+
+  // 格式变体 ⇒ 仍判绿（内容没错不得假红）
+  final variants = <String, String>{
+    '半角冒号': s013.replaceFirst('**推荐教学动作**：', '**推荐教学动作**: '),
+    '去加粗': s013.replaceFirst('**推荐教学动作**：', '推荐教学动作：'),
+    '首选动作': s013.replaceFirst('首选 A007', '首选动作 A007'),
+  };
+  for (final v in variants.entries) {
+    expect(v.value, isNot(s013), reason: '格式变体「${v.key}」未生效 ⇒ 本例无效');
+    expect(
+      _judgeGuard19(id: 'P013', section: v.value, actions: p013.actions),
+      isEmpty,
+      reason: '格式变体「${v.key}」被判红 ⇒ 正则仍与书写格式耦合（假红）',
+    );
+  }
+
+  // ★ 反证：把正则**收紧回旧严格式**，同一批格式变体必须被判成「缺行」——
+  //   证明上面三条「格式变体仍绿」不是因为「判定没在看格式」，而是因为
+  //   解耦版正则真的放宽了。没有这一条，上面三条是**恒绿**的（skill ⑦）。
+  final strictRe = RegExp(r'\*\*推荐教学动作\*\*：首选 (A\d{3})');
+  final strictBad = _judgeGuard19(
+    id: 'P013',
+    section: variants['半角冒号']!,
+    actions: p013.actions,
+    preferredRe: strictRe,
+  );
+  expect(
+    strictBad.join('\n'),
+    contains('缺「首选 Axxx」行'),
+    reason: '收紧回旧式的正则竟未判缺行 ⇒ 对照无效，解耦版的「绿」无鉴别力',
+  );
+}
+
 void main() {
   // 权威症候集合（b9 真源化：由 syndrome_registry 派生，替代 kSyndromeSkillLevels.keys）
   final validSyndromes = kSyndromeIds.toSet();
@@ -344,36 +584,27 @@ void main() {
       // ⚠️ 施工实测（2026-10-31）：稿 E1-9 记「P013 手册段无该行」，但按**运行期真源**
       //   `getSyndromeContent(['P013'])` 抽段，该行**在场**且首选 A007 == 注册表首位
       //   ⇒ 白名单取**空集**（P013 不入白名单）。若将来某条真的缺行，此处加成员并在台账归因。
-      const noPreferredLineWhitelist = <String>{};
-      final preferredRe = RegExp(r'\*\*推荐教学动作\*\*：首选 (A\d{3})');
+      //
+      // T-20261031-20 加固：判定内核抽到文件级 `_judgeGuard19`（共享给负向自测），
+      // ① 正则**格式解耦**（半角冒号 / 去加粗 / 「首选动作」不再假红），
+      // ② 新增**备选侧覆盖**（手册备选 ⊆ 注册表 actions —— 原先零覆盖）。
       final bad = <String>[];
       for (final s in kSyndromeRegistry) {
-        final sec = getSyndromeContent([s.id]);
-        final all = sec.isEmpty
-            ? <RegExpMatch>[]
-            : preferredRe.allMatches(sec).toList();
-        if (all.isEmpty) {
-          if (!noPreferredLineWhitelist.contains(s.id)) {
-            bad.add('${s.id} 手册段缺「首选 Axxx」行且不在白名单');
-          }
-          continue;
-        }
-        if (noPreferredLineWhitelist.contains(s.id)) {
-          bad.add('${s.id} 已在白名单但手册行回来了 ⇒ 白名单陈旧，须删该成员');
-          continue;
-        }
-        final vals = all.map((m) => m.group(1)!).toSet();
-        if (vals.length > 1) {
-          bad.add(
-            '${s.id} 手册段 ${all.length} 条首选行取值不一致(${vals.join('/')}) ⇒ 先定谁权威',
-          );
-          continue;
-        }
-        if (vals.single != s.actions.first) {
-          bad.add('${s.id} 手册首选=${vals.single} 注册表首位=${s.actions.first} ⇒ 分歧');
-        }
+        bad.addAll(
+          _judgeGuard19(
+            id: s.id,
+            section: getSyndromeContent([s.id]),
+            actions: s.actions,
+          ),
+        );
       }
       expect(bad, isEmpty, reason: '手册/注册表首选不一致:\n${bad.join('\n')}');
+
+      // 负向自测（B1 首选改值 / B2 首选行删掉 / B4 备选越界 + 格式变体不假红
+      // + 旧式正则对照）—— 内嵌在本用例内：既有用例数与用例名**均不变**
+      // ⇒ 门禁 2 例集指纹输入不变 ⇒ 不需要重钉 `tool/test_count_baseline.json`。
+      // 无它，「首选一致 / 备选 ⊆ actions」在判据被削弱时会恒绿（skill ⑦）。
+      _guard19NegativeSelfTest();
     });
   });
 
