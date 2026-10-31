@@ -68,15 +68,16 @@ void main() {
         ),
       );
 
-      // 阳性对照：区块标题出现（至少 1 个，防计数遮蔽）。
+      // T-20261030-02：默认折叠 —— 先看到计数行（阳性对照）。
       expect(
-        find.text('本轮还考虑过'),
+        find.textContaining('本轮还考虑过 1 项'),
         findsAtLeastNWidgets(1),
-        reason: 'excluded 非空时必须渲染「本轮还考虑过」区块',
+        reason: 'excluded 非空时必须渲染折叠行（「本轮还考虑过 N 项」）',
       );
-      // ID 反查注册表取名：P002 = 信息倾泻（syndromeNameOf 实测字面量，
+      // 展开后：ID 反查注册表取名，P002 = 信息倾泻（syndromeNameOf 实测字面量，
       // 期望侧钉死 —— 不调生产 helper 生成，否则断言永真）。
-      // 渲染行形态（施工 :1026）：'· $name：$reason' 合体串 ⇒ 用 textContaining。
+      await tester.tap(find.textContaining('本轮还考虑过'));
+      await tester.pumpAndSettle();
       expect(
         find.textContaining('信息倾泻'),
         findsAtLeastNWidgets(1),
@@ -100,10 +101,12 @@ void main() {
 
       // 阳性对照先立：区块确实渲染了（否则下面的 findsNothing 是空过）。
       expect(
-        find.text('本轮还考虑过'),
+        find.textContaining('本轮还考虑过'),
         findsAtLeastNWidgets(1),
         reason: 'excluded 非空时区块必须出现',
       );
+      await tester.tap(find.textContaining('本轮还考虑过'));
+      await tester.pumpAndSettle();
       // 未知 ID 回退原串：P999 不在注册表 → 原样展示 ID（渲染行 '· P999' 合体 ⇒ textContaining）。
       expect(
         find.textContaining('P999'),

@@ -131,7 +131,7 @@ class SyndromeRecord {
   /// 可空：非每条症候都有量维度（顺序/视角/逻辑类不填）。
   final QuantityTag? quantityTag;
 
-  /// position_sensitivity（chapter / serial / global / beginning / middle / end / local）
+  /// position_sensitivity：取值见 kPositionSemantics（position_semantics.dart）
   final String position;
 
   /// 推荐技法 ID 列表（首选在首位，可含备选；与 kTechniquesBySyndrome 一致）

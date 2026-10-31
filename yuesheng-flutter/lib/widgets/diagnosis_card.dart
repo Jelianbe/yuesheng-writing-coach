@@ -41,6 +41,7 @@ import '../services/syndrome_tracker.dart';
 import '../services/teaching_state_cache.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
+import 'excluded_folded_section.dart';
 import 'm2_recall_bar.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
@@ -264,12 +265,43 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   /// 已确认指认的证据文本集合（会话级确认态，只读内存，不跨轮次）。
   final Set<String> _acknowledgedEvidence = {};
 
+  /// T-20261030-02：往轮排除记录（按轮分组、最近轮在上）。空 = 无往轮或
+  /// 读失败（失败静默、留痕；本轮折叠行照常显示）。
+  List<ExcludedRoundGroup> _historyExcluded = const [];
+
   @override
   void initState() {
     super.initState();
     _loadTeachingStates();
     _loadTrends();
     _resolveChapterId();
+    _loadHistoryExcluded();
+  }
+
+  /// T-20261030-02：读会话内往轮排除记录（复用 30-01 的 `excludedOf`，
+  /// 零新查询路径）。轮次号 = 会话内时间升序第 N 行（1 起）；本轮按
+  /// `messageId` 剔除；只分不并（不做跨轮去重）。
+  /// 失败：历史段整体不渲染（本轮仍显示），debugPrint 留痕（R-028）。
+  Future<void> _loadHistoryExcluded() async {
+    final sessionId = widget.sessionId;
+    final messageId = widget.messageId;
+    if (sessionId == null || messageId == null || messageId.isEmpty) return;
+    try {
+      final repo = DiagnosisRepository(ref.read(appDatabaseProvider));
+      final rows = await repo.getAllDiagnosisRows(sessionId: sessionId);
+      final currentIndex = rows.lastIndexWhere((r) => r.messageId == messageId);
+      final groups = <ExcludedRoundGroup>[];
+      for (var i = rows.length - 1; i >= 0; i--) {
+        if (i == currentIndex) continue;
+        final items = repo.excludedOf(rows[i]);
+        if (items.isEmpty) continue;
+        groups.add(ExcludedRoundGroup(roundNumber: i + 1, items: items));
+      }
+      if (!mounted) return;
+      setState(() => _historyExcluded = groups);
+    } catch (e) {
+      debugPrint('[diagnosis_card] 往轮排除记录读取失败（历史段不渲染）: $e');
+    }
   }
 
   /// ADR-C132 批3：章节 ID 反查（session → chapter）。失败静默留 ''。
@@ -426,7 +458,11 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         _buildHeader(),
         _buildTagRow(),
         // T-20261024-05 批2：「本轮还考虑过」——症候列表之后、整体判定之前。
-        _buildExcludedSection(),
+        // T-20261030-02：默认折叠成一行（展开内联）；往轮分组只分不并。
+        ExcludedFoldedSection(
+          excluded: widget.excluded,
+          history: _historyExcluded,
+        ),
         // P1-7：常驻弱提示——条目≠总评（prompt 里只写给模型听，UI 反而渲染成
         // 「严重度评估」让学员当成整篇总评）。
         _buildNotOverallHint(),
@@ -997,48 +1033,6 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               height: 1.4,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  /// T-20261024-05 批2：「本轮还考虑过」——模型考虑过但未报出的相近症候。
-  ///
-  /// 视觉做弱（灰字小字，同 [_buildLogicChainHint]），不与报出的症候抢注意力。
-  /// syndrome_id 反查注册表取名，未知 ID 回退原串（数据诚实）；reason 非空才现。
-  /// 空列表 ⇒ 不渲染（不造空区）。
-  Widget _buildExcludedSection() {
-    final excluded = widget.excluded;
-    if (excluded.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '本轮还考虑过',
-            style: context.text.caption.copyWith(
-              color: context.palette.textTertiary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 2),
-          ...excluded.map((e) {
-            final name = syndromeNameOf(e.syndromeId) ?? e.syndromeId;
-            final reason = e.reason.trim();
-            return Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                reason.isEmpty ? '· $name' : '· $name：$reason',
-                style: context.text.caption.copyWith(
-                  color: context.palette.textTertiary,
-                  fontSize: 11,
-                  height: 1.4,
-                ),
-              ),
-            );
-          }),
         ],
       ),
     );

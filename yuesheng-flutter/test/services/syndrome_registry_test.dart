@@ -7,11 +7,41 @@
 // 各库与注册表的渲染一致性断言见 four_libraries_consistency_test。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/services/position_semantics.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
+
+/// 手册层 `> **position_sensitivity**: <值>` 旁注 → 症候 ID。
+///
+/// 逐份读源文件（六份 manual_1..6）。**取块头不能按行首**：第一块
+/// `### P006` 紧跟在 `r'''` 之后（`syndrome_kb_content_manual_2.dart:19`），
+/// 按 `^### P0` 会漏掉它 —— 2026-10-31 草案 §1.3 的「38 份、P006 缺」
+/// 就是这个取行条件造成的假读数（实际 39/39，见该稿 §11 订正）。
+Map<String, String> _parseManualPositionAnnotations() {
+  final result = <String, String>{};
+  for (var i = 1; i <= 6; i++) {
+    final file = File('lib/services/syndrome_kb_content_manual_$i.dart');
+    expect(file.existsSync(), isTrue, reason: '缺手册文件 ${file.path}');
+    final text = file.readAsStringSync();
+    final heads = RegExp(r'### (P\d{3})\b').allMatches(text).toList();
+    for (var k = 0; k < heads.length; k++) {
+      final id = heads[k].group(1)!;
+      final start = heads[k].end;
+      final end = k + 1 < heads.length ? heads[k + 1].start : text.length;
+      final body = text.substring(start, end);
+      final m = RegExp(
+        r'> \*\*position_sensitivity\*\*: ([a-z]+)',
+      ).firstMatch(body);
+      result[id] = m?.group(1) ?? '';
+    }
+  }
+  return result;
+}
 
 void main() {
   group('批次27（b9）注册表合法性', () {
@@ -271,6 +301,70 @@ void main() {
               '静默改写到旧实体上',
         );
       });
+    });
+  });
+
+  // ── T-20261025-06 件1（2026-10-31 舰长确认）：position 七值语义 ──
+  // 语义源：`.ai/reports/2026-10-31-待确认-25-06-position七值语义映射表.md`
+  // §2 同轴分组 / §3 逐值语义。本组只钉「值 → 语义存在且闭合」，
+  // **不改判定算法**（band 三档仍按 buildKnownPositionBlock）。
+  group('T-20261025-06 件1 · position 七值语义表', () {
+    test('P1 映射表恰好 7 键（硬锚，非派生）', () {
+      const expected = {
+        'beginning',
+        'middle',
+        'end',
+        'global',
+        'chapter',
+        'serial',
+        'local',
+      };
+      expect(
+        kPositionSemantics.length,
+        7,
+        reason: '七值是封闭集：位次轴 3 + 通配 1 + 规模轴 3',
+      );
+      expect(kPositionSemantics.keys.toSet(), expected);
+      for (final entry in kPositionSemantics.entries) {
+        expect(
+          entry.value.trim(),
+          isNotEmpty,
+          reason: '${entry.key} 的语义不得为空（空 = 回到语义真空）',
+        );
+      }
+    });
+
+    test('P2 注册表 39 条 position 全部 ⊆ 键集', () {
+      expect(kSyndromeRegistry.length, 39);
+      for (final s in kSyndromeRegistry) {
+        expect(
+          kPositionSemantics.containsKey(s.position),
+          isTrue,
+          reason: '${s.id} 的 position「${s.position}」不在七值语义表内',
+        );
+      }
+    });
+
+    test('P3 手册旁注 39/39 全有、值 ⊆ 键集、与注册表逐条相等', () {
+      final ann = _parseManualPositionAnnotations();
+      final registryIds = kSyndromeRegistry.map((s) => s.id).toList();
+
+      // 硬锚：39 条全部有旁注（删任一行 ⇒ 红；2026-10-31 实测 39/39）。
+      expect(ann.length, 39, reason: '手册旁注条数应为 39（每症候一条）');
+      expect(
+        ann.keys.toSet(),
+        registryIds.toSet(),
+        reason: '手册旁注 ID 集必须与注册表 ID 集完全一致',
+      );
+      for (final s in kSyndromeRegistry) {
+        final value = ann[s.id];
+        expect(
+          kPositionSemantics.containsKey(value),
+          isTrue,
+          reason: '${s.id} 手册旁注「$value」不在七值语义表内',
+        );
+        expect(value, s.position, reason: '${s.id} 手册旁注与注册表不一致（两处真源漂移）');
+      }
     });
   });
 }
