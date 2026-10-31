@@ -341,7 +341,7 @@
     },
     {
       "file": "lib/services/diagnosis_flow_handler.dart",
-      "lines": 1786
+      "lines": 1808
     },
     {
       "file": "lib/services/diagnosis_injection_service.dart",
@@ -469,7 +469,7 @@
     },
     {
       "file": "lib/services/syndrome_kb_content.dart",
-      "lines": 314
+      "lines": 321
     },
     {
       "file": "lib/services/syndrome_kb_content_manual_1.dart",
@@ -489,7 +489,7 @@
     },
     {
       "file": "lib/services/syndrome_registry.dart",
-      "lines": 988
+      "lines": 995
     },
     {
       "file": "lib/services/teacher_validator.dart",

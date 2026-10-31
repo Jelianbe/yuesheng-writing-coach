@@ -381,11 +381,11 @@ void _buildL2Chunks(
           skill.contentForPhase?.call(ctx.phase, skill.content) ??
           skill.content;
       // 诊断编辑器：索引 skill 按用户启用集动态生成（剔除关闭行）；
-      // 单章不可判症候（P022）同样从索引剔除——库常量保留行，此为注入点剔除。
+      // 单章不可判（P022）+ 前提层不可诊（P031）同样从索引剔除——库常量保留行，此为注入点剔除。
       if (ref.skillId == 'syndrome-diagnosis-index') {
         content = buildSyndromeIndexContent({
           ...ctx.disabledSyndromeIds,
-          ...kSingleChapterExcludedSyndromeIds,
+          ...kShortChainExcludedSyndromeIds,
         });
       }
       chunks.add(content);

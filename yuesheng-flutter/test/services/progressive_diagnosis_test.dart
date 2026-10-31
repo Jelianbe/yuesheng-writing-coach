@@ -916,9 +916,17 @@ void main() {
           reason: '$id 不应出现在要点块（ADR-C155 收窄：片内不可自证）',
         );
       }
-      // 要点条数 = 注册表活跃 − 6（派生断言，不写死数字：注册表扩容后仍成立）
+      // 要点条数 = 注册表活跃 − 退化判据 − 前提层不可诊（派生断言，不写死数字：
+      // 注册表或任一排除集扩容后仍成立）。
+      // ⚠️ 两个集合必须**分别**扣：P031 **不在** kChunkDegradedCriteriaIds 的 6 条里，
+      // 只扣前者会多算 1 行（T-20261031-11 件① 落地后实测 32 ≠ 旧断言 33）。
+      // 不许把 32 写死 —— 那会把「排除集改了、断言没跟上」变成静默。
+      final excludedIds = <String>{
+        ...kChunkDegradedCriteriaIds,
+        ...kNonDiagnosableSyndromeIds,
+      };
       final expected = kSyndromeRegistry
-          .where((s) => !kChunkDegradedCriteriaIds.contains(s.id))
+          .where((s) => !excludedIds.contains(s.id))
           .length;
       final actual = RegExp(
         r'^- P\d{3} ',
@@ -927,7 +935,10 @@ void main() {
       expect(
         actual,
         expected,
-        reason: '要点行数应 = 注册表活跃(${kSyndromeRegistry.length}) − 6',
+        reason:
+            '要点行数应 = 注册表活跃(${kSyndromeRegistry.length})'
+            ' − 退化判据(${kChunkDegradedCriteriaIds.length})'
+            ' − 前提层不可诊(${kNonDiagnosableSyndromeIds.length})',
       );
     });
 

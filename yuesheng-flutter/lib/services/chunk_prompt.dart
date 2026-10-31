@@ -85,7 +85,6 @@ const String _kChunkExceptionGuide = '''例外情况指引（以下场景通常�
 - P028例外（须指认）：须指出≥1处决策句或代价句（被动中主动）；侦探/悬疑须指出观察者在本窗的观察动作句；隐忍须指出等待时机的目标句；群像须指出≥2个各有欲望句的主视角。指不出⇒例外不成立，按正文判定
 - P029例外：先归位——这局没有布局者（反派本人）时本症候**根本不在报域**（症结归 P010/P007）；布局者行为有读者读得到的账（自身目标＋前史因果＋不可让渡的代价＋行为与执念一致）即不报；局中人/被算计者的蠢、连败、不申辩一律不得作为判定依据
 - P030例外（须指认）：须指出两处声线差异标记（人称/句长/词汇域）且分属不同叙述者；独白用角色腔与叙述声线分开看。指不出⇒例外不成立，按正文判定
-- P031例外（须指认）：须指出同一冲突同时驱动两类类型要素的句（内核统一）；文学实验须指出被实验的类型边界名；系列多品类按单本判。指不出⇒例外不成立，按正文判定
 - P033例外：刻意的循环/复沓结构（主题需轮回感且有自觉变奏设计）；日常流/治愈系本就低冲突，不靠升级驱动；看似重复实则每轮换维度（上轮外部危机、下轮内部信任崩塌＝升级）
 - P038例外（须指认）：须指出顺序理据句（为何先果后因）；意识流须指出联想链的触发词；空间全景白描须指出单向的整体→局部层级句序（≥2层，不得回跳）。指不出⇒例外不成立，按正文判定
 - P039例外：留白/停顿/氛围描写不是稀碎——留白是"作者有意不写、让读者填补"且删掉会破坏叙事，稀碎是"写了等于没写"、删掉叙事不受影响；无信息增量链（不揭示新事实、不改变角色状态、不制造张力）才是稀碎
@@ -179,7 +178,8 @@ ${rows.join('\n')}
 /// 读数批的判读依据是 39 条判据**原文**（61514 字符）；原文 verbatim
 /// （丙形态）按 33 条折算 ≈52000 字符/片，token 成本随片数爆炸 ⇒ 否。
 /// 乙形态从注册表现成字段（keyword + oneLine）派生，零新内容维护面。
-/// 排除 [kChunkDegradedCriteriaIds]（那些走「跨章依赖判据」节）。
+/// 排除 [kChunkDegradedCriteriaIds]（那些走「跨章依赖判据」节）；
+/// [kNonDiagnosableSyndromeIds] **不进**那一节（语义不同：退化者 = 窗口外可 uncertain，前提层 = **不报**）。
 List<String> _activeSyndromeCriteriaLines([
   Set<String> disabled = const {},
   String? band,
@@ -189,6 +189,7 @@ List<String> _activeSyndromeCriteriaLines([
       kSyndromeRegistry
           .where((s) => !disabled.contains(s.id))
           .where((s) => !kChunkDegradedCriteriaIds.contains(s.id))
+          .where((s) => !kNonDiagnosableSyndromeIds.contains(s.id))
           .where((s) => allowed.contains(s.position))
           .map((s) => '- ${s.id} ${s.name}（${s.keyword}）：${s.oneLine}')
           .toList()

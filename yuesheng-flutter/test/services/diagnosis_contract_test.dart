@@ -173,12 +173,14 @@ void main() {
 
       // L2 diagnosis 组：已注册项必须出现。
       // 索引 skill 自 T-20261028-06（B 包）起由 dispatcher 按「用户禁用集 +
-      // 单章排除集」动态重建，不再逐字等于静态注册内容 ⇒ 比对重建后的正文。
+      // 短链排除并集」动态重建，不再逐字等于静态注册内容 ⇒ 比对重建后的正文。
+      // ★ T-20261031-11 件①：并集真源 = kShortChainExcludedSyndromeIds（P022 + P031），
+      //   期望串与装配点**必须用同一常量**，不许各写一份 spread。
       for (final ref in getL2SkillIds(L2Mode.diagnosis)) {
         final skill = getSkill(ref.skillId);
         if (skill != null) {
           final expected = ref.skillId == 'syndrome-diagnosis-index'
-              ? buildSyndromeIndexContent(kSingleChapterExcludedSyndromeIds)
+              ? buildSyndromeIndexContent(kShortChainExcludedSyndromeIds)
               : skill.content;
           expect(
             result.systemPrompt.contains(expected),

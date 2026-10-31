@@ -51,8 +51,15 @@ const String kSuffixFnv = 'b4ae395807abdc6';
 //   注册表现行名去「症」下移 ⇒ 三组同源同降。值来源 = UPDATE_SNAPSHOTS=true
 //   重冻后的 `test/snapshots/skill_prompt_anchor.json`（与 `tool/check_prompt_volume.py`
 //   REDLINE 第十八次重贴逐键互证；两表若分家，S4/S5 与本脚本必有一红）。
-const String kDiagP1Fnv = '184222cc0eac22e4';
-const String kDiagYueFnv = '60ce814da2333ce9';
+// ★ 2026-10-31（T-20261031-11 件①③④）再重钉：diagnosis 两组各 **−42**
+//   （55897/184222cc0eac22e4 → 55855/6a2191b7c2f91422；
+//     57680/60ce814da2333ce9 → 57638/75704fcaea75e1eb）
+//   = 索引面 −59（P022+P031 两行）**叠加** coaching-actions-v2 +17。
+//   ⚠️ **force 组 = 不动项，本批不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变，
+//   因为该组 `loadedSkillIds` 不含 `coaching-actions-v2` 也不含 L2 索引 ⇒ 天然负对照。
+//   若哪天 force 的 fnv 变了，说明改动打到了不该碰的面，**先怀疑越界，不要顺手重钉**。
+const String kDiagP1Fnv = '6a2191b7c2f91422';
+const String kDiagYueFnv = '75704fcaea75e1eb';
 // force 组红线：先验 +0 只对**当时那一批**成立；本批是正文清扫 ⇒ 随组同降。
 const String kForceFnv = '37644edbf2af71a8';
 

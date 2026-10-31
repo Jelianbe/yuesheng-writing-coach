@@ -14,6 +14,11 @@ import 'technique_knowledge_base.dart'; // techniqueNameOf
 import 'intervention_value.dart'
     show kInterventionValueS3Criteria, kFormFieldCriteria;
 
+// 治理续批 31-11 件①（R1 落点）：`kNonDiagnosableSyndromeIds` 的真源在叶子库
+// `syndrome_registry.dart`。此处只把它接进本库出口，让 `diagnosis_flow_handler`
+// 沿用既有 knowledge_base 的 `show` 子句取用 ⇒ **不新增 import 边**（R1 约束）。
+export 'syndrome_registry.dart' show kNonDiagnosableSyndromeIds;
+
 // ─── P3 数据分片（数据/逻辑分离；知识文本在 part 文件）───
 part 'syndrome_kb_content.dart';
 part 'syndrome_kb_content_manual_1.dart';

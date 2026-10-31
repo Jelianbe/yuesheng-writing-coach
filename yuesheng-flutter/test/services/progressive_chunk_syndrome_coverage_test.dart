@@ -16,6 +16,8 @@
 //      ★ ADR-C155：全覆盖现由**两节**共同完成——「症候判定要点」（27 条可片内
 //        判定）+「跨章依赖判据」（6 条读数批实测退化者，点名留痕 + uncertain
 //        指引）。两节各自守「恰 1 次、不重复、不静默不选」（B4）。
+//      ★ T-20261031-11 件①：覆盖集在此基础上再减 [kNonDiagnosableSyndromeIds]
+//        （P031 = 判据对象在创作前提层，两链都**不报**，与「退化者走 uncertain」不同类）。
 //   ② 范围说明派生：buildMergePrompt 的范围串必须由同一真源算出
 //   ③ 无硬编码回退：源码中不得再现 P001-P020 / 硬编码清单行
 //   ④ 兜底句存在：例外指引末条覆盖「未列出的症候」
@@ -95,7 +97,10 @@ void main() {
     });
 
     test('逐个症候 ID 断言出现在 kChunkSystemPrompt 中', () {
+      // ★ T-20261031-11 件① B1：前提层不可诊（P031）已退出两链注入面 ⇒ 覆盖集
+      //   改为「活跃 − kNonDiagnosableSyndromeIds」，与装配点同一真源。
       final missing = ids
+          .where((id) => !kNonDiagnosableSyndromeIds.contains(id))
           .where((id) => !kChunkSystemPrompt.contains(id))
           .toList();
       expect(
@@ -106,6 +111,51 @@ void main() {
             '（ADR-C69 §4：原硬编码清单只到 P017，漏掉后段 20 个。\n'
             ' 逐条断言而非总数判据——总数允许「缺一个、别处重复一个」蒙混过关，'
             '见 AGENTS.md V4.8）',
+      );
+    });
+
+    test('件① 反向牙：P031 两行都不得进分块链 prompt（排除只发生在注入点）', () {
+      // 要点行（`- P031 …`）与例外行（`- P031例外…`）两处都必须消失；
+      // 恢复任一行 ⇒ 本例立刻变红（N5 的「怎么变红」）。
+      expect(
+        kChunkSystemPrompt,
+        isNot(contains('- P031 ')),
+        reason: 'P031 要点行仍在分块链 prompt ⇒ B1 的 .where 被绕过',
+      );
+      expect(
+        kChunkSystemPrompt,
+        isNot(contains('P031例外')),
+        reason: 'P031 例外行仍在 ⇒ B2 的逐字删除被回退',
+      );
+      // 注册表本体仍在（防「顺手删库」）：排除发生在装配点，不在数据源。
+      expect(
+        kSyndromeRegistry.map((s) => s.id),
+        contains('P031'),
+        reason: '注册表条目不得因退出注入面而被删除',
+      );
+    });
+
+    test('N4 双向牙：P031 既不进要点节、也不进「跨章依赖判据」节', () {
+      // 只断「要点节不含 P031」防不住把它塞进退化节（那等于改成 uncertain，语义错）；
+      // 只断「退化节不含 P031」防不住它被错标成退化判据。⇒ 两个方向都要。
+      final startIdx = kChunkSystemPrompt.indexOf('症候判定要点');
+      final midIdx = kChunkSystemPrompt.indexOf('跨章依赖判据');
+      final endIdx = kChunkSystemPrompt.indexOf('片段窗口边界');
+      expect(startIdx, isNot(-1), reason: '找不到「症候判定要点」小节');
+      expect(midIdx, greaterThan(startIdx), reason: '清单块边界异常');
+      expect(endIdx, greaterThan(midIdx), reason: '留痕节右边界异常');
+
+      final criteriaBlock = kChunkSystemPrompt.substring(startIdx, midIdx);
+      final degradedSection = kChunkSystemPrompt.substring(midIdx, endIdx);
+      expect(
+        criteriaBlock,
+        isNot(contains('P031')),
+        reason: '要点节仍含 P031 ⇒ 分块链还在报它（应为不报）',
+      );
+      expect(
+        degradedSection,
+        isNot(contains('P031')),
+        reason: 'P031 被错标成退化判据（走 uncertain）——它的前提层语义是「不报」',
       );
     });
 
@@ -123,15 +173,17 @@ void main() {
       expect(endIdx, greaterThan(startIdx), reason: '清单块边界异常');
       final block = kChunkSystemPrompt.substring(startIdx, endIdx);
 
-      // 每个**非退化**症候 ID 在要点块里恰好出现 1 次
+      // 每个**非退化且可诊**症候 ID 在要点块里恰好出现 1 次
       final dup = ids
           .where((id) => !kChunkDegradedCriteriaIds.contains(id))
+          .where((id) => !kNonDiagnosableSyndromeIds.contains(id))
           .where((id) => _count(block, id) > 1)
           .toList();
       expect(dup, isEmpty, reason: '以下症候在要点块中重复出现：${dup.join(', ')}');
-      // 且非退化症候全部在块内（防「收窄」被误做成「静默漏同步」）
+      // 且非退化可诊症候全部在块内（防「收窄」被误做成「静默漏同步」）
       final missingInBlock = ids
           .where((id) => !kChunkDegradedCriteriaIds.contains(id))
+          .where((id) => !kNonDiagnosableSyndromeIds.contains(id))
           .where((id) => !block.contains(id))
           .toList();
       expect(

@@ -384,7 +384,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     quantityTag: QuantityTag.overwritten,
     position: 'global',
     techniques: ['T003', 'T002', 'T021', 'T031'],
-    actions: ['A006', 'A011', 'A016'],
+    actions: ['A011', 'A006', 'A016'],
   ),
   SyndromeRecord(
     id: 'P007',
@@ -455,7 +455,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T017'],
-    actions: ['A007', 'A003'],
+    actions: ['A003', 'A007'],
     v2ActionName: '张力不足',
   ),
   SyndromeRecord(
@@ -495,7 +495,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     quantityTag: QuantityTag.underwritten,
     position: 'end',
     techniques: ['T025', 'T026', 'T017'],
-    actions: ['A007', 'A003', 'A012'],
+    actions: ['A012', 'A007', 'A003'],
     v2ActionName: '结尾乏力',
   ),
   SyndromeRecord(
@@ -567,7 +567,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     presentationGroup: PresentationGroup.plot,
     position: 'global',
     techniques: ['T029', 'T022'],
-    actions: ['A009', 'A006'],
+    actions: ['A006', 'A009'],
     v2ActionName: '过渡生硬',
   ),
   SyndromeRecord(
@@ -585,7 +585,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T022', 'T008'],
-    actions: ['A009', 'A005'],
+    actions: ['A005', 'A009'],
     v2ActionName: '跳跃叙事',
   ),
   SyndromeRecord(
@@ -638,7 +638,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     quantityTag: QuantityTag.underwritten,
     position: 'serial',
     techniques: ['T026', 'T017'],
-    actions: ['A013', 'A012'],
+    actions: ['A012', 'A013'],
   ),
   SyndromeRecord(
     id: 'P021',
@@ -774,7 +774,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T009', 'T005', 'T008', 'T032'],
-    actions: ['A002', 'A007', 'A003'],
+    actions: ['A007', 'A002', 'A003'],
   ),
   SyndromeRecord(
     id: 'P029',
@@ -857,7 +857,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     quantityTag: QuantityTag.overwritten,
     position: 'serial',
     techniques: ['T017', 'T008', 'T018'],
-    actions: ['A007', 'A003', 'A009'],
+    actions: ['A003', 'A007', 'A009'],
   ),
   SyndromeRecord(
     id: 'P034',
@@ -927,7 +927,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     quantityTag: QuantityTag.underwritten,
     position: 'local',
     techniques: ['T003', 'T012', 'T027'],
-    actions: ['A002', 'A005'],
+    actions: ['A006', 'A002', 'A005'],
   ),
   SyndromeRecord(
     id: 'P037',
@@ -944,7 +944,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T001', 'T017', 'T030'],
-    actions: ['A001', 'A006', 'A013'],
+    actions: ['A013', 'A001', 'A006'],
   ),
   // ── 需求 3 新增（2026-10-11）：描写顺序失序症 ──
   SyndromeRecord(
@@ -986,3 +986,10 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     actions: ['A011', 'A005'],
   ),
 ];
+
+/// 判据对象在**创作前提层**（全书题材定位），单章窗口与分块窗口都无位置、
+/// 且动作目录里没有同域动作可治的症候 ID ⇒ **退出诊断注入面**（两链都不报）。
+/// ⚠️ 不删库常量里的行、不删手册段（`four_libraries_consistency_test #1/行数` 护栏）。
+/// 与 [kSingleChapterExcludedSyndromeIds] 的区别：那条只出单章短链、**merge 侧保留**；
+/// 本条两链都出，合并出口同样过滤。当前成员仅 P031。
+const Set<String> kNonDiagnosableSyndromeIds = {'P031'};

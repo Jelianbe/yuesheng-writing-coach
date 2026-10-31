@@ -295,6 +295,75 @@ void main() {
         }
       }
     });
+
+    test('#17 件③：九条首选动作逐条落在批准序首位（不用集合断言）', () {
+      // 同集合换序 ⇒ 集合断言恒绿，所以这里**逐条字面**钉 `actions.first`
+      // （报批稿 §6.1 N6 与坑 1：判据的自述不能强于鉴别力）。
+      const preferred = <String, String>{
+        'P006': 'A011',
+        'P010': 'A003',
+        'P012': 'A012',
+        'P016': 'A006',
+        'P017': 'A005',
+        'P020': 'A012',
+        'P028': 'A007',
+        'P033': 'A003',
+        'P037': 'A013',
+      };
+      final bad = <String>[];
+      for (final e in preferred.entries) {
+        final rec = kSyndromeRegistry.firstWhere((s) => s.id == e.key);
+        if (rec.actions.first != e.value) {
+          bad.add(
+            '${e.key} 现首位=${rec.actions.first} 期望=${e.value} '
+            '全序=${rec.actions.join(',')}',
+          );
+        }
+      }
+      expect(bad, isEmpty, reason: '注册表首选动作与批准序不一致:\n${bad.join('\n')}');
+    });
+
+    test('#18 件④甲：P036 首选改 A006 且保留 A002 备选', () {
+      final p036 = kSyndromeRegistry.firstWhere((s) => s.id == 'P036');
+      expect(p036.actions.first, 'A006', reason: '手册首选是 A006，系统侧须一致');
+      expect(
+        p036.actions,
+        contains('A002'),
+        reason: '甲案保留 A002 作学员退路（乙案删它 = 超范围减法，本批不采）',
+      );
+      expect(p036.actions, contains('A005'));
+    });
+
+    test('#19 手册首选 == 注册表 actions.first（N-Guard · 白名单取空集）', () {
+      // 按 ID 抽段比对 —— **直接用 L3 注入面的真源函数** `getSyndromeContent`
+      // （不自建段界：自建会在 `### ` / `## ` 边界上与运行期分家，见 §2.9 抽段口径）。
+      // 分歧此前只能靠人工脚本发现（报批稿 E1-9）⇒ 本护栏把它变成机器牙。
+      // 白名单 = L3 抽段内确实没有「推荐教学动作」行的 ID。
+      // ⚠️ 施工实测（2026-10-31）：稿 E1-9 记「P013 手册段无该行」，但按**运行期真源**
+      //   `getSyndromeContent(['P013'])` 抽段，该行**在场**且首选 A007 == 注册表首位
+      //   ⇒ 白名单取**空集**（P013 不入白名单）。若将来某条真的缺行，此处加成员并在台账归因。
+      const noPreferredLineWhitelist = <String>{};
+      final preferredRe = RegExp(r'\*\*推荐教学动作\*\*：首选 (A\d{3})');
+      final bad = <String>[];
+      for (final s in kSyndromeRegistry) {
+        final sec = getSyndromeContent([s.id]);
+        final hit = sec.isEmpty ? null : preferredRe.firstMatch(sec);
+        if (hit == null) {
+          if (!noPreferredLineWhitelist.contains(s.id)) {
+            bad.add('${s.id} 手册段缺「首选 Axxx」行且不在白名单');
+          }
+          continue;
+        }
+        if (noPreferredLineWhitelist.contains(s.id)) {
+          bad.add('${s.id} 已在白名单但手册行回来了 ⇒ 白名单陈旧，须删该成员');
+          continue;
+        }
+        if (hit.group(1) != s.actions.first) {
+          bad.add('${s.id} 手册首选=${hit.group(1)} 注册表首位=${s.actions.first} ⇒ 分歧');
+        }
+      }
+      expect(bad, isEmpty, reason: '手册/注册表首选不一致:\n${bad.join('\n')}');
+    });
   });
 
   group('批次3（3.2）互斥对与内容引用', () {

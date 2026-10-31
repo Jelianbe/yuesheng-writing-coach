@@ -1,11 +1,11 @@
 {
   "kChunkSystemPrompt": {
-    "len": 6590,
-    "fnv": "382ca091dbe7e711"
+    "len": 6445,
+    "fnv": "4456dfcbd2d2a69f"
   },
   "chunkExceptionGuideBlock": {
-    "len": 3081,
-    "fnv": "582b0096adae57d5"
+    "len": 2998,
+    "fnv": "61a70ef48a35c708"
   },
   "kDiagnosisProtocolSuffix": {
     "len": 1038,
@@ -44,13 +44,12 @@
       "P028",
       "P029",
       "P030",
-      "P031",
       "P033",
       "P038",
       "P039"
     ],
-    "exceptionLineCount": 31,
-    "guideLineCount": 34,
+    "exceptionLineCount": 30,
+    "guideLineCount": 33,
     "note": "meta 段只做归因、不做钉值；判定看上面三个键的 len + fnv。exceptionIds = `- P\\d{3}例外` 出现次数；exceptionLineCount = 以 `- Pxxx例外` 行首开头的行数；guideLineCount = 例外表总行数（含首行标题与末条兜底）。"
   }
 }

@@ -102,7 +102,7 @@ import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/p0_verify/anchor_probe.dart';
 import 'package:writingcoach/services/reply_receipt_guard.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart'
-    show kSingleChapterExcludedSyndromeIds;
+    show kShortChainExcludedSyndromeIds, kNonDiagnosableSyndromeIds;
 import 'package:writingcoach/services/teacher_service.dart'
     show TeacherDiagnosisInput, callTeacherStream;
 import 'package:writingcoach/services/teacher_validator.dart'
@@ -379,7 +379,11 @@ class DiagnosisFlowHandler {
     required String fullContent,
     String? chapterContent,
   }) async {
-    final rawParse = _filterDisabled(_diagnosis.parseDiagnosis(fullContent));
+    // 合并 / 跨章唯一出口：排除前提层不可诊（P031），但**保留** P022（跨章侧仍判）。
+    final rawParse = _filterDisabled(
+      _diagnosis.parseDiagnosis(fullContent),
+      extraExcluded: kNonDiagnosableSyndromeIds,
+    );
     final parsed = await _parseDiagnosisFromContent(
       fullContent: fullContent,
       rawParse: rawParse,
@@ -399,20 +403,13 @@ class DiagnosisFlowHandler {
       manuscriptId: persisted.factManuscriptId,
     );
     final diagnosis = parsed.diagnosis;
-    // C103：长文链路补齐 GenUI 卡片（短链路在 commit 前插入，卡片顺序一致）。
-    await _insertGenuiCardFromContent(sessionId, fullContent);
-    if (diagnosis != null) {
-      // 顺序保持在 commit 之前：commit 若抛错，探针记录已经落下。
-      // 锚定结果只依赖诊断对象与原文，与落库成败无关 —— 观测数据不该
-      // 因为 commit 失败而一起丢（那正好是最需要看的那一次）。
-      await _probeAnchors(sessionId, diagnosis, chapterContent);
-      await _commitDiagnosisWithTeacher(
-        sessionId: sessionId,
-        messageId: messageId,
-        diagnosis: diagnosis,
-        chapterContent: chapterContent,
-      );
-    }
+    await _emitDiagnosisDownstream(
+      sessionId: sessionId,
+      messageId: messageId,
+      fullContent: fullContent,
+      diagnosis: diagnosis,
+      chapterContent: chapterContent,
+    );
     // V3 埋点（ADR-0005）：长文链路同样出块 ⇒ 分母必须含此路径，
     // 否则写作面板诊断的确认/质疑（分子全）会**虚高**质疑率（分母缺）。
     // 本路径 attempted 恒 true（章节诊断入口），故 inDiagnosisBlock 传 true。
@@ -423,6 +420,31 @@ class DiagnosisFlowHandler {
       success: diagnosis != null,
     );
     return messageId;
+  }
+
+  /// 诊断对象落定后的**下游副作用**：GenUI 卡片 → 锚点探针 → commit。
+  ///
+  /// 卡片无条件插（与短链路同序）；探针**必须在 commit 之前**。
+  Future<void> _emitDiagnosisDownstream({
+    required String sessionId,
+    required String messageId,
+    required String fullContent,
+    required ParsedDiagnosis? diagnosis,
+    required String? chapterContent,
+  }) async {
+    // C103：长文链路补齐 GenUI 卡片（短链路在 commit 前插入，卡片顺序一致）。
+    await _insertGenuiCardFromContent(sessionId, fullContent);
+    if (diagnosis == null) return;
+    // 顺序保持在 commit 之前：commit 若抛错，探针记录已经落下。
+    // 锚定结果只依赖诊断对象与原文，与落库成败无关 —— 观测数据不该
+    // 因为 commit 失败而一起丢（那正好是最需要看的那一次）。
+    await _probeAnchors(sessionId, diagnosis, chapterContent);
+    await _commitDiagnosisWithTeacher(
+      sessionId: sessionId,
+      messageId: messageId,
+      diagnosis: diagnosis,
+      chapterContent: chapterContent,
+    );
   }
 
   /// P0-a 锚定探针（旁路观测，**零行为变更**）。
@@ -1750,10 +1772,10 @@ class DiagnosisFlowHandler {
     });
   }
 
-  /// 单章短链专用：并入「单章窗口不可判」症候（P022）。
+  /// 单章短链专用：并入「单章不可判（P022）+ 前提层不可诊（P031）」。
   /// merge 路径（`commitDiagnosisFromContent`）**不得**调用本方法。
   ParseResult _filterShortChain(ParseResult r) =>
-      _filterDisabled(r, extraExcluded: kSingleChapterExcludedSyndromeIds);
+      _filterDisabled(r, extraExcluded: kShortChainExcludedSyndromeIds);
 }
 
 /// 纯函数：按排除集剥掉症候（短链与 merge 的差异只在调用点是否传入单章排除集）。

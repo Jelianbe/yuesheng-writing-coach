@@ -357,6 +357,33 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   4 份快照（prompt_const 4 键 / skill_prompt 52 / msgseq 32 / l3_entry 154）重冻，
   其余 3 份（chunk_message / injection_segments / student_profile）实测**零漂移**。
 
+· 2026-10-31 第二十三次（T-20261031-11 教学出口修复 件①③④ · R-027 舰长已批，
+  报批稿 `.ai/reports/2026-10-31-报批稿-31-11教学出口-P031退出与首选动作.md`）：
+  方向 = **P031 退出诊断注入面**（短链索引并集 + 分块例外行逐字删）+ **九条首选动作改序**
+  ⇒ 诊断面**下移**、携带 `coaching-actions-v2` 的面**上移**：
+  **REDLINE** diagnosis 两组各 −42（57704→57638 / 55921→55855 相对原冻结锚；
+  相对上一行 57680/55897 则各 −42 = 索引面 −59 + v2 +17）；force **不动**（66306）。
+  **CONST_REDLINE** kChunkSystemPrompt −145（6590→**6445**，fnv 4456dfcbd2d2a69f）、
+  chunkExceptionGuideBlock −83（3081→**2998**，fnv 61a70ef48a35c708）；
+  kDiagnosisProtocolSuffix 实测**零漂移** ⇒ 不动。
+  `prompt_const` 例外元数据同步变化：`P031` 条目消失、exceptionLineCount 31→30、
+  guideLineCount 34→33（= B2「逐字删 `- P031例外（须指认）` 行」的必然结果，非波及失控）。
+  **对照组对账（第二十二次遗留项，本批结清）**：`MUST_NOT_GROW` 7 组实测
+  64405/64371/64239/64062/65845/65845/30030（−23 ×6 / −22 ×1），与第二十二次**同值**
+  ⇒ **本批零增长**；基线**按设计不重贴**（`:645` 注释：该表取「阶段一之前 HEAD 值」作
+  固定参照，重贴会毁掉「本脚本不自己漂移」的初衷）。
+  ⚠️ **归因更正（与 31-11 交接 §2.3 相反，以本脚本现读为准）**：+17 的**不是对照组**，
+  而是**不在 `MUST_NOT_GROW` 名单内**的四组 —— `training_yuesheng` 69003→69020 ·
+  `advanced_sensei` 47956→47973 · `advanced_p4_yuesheng` 47866→47883 ·
+  `outline_yuesheng` 59452→59469（另消息序列快照 `p3_yuesheng_advanced` 48088→**48105**，
+  即同一形态的另一条构建路径），均因携带 `coaching-actions-v2`（3830→3847）⇒ 各 +17。
+  这四组**不在任何上限表 / 零增长表内** ⇒ **不会翻红**。交接「对照组 +17 必然翻红」
+  把「携带 v2 的受控组」与「`MUST_NOT_GROW` 对照组」混成了同一个对象；若照它去抬
+  对照组基线，抬的是**没变的那 7 组**，属抬错对象。
+  值来源 = `UPDATE_SNAPSHOTS=true` 重冻后本脚本**现测**（非预测）。
+  4 份快照重冻（prompt_const / skill_prompt / message_sequence / l3_entry）；
+  其余 3 份零漂移 —— `injection_segments` 虽被 msgseq 同轮重写，`git diff` **为空**。
+
 · 2026-10-30 补守登记（T-20261030-03 · L4 护栏批）：`_kMergeOutputRequirement`
   结束「无锚点看守」状态 —— 本文件新增 MERGE_REDLINE 源码字面量双钉
   (902, 54e615da5a167a6d)（纯字面量无插值 == 运行时值，python 提取与
@@ -548,8 +575,17 @@ REDLINE = {
     # `lib/` 170 处 / 20 文件删末字「症」，派生注入面（L2 索引 + coaching-actions-v2
     # + training-templates-index + 手册）随之下移。⚠️ **删除字符，非额度回收** ——
     # 本表只钉 len（无 fnv），下移后的线仍等于**当下实测**（pin==actual，余量 +0）。
-    'diagnosis_yuesheng': 57680,
-    'diagnosis_p1_yuesheng': 55897,
+    # ★ 2026-10-31 第十九次重贴实测值（REDLINE 本表序列第十九次 = 头注全局
+    # 「红线沿革」**第二十三次**）：diagnosis 两组各 **下移 −42**
+    # （57680→57638 / 55897→55855），force 组 **不动**（66306 实测零漂移 ——
+    # force 场景既不加载 v2 也不加载 L2 索引，是本批的天然负对照）。
+    # 方向 = T-20261031-11 件①「P031 退出诊断注入面」（索引面 −59）**叠加**件③④
+    # 改序使 `coaching-actions-v2` +17 ⇒ 净 −42。⚠️ 两组净降**不是**删除字符的全部：
+    # −59 与 +17 方向相反，只报 −42 会把「上移的那一面」藏掉 ⇒ 逐键对账见头注第二十三次。
+    # ⚠️ 本批 +17 的四组（training / advanced_sensei / advanced_p4 / outline）
+    # **不在** `MUST_NOT_GROW` 名单内，也不在 REDLINE 内 ⇒ 无上限看守（见头注更正）。
+    'diagnosis_yuesheng': 57638,
+    'diagnosis_p1_yuesheng': 55855,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
@@ -1038,12 +1074,26 @@ CONST_REDLINE = {
     # ⚠️ 报批稿 §6.2 预登记的 (6,344, 223d9b9719098b18) 是**冻结锚 08380a75 上的预测**，
     #   其后 T-20261025-10（本表第二十一次 +246）与件2 搬移改变了装配基线 ⇒
     #   本行按**落地实测**重钉，差异已在落地回执「偏差」逐条登记。
-    'kChunkSystemPrompt': (6590, '382ca091dbe7e711'),
+    # ★ 2026-10-31 第二十三次重钉：6590→6445（**−145**），
+    # fnv 382ca091dbe7e711→4456dfcbd2d2a69f。
+    # 方向 = T-20261031-11 件①「P031 退出诊断注入面」的**分块链**半边：
+    # ③ `_activeSyndromeCriteriaLines` 再减 `kNonDiagnosableSyndromeIds` ⇒ 判定要点
+    #   少 `- P031 …` 一行；④ `_kChunkExceptionGuide` 的「P031例外（须指认）」行**逐字删**。
+    # ⚠️ 报批稿 §6.3 预登记的 **6446 / 2999** 是相对**过期冻结锚 6591 / 3082** 的推算
+    #   （那两组值已被 T-20261024-17 去症清扫各 −1 至 6590 / 3081）⇒ 稿面值整批过期，
+    #   **只认本行现读**。照推算值重钉会把上限写错 1 字符（`_pin_verdict` 双向等值钉
+    #   act<lim 也报「钉表与实测脱钩」⇒ 写错不是"更宽松"，是直接红）。
+    # 值来源 = UPDATE_SNAPSHOTS=true flutter test
+    # test/services/prompt_const_anchor_test.dart 写模式打印（len=6445）。
+    'kChunkSystemPrompt': (6445, '4456dfcbd2d2a69f'),
     # ★ 2026-10-31 第二十二次重钉：3082→3081（−1），fnv 24ab03bbc9115ff8→582b0096adae57d5。
     # 同批同因：例外指引块内该行旧名去「症」（`chunk_prompt.dart` 内 `_kChunkExceptionGuide`，
     # 块坐标随 T-20261025-06 件2 整段搬入本文件）。值来源同上（len=3081）。
     # 与报批稿 §6.2 预登记值 (3,081, 582b0096adae57d5) **逐位吻合**。
-    'chunkExceptionGuideBlock': (3081, '582b0096adae57d5'),
+    # ★ 2026-10-31 第二十三次重钉：3081→**2998**（−83），
+    # fnv 582b0096adae57d5→61a70ef48a35c708。同批同因（件① 分块链半边）：
+    # 逐字删「- P031例外（须指认）」整行 ⇒ 例外指引块 −83。值来源同上（len=2998）。
+    'chunkExceptionGuideBlock': (2998, '61a70ef48a35c708'),
     # ★ 2026-10-30 第十七次重钉：977→1038（+61），fnv 609c7814d5bcc86d→b4ae395807abdc6。
     # 方向 = T-20261024-05 批2：suffix 模板 syndromes 数组后增 excluded 行（行内续接
     # 形态，无前导缩进）。值来源 = UPDATE_SNAPSHOTS=true flutter test

@@ -244,6 +244,13 @@ final String kSyndromeIndexContent = buildSyndromeIndexContent();
 /// ≤4000 字窗口内无位置（手册 `manual_5.dart:14`）。
 const Set<String> kSingleChapterExcludedSyndromeIds = {'P022'};
 
+/// 短链（单章 ≤4000 字）注入面 + 后置过滤的**唯一并集真源**。
+/// 装配点与期望串**都必须用它**，不许各写一份 spread（`§4-396` 同族的「两处定义漂移」教训）。
+const Set<String> kShortChainExcludedSyndromeIds = {
+  ...kSingleChapterExcludedSyndromeIds,
+  ...kNonDiagnosableSyndromeIds,
+};
+
 /// L3 完整手册：症候诊断手册（对应 RN content，含 P001-P029 完整定义）
 /// 头部「症候图谱」计数由注册表派生（b9 批次28），正文段落保留人工编写。
 final String kSyndromeManualContent =
