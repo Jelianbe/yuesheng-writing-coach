@@ -36,7 +36,7 @@ void main() {
       final content = getTrainingContent(['P018']);
       expect(content, contains('## P018 重复用词/基础语病'));
       expect(content, contains('指称解歧'));
-      expect(content, contains('P034 代词指代不清/零回指过载症'));
+      expect(content, contains('P034 代词指代不清/零回指过载'));
       expect(content, contains('不要按 P018'));
     });
 

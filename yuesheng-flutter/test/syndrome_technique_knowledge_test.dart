@@ -24,16 +24,16 @@ void main() {
     test('手册内容完整（含 P001/P017/P018 定义）', () {
       expect(kSyndromeManualContent, startsWith('# SKILL: 症候诊断手册'));
       expect(kSyndromeManualContent, contains('### P001 情绪标签化'));
-      expect(kSyndromeManualContent, contains('### P017 跳跃叙事/过度概括症'));
+      expect(kSyndromeManualContent, contains('### P017 跳跃叙事/过度概括'));
       expect(kSyndromeManualContent, contains('### P018 重复用词/基础语病'));
     });
 
     test('手册含批次15 网文商业症候完整定义', () {
       for (final name in [
-        'P013 高潮疲软症',
-        'P019 章节钩子缺失症',
-        'P020 追读动力不足症',
-        'P011 开篇平庸症',
+        'P013 高潮疲软',
+        'P019 章节钩子缺失',
+        'P020 追读动力不足',
+        'P011 开篇平庸',
       ]) {
         expect(
           kSyndromeManualContent,
@@ -42,16 +42,16 @@ void main() {
         );
       }
       final content = getSyndromeContent(['P013']);
-      expect(content, contains('### P013 高潮疲软症'));
+      expect(content, contains('### P013 高潮疲软'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
     });
 
     test('手册含批次23 新症候 P021 完整定义', () {
-      expect(kSyndromeManualContent, contains('### P021 画面感缺失症'));
+      expect(kSyndromeManualContent, contains('### P021 画面感缺失'));
       final content = getSyndromeContent(['P021']);
-      expect(content, contains('### P021 画面感缺失症'));
+      expect(content, contains('### P021 画面感缺失'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
@@ -69,9 +69,9 @@ void main() {
     });
 
     test('手册含批次25 新症候 P022 完整定义', () {
-      expect(kSyndromeManualContent, contains('### P022 节奏比例失衡症'));
+      expect(kSyndromeManualContent, contains('### P022 节奏比例失衡'));
       final content = getSyndromeContent(['P022']);
-      expect(content, contains('### P022 节奏比例失衡症'));
+      expect(content, contains('### P022 节奏比例失衡'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
@@ -79,9 +79,9 @@ void main() {
     });
 
     test('手册含批次26 新症候 P023 完整定义', () {
-      expect(kSyndromeManualContent, contains('### P023 设定矛盾症'));
+      expect(kSyndromeManualContent, contains('### P023 设定矛盾'));
       final content = getSyndromeContent(['P023']);
-      expect(content, contains('### P023 设定矛盾症'));
+      expect(content, contains('### P023 设定矛盾'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
@@ -89,9 +89,9 @@ void main() {
     });
 
     test('手册含 ADR-C150 新症候 P039 完整定义（自 P018 子情形 B 拆出）', () {
-      expect(kSyndromeManualContent, contains('### P039 信息密度缺失症'));
+      expect(kSyndromeManualContent, contains('### P039 信息密度缺失'));
       final content = getSyndromeContent(['P039']);
-      expect(content, contains('### P039 信息密度缺失症'));
+      expect(content, contains('### P039 信息密度缺失'));
       expect(content, contains('核心问题'));
       expect(content, contains('判断原则'));
       expect(content, contains('推荐教学动作'));
@@ -126,7 +126,7 @@ void main() {
 
     test('P034 判据含例外清单+强规则+正反例（C123 方案 E 同型修复）', () {
       final content = getSyndromeContent(['P034']);
-      expect(content, contains('### P034 代词指代不清/零回指过载症'));
+      expect(content, contains('### P034 代词指代不清/零回指过载'));
       // 例外守卫：正常零回指（单主角话题链/对话轮省略）不得报
       expect(content, contains('不得报 P034'));
       // 强规则：先数就近可及候选数，候选<2 一律不报

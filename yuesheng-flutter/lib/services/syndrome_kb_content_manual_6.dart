@@ -5,7 +5,7 @@
 part of 'syndrome_knowledge_base.dart';
 
 const String _syndromeManualBody6 = r'''
-### P026 心理内耗症
+### P026 心理内耗
 
 > **position_sensitivity**: chapter
 
@@ -46,7 +46,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P027 支线涣散症
+### P027 支线涣散
 
 > **position_sensitivity**: serial
 
@@ -97,7 +97,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P028 被动主角症
+### P028 被动主角
 
 > **position_sensitivity**: global
 
@@ -148,7 +148,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P029 降智反派症
+### P029 降智反派
 
 > **position_sensitivity**: global
 
@@ -198,7 +198,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P030 声线漂移症
+### P030 声线漂移
 
 > **position_sensitivity**: global
 
@@ -240,7 +240,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P031 题材边界感缺失症
+### P031 题材边界感缺失
 
 > **position_sensitivity**: global
 
@@ -280,7 +280,7 @@ const String _syndromeManualBody6 = r'''
 
 **外部佐证（商业网文向标注）**：本症候为"商业网文向"题材定位专项——面向以网文商业逻辑写作的学员；非商业/纯文学向学员若题材融合有纲领则不触发。
 
-### P032 翻译腔/外来语干扰症
+### P032 翻译腔/外来语干扰
 
 > **position_sensitivity**: chapter
 
@@ -331,7 +331,7 @@ const String _syndromeManualBody6 = r'''
 
 **外部佐证（中文写作规范三来源）**：翻译腔/外来语干扰被独立规范印证——B-42（机翻腔诊断）、C-14（real 直译导致的语序异化）；语法层 A-11/12/13/16 与 B-3/4/9 的"中文主谓骨架"要求侧面约束 P032。
 
-### P033 冲突未升级/模式重复症
+### P033 冲突未升级/模式重复
 
 > **position_sensitivity**: serial
 
@@ -371,7 +371,7 @@ const String _syndromeManualBody6 = r'''
 
 **外部佐证（中文写作规范三来源）**：冲突递进/模式去重与叙事节奏规范相互印证——张力需随阶段递增而非重复同强度刺激；与 P010（张力不足，是"单次冲突没分量"）、P004（节奏停滞，是"段落无推进"）区分，P033 重在"重复的冲突没有逐级升级"。
 
-### P034 代词指代不清/零回指过载症
+### P034 代词指代不清/零回指过载
 
 > **position_sensitivity**: global
 
@@ -417,7 +417,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P035 撞文同质化症
+### P035 撞文同质化
 
 > **position_sensitivity**: global
 
@@ -459,7 +459,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P036 细节失真症
+### P036 细节失真
 
 > **position_sensitivity**: local
 
@@ -501,7 +501,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P037 故事核缺失症
+### P037 故事核缺失
 
 > **position_sensitivity**: global
 
@@ -543,7 +543,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P038 描写顺序失序症
+### P038 描写顺序失序
 
 > **position_sensitivity**: local
 
@@ -589,7 +589,7 @@ const String _syndromeManualBody6 = r'''
 
 ---
 
-### P039 信息密度缺失症
+### P039 信息密度缺失
 
 > **position_sensitivity**: local
 
@@ -602,8 +602,8 @@ const String _syndromeManualBody6 = r'''
 - 把这段的每句主语+谓语提取出来，看是否构成"信息增量链"——如果每句都是"X做了个无意义的小动作"且合起来不推进任何事（不揭示新事实、不改变角色状态、不制造张力），就是稀碎。注意：留白/停顿/氛围描写不是稀碎——留白是"有意不写让读者填"，稀碎是"写了等于没写"。
 
 **与 P017/P010 的划界（关键，防误路由）**：
-- **vs P017 跳跃叙事/过度概括症**：P017 是"该展开的地方一笔带过"——有信息但被压缩了，读者能感觉到"这里应该有东西但没写"。P039 是"根本没有信息"——每句语法正确但信息量≈0，读者说不出"这里缺了什么"因为什么都没发生。判断锚点：P017 读者会问"然后呢？细节呢？"；P039 读者会问"这段有什么意义？"。
-- **vs P010 张力不足症**：P010 是有冲突但强度不够（威胁太弱、对手太菜）。P039 是没有冲突也没有任何信息——不是"张力不够"，是"什么都没发生"。判断锚点：P010 能指出"冲突在哪、为什么弱"；P039 找不到任何冲突点。
+- **vs P017 跳跃叙事/过度概括**：P017 是"该展开的地方一笔带过"——有信息但被压缩了，读者能感觉到"这里应该有东西但没写"。P039 是"根本没有信息"——每句语法正确但信息量≈0，读者说不出"这里缺了什么"因为什么都没发生。判断锚点：P017 读者会问"然后呢？细节呢？"；P039 读者会问"这段有什么意义？"。
+- **vs P010 张力不足**：P010 是有冲突但强度不够（威胁太弱、对手太菜）。P039 是没有冲突也没有任何信息——不是"张力不够"，是"什么都没发生"。判断锚点：P010 能指出"冲突在哪、为什么弱"；P039 找不到任何冲突点。
 - **留白/停顿 ≠ 稀碎**：刻意留白是"作者有意不写，让读者填补"，有明确的叙事功能（制造悬念/节奏停顿/情绪留白）。稀碎是"作者写了但没写出东西"，无叙事功能。判断锚点：删掉留白段会破坏叙事；删掉稀碎段叙事不受影响。
 
 **严重度判断**（结合三维标定表综合评估）：

@@ -43,10 +43,18 @@ const int kSuffixLen = 1038;
 const String kSuffixFnv = 'b4ae395807abdc6';
 
 // skill_prompt 受控组新基线（index 模板 +107 落 diagnosis 两组）。
-const String kDiagP1Fnv = '7908a114a2935bb0';
-const String kDiagYueFnv = '3d9b44d264788d0d';
-// force 组红线：先验 +0，实测维持旧值（04-对账表面二对照组全 0）。
-const String kForceFnv = '59d41af06ebfcd7f';
+// ★ 2026-10-31 随 `T-20261024-17` 去症清扫重冻**同步下移**（删字符方向，非提额）：
+//   diagnosis_p1 55921/7908a114a2935bb0 → 55897/184222cc0eac22e4（−24）
+//   diagnosis     57704/3d9b44d264788d0d → 57680/60ce814da2333ce9（−24）
+//   force         66329/59d41af06ebfcd7f → 66306/37644edbf2af71a8（−23）
+//   —— L2 索引 / coaching-actions-v2 / training-templates-index 三个派生面随
+//   注册表现行名去「症」下移 ⇒ 三组同源同降。值来源 = UPDATE_SNAPSHOTS=true
+//   重冻后的 `test/snapshots/skill_prompt_anchor.json`（与 `tool/check_prompt_volume.py`
+//   REDLINE 第十八次重贴逐键互证；两表若分家，S4/S5 与本脚本必有一红）。
+const String kDiagP1Fnv = '184222cc0eac22e4';
+const String kDiagYueFnv = '60ce814da2333ce9';
+// force 组红线：先验 +0 只对**当时那一批**成立；本批是正文清扫 ⇒ 随组同降。
+const String kForceFnv = '37644edbf2af71a8';
 
 const String kFulltextCase = 'p2_yuesheng_diagnosis_fulltext';
 const String kNoFulltextCase = 'p2_yuesheng_diagnosis_nofulltext';

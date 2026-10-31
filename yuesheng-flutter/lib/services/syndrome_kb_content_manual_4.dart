@@ -20,7 +20,7 @@ const String _syndromeManualBody4 = r'''**诊断锚点示例**（few-shot 参考
 
 ---
 
-### P019 章节钩子缺失症
+### P019 章节钩子缺失
 
 > **position_sensitivity**: chapter
 
@@ -69,7 +69,7 @@ const String _syndromeManualBody4 = r'''**诊断锚点示例**（few-shot 参考
 
 ---
 
-### P020 追读动力不足症
+### P020 追读动力不足
 
 > **position_sensitivity**: serial
 
@@ -132,7 +132,7 @@ const String _syndromeManualBody4 = r'''**诊断锚点示例**（few-shot 参考
 
 ---
 
-### P021 画面感缺失症
+### P021 画面感缺失
 
 > **position_sensitivity**: chapter
 

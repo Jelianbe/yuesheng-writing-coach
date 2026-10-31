@@ -39,7 +39,7 @@ const String kL3AnchorPath = 'test/snapshots/l3_entry_anchor.json';
 const String kKbHeader = '## 活跃症候详细定义（系统注入，学员不可见）';
 
 /// P030 词条三级标题（syndrome_kb_content_manual_6.dart:270）。
-const String kP042EntryTitle = '### P030 声线漂移症';
+const String kP042EntryTitle = '### P030 声线漂移';
 
 /// P030 词条正文的**尾句**（syndrome_kb_content_manual_6.dart:310）。
 /// 作为抽取边界的锚点：尾句之后第一个 `\n\n---` 即条目终止符，

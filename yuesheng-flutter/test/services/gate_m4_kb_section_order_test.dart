@@ -145,7 +145,7 @@ void main() {
       final s = getSyndromeContent(const ['P039']);
       expect(s, isNotEmpty, reason: 'P039 抽取为空');
       // P039 判据在场。
-      expect(s.contains('### P039 信息密度缺失症'), isTrue);
+      expect(s.contains('### P039 信息密度缺失'), isTrue);
       expect(s.contains('信息增量链'), isTrue, reason: 'P039 判据正文缺失');
       expect(s.contains('**✅ L2 命中（整段无信息增量）**'), isTrue);
       // 不串味：不含 P018 的锚点示例（修复前 P039 抽取吞入 manual_4 头的

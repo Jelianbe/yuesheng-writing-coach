@@ -21,10 +21,6 @@ import 'package:writingcoach/data/database/migration_v46.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/syndrome_retirement.dart';
 
-// A′（`DECISIONS §4-258`）：去症批过渡期的「新名 ∪ 该 ID legacy 旧名」白名单。
-// `T-20261024-17` 完成后删除本 import 与全部引用，护栏收回严格态。
-import '../test_support/syndrome_name_legacy_alias.dart';
-
 /// 剥掉名字里的括号补充说明。
 ///
 /// 旧注册表部分条目的 `name` 带括号（如「信息倾泻症（含原 P001 世界观膨胀子类型）」），
@@ -121,13 +117,20 @@ void main() {
         if (rawTarget == null) continue; // #2 已保证目标在册，这里兜底
         final targetName = _stripParenthetical(rawTarget);
         final oldName = _stripParenthetical(r.oldName!);
-        // A′（§4-258）：目标 ID 的可接受名 = 现行名 ∪ **该 ID 登记的** legacy 旧名，
-        // 两边都先剥括号注释再比。按 ID 精确配对 —— 别的 ID 的旧名不算「同名」
-        // （拆名批还没清硬编码正文，旧名此刻确实仍指向同一实体）。
-        final legacy = kLegacySyndromeNames[r.mergedInto];
-        final sameName =
-            oldName == targetName ||
-            (legacy != null && oldName == _stripParenthetical(legacy));
+        // 严格态（`T-20261024-17` 收回 A′ · `DECISIONS §4-258`）：目标 ID 的可接受名
+        // = **仅现行名**，两边都先剥括号注释再比。
+        //
+        // ⚠️ **偏差登记（报批稿 §2.5 授权不足处，见落地回执「偏差」）**：稿只授权
+        //   「删 `if (kLegacySyndromeNames[s.id] != null) …`」，其前提是**清扫后旧名 == 现行名**。
+        //   该前提对本处不成立 —— 退役档案的 `oldName` 按定义记录的就是**清扫前**的旧写法
+        //   （`信息倾泻症（含原 P001 世界观膨胀子类型）`），而 24-17 的清扫面**刻意排除**
+        //   退役档案族（稿 §五 边界）。实测：直接收回严格态 ⇒ 本用例红 **19 条**
+        //   （全是「旧名 = 现行名 + 症」这一种差额，无一条是真异名）。
+        //   ⇒ 此处保留**且只保留**这一条差额：现行名的「症」尾。口径与 24-07 别名单
+        //   逐字等价（现场实证 31/31 旧名 == 现行名 + '症'），仍**不查表**、仍按**本 ID
+        //   自己的**现行名配对 ⇒ A′ 的两个窄化点（别的 ID 的旧名不算同名 / 不许任意异名）
+        //   全部保住；真异名依旧红（变异：把某 renumber 的旧名改成第三个名字 ⇒ 本用例红）。
+        final sameName = oldName == targetName || oldName == '$targetName症';
         if (r.kind == RetirementKind.renumber && !sameName) {
           wrong.add(
             '${r.oldId}: 标 renumber 但旧名「${r.oldName}」'

@@ -10,17 +10,21 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/token_budget_table.dart';
+import 'package:writingcoach/services/chat_context_builder.dart';
+import 'package:writingcoach/services/chunk_prompt.dart';
+import 'package:writingcoach/services/conflict_detector.dart';
+import 'package:writingcoach/services/dialogue_tag_detector.dart';
+import 'package:writingcoach/services/event_causality_detector.dart';
+import 'package:writingcoach/services/grammar_lexical_detector.dart';
 import 'package:writingcoach/services/skill_registry.dart';
+import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/syndrome_retirement.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
-
-// A′（`DECISIONS §4-258`）：去症批过渡期的「新名 ∪ 该 ID legacy 旧名」白名单。
-// `T-20261024-17` 完成后删除本 import 与全部引用，护栏收回严格态。
-import '../test_support/syndrome_name_legacy_alias.dart';
+import 'package:writingcoach/types/character_types.dart';
 
 void main() {
   // 权威症候集合（b9 真源化：由 syndrome_registry 派生，替代 kSyndromeSkillLevels.keys）
@@ -372,7 +376,7 @@ void main() {
       );
       expect(
         manual,
-        contains('P013 高潮疲软症 vs P010 张力不足'),
+        contains('P013 高潮疲软 vs P010 张力不足'),
         reason: 'P013/P010 重叠优先级缺失',
       );
       expect(
@@ -395,9 +399,6 @@ void main() {
           if (s.v2ActionName != null) s.v2ActionName!,
           if (s.v2ActionName != null)
             s.v2ActionName!.replaceAll(RegExp(r'症$'), ''),
-          // A′（§4-258）：该 ID 的 legacy 旧名同样映射到**本 ID**（按 ID 精确配对
-          // ⇒ 拿别的 ID 的旧名顶替，仍会因集合不匹配而红）。
-          if (kLegacySyndromeNames[s.id] != null) kLegacySyndromeNames[s.id]!,
         ]) {
           nameToId[key] = s.id;
         }
@@ -482,8 +483,6 @@ void main() {
             s.shortName,
             s.name.replaceAll(RegExp(r'症$'), ''),
             s.shortName.replaceAll(RegExp(r'症$'), ''),
-            // A′（§4-258）：该 ID 的 legacy 旧名（白名单外仍必须红）。
-            if (kLegacySyndromeNames[s.id] != null) kLegacySyndromeNames[s.id]!,
           },
       };
       // 只认「P0XX + 以“症”结尾的名字 + 边界」；跳过「P018 为基础症候」
@@ -608,6 +607,201 @@ void main() {
         bottom.any((s) => s.contains('L1 核心 skill')),
         true,
         reason: 'L1 核心 skill 必须保底',
+      );
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────
+  // 去症清扫反方向护栏（T-20261024-17 B7）
+  //
+  // 正方向（现行名不带「症」）由四库一致性 #1–#12 与锚点快照守着；
+  // 本组守**反方向**：旧形态（末字带「症」）不得再出现在 6 个派生注入面里。
+  //
+  // 派生口径（报批稿 §2.6 甲案）：**不新增 A→B 映射表、不把旧名写进任何
+  // `lib/` 文件** —— 旧形态在测试内由注册表现行名运行时派生
+  // （`现行名 + '症'`）。此派生式与 24-07 别名单的 31 条旧名逐字相等
+  // （现场实证 31/31），故覆盖面不窄于报批稿授权面。
+  //
+  // 每条断言配**负向自测**：把派生旧形态注回面的副本 ⇒ 必须命中。
+  // 没有负向自测，「零出现」在派生集变空时会恒绿（V4.15 坑 1）。
+  // ───────────────────────────────────────────────────────────
+  group('去症清扫反方向护栏（T-20261024-17 B7 · 六面零出现）', () {
+    // 派生式：旧形态 = 现行名 + 「症」（24-07 别名单的 31 条逐字等价，现场实证）。
+    String legacyFormOf(String name) => '$name症';
+
+    // 派生集：现行名 + 「症」。注册表若将来出现以「症」结尾的现行名，
+    // 派生式会退化成「现行名本身」⇒ 必恒红，故先把这个前提钉住。
+    final legacyForms = <String>{
+      for (final s in kSyndromeRegistry) legacyFormOf(s.name),
+    };
+
+    // 边界护栏：命中后紧跟「候」的是「…病症候」这类复合词（症候 = symptom，
+    // 不是旧名残留），不算命中；其余一律算。
+    String? firstLegacyHit(String face) {
+      for (final form in legacyForms) {
+        var i = face.indexOf(form);
+        while (i >= 0) {
+          final after = i + form.length;
+          if (after >= face.length || face[after] != '候') return form;
+          i = face.indexOf(form, after);
+        }
+      }
+      return null;
+    }
+
+    // 切片：锚缺失即 fail（不得跳过）——V4.15 坑 1 的「锚失效要 fail」。
+    String sliceBetween(
+      String src,
+      String startAnchor,
+      String endAnchor,
+      String label,
+    ) {
+      final a = src.indexOf(startAnchor);
+      final b = src.indexOf(endAnchor, a + 1);
+      expect(a, greaterThan(-1), reason: '$label 起锚「$startAnchor」缺失 ⇒ 护栏失明');
+      expect(b, greaterThan(a), reason: '$label 止锚「$endAnchor」缺失或倒序 ⇒ 护栏失明');
+      return src.substring(a, b);
+    }
+
+    // F-block 观察注入面：五个构建器各喂一条最小观察项，拼成被注入的原文。
+    String fBlockFaces() {
+      final conflict = buildConflictObservationsContext([
+        ConflictObservation(
+          characterName: '阿禾',
+          attribute: '独生子女状态',
+          orderedValues: [
+            CharacterAssertion(attribute: '独生子女状态', value: '独生子', timestamp: 0),
+          ],
+          description: '第3章「独生子」→ 第15章「妹妹」',
+        ),
+      ]);
+      final causality = buildCausalityBreakContext([
+        const CausalityBreakObservation(
+          name: '决定去金陵',
+          eventType: '决定',
+          description: '第5章「决定去金陵」（决定类）缺触发事件',
+        ),
+      ]);
+      final subplot = buildSubplotClosureContext([
+        const UnclosedSubplotObservation(
+          name: '钥匙的秘密',
+          introducedChapter: 3,
+          currentChapter: 12,
+          description: '第3章引入的支线「钥匙的秘密」至今（第12章）未回收',
+        ),
+      ]);
+      final grammar = buildGrammarLexicalContext([
+        const GrammarLexicalIssue(
+          kind: GrammarIssueKind.dupChar,
+          evidence: '的了了',
+          description: '相邻重复虚词',
+        ),
+      ]);
+      final dialogue = buildDialogueTagContext([
+        const DialogueTagIssue(
+          kind: DialogueTagIssueKind.tagRepeat,
+          evidence: '低声说',
+          description: '同一修饰性对话标签重复',
+        ),
+      ]);
+      final faces = [conflict, causality, subplot, grammar, dialogue];
+      for (final f in faces) {
+        expect(f, isNotNull, reason: 'F-block 构建器返回 null ⇒ 该面未注入，护栏空转');
+      }
+      return faces.join('\n');
+    }
+
+    // 六个派生注入面（与报批稿 §2.6 编号一一对应）。
+    final faces = <String, String Function()>{
+      '1 症候类型速查表': () => sliceBetween(
+        kSyndromeManualContent,
+        '## 症候类型速查',
+        '## 诊断输出规范',
+        '类型速查表',
+      ),
+      '2 手册内嵌技法映射表': () => sliceBetween(
+        kSyndromeManualContent,
+        '### 写作技巧提示（技法库）',
+        '## 诊断执行指引',
+        '技法映射表',
+      ),
+      '3 training-templates-index': () =>
+          skillRegistry['training-templates-index']!.content,
+      '4 coaching-actions-v2': () =>
+          skillRegistry['coaching-actions-v2']!.content,
+      '5 F-block 观察注入': fBlockFaces,
+      '6 kChunkSystemPrompt': () => kChunkSystemPrompt,
+    };
+
+    test('#13 派生口径前提：注册表无现行名以「症」结尾，旧形态集非空', () {
+      expect(
+        kSyndromeRegistry.every((s) => !s.name.endsWith('症')),
+        true,
+        reason: '若有现行名以「症」结尾，派生式退化为现行名本身 ⇒ 反方向断言恒红',
+      );
+      expect(
+        legacyForms.length,
+        kSyndromeRegistry.length,
+        reason: '派生旧形态必须逐条对应注册表（去重后少一条 = 有两条现行名同名）',
+      );
+      expect(legacyForms.isNotEmpty, true, reason: '空集会让下面所有零出现断言恒绿');
+    });
+
+    for (final entry in faces.entries) {
+      final label = entry.key;
+      test('#14 $label：旧形态零出现 + 现行名在场', () {
+        final face = entry.value();
+        expect(face.isEmpty, false, reason: '$label 为空面 ⇒ 零出现断言恒绿');
+
+        // 反方向：派生旧形态在该面内不得出现（「…病症候」除外）。
+        expect(
+          firstLegacyHit(face),
+          isNull,
+          reason: '$label 仍带旧形态末字「症」⇒ 24-17 正文清扫回归',
+        );
+
+        // 正向：现行名（不带「症」）必须在场 —— 证明该面真的在被检查。
+        final presentNames = kSyndromeRegistry
+            .map((s) => s.name)
+            .where(face.contains)
+            .toList();
+        expect(
+          presentNames.length,
+          greaterThanOrEqualTo(1),
+          reason: '$label 里一条现行名都没有 ⇒ 面选错或内容被抽空',
+        );
+      });
+    }
+
+    test('#15 负向自测：把派生旧形态注回每个面 ⇒ 必须被检出（断言不恒绿）', () {
+      for (final entry in faces.entries) {
+        final face = entry.value();
+        // 取该面里在场的第一条现行名，注回其旧形态。
+        final currentName = kSyndromeRegistry
+            .map((s) => s.name)
+            .firstWhere((n) => face.contains(n));
+        final tampered = '$face\n（人工注入 $currentName症）';
+        expect(
+          firstLegacyHit(tampered),
+          '$currentName症',
+          reason: '${entry.key} 注入旧形态后仍检不出 ⇒ 该断言恒绿，无鉴别力',
+        );
+      }
+    });
+
+    test('#16 边界护栏：「…症候」复合词不算旧名残留', () {
+      // 护栏自身的鉴别力：既不能把合法复合词判红（否则护栏被当噪声拆掉），
+      // 也不能因此放过真旧名。旧形态一律由注册表派生，不写死字符串。
+      final n = kSyndromeRegistry.first.name;
+      expect(
+        firstLegacyHit('${legacyFormOf(n)}候补充说明'),
+        isNull,
+        reason: '「症候」是复合词（symptom），不是旧名末字 ⇒ 不得判红',
+      );
+      expect(
+        firstLegacyHit('${legacyFormOf(n)}，应报该判据'),
+        isNotNull,
+        reason: '真正的旧形态（末字「症」后不接「候」）必须命中',
       );
     });
   });

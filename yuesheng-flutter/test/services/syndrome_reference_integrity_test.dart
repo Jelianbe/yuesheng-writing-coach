@@ -8,7 +8,8 @@
 //   kSyndromeIndexContent / kSyndromeManualContent / kTechniqueIndexContent /
 //   kTechniqueLibraryContent / kTrainingFullKnowledge / kTrainingFewShotLibrary /
 //   coaching-actions-v2
-// 而症候 ID 实测分布在 lib/ 的 **37 个文件 / 869 处**（全库共 445 个 .dart）。
+// 而症候 ID 实测分布在 lib/ 的 **44 个文件 / 1457 处**（全库共 **517** 个 .dart）。
+// —— 括注为 2026-10-31 现测（`T-20261024-17` 正文清扫后，本文件 `_buildScan()` 同口径）。
 //
 // 本文件把两条判据**全域化**到 lib/**/*.dart，并补上既有护栏缺的三件事：
 //   R1 全域「ID↔名字」一致性
@@ -18,16 +19,28 @@
 //
 // 三条实测依据（详见 `.ai/reports/2026-09-30-积木化与症状开关-评估.md` §4①）：
 //
-// ① 全域语料：lib/ 共 **445** 个 .dart（其中 37 个携带症候 ID、20 个携带「ID+名」）。
-//    现状基线（2026-09-30 实测；**两套独立实现逐字一致** —— 见 `.ai/reports/2026-09-30-引用完整性-交叉验证.py`）：
-//      • R1「ID+名」命中 **321 处**，错配 **0**  ⇒ 内容层当前是干净的，
+// ① 全域语料：lib/ 共 **517** 个 .dart（其中 **44** 个携带症候 ID、**22** 个携带「ID+名」）。
+//    读数以本轮为准（**2026-10-31 现测**，`T-20261024-17` 正文清扫后，同本文件
+//    `_buildScan()` 口径 —— 注释区一律跳过，故与「全库含注释的 grep 计数」不可比）：
+//      • R1「ID+名」命中 **347 处**，错配 **0**  ⇒ 内容层当前是干净的，
 //        本护栏守的是**将来**（下一次整合漏一处即红）。
-//      • R2 ID 出现 **869 处**（去重 51 个），悬空 **0**。
+//      • R2 ID 出现 **1457 处**（去重 **51** 个），悬空 **0**。
+//    历史基线（2026-09-30 首轮实测，**清扫前**；**两套独立实现逐字一致** ——
+//    见 `.ai/reports/2026-09-30-引用完整性-交叉验证.py`）：R1 命中 **321** 处 /
+//    R2 **869** 处（去重 51）；`-07` 复核时 R1 已是 **345** —— 头注曾长期停留在 321，
+//    这正是 §7-⑦ 登记的「注释里的数字必漂」，故本行改为**带日期的现测**。
 //
-// ② #13 的正则要求名字**以「症」结尾**，但注册表 33 条里有 **8 个名字不含「症」**：
+// ② #13 的正则要求名字**以「症」结尾**，但注册表里有一批名字**天生不含「症」**
+//    （2026-09-30 首轮实测：注册表 33 条里有 **8** 个这样的名字 ——
 //    P001 情绪标签化 / P003 视角漂移 / P004 节奏停滞 / P005 句式节奏单一 /
-//    P006 语言堆砌 / P007 角色空心化 / P008 OC 平面化 / P018 重复用词/基础语病
-//    ⇒ 全域口径下该规则只命中 **144** 处，而并集命中 **321** 处（**漏 177 处 = 55%**）。
+//    P006 语言堆砌 / P007 角色空心化 / P008 OC 平面化 / P018 重复用词/基础语病）。
+//    ⇒ 全域口径下该规则只命中 **144** 处，而并集命中 **321** 处（**漏 177 处 = 55%**）
+//    —— 以上为**清扫前**（2026-09-30）读数。
+//    **2026-10-31 现测（`T-20261024-17` 正文清扫后）：A 命中 0 处 / B 命中 347 处 /
+//    并集 347 处** —— 非注释区已不存在「以「症」结尾的名字」，注册表 39 条现行名
+//    无一以「症」结尾（该前提由 `four_libraries_consistency_test.dart` B7 #13 钉住）。
+//    A 因此从「覆盖缺口的一半」变成**旧名回归的专探测针**：它现在够不着任何现行名，
+//    只够得着「新 ID + 已死旧名」——正是它该守的那一类。
 //    本文件取**双规则并集**：
 //      A（ID + 以「症」结尾的名字）—— 抓「新 ID + **已死旧名**」
 //      B（ID + 注册表别名字面量）—— 抓「新 ID + **错的活名**」
@@ -40,6 +53,10 @@
 //    会**误豁免**：lib/ 实测有 **12 处**命中落在 markdown 粗体行
 //    （`**适用症候**：P002 信息倾泻症`），首字符恰是 `*` —— 而其中一处
 //    （`technique_kb_content_lib_3.dart:100`）正是 0.3.6 的真实残留点。
+//    （**2026-10-31 注**：上述 **12 处** 与引文末字「症」同为 2026-09-30 读数，本轮
+//    未重测；`T-20261024-17` 清扫后 lib/ 该两行已写成「P002 信息倾泻」。
+//    本条判据讲的是**行首形状**（`*`）导致的误豁免，与名字带不带「症」无关
+//    ⇒ 结论不变，只有引文形态漂了。）
 //    ⇒ 本文件改用**逐字符词法剥离**（注释 / 字符串 / 代码），不用行首启发式。
 //    （反向也成立：不做剥离则注释里的历史留痕会误报，实测 3 处 ——
 //     `manual_2.dart:15`「P035 对话注水症 已并入 P009」等，都是**合法留痕**。）
@@ -62,10 +79,6 @@ import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/syndrome_retirement.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
-
-// A′（`DECISIONS §4-258`）：去症批过渡期的「新名 ∪ 该 ID legacy 旧名」白名单。
-// `T-20261024-17` 完成后删除本 import 与全部引用，护栏收回严格态。
-import '../test_support/syndrome_name_legacy_alias.dart';
 
 // ═══ 一、词法剥离：注释 vs 字符串 ═══════════════════════════════
 
@@ -324,15 +337,12 @@ Set<String> _allowedIds() => kSyndromeIds.toSet().union(_legacyIds());
 Set<String> _legacyIds() => kRetiredSyndromeIds;
 
 void _r1IdNameConsistency(_Scan scan) {
-  // ★ 可接受集合 = 现行别名 ∪ 该 ID 登记的 legacy 旧名（A′ · §4-258）。
-  //   按 ID 精确配对（旧名只对本 ID 生效）；**扫描正文字宙（_aliasesOf /
-  //   _buildAliasRe）不变** —— 只放宽「判它合不合法」的那一步，不放宽「扫什么」。
+  // ★ 可接受集合 = **仅现行别名**（严格态）。
+  //   `T-20261024-07` 去症批留下的过渡放宽（A′ · `DECISIONS §4-258`：并入该 ID 登记的
+  //   legacy 旧名）已随 `T-20261024-17` 正文清扫落地收回 ⇒ 白名单外一律红。
+  //   **扫描正文字宙（_aliasesOf / _buildAliasRe）不变** —— 收回的只是「判它合不合法」那一步。
   final alias = <String, Set<String>>{
-    for (final s in kSyndromeRegistry)
-      s.id: {
-        ..._aliasesOf(s),
-        if (kLegacySyndromeNames[s.id] != null) kLegacySyndromeNames[s.id]!,
-      },
+    for (final s in kSyndromeRegistry) s.id: {..._aliasesOf(s)},
   };
   final bad = <String>[];
   for (final h in scan.pairHits) {
@@ -415,26 +425,31 @@ void _r3CarrierMatrix() {
 }
 
 /// R4 阳性对照：扫描器必须真命中，否则「零发现」与「没跑起来」外观相同。
+///
+/// 下限（300 / 150 / 400 / 30）是**测法**，本轮未动；括号里的「实测」是
+/// **读数注脚**，随语料漂移 —— 现测值见文件头 ①（2026-10-31：517 / 347 / 1457 / 51）。
 void _r4PositiveControls(_Scan scan) {
   expect(
     scan.filesScanned,
     greaterThanOrEqualTo(300),
-    reason: '扫描面过窄（实测 445 个 .dart）—— 疑似只扫到部分目录',
+    reason: '扫描面过窄（2026-10-31 实测 517 个 .dart）—— 疑似只扫到部分目录',
   );
   expect(
     scan.pairHits,
     isNotEmpty,
-    reason: '「ID+名」扫描零命中 —— 正则疑似静默失效（实测应 321 处）',
+    reason:
+        '「ID+名」扫描零命中 —— 正则疑似静默失效'
+        '（2026-10-31 实测应 347 处；清扫前 2026-09-30 为 321）',
   );
   expect(
     scan.pairHits.length,
     greaterThanOrEqualTo(150),
-    reason: '「ID+名」命中数骤降（实测 321）—— 疑似正则/剥离逻辑退化',
+    reason: '「ID+名」命中数骤降（2026-10-31 实测 347）—— 疑似正则/剥离逻辑退化',
   );
   expect(
     scan.idTokens.length,
     greaterThanOrEqualTo(400),
-    reason: 'ID 命中数骤降（实测 869）—— 疑似扫描面退化',
+    reason: 'ID 命中数骤降（2026-10-31 实测 1457）—— 疑似扫描面退化',
   );
   expect(
     scan.idTokens.toSet().length,
