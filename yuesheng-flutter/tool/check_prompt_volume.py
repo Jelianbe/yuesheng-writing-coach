@@ -328,6 +328,20 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   走 E1 实测登记，不新增红线键）。E2 估算回填：分片模板估 +60~80 实测 +245、
   merge 要求估 +30~50 实测 +95（说明段写长了，登记不扩范围）。
 
+· 2026-10-31 第二十一次（T-20261025-10 第四态与例外指认 · Q1 甲 / Q2 丙，舰长批 R-027，
+  报批稿 `.ai/reports/2026-10-31-报批稿-25-10-第四态与例外指认.md`）：
+  **CONST_REDLINE kChunkSystemPrompt +246**（6345→6591，
+  fnv 6cc995ee715d6ed→12f336da4c230198）。
+  方向 = **分片输出协议**：`_kChunkOutputFormat` notes 示例增
+  `"exception_quotes": [...]` 行 + `exception_quotes 字段说明` 段（例外成立在本块
+  哪几句可被记录与校验）。`not_applicable` **只进评测协议，不进 runtime prompt**。
+  值来源 = UPDATE_SNAPSHOTS=true flutter test test/services/prompt_const_anchor_test.dart
+  写模式运行时打印（len=6591 fnv=12f336da4c230198，16 位照抄）。
+  对照组三键实测零变化：chunkExceptionGuideBlock 3082/24ab03bbc9115ff8 ·
+  kDiagnosisProtocolSuffix 1038/b4ae395807abdc6 · chunkWindowMetaSample 32/5510c8ce2f3b4552。
+  预测 +246 与实测逐位一致（报批稿 §4 构件分解 612→858）。方向 = **真实提额**，
+  不得写成额度回收。
+
 · 2026-10-30 补守登记（T-20261030-03 · L4 护栏批）：`_kMergeOutputRequirement`
   结束「无锚点看守」状态 —— 本文件新增 MERGE_REDLINE 源码字面量双钉
   (902, 54e615da5a167a6d)（纯字面量无插值 == 运行时值，python 提取与
@@ -978,13 +992,14 @@ CONST_ANCHOR = os.path.join(ROOT, 'test', 'snapshots', 'prompt_const_anchor.json
 #    ★ 内容牙 牙1–牙5 落在同文件 `_p003FidBranchCheck`（不新增用例）。行为验收
 #    挂 `T-20261024-19`，本批**无 key 未验**（E2），不得自宣「误伤下降」。
 CONST_REDLINE = {
-    # ★ 2026-10-30 第十八次重钉：6100→6345（+245），fnv 576903d657a60464→6cc995ee715d6ed。
-    # 方向 = T-20261024-06（形态甲）：_kChunkOutputFormat notes 对象增 excluded 字段行
-    # + excluded 字段说明段（分片侧「判了否」结构化留痕，对位 uncertain）。值来源 =
-    # UPDATE_SNAPSHOTS=true flutter test test/services/prompt_const_anchor_test.dart
-    # 写模式运行时打印（len=6345 fnv=6cc995ee715d6ed）。对照组 chunkExceptionGuideBlock /
-    # kDiagnosisProtocolSuffix / chunkWindowMetaSample 三项逐键实测零变化。
-    'kChunkSystemPrompt': (6345, '6cc995ee715d6ed'),
+    # ★ 2026-10-31 第二十一次重钉：6345→6591（+246），fnv 6cc995ee715d6ed→12f336da4c230198。
+    # 方向 = T-20261025-10（Q1 甲 / Q2 丙）：_kChunkOutputFormat notes 示例增
+    # exception_quotes 行 + exception_quotes 字段说明段（例外指认随 notes 透传，
+    # runtime 不加 not_applicable）。值来源 = UPDATE_SNAPSHOTS=true flutter test
+    # test/services/prompt_const_anchor_test.dart 写模式运行时打印（len=6591）。
+    # 对照组 chunkExceptionGuideBlock / kDiagnosisProtocolSuffix / chunkWindowMetaSample
+    # 三项逐键实测零变化。fnv 16 位、照抄打印串未补零。
+    'kChunkSystemPrompt': (6591, '12f336da4c230198'),
     'chunkExceptionGuideBlock': (3082, '24ab03bbc9115ff8'),
     # ★ 2026-10-30 第十七次重钉：977→1038（+61），fnv 609c7814d5bcc86d→b4ae395807abdc6。
     # 方向 = T-20261024-05 批2：suffix 模板 syndromes 数组后增 excluded 行（行内续接

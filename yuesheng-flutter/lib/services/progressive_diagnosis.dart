@@ -93,6 +93,17 @@ class ChunkNote {
   /// 形状复用轮次级 [ParsedExclusion]（{syndromeId, reason}，不输出 name）。
   final List<ParsedExclusion> excluded;
 
+  /// ★ 分片援引例外条款时的原文依据（T-20261025-10 Q2 丙，2026-10-31 舰长批）。
+  ///
+  /// 形状从「单个 span」改为「逐字引文数组」：现役 P003 例外要求**同时摘引
+  /// 切换前、切换后两条句子**并分别指认感知者，单区间装不下。省略与 `[]`
+  /// 同义（= 未指认），不造第三种「显式无」。
+  ///
+  /// 解析侧（[_parseChunkNotes]）逐条断言「是本块原文子串」：不成立只丢该条
+  /// 引文并在 description 留痕，**不丢整条 note**（否则「例外不成立」会被
+  /// 误升级成「这条没报」）。
+  final List<String> exceptionQuotes;
+
   const ChunkNote({
     required this.syndromeId,
     required this.description,
@@ -100,6 +111,7 @@ class ChunkNote {
     required this.severity,
     this.uncertain = false,
     this.excluded = const [],
+    this.exceptionQuotes = const [],
   });
 }
 
@@ -591,6 +603,10 @@ List<String> _buildChunkNotesBlocks(
               'excluded': n.excluded
                   .map((e) => {'syndrome_id': e.syndromeId, 'reason': e.reason})
                   .toList(),
+              // ★ 例外指认随 notes 透传（T-20261025-10 Q2 丙）：merge 不重判、
+              // 不去重，只让长期视图拿得到「例外成立在本块哪几句」。
+              if (n.exceptionQuotes.isNotEmpty)
+                'exception_quotes': n.exceptionQuotes,
             },
           )
           .toList();
@@ -1225,25 +1241,49 @@ bool _parseUncertainFlag(Object? raw) {
   return false;
 }
 
+/// 分片例外引文安全读（T-20261025-10 Q2 丙）。循 `_parseChunkExcludedList` 同型三件套：
+/// 非 List ⇒ const []；元素非 String 丢弃；trim 后空串丢弃。不抛异常。
+List<String> _parseExceptionQuotes(Object? raw) {
+  if (raw is! List) return const <String>[];
+  return raw
+      .whereType<String>()
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+}
+
 /// 解析单块分析返回的 JSON 为 ChunkNote 列表
-List<ChunkNote> _parseChunkNotes(String jsonStr) {
+///
+/// [chunk] 为本块正文：`exception_quotes` 逐条断言「是本块原文子串」。
+List<ChunkNote> _parseChunkNotes(String jsonStr, String chunk) {
   try {
     final decoded = jsonDecode(jsonStr);
     if (decoded is Map<String, dynamic> && decoded['notes'] is List) {
       return (decoded['notes'] as List)
           .whereType<Map<String, dynamic>>()
-          .map(
-            (n) => ChunkNote(
+          .map((n) {
+            // 例外引文逐条校验：必须是本块原文的逐字子串。不成立只丢该条引文
+            // 并在 description 留痕，**不丢整条 note**（与 severity 越界剔除同纪律）。
+            final rawQuotes = _parseExceptionQuotes(n['exception_quotes']);
+            final quotes = rawQuotes.where(chunk.contains).toList();
+            var description = n['description'] as String? ?? '';
+            if (quotes.length != rawQuotes.length) {
+              description =
+                  '$description（例外引文未在本片原文找到，已剔除 '
+                  '${rawQuotes.length - quotes.length} 条）';
+            }
+            return ChunkNote(
               syndromeId: n['syndromeId'] as String? ?? '',
-              description: n['description'] as String? ?? '',
+              description: description,
               evidence:
                   (n['evidence'] as List?)?.map((e) => e.toString()).toList() ??
                   const [],
               severity: n['severity'] as String? ?? 'L1',
               uncertain: _parseUncertainFlag(n['uncertain']),
               excluded: _parseChunkExcludedList(n['excluded']),
-            ),
-          )
+              exceptionQuotes: quotes,
+            );
+          })
           // L3 白名单：severity 越界（非 L1/L2/L3）→ 剔除该条并留痕。
           // 中间产物诚实降级——不伪造严重度进入合并 prompt。
           .where((n) {
@@ -1327,7 +1367,7 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
       );
     }
     final jsonStr = extractJson(content);
-    final notes = _parseChunkNotes(jsonStr);
+    final notes = _parseChunkNotes(jsonStr, chunk);
     return ChunkAnalysisResult(
       chunkIndex: chunkIndex,
       notes: notes,

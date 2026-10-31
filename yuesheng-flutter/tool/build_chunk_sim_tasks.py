@@ -187,7 +187,8 @@ def build_task(chunk, title):
         "| `hit` | 本片内有**可指认位置**的证据支撑该症候成立 | evidence + severity + reason |\n"
         "| `miss` | 本片内不成立（含命中例外条款的） | 无 |\n"
         "| `uncertain` | 成立与否**依赖片段外信息**（前文铺垫 / 后文解释 / "
-        "片段外人物关系 / 全文节奏比例 / 角色长期状态） | reason（缺哪类） |"
+        "片段外人物关系 / 全文节奏比例 / 角色长期状态） | reason（缺哪类） |\n"
+        "| `not_applicable` | 该判据按位置/尺度**不适用于本块**（判据没被问） | reason |\n"
     )
     lines.append("")
     lines.append("## 输出格式（严格遵守）")
@@ -205,7 +206,9 @@ def build_task(chunk, title):
         "\"reason\": \"判断理由\"},\n"
         "    {\"id\": \"P002\", \"verdict\": \"miss\"},\n"
         "    {\"id\": \"P003\", \"verdict\": \"uncertain\", "
-        "\"reason\": \"缺前文铺垫：…\"}\n"
+        "\"reason\": \"缺前文铺垫：…\"},\n"
+        "    {\"id\": \"P004\", \"verdict\": \"not_applicable\", "
+        "\"reason\": \"本块位于开头章，P004（中段）不在适用位置\"}\n"
         "    // …… 恰好 39 条，P001–P039 全覆盖，不重不漏\n"
         "  ]\n"
         "}\n"
@@ -222,15 +225,20 @@ def build_task(chunk, title):
         "3. **每条判定都按判据原文判**：`hit` 要能指出本片内可指认的位置；"
         "判据自带的例外条款、以及「片段外才能判定」的情形，一律按判据原文处理，"
         "**本任务单不替你预设方向**。\n"
+        "命中判据原文的例外条款时，可在该条 verdict 上加 `exception_quotes`"
+        "（逐字引文数组，必须是本片段原文子串）——例外要求两句就摘两句。\n"
         "4. **文件里只有 JSON**，不要任何解释性文字；JSON 必须可被 "
-        "`json.load` 解析。"
+        "`json.load` 解析。\n"
+        "5. **`not_applicable` 只在判据按位置/尺度不适用时使用**"
+        "（如 `serial` 判据遇到单章提交）；「判不了」用 `uncertain`、"
+        "「判了否」用 `miss`，三者不得互相替代。"
     )
     lines.append("")
     lines.append(
         "## 完成判据\n\n"
         "- 文件存在于指定路径且是合法 JSON；\n"
         "- `verdicts` 恰好 39 条，id 集合 = P001–P039（不重不漏）；\n"
-        "- 每条 verdict ∈ {hit, miss, uncertain}，必填字段齐全。"
+        "- 每条 verdict ∈ {hit, miss, uncertain, not_applicable}，必填字段齐全。"
     )
     lines.append("")
     return cid, "\n".join(lines)
