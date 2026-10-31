@@ -326,6 +326,8 @@ void main() {
     test('#18 件④甲：P036 首选改 A006 且保留 A002 备选', () {
       final p036 = kSyndromeRegistry.firstWhere((s) => s.id == 'P036');
       expect(p036.actions.first, 'A006', reason: '手册首选是 A006，系统侧须一致');
+      // A002 备选只存在于注册表侧 —— manual_6.dart:500 的 P036 原文是「首选 A006
+      // 感官全开 + A005 动作链」，手册无 A002。本判据只钉注册表首位，不得读成手册也这么说。
       expect(
         p036.actions,
         contains('A002'),
@@ -347,8 +349,10 @@ void main() {
       final bad = <String>[];
       for (final s in kSyndromeRegistry) {
         final sec = getSyndromeContent([s.id]);
-        final hit = sec.isEmpty ? null : preferredRe.firstMatch(sec);
-        if (hit == null) {
+        final all = sec.isEmpty
+            ? <RegExpMatch>[]
+            : preferredRe.allMatches(sec).toList();
+        if (all.isEmpty) {
           if (!noPreferredLineWhitelist.contains(s.id)) {
             bad.add('${s.id} 手册段缺「首选 Axxx」行且不在白名单');
           }
@@ -358,8 +362,15 @@ void main() {
           bad.add('${s.id} 已在白名单但手册行回来了 ⇒ 白名单陈旧，须删该成员');
           continue;
         }
-        if (hit.group(1) != s.actions.first) {
-          bad.add('${s.id} 手册首选=${hit.group(1)} 注册表首位=${s.actions.first} ⇒ 分歧');
+        final vals = all.map((m) => m.group(1)!).toSet();
+        if (vals.length > 1) {
+          bad.add(
+            '${s.id} 手册段 ${all.length} 条首选行取值不一致(${vals.join('/')}) ⇒ 先定谁权威',
+          );
+          continue;
+        }
+        if (vals.single != s.actions.first) {
+          bad.add('${s.id} 手册首选=${vals.single} 注册表首位=${s.actions.first} ⇒ 分歧');
         }
       }
       expect(bad, isEmpty, reason: '手册/注册表首选不一致:\n${bad.join('\n')}');
