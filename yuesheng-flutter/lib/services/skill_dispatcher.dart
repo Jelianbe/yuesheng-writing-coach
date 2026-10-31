@@ -388,7 +388,7 @@ void _buildL2Chunks(
           ...kShortChainExcludedSyndromeIds,
         });
       }
-      chunks.add(content);
+      chunks.add(excludeNonDiagnosableActionRows(content));
       loadedIds.add(ref.skillId);
       if (ref.contextHint != null) {
         chunks.add(ref.contextHint!);

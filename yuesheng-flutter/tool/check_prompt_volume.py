@@ -384,6 +384,31 @@ ADR-0003 §5 判据 9 原文：「阶段一注入后 diagnosis 组体积实测�
   4 份快照重冻（prompt_const / skill_prompt / message_sequence / l3_entry）；
   其余 3 份零漂移 —— `injection_segments` 虽被 msgseq 同轮重写，`git diff` **为空**。
 
+· 2026-10-31 第二十四次（T-20261031-17 · F9「P031 的 v2 动作映射表行退出注入面」·
+  R-027 舰长 2026-10-31 23:4x「全部批准，按稿执行」，报批稿
+  `.ai/reports/2026-10-31-报批稿-31-17-F9-P031退出v2映射表.md` §2.0）：
+  方向 = **注入点剔除一行**（落点 = `skill_dispatcher.dart` 的 `chunks.add` 入参处；
+  新函数 `excludeNonDiagnosableActionRows` 放 `syndrome_knowledge_base.dart`）。
+  **REDLINE** diagnosis 两组各 **下移 −41**（57638→**57597** / 55855→**55814**），
+  force 组 **不动**（66306 实测零漂移）。
+  ⚠️ **不是额度回收，是删除字符**：剔除的是 `coaching-actions-v2` 正文里
+  `| P031 题材边界感缺失 | A007 一句话冲突 | A003 五问法 |` 一行
+  （行本体 40 字符 + 行间 \n 1 = 41）。
+  ★ **库常量零漂移**（本批核心不变式）：过滤只发生在**注入点**，不改库常量生成处 ⇒
+  `skillContent['coaching-actions-v2']` 仍 **3847 / 46dec3e2b4b76fd**，
+  `skillContent` 子树**漂移键 = 0**（重冻后以 `git show ef9084cd:…` 逐键比对复核）。
+  逐键对账（重冻实测，6 个携带面各 −41）：diagnosis_yuesheng 57638→57597 ·
+  diagnosis_p1_yuesheng 55855→55814 · training_yuesheng 69020→68979 ·
+  advanced_sensei 47973→47932 · advanced_p4_yuesheng 47883→47842 ·
+  outline_yuesheng 59469→59428；另消息序列快照 `p3_yuesheng_advanced` 48105→**48064**
+  与 `p3_sensei_advanced` 47973→47932（同形态另一条构建路径）。
+  **对照组 7 组实测零漂移**（含 force 组 66306）⇒ 该组不携带 `coaching-actions-v2`，
+  是本批的天然负对照。
+  4 份快照中重冻 2 份（skill_prompt / message_sequence）；`injection_segments`
+  实测**零漂移**（`git diff` 为空）；`prompt_const` / `l3_entry` / `chunk_message` /
+  `student_profile` 未触及。
+  值来源 = `UPDATE_SNAPSHOTS=true` 重冻后本脚本**现测**（非预测）。
+
 · 2026-10-30 补守登记（T-20261030-03 · L4 护栏批）：`_kMergeOutputRequirement`
   结束「无锚点看守」状态 —— 本文件新增 MERGE_REDLINE 源码字面量双钉
   (902, 54e615da5a167a6d)（纯字面量无插值 == 运行时值，python 提取与
@@ -584,8 +609,20 @@ REDLINE = {
     # −59 与 +17 方向相反，只报 −42 会把「上移的那一面」藏掉 ⇒ 逐键对账见头注第二十三次。
     # ⚠️ 本批 +17 的四组（training / advanced_sensei / advanced_p4 / outline）
     # **不在** `MUST_NOT_GROW` 名单内，也不在 REDLINE 内 ⇒ 无上限看守（见头注更正）。
-    'diagnosis_yuesheng': 57638,
-    'diagnosis_p1_yuesheng': 55855,
+    # ★ 2026-10-31 第二十次重贴实测值（REDLINE 本表序列第二十次 = 头注全局
+    # 「红线沿革」**第二十四次**）：diagnosis 两组各 **下移 −41**
+    # （57638→**57597** / 55855→**55814**），force 组 **不动**（66306 实测零漂移 ——
+    # force 组 `loadedSkillIds` 不含 `coaching-actions-v2`，是本批的天然负对照）。
+    # 方向 = T-20261031-17「P031 的 v2 动作映射表行退出注入面」（R-027 舰长 2026-10-31
+    # 23:4x「全部批准，按稿执行」；报批稿
+    # `.ai/reports/2026-10-31-报批稿-31-17-F9-P031退出v2映射表.md` §2.0）：
+    # **注入点**（`skill_dispatcher.dart` 的 `chunks.add`）剔除不可诊断症候的
+    # v2 动作映射表行（行本体 40 字符 + 行间 \n 1 = 41），**库常量逐字节不动**
+    # （`skillContent['coaching-actions-v2']` 仍 3847 / 46dec3e2b4b76fd）。
+    # ⚠️ 本批是**删除字符**，**不是额度回收** —— 本表是等值钉，下移后仍等于当下实测
+    # （pin==actual，余量 +0）；不动库常量 ⇒ 不撞 R-027 铁律 5。
+    'diagnosis_yuesheng': 57597,
+    'diagnosis_p1_yuesheng': 55814,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。

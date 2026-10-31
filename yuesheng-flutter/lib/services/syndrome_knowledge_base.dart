@@ -28,6 +28,41 @@ part 'syndrome_kb_content_manual_4.dart';
 part 'syndrome_kb_content_manual_5.dart';
 part 'syndrome_kb_content_manual_6.dart';
 
+// ─── 注入面剔除：库常量保留行（R-027 铁律 5）────────────────────
+
+/// 从 [content] 中剔除**不可诊断症候**的 v2 动作映射表行（注入期使用）。
+///
+/// 背景（`T-20261031-17` / F9）：`kNonDiagnosableSyndromeIds` 的成员已退出诊断
+/// 注入面，但 `coaching-actions-v2` 的正文是**库常量**——`skills_training_p4.dart:257`
+/// 直接吃 `kSyndromeRegistry.map(_v2ActionRow).join('\n')` 的插值结果。从常量里删行
+/// 会打红 `four_libraries_consistency_test` 的 `#12`（库常量渲染行逐 ID 断言），
+/// 故剔除**只发生在注入点**，库常量逐字节不动。
+///
+/// **判据是行形态 + 集合成员，不是 skillId 白名单**：只命中
+/// `| <P###> <症名> | <A###> <动作名> | …` 形态（`_v2ActionRow` 的唯一渲染形，
+/// `skill_registry.dart:190-200`）。下列同形异义行**不命中**：
+///   - 训练索引 `| P031 | 题材边界感缺失 | …`（症名后紧跟竖线，第二列是症名）
+///     ⇒ 31-11 §10 的训练索引边界保留；
+///   - 症候手册技法映射 `| P031 题材边界感缺失 | T003 …`（第二列是技法）。
+/// ⇒ 对不含该形态的内容是**恒等变换**（`split('\n')` / `join('\n')` 逐字节可逆），
+/// 其余 skill 与 L1 面 Δ=0。
+///
+/// Δ：命中行整行删除，连同行尾 1 个 `\n`（不可诊断项不是末行）⇒ −41 码元 / −71 字节。
+String excludeNonDiagnosableActionRows(String content) {
+  if (kNonDiagnosableSyndromeIds.isEmpty) return content;
+  if (!kNonDiagnosableSyndromeIds.any((id) => content.contains(id))) {
+    return content;
+  }
+  final v2Row = RegExp(r'^\| (P\d{3}) [^|]+ \| A\d{3} ');
+  return content
+      .split('\n')
+      .where((line) {
+        final m = v2Row.firstMatch(line);
+        return m == null || !kNonDiagnosableSyndromeIds.contains(m.group(1));
+      })
+      .join('\n');
+}
+
 /// 从完整手册中按症候 ID 提取单个症候的完整定义（复刻 RN extractSyndromeSection）
 String _extractSyndromeSection(String raw, String id) {
   final pattern = RegExp('### $id ');

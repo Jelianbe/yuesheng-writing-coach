@@ -58,8 +58,18 @@ const String kSuffixFnv = 'b4ae395807abdc6';
 //   ⚠️ **force 组 = 不动项，本批不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变，
 //   因为该组 `loadedSkillIds` 不含 `coaching-actions-v2` 也不含 L2 索引 ⇒ 天然负对照。
 //   若哪天 force 的 fnv 变了，说明改动打到了不该碰的面，**先怀疑越界，不要顺手重钉**。
-const String kDiagP1Fnv = '6a2191b7c2f91422';
-const String kDiagYueFnv = '75704fcaea75e1eb';
+// ★ 2026-10-31（T-20261031-17 · F9「P031 的 v2 动作映射表行退出注入面」）再重钉：
+//   diagnosis 两组各 **−41**（55855/6a2191b7c2f91422 → **55814/356f25a9f384c841**；
+//     57638/75704fcaea75e1eb → **57597/53f8ec0e7c537702**）。
+//   方向 = **注入点剔除一行**（`coaching-actions-v2` 正文里的
+//   `| P031 题材边界感缺失 | A007 一句话冲突 | A003 五问法 |`：行本体 40 + 行间 \n 1）。
+//   ★ **库常量零漂移**（本批核心不变式）：剔除只发生在注入点，`skillContent` 子树
+//   漂移键 = 0（`skillContent['coaching-actions-v2']` 仍 3847 / 46dec3e2b4b76fd）。
+//   ⚠️ **force 组 = 不动项，本批仍不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变
+//   （该组 `loadedSkillIds` 不含 `coaching-actions-v2` ⇒ 天然负对照）。
+//   fnv 取自 `UPDATE_SNAPSHOTS=true` 重冻时**运行时打印串**，16 位**不补零**。
+const String kDiagP1Fnv = '356f25a9f384c841';
+const String kDiagYueFnv = '53f8ec0e7c537702';
 // force 组红线：先验 +0 只对**当时那一批**成立；本批是正文清扫 ⇒ 随组同降。
 const String kForceFnv = '37644edbf2af71a8';
 
