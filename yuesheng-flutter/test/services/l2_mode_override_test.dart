@@ -11,6 +11,7 @@ import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/l2_route_hysteresis.dart';
 import 'package:writingcoach/services/skill_layers.dart';
 import 'package:writingcoach/services/skill_registry.dart';
+import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 /// 最长公共前缀长度（用于验证 L1 段未被覆盖影响）。
@@ -126,7 +127,11 @@ void main() {
       final firstL2 = getSkill(firstL2Id);
       expect(firstL2, isNotNull, reason: '首个诊断组 skill 应已注册');
 
-      final l1Len = natural.systemPrompt.indexOf(firstL2!.content);
+      final l1Len = natural.systemPrompt.indexOf(
+        firstL2Id == 'coaching-actions-v2'
+            ? excludeNonDiagnosableActionRows(firstL2!.content)
+            : firstL2!.content,
+      );
       expect(l1Len, greaterThan(0), reason: 'L2 不应出现在开头');
       expect(
         _commonPrefixLen(natural.systemPrompt, forced.systemPrompt),

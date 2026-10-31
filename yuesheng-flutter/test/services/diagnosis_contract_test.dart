@@ -183,7 +183,11 @@ void main() {
               ? buildSyndromeIndexContent(kShortChainExcludedSyndromeIds)
               : skill.content;
           expect(
-            result.systemPrompt.contains(expected),
+            result.systemPrompt.contains(
+              ref.skillId == 'coaching-actions-v2'
+                  ? excludeNonDiagnosableActionRows(expected)
+                  : expected,
+            ),
             isTrue,
             reason: 'L2 diagnosis skill 缺失: ${ref.skillId}',
           );
