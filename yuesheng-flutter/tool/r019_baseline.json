@@ -2,7 +2,7 @@
   "dir": "lib",
   "limit": 50,
   "fileLimit": 300,
-  "fileCount": 511,
+  "fileCount": 513,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
@@ -541,7 +541,7 @@
     },
     {
       "file": "lib/widgets/diagnosis_card.dart",
-      "lines": 2367
+      "lines": 2361
     },
     {
       "file": "lib/widgets/evaluation_report_panel.dart",

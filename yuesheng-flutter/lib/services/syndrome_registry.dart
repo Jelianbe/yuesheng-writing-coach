@@ -22,8 +22,8 @@
 // 这个类型，改指向类型层文件即解开——依赖变为 registry → types（单向）。
 import 'syndrome_skill_types.dart'; // SkillLevel
 
-// ─── R-019 数据分片（≤300 行）：33 条 kSyndromeRegistry 记录字面量
-// 按 11/11/11 拆至 syndrome_registry_p1/p2/p3.dart（const 列表分段，宿主拼接）
+// ─── R-019 数据分片（≤300 行）：39 条 kSyndromeRegistry 记录字面量
+// 按 11/10/18 分为 _syndromeRegistryP1/P2/P3 三段 const 列表（均在本文件内，宿主拼接）
 /// 症候类型（症候库「症候类型速查」表使用；skill_registry 类型分组表
 /// 的「语言表达类」由渲染函数按 P006/P018 特例映射，见批次30）
 enum SyndromeType {
@@ -173,11 +173,11 @@ class SyndromeRecord {
   String get v2ActionDisplayName => v2ActionName ?? shortName;
 }
 
-/// 注册表（真源）：34 条（P001-P034），按 ID 升序。
+/// 注册表（真源）：39 条（P001-P039），按 ID 升序。
 /// 增删症候时：
 ///   - 新增：追加一条记录（ID 连续递增）+ 在症候库/训练库编写手册段与训练段
 ///   - 删减：删除记录 + 删对应手册段与训练段（勿复用 ID）
-/// R-019 拆分：33 条记录字面量移至 syndrome_registry_p1/p2/p3.dart，此处拼接。
+/// R-019 拆分：39 条记录字面量分三段列表，均在本文件内，此处拼接。
 final List<SyndromeRecord> kSyndromeRegistry = List.unmodifiable([
   ..._syndromeRegistryP1,
   ..._syndromeRegistryP2,
