@@ -123,6 +123,16 @@ void main() {
       );
 
       // 诊断组首个 L2 skill 的注入位点 = L1 段长度（L1 在 L2 之前）。
+      // ★ T-20261101-03：本段的 `reason:` 文案已与判据能力边界对齐 ——
+      //   断言钉住的是**同源不变式**「注入面逐字 == excludeNonDiagnosableActionRows(库常量)」
+      //   （位点量取用的内容与注入面走**同一**过滤函数），**不是**「这条 skill
+      //   有没有被注入」，也**不是**「过滤是否真的发生」。
+      //   ⇒ 红驱动去处二选一：M3-a 变异**注入点** `skill_dispatcher.dart:391`
+      //     （注入面不再过滤）／ M3-b 变异**本护栏侧期望值**（改回未过滤的
+      //     `firstL2!.content`）。
+      //   ⚠️ 本护栏**不是**「过滤是否真的发生」的判据 —— 两侧同源 ⇒ 同源平移即恒绿
+      //     （M3-c 变异过滤函数为恒等时本段仍绿）；那个判据在
+      //     `v2_action_table_filter_test.dart`（N1/N4）。
       final firstL2Id = getL2SkillIds(L2Mode.diagnosis).first.skillId;
       final firstL2 = getSkill(firstL2Id);
       expect(firstL2, isNotNull, reason: '首个诊断组 skill 应已注册');
@@ -132,7 +142,23 @@ void main() {
             ? excludeNonDiagnosableActionRows(firstL2!.content)
             : firstL2!.content,
       );
-      expect(l1Len, greaterThan(0), reason: 'L2 不应出现在开头');
+      expect(
+        l1Len,
+        greaterThan(0),
+        reason:
+            'L2 段位点异常（l1Len=$l1Len）：'
+            '本断言钉住的是「L2 内容在 systemPrompt 中的起始位点 > 0」'
+            '（= L1 段在前、L2 不在开头），'
+            '且位点量取的是**同源**内容 excludeNonDiagnosableActionRows(库常量)'
+            '（期望值与注入面走同一过滤函数 ⇒ 同源平移即恒绿）'
+            '—— **不是**「该 skill 有没有被注入」，'
+            '**也不是**「过滤是否真的发生」（那个判据在 '
+            'v2_action_table_filter_test.dart）。'
+            '两种红法要分开看：l1Len == 0 ⇒ L2 真的出现在开头；'
+            'l1Len == -1 ⇒ L2 内容**根本没找到**（注入面被改写或被过滤掉）。'
+            '红驱动去处 = M3-a 变异注入点 skill_dispatcher.dart:391 '
+            '/ M3-b 变异本护栏侧期望值',
+      );
       expect(
         _commonPrefixLen(natural.systemPrompt, forced.systemPrompt),
         greaterThanOrEqualTo(l1Len),

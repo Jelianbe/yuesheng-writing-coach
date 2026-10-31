@@ -176,6 +176,14 @@ void main() {
       // 短链排除并集」动态重建，不再逐字等于静态注册内容 ⇒ 比对重建后的正文。
       // ★ T-20261031-11 件①：并集真源 = kShortChainExcludedSyndromeIds（P022 + P031），
       //   期望串与装配点**必须用同一常量**，不许各写一份 spread。
+      // ★ T-20261101-03：本段的 `reason:` 文案已与判据能力边界对齐 ——
+      //   断言钉住的是**同源不变式**「注入面逐字 == excludeNonDiagnosableActionRows(库常量)」
+      //   （期望值与注入面走**同一**过滤函数），**不是**「这条 skill 有没有被注入」。
+      //   ⇒ 红驱动去处二选一：M3-a 变异**注入点** `skill_dispatcher.dart:391`
+      //     （注入面不再过滤）／ M3-b 变异**本护栏侧期望值**（改回未过滤的 `expected`）。
+      //   ⚠️ 本护栏**不是**「过滤是否真的发生」的判据 —— 两侧同源 ⇒ 同源平移即恒绿
+      //     （M3-c 变异过滤函数为恒等时本段仍绿）；那个判据在
+      //     `v2_action_table_filter_test.dart`（N1/N4）。
       for (final ref in getL2SkillIds(L2Mode.diagnosis)) {
         final skill = getSkill(ref.skillId);
         if (skill != null) {
@@ -189,7 +197,13 @@ void main() {
                   : expected,
             ),
             isTrue,
-            reason: 'L2 diagnosis skill 缺失: ${ref.skillId}',
+            reason:
+                'L2 注入面 ≠ 过滤后库常量（${ref.skillId}）—— '
+                '钉住的是同源不变式「注入面逐字 == '
+                'excludeNonDiagnosableActionRows(库常量)」，'
+                '不是「该 skill 有没有被注入」；'
+                '红驱动去处 = M3-a 变异注入点 skill_dispatcher.dart:391 '
+                '/ M3-b 变异本护栏侧期望值',
           );
         }
       }
