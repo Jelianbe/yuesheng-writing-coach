@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // SyndromeLearnerNotes — 诊断资料区 · 症候学员解读库（ADR-C122）
 //
-// 一期：34 条症候（P001–P034）的学员化转写，纯展示数据。
+// 一期：34 条症候（P001–P034）的学员化转写，纯展示数据；现 39 条（P001–P039，2026-10-31 实测）。
 //
 // ★ 边界声明（ADR-C122 §4 判定）：
 //   本文件是**独立展示数据文件**，不进注入链（不注入 skills_*.dart /
@@ -46,7 +46,7 @@ class SyndromeLearnerNote {
   });
 }
 
-/// 诊断资料区列表（34 条，按编号序）
+/// 诊断资料区列表（39 条，按编号序）
 const List<SyndromeLearnerNote> kSyndromeLearnerNotes = [
   SyndromeLearnerNote(
     id: 'P001',
@@ -286,8 +286,8 @@ const List<SyndromeLearnerNote> kSyndromeLearnerNotes = [
     signs: ['一段里连续省略主语', '「他说」之后接「她笑了」读者分不清谁'],
     actionRefs: ['A002'],
   ),
-  // ── 二期补齐（2026-10-06）：ADR-0003 阶段一新增的P035–P037 ──
-  // 转写口径与一期 34 条完全一致（已实测核对：现有 34 条的 actionRefs 与
+  // ── 二期补齐（2026-10-06 · 本段「34 条 / 34/34」为**当时口径**，现全文件 39 条）：ADR-0003 阶段一新增的P035–P037 ──
+  // 转写口径与一期 34 条完全一致（已实测核对：当时 34 条的 actionRefs 与
   // 注册表 `syndrome_registry.dart` 的 `actions` 字段**34/34 逐条一致**，
   // 故本批三条直接取注册表权威值，不另设映射）：
   //   P035 actions=['A004','A011'] · P036 actions=['A002','A005']
