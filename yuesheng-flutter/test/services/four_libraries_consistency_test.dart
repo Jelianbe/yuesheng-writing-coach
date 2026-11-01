@@ -71,9 +71,7 @@ const Set<String> kGuard19NoPreferredLineWhitelist = <String>{};
 ///   **本卡不碰内容侧**（卡 §六）⇒ 登记为例外 + 双向陈旧判据：
 ///   内容侧一旦裁定（补进注册表 或 从手册删掉），本例外即陈旧 ⇒ 判据必红 ⇒
 ///   强制清理。解锁条件可判，不留永久豁免。
-const Map<String, Set<String>> kGuard19AlternativeExempt = {
-  'P006': {'A008'},
-};
+const Map<String, Set<String>> kGuard19AlternativeExempt = {};
 
 /// `#19` 判定内核：手册段（首选 + 备选）vs 注册表 `actions`。
 ///
@@ -206,33 +204,45 @@ void _guard19NegativeSelfTest() {
   );
 
   // B5/B6 豁免集的**双向陈旧**必须有牙 —— 否则例外会变成永久豁免。
-  //   B5：注册表已把 A008 补进 P006 ⇒ 例外失效 ⇒ 红。
-  final b5 = _judgeGuard19(
-    id: 'P006',
-    section: s006,
-    actions: [...p006.actions, 'A008'],
-  );
-  expect(b5.length, 1, reason: 'B5 预判命中 1 条，实际 ${b5.length}：$b5');
-  expect(
-    b5.single,
-    contains('例外 A008 已在注册表 actions 内 ⇒ 例外陈旧'),
-    reason: 'B5 未报例外陈旧 ⇒ 豁免可被内容侧修复后长期留存（无牙）',
-  );
+  //   ★ 前提守卫（T-20261101-01 补授权·守卫式）：这两条自测硬编码了
+  //   「例外集含 P006/A008」（B5/B6）与「手册含 A008 对话瘦身」（B6 的变异底料）
+  //   两个前提 —— D1（手册删 A008）/ D2（例外清空）落地后前提即消失 ⇒ 无守卫则
+  //   自测必红（隔离实验实测：原树 All tests passed，三处改动落地后 B5 红 :214）。
+  //   例外在场 ⇒ 自测照跑；例外清空 ⇒ 自测随对象休眠；同对例外若重新登记 ⇒ 自动复活。
+  //   N7/N8 的有牙时点证据见 31-20 施工报告（已落账）。
+  if (kGuard19AlternativeExempt['P006']?.contains('A008') ?? false) {
+    //   B5：注册表已把 A008 补进 P006 ⇒ 例外失效 ⇒ 红。
+    final b5 = _judgeGuard19(
+      id: 'P006',
+      section: s006,
+      actions: [...p006.actions, 'A008'],
+    );
+    expect(b5.length, 1, reason: 'B5 预判命中 1 条，实际 ${b5.length}：$b5');
+    expect(
+      b5.single,
+      contains('例外 A008 已在注册表 actions 内 ⇒ 例外陈旧'),
+      reason: 'B5 未报例外陈旧 ⇒ 豁免可被内容侧修复后长期留存（无牙）',
+    );
+  }
 
   //   B6：手册不再写 A008 这个备选 ⇒ 例外失效 ⇒ 红。
-  final b6section = s006.replaceFirst('A008 对话瘦身 ', '');
-  expect(b6section, isNot(s006), reason: 'B6 变异未生效（A008 备选串未命中）⇒ 本例无效');
-  final b6 = _judgeGuard19(
-    id: 'P006',
-    section: b6section,
-    actions: p006.actions,
-  );
-  expect(b6.length, 1, reason: 'B6 预判命中 1 条，实际 ${b6.length}：$b6');
-  expect(
-    b6.single,
-    contains('例外 A008 手册已不再写该备选 ⇒ 例外陈旧'),
-    reason: 'B6 未报例外陈旧 ⇒ 豁免可被内容侧修复后长期留存（无牙）',
-  );
+  //   二级前提：变异底料（手册串）必须在场，否则 replaceFirst 空转。
+  if ((kGuard19AlternativeExempt['P006']?.contains('A008') ?? false) &&
+      s006.contains('A008 对话瘦身 ')) {
+    final b6section = s006.replaceFirst('A008 对话瘦身 ', '');
+    expect(b6section, isNot(s006), reason: 'B6 变异未生效（A008 备选串未命中）⇒ 本例无效');
+    final b6 = _judgeGuard19(
+      id: 'P006',
+      section: b6section,
+      actions: p006.actions,
+    );
+    expect(b6.length, 1, reason: 'B6 预判命中 1 条，实际 ${b6.length}：$b6');
+    expect(
+      b6.single,
+      contains('例外 A008 手册已不再写该备选 ⇒ 例外陈旧'),
+      reason: 'B6 未报例外陈旧 ⇒ 豁免可被内容侧修复后长期留存（无牙）',
+    );
+  }
 
   // 格式变体 ⇒ 仍判绿（内容没错不得假红）
   final variants = <String, String>{
