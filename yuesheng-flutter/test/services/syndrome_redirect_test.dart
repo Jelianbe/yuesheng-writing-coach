@@ -12,6 +12,7 @@ import 'package:writingcoach/services/chunk_prompt.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_redirect.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
+import 'package:writingcoach/types/teaching_types.dart';
 
 /// 文案里的 id 记号（Pxxx / Axxx）。
 final RegExp _idPattern = RegExp(r'[PA]\d{3}');
@@ -179,6 +180,53 @@ void main() {
       expect(f.actionId, isNull);
       expect(f.text, isNull);
       expect(f.traces, isEmpty);
+    });
+  });
+
+  // ── 卡面 V1：协议字段双向键集合（写入 / 读出对称）+ 缺省容错有单测 ──
+  group('ParsedExclusion 读写对称（卡面 V1）', () {
+    test('toJson → fromJson 往返：指向 + 逐字句对称，缺省方向仍为 null', () {
+      const e = ParsedExclusion(
+        syndromeId: 'P007',
+        reason: '动机已立住，行为前后矛盾',
+        redirectSyndromeId: 'P015',
+        redirectText: '角色空心化不成立时：动机本已立住而行为前后矛盾，转 P015 的训练',
+      );
+      final json = e.toJson();
+      expect(json['redirect'], isA<Map<String, dynamic>>());
+      final back = ParsedExclusion.fromJson(json);
+      expect(back.syndromeId, 'P007');
+      expect(back.reason, '动机已立住，行为前后矛盾');
+      expect(back.redirectSyndromeId, 'P015');
+      expect(back.redirectActionId, isNull);
+      expect(back.redirectText, '角色空心化不成立时：动机本已立住而行为前后矛盾，转 P015 的训练');
+    });
+
+    test('缺省容错：三字段皆空 ⇒ 不落 redirect 键 ⇒ 往返仍皆空', () {
+      const e = ParsedExclusion(syndromeId: 'P002', reason: '证据不足');
+      final json = e.toJson();
+      expect(
+        json.containsKey('redirect'),
+        isFalse,
+        reason: '未指认时整个 redirect 不落 key（往返稳定）',
+      );
+      final back = ParsedExclusion.fromJson(json);
+      expect(back.redirectSyndromeId, isNull);
+      expect(back.redirectActionId, isNull);
+      expect(back.redirectText, isNull);
+    });
+
+    test('动作指向（A 行）同样对称', () {
+      const e = ParsedExclusion(
+        syndromeId: 'P006',
+        reason: '不成立',
+        redirectActionId: 'A011',
+        redirectText: '语言堆砌不成立而文字仍显繁复时，同域的练法是场景裁剪（A011）——是否使用由你决定。',
+      );
+      final back = ParsedExclusion.fromJson(e.toJson());
+      expect(back.redirectActionId, 'A011');
+      expect(back.redirectSyndromeId, isNull);
+      expect(back.redirectText, e.redirectText);
     });
   });
 }

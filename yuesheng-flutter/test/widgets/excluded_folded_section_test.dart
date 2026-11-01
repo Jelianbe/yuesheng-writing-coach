@@ -417,4 +417,95 @@ void main() {
       );
     });
   });
+
+  // ── 撤销改道渲染（T-20261031-12 · 卡面 V3：撤销一张卡可见「改做什么」）──
+  group('撤销改道渲染（卡面 V3）', () {
+    testWidgets('有 redirect ⇒ 显示「改做什么：{逐字句}（转向：{名}）」，且不写「AI 帮你改好了」', (
+      tester,
+    ) async {
+      await pumpSection(
+        tester,
+        const ExcludedFoldedSection(
+          excluded: [
+            ParsedExclusion(
+              syndromeId: 'P007',
+              reason: '动机已立住，行为前后矛盾',
+              redirectSyndromeId: 'P015',
+              redirectText: '角色空心化不成立时：动机本已立住而行为前后矛盾，转 P015 的训练',
+            ),
+          ],
+        ),
+      );
+
+      await tester.tap(find.textContaining('本轮还考虑过'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('改做什么：角色空心化不成立时：动机本已立住而行为前后矛盾，转 P015 的训练'),
+        findsOneWidget,
+        reason: 'V3：撤销一张卡必须可见「改做什么」+ 逐字句',
+      );
+      expect(
+        find.textContaining('（转向：人设崩塌）'),
+        findsOneWidget,
+        reason: '转向目标用注册表名（人设崩塌 = P015）',
+      );
+      expect(
+        find.textContaining('AI 帮你改好了'),
+        findsNothing,
+        reason: '温知新签纪律 3：不得渲染成「AI 帮你改好了」',
+      );
+    });
+
+    testWidgets('无 redirect 且该行是 T 行 ⇒ 显示诚实句，不显示「改做什么」', (tester) async {
+      await pumpSection(
+        tester,
+        const ExcludedFoldedSection(
+          excluded: [ParsedExclusion(syndromeId: 'P030', reason: '声线前后一致')],
+        ),
+      );
+
+      await tester.tap(find.textContaining('本轮还考虑过'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('改做什么'),
+        findsNothing,
+        reason: 'T 行无出口可指 ⇒ 不得渲染改道句',
+      );
+      expect(
+        find.textContaining('本条撤销后没有点名可转向的其他症候训练'),
+        findsOneWidget,
+        reason: 'T 行客户端兜底：显示诚实句（不是报错、不是「无能为力」）',
+      );
+      expect(
+        find.textContaining('AI 帮你改好了'),
+        findsNothing,
+        reason: '温知新签纪律 3：不得渲染成「AI 帮你改好了」',
+      );
+    });
+
+    testWidgets('无 redirect 且该行是 S 行 ⇒ 不渲染改道行（现状锚：撤销行仍可能空洞）', (tester) async {
+      await pumpSection(
+        tester,
+        const ExcludedFoldedSection(
+          excluded: [ParsedExclusion(syndromeId: 'P007', reason: '动机已立住')],
+        ),
+      );
+
+      await tester.tap(find.textContaining('本轮还考虑过'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('改做什么'),
+        findsNothing,
+        reason: '模型未指认且该行不是 T 行 ⇒ 无逐字句可渲染（不臆造）',
+      );
+      expect(
+        find.textContaining('本条撤销后没有点名可转向的其他症候训练'),
+        findsNothing,
+        reason: 'S 行不是 T 行 ⇒ 不显示 T 行诚实句',
+      );
+    });
+  });
 }
