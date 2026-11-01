@@ -20,6 +20,8 @@ import 'package:flutter/material.dart';
 import '../config/app_motion.dart';
 import '../config/app_theme.dart';
 import '../config/app_palette.dart';
+import '../services/skill_registry.dart';
+import '../services/syndrome_redirect.dart';
 import '../services/syndrome_registry.dart';
 import '../theme/app_typography.dart';
 import '../types/teaching_types.dart';
@@ -157,19 +159,55 @@ class _ExcludedFoldedSectionState extends State<ExcludedFoldedSection> {
   }
 
   /// 单条：`· 名称：理由`（与改造前逐字一致；reason 空则不展示理由）。
+  ///
+  /// 撤销改道（T-20261031-12）：有 redirect ⇒ 追加一行「改做什么：{逐字句}
+  /// （转向：{名}）」；无 redirect 且该症候在登记表里是 T 行 ⇒ 追加一行诚实句。
+  /// **不得**渲染成「AI 帮你改好了」；**不自动派训练任务**（温知新签 §一 纪律 3）。
   Widget _buildItem(ParsedExclusion e) {
     final name = syndromeNameOf(e.syndromeId) ?? e.syndromeId;
     final reason = e.reason.trim();
+    final style = context.text.caption.copyWith(
+      color: context.palette.textTertiary,
+      fontSize: 11,
+      height: 1.4,
+    );
+    final head = Text(
+      reason.isEmpty ? '· $name' : '· $name：$reason',
+      style: style,
+    );
+    final line = _redirectLineOf(e);
+    if (line == null) {
+      return Padding(
+        padding: const EdgeInsets.only(top: AppSpacing.xxs),
+        child: head,
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.xxs),
-      child: Text(
-        reason.isEmpty ? '· $name' : '· $name：$reason',
-        style: context.text.caption.copyWith(
-          color: context.palette.textTertiary,
-          fontSize: 11,
-          height: 1.4,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          head,
+          Text(line, style: style),
+        ],
       ),
     );
+  }
+
+  /// 撤销改道行（学员面一句话）：有 redirect ⇒「改做什么：{逐字句}（转向：{名}）」；
+  /// 无 redirect 且该症候在登记表里是 T 行 ⇒ 诚实句；皆无 ⇒ null（不渲染）。
+  String? _redirectLineOf(ParsedExclusion e) {
+    final row = redirectOf(e.syndromeId);
+    if (row == null) return null;
+    final id = e.redirectSyndromeId ?? e.redirectActionId;
+    final text = redirectDisplayText(row, id, e.redirectText);
+    if (text != null && text.isNotEmpty) {
+      final target = e.redirectSyndromeId != null
+          ? syndromeNameOf(e.redirectSyndromeId)
+          : actionNameOf(e.redirectActionId);
+      return '改做什么：$text（转向：${target ?? id}）';
+    }
+    final honest = redirectHonestText(e.syndromeId);
+    return (honest != null && honest.isNotEmpty) ? honest : null;
   }
 }

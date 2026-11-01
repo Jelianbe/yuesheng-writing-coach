@@ -476,19 +476,16 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
 ///
 /// 与 reader_impact / teaching_plan 同型三件套：null / 非 List 按缺失 ⇒ const []；
 /// 元素类型守卫（非 Map 丢弃）；syndrome_id / reason 非 String 按空串。纯读无副作用。
+///
+/// 撤销改道三字段（T-20261031-12）：由 [ParsedExclusion.fromJson] 读入并净化
+/// ——**失配即丢该字段**、不丢整条排除记录（merge 面不留痕：留痕由分片侧写进
+/// note description）。本函数只做「读」，与分片侧同一套净化口径。
 List<ParsedExclusion> _parseExcludedList(Map<String, dynamic> obj) {
   final raw = obj['excluded'];
   if (raw is! List) return const <ParsedExclusion>[];
   return raw
       .whereType<Map<String, dynamic>>()
-      .map(
-        (e) => ParsedExclusion(
-          syndromeId: e['syndrome_id'] is String
-              ? e['syndrome_id'] as String
-              : '',
-          reason: e['reason'] is String ? e['reason'] as String : '',
-        ),
-      )
+      .map((e) => ParsedExclusion.fromJson(e))
       .toList();
 }
 

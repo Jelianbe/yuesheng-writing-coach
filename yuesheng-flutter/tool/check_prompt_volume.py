@@ -1122,7 +1122,22 @@ CONST_REDLINE = {
     #   act<lim 也报「钉表与实测脱钩」⇒ 写错不是"更宽松"，是直接红）。
     # 值来源 = UPDATE_SNAPSHOTS=true flutter test
     # test/services/prompt_const_anchor_test.dart 写模式打印（len=6445）。
-    'kChunkSystemPrompt': (6445, '4456dfcbd2d2a69f'),
+    # ★ 2026-11-01 第二十四次重钉：6445→**8693**（**+2248**），
+    # fnv 4456dfcbd2d2a69f→3c0d63e1bfa3c51a。
+    # 方向 = T-20261031-12（撤销改道 redirect · R-027 舰长 2026-11-01 12:11「都批」）：
+    # ① `_kChunkOutputFormat` 增 excluded 的 redirect 子对象 schema 行 + `redirect 字段说明`
+    #   段（报批稿 §2.2 两处逐字）；② 分块 prompt 尾部追加**派生**的撤销改道例外行
+    #   （S/A 22 条整段注入、模型按撤销理由择一发出；T 11 条不进模型面）。
+    # ⚠️ **本批是真实提额**（非额度回收）：+2248 落在报批稿 §4 预登记的
+    #   「协议 +400~500 + 例外行 +0~+2200」区间内（实测：协议段 ≈ +340，例外行段 ≈ +1908）。
+    # ⚠️ 报批稿 §4/§6 预登记的稿面值 **6591 / 12f336da4c230198** 是**过期锚**
+    #   （那是 2026-10-31 第二十一次重钉值；其后第二十二/二十三次重钉已落到 6445）
+    #   ⇒ 照稿面值重钉会把上限写错 2248 字符（等值钉 act≠lim ⇒ 直接红，不是更宽松）。
+    # 值来源 = UPDATE_SNAPSHOTS=true flutter test
+    # test/services/prompt_const_anchor_test.dart 写模式运行时打印（len=8693 fnv=3c0d63e1bfa3c51a）。
+    # 对照组 chunkExceptionGuideBlock / kDiagnosisProtocolSuffix / chunkWindowMetaSample
+    # 三项逐键实测**零变化**（2998 / 1038 / 32）⇒ 本次提额只落在分块 system 面一处。
+    'kChunkSystemPrompt': (8693, '3c0d63e1bfa3c51a'),
     # ★ 2026-10-31 第二十二次重钉：3082→3081（−1），fnv 24ab03bbc9115ff8→582b0096adae57d5。
     # 同批同因：例外指引块内该行旧名去「症」（`chunk_prompt.dart` 内 `_kChunkExceptionGuide`，
     # 块坐标随 T-20261025-06 件2 整段搬入本文件）。值来源同上（len=3081）。
@@ -1169,8 +1184,17 @@ CONST_FLOOR = {
 #   终值 & 0x7fffffffffffffff · toRadixString(16) 不补零）——
 #   自校验锚点：_fnv1a64('') 必须 == '4bf29ce484222325'
 #   （== injection_segments_anchor.json 空 fullTextBlock / l3Inject.empty 实测空串指纹）。
+# ★ 第二钉（2026-11-01 · T-20261031-12 撤销改道）：(902,'54e615da5a167a6d')
+#   → (970,'1259224ae28b2f99')（+68 字符，**真实提额**非额度回收）。
+#   方向 = `_kMergeOutputRequirement` 的 excluded 行补 redirect 形态
+#   （`{"syndrome_id"[,"redirect"]}` + redirect 子对象形状）。
+#   ★ 为什么必须改这一行：merge 协议原文只写「每条 {"syndrome_id","reason"}」⇒
+#   merge 模型会把 redirect 归一化丢掉 ⇒ 改道在**合并边界**被吞掉（声明≠生效）。
+#   不改这一行的后果 = ① 的三字段到不了学员面，整个包不成立。
+#   值来源 = python 源码字面量提取（len=970 fnv=1259224ae28b2f99），
+#   与 Dart 运行时同实现（`_fnv1a64_dart`）。
 MERGE_REDLINE = {
-    '_kMergeOutputRequirement': (902, '54e615da5a167a6d'),
+    '_kMergeOutputRequirement': (970, '1259224ae28b2f99'),
 }
 MERGE_SRC = os.path.join(ROOT, 'lib', 'services', 'progressive_diagnosis.dart')
 _MERGE_LITERAL_RE = re.compile(

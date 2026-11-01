@@ -16,6 +16,7 @@
 
 import '../types/teaching_types.dart';
 import 'position_semantics.dart';
+import 'syndrome_redirect.dart';
 import 'syndrome_registry.dart';
 
 // ── 单块系统提示词（对齐 RN CHUNK_SYSTEM_PROMPT）──
@@ -100,7 +101,8 @@ const String _kChunkOutputFormat = '''请输出JSON格式的笔记，不要包�
       "evidence": ["具体例句1", "具体例句2"],
       "severity": "L1",
       "uncertain": false,
-      "excluded": [{"syndrome_id": "P0XX", "reason": "本片查过但判定不成立的一句话理由"}],
+      "excluded": [{"syndrome_id": "P0XX", "reason": "本片查过但判定不成立的一句话理由",
+                        "redirect": {"syndrome_id": "P0XX", "action_id": "AXXX", "text": "撤销后改道句（逐字取自该症候改道行）"}}],
       "exception_quotes": ["例外依据句1", "例外依据句2"]
     }
   ]
@@ -110,7 +112,12 @@ uncertain 字段说明：按上面「片段窗口边界」一节，该条判据�
 
 excluded 字段说明：本片诊断时考虑过、但在本片证据下判定不成立的相近症候（同类型、共用判定要点的近邻），逐条列你**查过却不报**的，每条一句话理由（≤40字）；没有则输出空数组 []。它记录的是「判了否」，与 uncertain「判不了」是两回事——缺片段外信息而判不了的仍标 uncertain，不得写进 excluded。
 
-exception_quotes 字段说明：仅当该条命中判据原文的「例外情况」条款、且该条例外要求指出原文依据时填写——逐字摘引本片段中支撑该例外成立的句子，一句一条；例外要求两句就摘两句（如「切换前一条、切换后一条」），并逐句对应各自的归属。必须是本片段原文的逐字子串，不得改写或拼接；不得取自引号内的人物台词（该条例外另有说明的除外）。未援引例外时省略此字段或输出空数组 []，二者同义。''';
+exception_quotes 字段说明：仅当该条命中判据原文的「例外情况」条款、且该条例外要求指出原文依据时填写——逐字摘引本片段中支撑该例外成立的句子，一句一条；例外要求两句就摘两句（如「切换前一条、切换后一条」），并逐句对应各自的归属。必须是本片段原文的逐字子串，不得改写或拼接；不得取自引号内的人物台词（该条例外另有说明的除外）。未援引例外时省略此字段或输出空数组 []，二者同义。
+
+redirect 字段说明：仅当被排除症候的改道行给出了可转向出口时填写——syndrome_id 与 action_id **择一**
+（转另一症候的训练填 syndrome_id；转同域动作填 action_id），text 逐字取自该症候改道行的对应分支句，
+不得改写、不得自拟、不得超出该行登记的指向集合。改道行未给出出口、或撤销理由不含任何已登记分支时，
+省略 redirect（缺省 = 无改道，与现行为同义）。redirect 是给学习者的指路句，不是任务派发——是否照做由学员决定。''';
 
 /// ★ 窗口边界声明（2026-10-21，ADR-C153）：分片阶段的**前提**，不是例外清单。
 ///
@@ -197,6 +204,39 @@ List<String> _activeSyndromeCriteriaLines([
   return rows;
 }
 
+/// 撤销改道例外行（**模型面**）：仅 S/A 行进模型面；T 行只作客户端兜底渲染。
+///
+/// 整段注入，模型按撤销理由**择一**发出对应 id 与逐字句（温知新终稿表 §四注记 1：
+/// 「单值字段 vs 条件多支」⇒ 例外行整段注入 + 遍历断言；「学习者每次只见一支」）。
+/// 过滤口径与判定要点清单同源：用户禁用（disabled）+ 位次（band）。
+/// 返回 ''（无行可注入）或整段（含首尾换行；空串时拼装结果与改动前逐字相同）。
+String _redirectExceptionBlock(Set<String> disabled, String? band) {
+  final allowed = allowedPositionsForBand(band);
+  final positions = {for (final s in kSyndromeRegistry) s.id: s.position};
+  final lines = <String>[];
+  for (final e in kSyndromeRedirects.entries) {
+    if (disabled.contains(e.key)) continue;
+    final row = e.value;
+    if (!row.inModelFace) continue;
+    final pos = positions[e.key];
+    if (pos != null && !allowed.contains(pos)) continue;
+    final branches = redirectBranchesOf(row);
+    if (branches.isEmpty) continue;
+    final name = syndromeNameOf(e.key) ?? e.key;
+    lines.add(
+      '- 撤销 ${e.key}（$name）时：'
+      '${branches.map((b) => '${b.id} "${b.clause}"').join('｜')}',
+    );
+  }
+  if (lines.isEmpty) return '';
+  return '''
+
+## 撤销改道例外行（只在 excluded 里用）
+- 上面某条症候若被撤销（写进 excluded），且下面这一行给出了可转向出口：按撤销理由**择一**发出——一次只发一支，不得合并多支、不得改写文字、不得超出该行登记的指向集合。
+${lines.join('\n')}
+''';
+}
+
 /// 构造单块系统提示词：症候清单由注册表派生（ADR-C69）。
 ///
 /// 每行 4 个，沿用 RN 逐字移植时的紧凑排布，避免 39 条摊成 39 行。
@@ -218,6 +258,7 @@ String buildChunkSystemPrompt([
 ]) {
   final criteriaLines = _activeSyndromeCriteriaLines(disabled, positionBand);
   final degradedBlock = _chunkDegradedCriteriaBlock(disabled, positionBand);
+  final redirectBlock = _redirectExceptionBlock(disabled, positionBand);
   return '''你是一个专业的写作诊断助手。请阅读以下文本片段，识别其中存在的写作问题。
 
 症候判定要点（逐条核对，不要强行匹配）：
@@ -228,7 +269,7 @@ $_kChunkSelfContainedProbe
 
 $_kChunkExceptionGuide
 
-$_kChunkOutputFormat${kTeachingModeChunkInstruction(teachingMode)}''';
+$_kChunkOutputFormat${kTeachingModeChunkInstruction(teachingMode)}$redirectBlock''';
 }
 
 /// 单块系统提示词（全启用默认值）：症候清单由注册表派生，调用处无需感知（ADR-C69）。

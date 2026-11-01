@@ -36,6 +36,7 @@ import '../types/teaching_types.dart';
 import 'chunk_messages.dart';
 import 'chunk_prompt.dart';
 import 'position_semantics.dart';
+import 'syndrome_redirect.dart'; // T-20261031-12：撤销改道派生（33 条登记 + 失配净化）
 
 // 分块 prompt 与消息装配已按 R-019 职责级分解到独立文件（T-20261025-06 件2）；
 // export 保证既有 `import progressive_diagnosis.dart` 的消费者零改动。
@@ -524,7 +525,7 @@ const String _kMergeOutputRequirement = '''输出结构说明（下面两部分�
 - confidence (number): 0-1 置信度——★ §1-20：模型自报 confidence 已废除（禁止重新引入）；
   本字段为协议兼容保留（活性审查 D1 / §4-215 裁7②），可省略；解析侧缺省 0.0
 - root_cause_analysis / next_focus / feedback_summary: 可选
-- excluded (object[]): 可选——透传各分片笔记里的排除记录（每条 {"syndrome_id","reason"}），按分片原样保留、不重判、不跨片二选一；没有则省略
+- excluded (object[]): 可选——透传各分片笔记里的排除记录（每条 {"syndrome_id","reason"[,"redirect"]}；redirect 可选，形状 {"syndrome_id" 或 "action_id" 择一,"text"}），按分片原样保留、不重判、不跨片二选一；没有则省略
 - overall (object): 整体判定（结构完整度诊断，非文学打分、不给分数），仅当已诊断章节覆盖度足够时输出：
   - verdict (string): 三档之一「结构完整」「基本完整」「存在结构性缺口」
   - reasons (string[]): 1-3 条核心理由，须引用上面的结构画像或已报症候证据
@@ -563,6 +564,46 @@ const String _kMergeRelevanceGate = '''叙事合理性判定（最终裁决步�
 
 拿不准是否真的损害了读者体验时，一律判为"否"，不输出该条。''';
 
+/// 单条分片笔记 → 合并面 JSON（R-019：从 `_buildChunkNotesBlocks` 拆出）。
+Map<String, dynamic> _chunkNoteJson(ChunkNote n) {
+  return {
+    'syndromeId': n.syndromeId,
+    'description': n.description,
+    'evidence': n.evidence,
+    'severity': n.severity,
+    // ★ 必须带进 merge（ADR-C153 §3）：不带则 merge 读到的仍是一堆
+    // 肯定结论，分片侧的「我判不了」就在这一步丢失 ⇒ 又一个声明≠生效。
+    'uncertain': n.uncertain,
+    // ★ 必须带进 merge（T-20261024-06 形态甲，对位 uncertain ADR-C153 §3）：
+    // 不带则分片侧的「判了否」在这一步丢失 ⇒ 长期视图拿不到「本轮还考虑过什么」。
+    'excluded': n.excluded.map(_excludedEntryJson).toList(),
+    // ★ 例外指认随 notes 透传（T-20261025-10 Q2 丙）：merge 不重判、
+    // 不去重，只让长期视图拿得到「例外成立在本块哪几句」。
+    if (n.exceptionQuotes.isNotEmpty) 'exception_quotes': n.exceptionQuotes,
+  };
+}
+
+/// 单条排除记录 → 合并面 JSON（R-019：从 `_chunkNoteJson` 拆出）。
+///
+/// ★ 撤销改道三字段随 excluded 透传（T-20261031-12）：不带则 merge 读到的
+/// 仍是没有出口的「判了否」⇒ 撤销行在合并之后只剩空洞（声明≠生效）。
+Map<String, dynamic> _excludedEntryJson(ParsedExclusion e) {
+  final hasRedirect =
+      e.redirectSyndromeId != null ||
+      e.redirectActionId != null ||
+      e.redirectText != null;
+  return {
+    'syndrome_id': e.syndromeId,
+    'reason': e.reason,
+    if (hasRedirect)
+      'redirect': {
+        if (e.redirectSyndromeId != null) 'syndrome_id': e.redirectSyndromeId,
+        if (e.redirectActionId != null) 'action_id': e.redirectActionId,
+        if (e.redirectText != null) 'text': e.redirectText,
+      },
+  };
+}
+
 /// 把分片分析结果组装成 merge prompt 里的「## 分片 N」笔记块列表。
 ///
 /// 抽出为独立函数（职责级）：组装笔记是**纯数据变换**，与 merge prompt
@@ -588,28 +629,7 @@ List<String> _buildChunkNotesBlocks(
   for (var i = 0; i < chunkResults.length; i++) {
     final r = chunkResults[i];
     if (r.success && r.notes.isNotEmpty) {
-      final notes = r.notes
-          .map(
-            (n) => {
-              'syndromeId': n.syndromeId,
-              'description': n.description,
-              'evidence': n.evidence,
-              'severity': n.severity,
-              // ★ 必须带进 merge（ADR-C153 §3）：不带则 merge 读到的仍是一堆
-              // 肯定结论，分片侧的「我判不了」就在这一步丢失 ⇒ 又一个声明≠生效。
-              'uncertain': n.uncertain,
-              // ★ 必须带进 merge（T-20261024-06 形态甲，对位 uncertain ADR-C153 §3）：
-              // 不带则分片侧的「判了否」在这一步丢失 ⇒ 长期视图拿不到「本轮还考虑过什么」。
-              'excluded': n.excluded
-                  .map((e) => {'syndrome_id': e.syndromeId, 'reason': e.reason})
-                  .toList(),
-              // ★ 例外指认随 notes 透传（T-20261025-10 Q2 丙）：merge 不重判、
-              // 不去重，只让长期视图拿得到「例外成立在本块哪几句」。
-              if (n.exceptionQuotes.isNotEmpty)
-                'exception_quotes': n.exceptionQuotes,
-            },
-          )
-          .toList();
+      final notes = r.notes.map(_chunkNoteJson).toList();
       // 用自研 _encodeJson 序列化分片笔记（对齐 JSON.stringify 语义；
       // 不用 toString()——其对中文/引号/换行会产生非 JSON 输出）。
       final encoded = '{"notes": ${_encodeJson(notes)}}';
@@ -1211,23 +1231,36 @@ Future<String> _runMergePhase({
 /// 而失效方向恰好是「把判不了的当成判得了」——正是要防的那一侧。
 ///
 /// 只认肯定语义（true / "true" / "True" / "1" / 1）；其余一律 false（缺省）。
-/// 分片 excluded 列表安全读（T-20261024-06 形态甲）。循批 2 轮次级 `_parseExcludedList`
-/// 同型三件套：null / 非 List ⇒ const []；元素类型守卫（非 Map 丢弃）；
-/// syndrome_id / reason 非 String 按空串。不抛异常（本函数在 `_parseChunkNotes` 的
-/// try 内，抛异常会连带丢掉整块笔记——与 `_parseUncertainFlag` 同纪律）。
-List<ParsedExclusion> _parseChunkExcludedList(Object? raw) {
-  if (raw is! List) return const <ParsedExclusion>[];
-  return raw
-      .whereType<Map<String, dynamic>>()
-      .map(
-        (e) => ParsedExclusion(
-          syndromeId: e['syndrome_id'] is String
-              ? e['syndrome_id'] as String
-              : '',
-          reason: e['reason'] is String ? e['reason'] as String : '',
-        ),
-      )
-      .toList();
+/// 分片 excluded 列表安全读（T-20261024-06 形态甲）+ 撤销改道净化（T-20261031-12）。
+///
+/// 循批 2 轮次级 `_parseExcludedList` 同型三件套：null / 非 List ⇒ const []；
+/// 元素类型守卫（非 Map 丢弃）；syndrome_id / reason 非 String 按空串。不抛异常
+/// （本函数在 `_parseChunkNotes` 的 try 内，抛异常会连带丢掉整块笔记——与
+/// `_parseUncertainFlag` 同纪律）。
+///
+/// 改道三字段由 [sanitizeRedirect] 净化：**失配即丢该字段、不丢整条 note**
+/// （报批稿 §2.4，对齐 25-10 丙裁）；失配说明随 traces 回传，由调用方写进
+/// description 留痕——不给静默丢弃。
+typedef _ChunkExcluded = ({List<ParsedExclusion> items, List<String> traces});
+
+_ChunkExcluded _parseChunkExcludedList(Object? raw) {
+  if (raw is! List) {
+    return (items: const <ParsedExclusion>[], traces: const <String>[]);
+  }
+  final traces = <String>[];
+  final items = raw.whereType<Map<String, dynamic>>().map((e) {
+    final sid = e['syndrome_id'] is String ? e['syndrome_id'] as String : '';
+    final f = sanitizeRedirect(e['redirect'], ownerSyndromeId: sid);
+    traces.addAll(f.traces);
+    return ParsedExclusion(
+      syndromeId: sid,
+      reason: e['reason'] is String ? e['reason'] as String : '',
+      redirectSyndromeId: f.syndromeId,
+      redirectActionId: f.actionId,
+      redirectText: f.text,
+    );
+  }).toList();
+  return (items: items, traces: traces);
 }
 
 /// 不抛异常：本函数在 `_parseChunkNotes` 的 try 内，抛异常会连带丢掉整块笔记。
@@ -1272,6 +1305,12 @@ List<ChunkNote> _parseChunkNotes(String jsonStr, String chunk) {
                   '$description（例外引文未在本片原文找到，已剔除 '
                   '${rawQuotes.length - quotes.length} 条）';
             }
+            // 撤销改道失配留痕（T-20261031-12）：只丢字段、不丢整条 note。
+            final excluded = _parseChunkExcludedList(n['excluded']);
+            if (excluded.traces.isNotEmpty) {
+              description =
+                  '$description（改道字段失配已剔除：${excluded.traces.join('；')}）';
+            }
             return ChunkNote(
               syndromeId: n['syndromeId'] as String? ?? '',
               description: description,
@@ -1280,7 +1319,7 @@ List<ChunkNote> _parseChunkNotes(String jsonStr, String chunk) {
                   const [],
               severity: n['severity'] as String? ?? 'L1',
               uncertain: _parseUncertainFlag(n['uncertain']),
-              excluded: _parseChunkExcludedList(n['excluded']),
+              excluded: excluded.items,
               exceptionQuotes: quotes,
             );
           })

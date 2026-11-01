@@ -2,6 +2,8 @@
 // 教学类型定义 — 复刻 yuesheng-android/src/types/db.ts（调度链路所需部分）
 // ─────────────────────────────────────────────────────────────
 
+import '../services/syndrome_redirect.dart'; // T-20261031-12：改道字段净化（同 types→services 先例 display_types.dart）
+
 /// 教学阶段（P 系）
 enum TeachingPhase {
   p0Engage('P0_ENGAGE'),
@@ -429,22 +431,50 @@ class ParsedExclusion {
   /// 一句话排除理由（可选）。空串 = 无理由，渲染时不展示理由行。
   final String reason;
 
-  const ParsedExclusion({required this.syndromeId, this.reason = ''});
+  /// 撤销改道（T-20261031-12）：转向另一症候的训练 / 转向同域动作训练 / 学员面
+  /// 一句话（逐字取自改道登记表）。三者皆空 = 未指认（省略与空串同义，25-10 甲裁）。
+  final String? redirectSyndromeId;
+  final String? redirectActionId;
+  final String? redirectText;
+
+  const ParsedExclusion({
+    required this.syndromeId,
+    this.reason = '',
+    this.redirectSyndromeId,
+    this.redirectActionId,
+    this.redirectText,
+  });
 
   factory ParsedExclusion.fromJson(Map<String, dynamic> json) {
+    final sid = json['syndrome_id'] is String
+        ? json['syndrome_id'] as String
+        : '';
+    final reason = json['reason'] is String ? json['reason'] as String : '';
+    // 改道三字段：失配即丢该字段、不丢整条排除记录（净化逻辑住派生载体）。
+    final f = sanitizeRedirect(json['redirect'], ownerSyndromeId: sid);
     return ParsedExclusion(
-      syndromeId: json['syndrome_id'] is String
-          ? json['syndrome_id'] as String
-          : '',
-      reason: json['reason'] is String ? json['reason'] as String : '',
+      syndromeId: sid,
+      reason: reason,
+      redirectSyndromeId: f.syndromeId,
+      redirectActionId: f.actionId,
+      redirectText: f.text,
     );
   }
 
   // W-15-B 约定：reason 空串不落 key（往返稳定，同 reader_impact 口径）。
-  Map<String, dynamic> toJson() => {
-    'syndrome_id': syndromeId,
-    if (reason.isNotEmpty) 'reason': reason,
-  };
+  // 改道三字段为空 = 未指认 ⇒ 整个 redirect 不落 key（同一口径）。
+  Map<String, dynamic> toJson() {
+    final redirect = <String, dynamic>{
+      if (redirectSyndromeId != null) 'syndrome_id': redirectSyndromeId,
+      if (redirectActionId != null) 'action_id': redirectActionId,
+      if (redirectText != null) 'text': redirectText,
+    };
+    return {
+      'syndrome_id': syndromeId,
+      if (reason.isNotEmpty) 'reason': reason,
+      if (redirect.isNotEmpty) 'redirect': redirect,
+    };
+  }
 }
 
 /// 活跃症候视图（focus-resolver 用）
