@@ -593,9 +593,10 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     name: '重复用词/基础语病',
     shortName: '重复用词/基础语病',
     keyword: '重复用词/基础语病',
-    oneLine: '相邻字重复/连续标点/高频词反复；主谓搭配不当、成分残缺等基础文法问题',
+    oneLine: '相邻字重复/连续标点/高频词反复；错别字误字（同音/形近致非词）、误插结构助词；主谓搭配不当、成分残缺等基础文法问题',
     typeLine: '表达不够精炼，基础语法失稳',
-    trainingLine: '相邻字重复/连续标点/高频词反复；主谓搭配不当、时态跳脱、成分残缺等基础文法问题分散注意力',
+    trainingLine:
+        '相邻字重复/连续标点/高频词反复；错别字误字（同音/形近致非词）、误插结构助词；主谓搭配不当、时态跳脱、成分残缺等基础文法问题分散注意力',
     type: SyndromeType.expressiveDeficit,
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,

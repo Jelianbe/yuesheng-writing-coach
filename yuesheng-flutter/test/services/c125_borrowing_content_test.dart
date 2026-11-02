@@ -84,6 +84,18 @@ void main() {
       expect(p018, isNotNull);
       expect(p018!.oneLine, isNot(contains('指代混乱')));
       expect(p018.trainingLine, isNot(contains('指代不清')));
+      // ★ T-20261102-01 B1c 批 1 内容牙（J1/J2）：错字/误字授权措辞在位
+      // （报批稿 §6 · R-027 舰长 2026-11-02 23:21「都批」；防后续重构误删）。
+      expect(
+        p018.oneLine,
+        contains('错别字误字'),
+        reason: 'P018 oneLine 缺错字/误字授权措辞（T-20261102-01 B1c 改动 1）',
+      );
+      expect(
+        p018.trainingLine,
+        contains('错别字误字'),
+        reason: 'P018 trainingLine 缺错字/误字授权措辞（T-20261102-01 B1c 改动 3）',
+      );
     });
 
     test('#9 P034 name 仍为「代词指代不清/零回指过载」（未被误删/误改）', () {

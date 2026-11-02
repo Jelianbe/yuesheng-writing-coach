@@ -68,8 +68,15 @@ const String kSuffixFnv = 'b4ae395807abdc6';
 //   ⚠️ **force 组 = 不动项，本批仍不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变
 //   （该组 `loadedSkillIds` 不含 `coaching-actions-v2` ⇒ 天然负对照）。
 //   fnv 取自 `UPDATE_SNAPSHOTS=true` 重冻时**运行时打印串**，16 位**不补零**。
-const String kDiagP1Fnv = '356f25a9f384c841';
-const String kDiagYueFnv = '53f8ec0e7c537702';
+// ★ 2026-11-02（T-20261102-01 B1c 批 1 · R-027 舰长 2026-11-02 23:21「都批」）再重钉：
+//   diagnosis 两组各 **+23**（55814/356f25a9f384c841 → **55837/5c9cdb65bb28f27d**；
+//     57597/53f8ec0e7c537702 → **57620/6c53633dadd89816**）。
+//   方向 = `syndrome_registry.dart` P018 oneLine/trainingLine 各插
+//   「错别字误字（同音/形近致非词）、误插结构助词；」（+23 码元）随 L2 诊断索引进两组。
+//   ⚠️ **force 组 = 不动项，本批仍不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变
+//   （该组 `loadedSkillIds` 不含 L2 索引 ⇒ 天然负对照）。
+const String kDiagP1Fnv = '5c9cdb65bb28f27d';
+const String kDiagYueFnv = '6c53633dadd89816';
 // force 组红线：先验 +0 只对**当时那一批**成立；本批是正文清扫 ⇒ 随组同降。
 const String kForceFnv = '37644edbf2af71a8';
 

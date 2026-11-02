@@ -621,8 +621,15 @@ REDLINE = {
     # （`skillContent['coaching-actions-v2']` 仍 3847 / 46dec3e2b4b76fd）。
     # ⚠️ 本批是**删除字符**，**不是额度回收** —— 本表是等值钉，下移后仍等于当下实测
     # （pin==actual，余量 +0）；不动库常量 ⇒ 不撞 R-027 铁律 5。
-    'diagnosis_yuesheng': 57597,
-    'diagnosis_p1_yuesheng': 55814,
+    # ★ 2026-11-02 第二十一次重贴实测值（diagnosis 两组各 **+23**
+    # （57597→**57620** / 55814→**55837**），force 组 **不动**（66306 实测零漂移 ——
+    # force 场景不加载 L2 诊断索引，是本批的天然负对照））。
+    # 方向 = T-20261102-01 B1c 批 1（改动 1+3 · R-027 舰长 2026-11-02 23:21「都批」）：
+    # 改动 1 使 syndrome-diagnosis-index 指纹 6320→6343（+23）随 L2 索引进两组；
+    # 改动 3 使 training-templates-index 2682→2705（+23）进 training 组（无红线上限，
+    # 不在本表）。等值钉 pin==actual，余量 +0。
+    'diagnosis_yuesheng': 57620,
+    'diagnosis_p1_yuesheng': 55837,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
@@ -1137,7 +1144,19 @@ CONST_REDLINE = {
     # test/services/prompt_const_anchor_test.dart 写模式运行时打印（len=8693 fnv=3c0d63e1bfa3c51a）。
     # 对照组 chunkExceptionGuideBlock / kDiagnosisProtocolSuffix / chunkWindowMetaSample
     # 三项逐键实测**零变化**（2998 / 1038 / 32）⇒ 本次提额只落在分块 system 面一处。
-    'kChunkSystemPrompt': (8693, '3c0d63e1bfa3c51a'),
+    # ★ 2026-11-02 第二十五次重钉：8693→**8716**（**+23**），
+    # fnv 3c0d63e1bfa3c51a→**62cf4606f04c5a86**。
+    # 方向 = T-20261102-01 B1c 批 1（改动 1+3 · R-027 报批稿
+    # `.ai/reports/2026-11-02-报批稿-P018语病判据面错字入面.md` 舰长 2026-11-02 23:21「都批」）：
+    # `syndrome_registry.dart` P018 oneLine/trainingLine 各插「错别字误字（同音/形近致非词）、
+    # 误插结构助词；」（+23 码元/条）；oneLine 经 `chunk_prompt.dart:201` 判定要点行进
+    # 分块链 system prompt ⇒ kChunkSystemPrompt +23。
+    # ⚠️ 等值钉（len+fnv）照抄写模式运行时打印，不补零。
+    # 值来源 = UPDATE_SNAPSHOTS=true flutter test
+    # test/services/prompt_const_anchor_test.dart 写模式运行时打印（len=8716 fnv=62cf4606f04c5a86）。
+    # 对照组 chunkExceptionGuideBlock / kDiagnosisProtocolSuffix / chunkWindowMetaSample
+    # 三项逐键实测**零变化**（2998 / 1038 / 32）。
+    'kChunkSystemPrompt': (8716, '62cf4606f04c5a86'),
     # ★ 2026-10-31 第二十二次重钉：3082→3081（−1），fnv 24ab03bbc9115ff8→582b0096adae57d5。
     # 同批同因：例外指引块内该行旧名去「症」（`chunk_prompt.dart` 内 `_kChunkExceptionGuide`，
     # 块坐标随 T-20261025-06 件2 整段搬入本文件）。值来源同上（len=3081）。
