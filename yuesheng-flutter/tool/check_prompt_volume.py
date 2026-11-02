@@ -861,10 +861,16 @@ CHUNK_MSG = os.path.join(ROOT, 'test', 'snapshots', 'chunk_message_anchor.json')
 #   `DECISIONS §4-407`，头注全局「红线沿革」**第二十二次**）：9,687 → **9,682**
 #   （三例同 Δ **−5**）。来源 = 首轮判据块注入面里 5 处硬编码旧名（末字「症」）
 #   随正文清扫下移。⚠️ **删除字符，非额度回收**；本表只钉 len，下移后仍 pin==actual。
+# ★ 2026-11-02 第二十六次重贴实测值（T-20261102-01 B1c 批 2 · R-027 舰长
+#   2026-11-02 23:21「都批」）：9,682 → **9,921**（三例同 Δ **+239** =
+#   manual P018 段改动 2 正文 +238〔触发信号行尾追加 103 + 例外三段 bullet 135〕
+#   + 例外 bullet 行装配换行 1）流入首轮判据块旁路 system 注入面。
+#   值来源 = UPDATE_SNAPSHOTS=true 重冻 message_sequence_anchor 后实测（fnv
+#   4d3657e6dac2756b，五诊断 case 同值互证）；本表只钉 len，pin==actual。
 BYPASS_REDLINE = {
-    'p1_yuesheng_diagnosis[1]': 9682,
-    'p2_yuesheng_diagnosis[1]': 9682,
-    'p2_yuesheng_diagnosis_fulltext[1]': 9682,
+    'p1_yuesheng_diagnosis[1]': 9921,
+    'p2_yuesheng_diagnosis[1]': 9921,
+    'p2_yuesheng_diagnosis_fulltext[1]': 9921,
 }
 
 
