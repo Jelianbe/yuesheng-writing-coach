@@ -27,6 +27,11 @@
 //   ★ 2026-10-29 **H8**（`T-20261027-01` 批八）：该串不再与正文拼在同一条 user
 //   消息里 ⇒ 键名随对象改名 `chunkUserMessageSample → chunkWindowMetaSample`，
 //   并另加形状牙 **H1–H4**（角色序列 / 正文纯净 / 块序不重复 / 主 system 不动）。
+// ★ 2026-11-03 追加 **D1/D2/P1** 三键（`T-20261102-01` 批 **B2c**）：发现层
+//   **未接线**三常量（`discovery_prompt.dart`，报批稿 §2 逐字授权面）。
+//   公开常量直接引用 = 量运行时字节；字节级钉值由快照三键承担，
+//   内容牙 **J1–J4** + 负向护栏见 `_discoveryCheck()`。接线批若动这三块，
+//   本锚即红（预期内重冻走报批）。
 
 // ## `chunkExceptionGuideBlock` 怎么取（为什么不是读源码文件）
 //
@@ -78,6 +83,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/discovery_prompt.dart';
 import 'package:writingcoach/services/progressive_diagnosis.dart';
 
 const String kAnchorPath = 'test/snapshots/prompt_const_anchor.json';
@@ -196,6 +202,10 @@ CollectedPromptConsts _buildCurrent() {
           chunkCount: kPayloadSampleCount,
         ),
       ),
+      // B2c（T-20261102-01）：发现层三常量（**未接线**资产，公开常量直接引用）。
+      'D1': _textAnchor(kDiscoveryDirectionSet),
+      'D2': _textAnchor(kDiscoveryDirectionDiscipline),
+      'P1': _textAnchor(kCandidatePromotionGate),
       'meta': {
         'exceptionIds': ids,
         'exceptionLineCount': exceptionLineCount,
@@ -294,6 +304,9 @@ const List<String> kPinnedKeys = [
   'chunkExceptionGuideBlock',
   'kDiagnosisProtocolSuffix',
   'chunkWindowMetaSample',
+  'D1',
+  'D2',
+  'P1',
 ];
 
 // ── H9 payload 样张入参（固定值 ⇒ 样张可逐字节比对）──
@@ -592,6 +605,63 @@ void _p003FidBranchCheck(String guideText) {
   }
 }
 
+/// 内容牙 **J1–J4** + 负向护栏（`T-20261102-01` 批 **B2c** · 报批稿 §6 ·
+/// 舰长 2026-11-03「按建议全批」）。
+///
+/// 打在 `discovery_prompt.dart` 三个**未接线**常量的运行时值上（公开常量直接
+/// 引用 = 量运行时字节，非源码正则）。字节级钉值由快照 D1/D2/P1 三键承担；
+/// 本函数钉**内容形态**：
+///   J1 方向集标题行在位 · J2 三出口枚举 + fail-closed 兜底在位（切片 =
+///   P1 常量本体，防 D1/D2 内同形句掩盖——坑 1 纪律）· J3 聚合条在位 ·
+///   J4 无锚点拦截在位。**J2 ∥ J4 成对**（报批稿 §6），不得只落其一。
+/// 负向护栏（预期恒绿）：无症状候 id 字面（P0xx 模式）、无修改方案动词面
+/// （温稿 R1 机器化）、无「这里有对应训练」承诺句（温稿 §2.2）。
+///
+/// ★ 这不是行为牙：常量未接线，本批零行为变化（报批稿 §7-1）；
+///   拦不住「接线后模型照旧乱判」——后者挂 U4 行为采样。
+void _discoveryCheck() {
+  const String d1 = kDiscoveryDirectionSet;
+  const String d2 = kDiscoveryDirectionDiscipline;
+  const String p1 = kCandidatePromotionGate;
+
+  // J1 D1 方向集标题行在位。
+  if (!d1.contains('发现方向（系统给定，不要自选方向，也不要新增方向）')) {
+    fail('内容牙 J1 不过：D1 缺方向集标题行（方向集被删/改写）。');
+  }
+  // J2 三出口枚举完整 + fail-closed 兜底（P1 切片内断言）。
+  for (final m in const [
+    '出口一，晋升为候选假设',
+    '出口二，登记为观察记录',
+    '出口三，登记为未归类现象',
+    '按出口二登记并写明原因',
+  ]) {
+    if (!p1.contains(m)) {
+      fail('内容牙 J2 不过：P1 缺出口枚举/兜底「$m」（三出口闸不完整）。');
+    }
+  }
+  // J3 聚合条在位（D2 切片内断言）。
+  for (final m in const ['合并为一条上报', '不得混并']) {
+    if (!d2.contains(m)) {
+      fail('内容牙 J3 不过：D2 缺聚合条要素「$m」（聚合上报形态被删）。');
+    }
+  }
+  // J4 无锚点拦截在位（P1 切片内断言；与 J2 成对）。
+  if (!p1.contains('无逐字原句锚点的印象不进任何出口')) {
+    fail('内容牙 J4 不过：P1 缺无锚点拦截句（幻觉滤网被删）。');
+  }
+
+  // ── 负向护栏（预期恒绿）──
+  final idHits = RegExp(r'P\d{3}').allMatches('$d1$d2$p1').length;
+  if (idHits > 0) {
+    fail('负向护栏不过：发现层常量出现症候 id 字面（P0xx 模式 $idHits 处）。');
+  }
+  for (final banned in const ['修正', '改正', '替换', '给出正确写法', '建议改法', '这里有对应训练']) {
+    if (d1.contains(banned) || d2.contains(banned) || p1.contains(banned)) {
+      fail('负向护栏不过：发现层常量出现禁用词面「$banned」（修改方案/训练承诺类）。');
+    }
+  }
+}
+
 void main() {
   test('常量级 prompt 体积锚点：三块常量字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
@@ -626,6 +696,7 @@ void main() {
     _p003WindowBranchCheck(collected.chunkPrompt, collected.guideText);
     _p003FidBranchCheck(collected.guideText);
     _payloadCheck();
+    _discoveryCheck();
 
     // ── ② 显式重建通路（UPDATE_SNAPSHOTS=true）──────────────────────────
     // 允许写，但**必须打告警**：本分支不做任何比对，写出的就是新判据。
