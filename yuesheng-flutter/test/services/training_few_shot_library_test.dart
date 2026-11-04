@@ -136,6 +136,48 @@ void main() {
       // 用各症候独有原文片段断言命中
       expect(getTrainingFewShot(['P018']), contains('往事往事'));
       expect(getTrainingFewShot(['P018']), contains('。。'));
+      // ── T-20261103-01 P018 内容牙（报批稿 §6 J1–J3；R-027 舰长 2026-11-04 批）
+      // getTrainingFewShot(['P018']) 即 P018 块切片，同形句不会从其它症候块混入。
+      final p018Fs = getTrainingFewShot(['P018']);
+      // J1 标题牙：子情形 D（错字/误字）整段在位
+      expect(
+        p018Fs,
+        contains('子情形 D：错字/误字'),
+        reason: 'P018 few-shot 缺「子情形 D：错字/误字」标题（报批稿 §6 J1）',
+      );
+      // J2 三错字词面牙：问题版含三错字（例句 + 问题点行引用）
+      expect(p018Fs, contains('座在'), reason: 'J2 问题版缺错字「座在」');
+      expect(p018Fs, contains('历害'), reason: 'J2 问题版缺错字「历害」');
+      expect(p018Fs, contains('稍侯'), reason: 'J2 问题版缺错字「稍侯」');
+      // J2 改善版段（「正错字」为子情形 D 改善版标题专属锚）：三正字在位且不残留错字
+      final dIdx = p018Fs.indexOf('子情形 D：错字/误字');
+      expect(dIdx, greaterThan(0), reason: 'J2 子情形 D 切片锚点失效');
+      final dBlock = p018Fs.substring(dIdx);
+      final gIdx = dBlock.indexOf('正错字');
+      expect(gIdx, greaterThan(0), reason: 'J2 改善版段锚点「正错字」失效');
+      final gBlock = dBlock.substring(gIdx);
+      expect(gBlock, contains('坐在'), reason: 'J2 改善版缺正字「坐在」');
+      expect(gBlock, contains('厉害'), reason: 'J2 改善版缺正字「厉害」');
+      expect(gBlock, contains('稍候'), reason: 'J2 改善版缺正字「稍候」');
+      expect(gBlock, isNot(contains('座在')), reason: 'J2 改善版残留错字「座在」');
+      expect(gBlock, isNot(contains('历害')), reason: 'J2 改善版残留错字「历害」');
+      expect(gBlock, isNot(contains('稍侯')), reason: 'J2 改善版残留错字「稍侯」');
+      // J3 GT 反 contains 牙：P018 块全文不得出现验收 GT 词面（防验收泄漏；出现即废稿）
+      expect(
+        p018Fs,
+        isNot(contains('思想受到了强烈的的冲击')),
+        reason: 'J3 P018 块泄漏验收 GT 词面（防验收泄漏）',
+      );
+      expect(
+        p018Fs,
+        isNot(contains('虽然并不怎吗高明')),
+        reason: 'J3 P018 块泄漏验收 GT 词面（防验收泄漏）',
+      );
+      expect(
+        p018Fs,
+        isNot(contains('难免会想养条狗里慰藉和消遣')),
+        reason: 'J3 P018 块泄漏验收 GT 词面（防验收泄漏）',
+      );
       expect(getTrainingFewShot(['P013']), contains('保护费'));
       expect(getTrainingFewShot(['P013']), contains('哪只手打断的'));
       expect(getTrainingFewShot(['P019']), contains('改变一切'));
