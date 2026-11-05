@@ -2181,4 +2181,262 @@ void main() {
       expect(camel.formStructure, 'narrative');
     });
   });
+
+  // ───────────────────────────────────────────────────────────
+  // T-20261105-03：nextFocus 呈现侧（三级贯通的最末一级）
+  //
+  // 真源（现场重取）：
+  //   widget 字段   `lib/widgets/diagnosis_card.dart:179`（`:197` ctor 参数）
+  //   JSON 通道     `:226` `nextFocus: payload.nextFocus`（fromMessageContent）
+  //   标签常量      `:106` `_CardText.nextFocusLabel = '下一步重点：'`
+  //   有效读点      `:642-647` getter `_nextFocusLine`，宿主 = `widget`
+  //   渲染位        `:522-526` 展开区尾部，位于「本轮小结」之前
+  //   DTO 往返      `message_card_service.dart:139`（fromJson snake/camel 双读）/ `:173`（toJson 只落 `next_focus`）
+  //
+  // 断言口径（不用 byType 计数，全部落在**渲染文本**上）：
+  //   缺席断言一律用 `textContaining('下一步重点：')` —— 子串否定而非等值否定
+  //   （等值否定在「标签还在、正文换成了别的字段」时不红，见
+  //    flutter-widget-test-false-green ⑦）。每条缺席断言前都有阳性对照。
+  //
+  // 负向实测（每条变异只改一处、只在行级；原预判保留，实测差异已标注）：
+  //   ③ `_nextFocusLine` 的 `widget.nextFocus?.trim()` → `widget.focusReason?.trim()`
+  //      原预判「C2/C3/C4/C5/C6 红，C1 绿」⇒ **实测命中 5/5**，
+  //      **另有 1 条预判外转红**：既有 `批次 D-B D1 有 focus_reason：归因随卡片展开即可见`
+  //      —— 机制：该变异让同一段 focusReason 文本在卡片里渲染**两次**，
+  //      而 D1 用的是 `findsOneWidget` ⇒ 撞「Found 2 widgets」。
+  //      ⇒ 这条属**覆盖重叠**，不得当「D1 也在守 nextFocus」的反证据。
+  //   ③b 同一读点 → 常量串 `'变异体下步焦点'`（排除上面的同串碰撞）⇒ 实测
+  //      C2/C3/C4/C5/C6 红（5/5 命中），**预判外转红 1 条**：既有
+  //      `G-3 多组症候…组分隔块就位` —— 机制是 **RenderFlex overflow 7.0px**
+  //      （默认 800×600 视口 + 那套多组卡片夹具，多一行即越界），属布局伪红，
+  //      与 nextFocus 语义无关；同时说明该类大卡片形状在测试视口下余量已很薄。
+  //   ④ toJson 键名 `next_focus` → `nextFocusKey` ⇒ **实测**恰好 C1/C6 红，C2–C5 绿。
+  // ───────────────────────────────────────────────────────────
+  group('T-20261105-03 下一步重点接线', () {
+    DiagnosisCard cardWith({
+      String? nextFocus,
+      String? focusReason,
+      String? feedbackSummary,
+    }) {
+      return DiagnosisCard(
+        syndromeCount: 1,
+        syndromes: const [
+          DiagnosisSyndromeCard(
+            syndromeId: 'P002',
+            name: '信息倾泻',
+            severity: 'L2',
+            evidenceCount: 1,
+            explanation: '开篇连续三段交代设定',
+          ),
+        ],
+        suggestedActions: const [],
+        confidence: 0.8,
+        defaultExpanded: true,
+        nextFocus: nextFocus,
+        focusReason: focusReason,
+        feedbackSummary: feedbackSummary,
+      );
+    }
+
+    test('C1 DTO 往返：next_focus 逐字一致；空串不落 key（往返稳定）', () {
+      const sentence = '下一轮把第三段的两句对话拆开，删掉中间那句解释性独白';
+      final payload = DiagnosisResultCardPayload(
+        syndromeCount: 0,
+        syndromes: const [],
+        suggestedActions: const [],
+        confidence: 0.8,
+        diagnosisId: 'msg-1',
+        nextFocus: sentence,
+      );
+      final json = payload.toJson();
+      expect(
+        json['next_focus'],
+        sentence,
+        reason: 'toJson 键名必须是 snake（与生产消息 JSON 存量口径一致）；改名/漏写 ⇒ 红',
+      );
+      expect(
+        DiagnosisResultCardPayload.fromJson(json).nextFocus,
+        sentence,
+        reason: '往返逐字一致（防 trim / 截断）',
+      );
+
+      // 空串：不落 key，读回为 null（与 focusReason 同款往返约定）
+      final empty = DiagnosisResultCardPayload(
+        syndromeCount: 0,
+        syndromes: const [],
+        suggestedActions: const [],
+        confidence: 0.8,
+        diagnosisId: 'msg-2',
+        nextFocus: '',
+      );
+      expect(empty.toJson().containsKey('next_focus'), isFalse);
+      expect(
+        DiagnosisResultCardPayload.fromJson(empty.toJson()).nextFocus,
+        matcher.isNull,
+      );
+
+      // camel 写法的存量/手工 JSON 也认（同 rootCauseAnalysis 宽容口径）
+      expect(
+        DiagnosisResultCardPayload.fromJson({
+          'syndromeCount': 0,
+          'syndromes': const <Map<String, dynamic>>[],
+          'suggestedActions': const <String>[],
+          'confidence': 0.8,
+          'diagnosisId': 'msg-3',
+          'nextFocus': 'camel 写法',
+        }).nextFocus,
+        'camel 写法',
+      );
+    });
+
+    testWidgets('C2 非空 ⇒ 「下一步重点：」行与正文逐字可见，且排在「本轮小结」之前', (tester) async {
+      const sentence = '下一轮把第三段的两句对话拆开';
+      await tester.pumpWidget(
+        _wrap(
+          cardWith(
+            nextFocus: sentence,
+            focusReason: '本轮焦点选在信息密度上',
+            // 「本轮小结」同为尾部槽位 ⇒ 给值才有位置锚点可比较
+            feedbackSummary: '本轮主要是信息密度问题',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 阳性对照：卡片与展开区确实渲染了（否则下面的断言没有意义）
+      expect(find.text('本次诊断'), findsOneWidget);
+      expect(find.textContaining('开篇连续三段交代设定'), findsOneWidget);
+      // 位置锚点必须在场，否则 indexOf 返回 -1，顺序断言会变成假判据
+      expect(find.text('本轮小结'), findsOneWidget);
+
+      // ★ 断言落点是**渲染出的文本**，不是 widget 类型
+      final line = find.text('下一步重点：$sentence');
+      expect(
+        line,
+        findsOneWidget,
+        reason:
+            '标签 + 正文必须逐字出现在同一个 Text 里'
+            '（标签被改字 / 正文被改写 / 该行未渲染 ⇒ 红）',
+      );
+
+      // 位置口径：位于「本轮小结」之前（先给下步焦点，再收束）
+      final texts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data)
+          .whereType<String>()
+          .toList();
+      expect(
+        texts.indexOf('下一步重点：$sentence'),
+        lessThan(texts.indexOf('本轮小结')),
+        reason: '顺序被挪到「本轮小结」之后 ⇒ 红',
+      );
+    });
+
+    testWidgets('C3 nextFocus=null ⇒ 该行零命中（阳性对照证明卡片渲染了）', (tester) async {
+      await tester.pumpWidget(_wrap(cardWith(focusReason: '本轮焦点选在信息密度上')));
+      await tester.pumpAndSettle();
+
+      // 阳性对照：卡片渲染 + 「归因」块在（证明展开区真的构建了）
+      expect(find.text('本次诊断'), findsOneWidget);
+      expect(find.text('归因'), findsOneWidget);
+      expect(
+        find.textContaining('下一步重点：'),
+        findsNothing,
+        reason:
+            'null 时不得渲染该行；用子串否定 —— 若实现改读别的字段'
+            '（标签在、正文串了），等值否定不会红，本条会',
+      );
+    });
+
+    testWidgets('C4 空串 / 纯空白 ⇒ 该行零命中（不占位、不渲染空标签）', (tester) async {
+      for (final blank in const ['', '   ', '\n\t ']) {
+        await tester.pumpWidget(
+          _wrap(cardWith(nextFocus: blank, focusReason: '本轮焦点选在信息密度上')),
+        );
+        await tester.pumpAndSettle();
+
+        // 阳性对照：卡片与「归因」在
+        expect(find.text('本次诊断'), findsOneWidget);
+        expect(find.text('归因'), findsOneWidget);
+        expect(
+          find.textContaining('下一步重点：'),
+          findsNothing,
+          reason: '空白串（$blank）必须归一为「不渲染」，否则会渲染出光秃秃的标签',
+        );
+      }
+    });
+
+    testWidgets('C5 160 字边界：恰好 160 不省略，161 截断为前 160 + 省略号', (tester) async {
+      const ch = '长'; // 单字，按 codeUnit 重复构造定长串
+
+      // 恰好 160 字 ⇒ 原样，无省略号
+      final exact = ch * 160;
+      expect(exact.length, 160);
+      await tester.pumpWidget(_wrap(cardWith(nextFocus: exact)));
+      await tester.pumpAndSettle();
+      expect(find.text('下一步重点：$exact'), findsOneWidget);
+      expect(
+        find.text('下一步重点：$exact…'),
+        findsNothing,
+        reason: '160 字不该被截断（判据写成 `< 160` ⇒ 此处红）',
+      );
+
+      // 161 字 ⇒ 前 160 + `…`
+      final over = ch * 161;
+      expect(over.length, 161);
+      await tester.pumpWidget(_wrap(cardWith(nextFocus: over)));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('下一步重点：${ch * 160}…'),
+        findsOneWidget,
+        reason: '截断口径同 _focusReasonText：保留前 160 字加省略号（不改写）',
+      );
+      expect(
+        find.text('下一步重点：$over'),
+        findsNothing,
+        reason: '超长原文整句不得整段渲染（撑爆一行）',
+      );
+    });
+
+    testWidgets('C6 消息通道（fromMessageContent）：content 里的 next_focus 能渲染出来', (
+      tester,
+    ) async {
+      // 这条走的是生产路径：DB 里的 Message.content（JSON 字符串）
+      // → DiagnosisResultCardPayload.fromJson → DiagnosisCard.fromMessageContent
+      // ⇒ 证明「键名 / 接线 / 有效读点」三者串起来是通的，不只是直接构造 widget。
+      const sentence = '下一轮把第三段的两句对话拆开';
+      final content = jsonEncode(
+        DiagnosisResultCardPayload(
+          syndromeCount: 1,
+          syndromes: const [
+            DiagnosisSyndromeCard(
+              syndromeId: 'P002',
+              name: '信息倾泻',
+              severity: 'L2',
+              evidenceCount: 1,
+              explanation: '开篇连续三段交代设定',
+            ),
+          ],
+          suggestedActions: const [],
+          confidence: 0.8,
+          diagnosisId: 'msg-c6',
+          nextFocus: sentence,
+        ).toJson(),
+      );
+
+      await tester.pumpWidget(_wrap(DiagnosisCard.fromMessageContent(content)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('本次诊断'), findsOneWidget);
+      await tester.tap(find.text('本次诊断')); // fromMessageContent 默认收起
+      await tester.pumpAndSettle();
+      expect(
+        find.text('下一步重点：$sentence'),
+        findsOneWidget,
+        reason:
+            'fromMessageContent 漏传 nextFocus（:226）或 toJson 漏写 key ⇒ 红 —— '
+            '这条是 L2 卡片 payload → L3 呈现之间的接线判据',
+      );
+    });
+  });
 }

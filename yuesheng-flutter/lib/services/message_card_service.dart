@@ -35,10 +35,8 @@ class DiagnosisResultCardPayload {
 
   /// 本轮教学焦点理由（teaching_plan.focus_reason）。
   ///
-  /// 批次 D-B：该字段此前只落 diagnosis_results 表 + 注入 prompt 给 AI 看
-  /// （message_injector.dart），用户侧完全不可见。诊断卡的「归因」步骤
-  /// 把它接出来展示——是**已有数据接线**，不是新造数据。
-  /// null / 空串时该步骤不渲染（数据诚实：不编造归因）。
+  /// 批次 D-B：此前只落 diagnosis_results 表 + 注入 prompt（message_injector.dart），用户侧不可见；
+  /// 诊断卡「归因」步骤接出来展示——**已有数据接线**非新造。null / 空串 ⇒ 不渲染（不编造归因）。
   final String? focusReason;
 
   /// ADR-0006：整体判定（结构完整度诊断，非文学打分）。
@@ -60,17 +58,12 @@ class DiagnosisResultCardPayload {
   /// （确认/改选/拒绝）落既有 active_problem.confirmation_status。
   final List<FocusCandidateCard>? focusCandidates;
 
-  /// W-49：本轮问题的**根因分析**（整轮问题的成因，一段话）。
-  ///
-  /// 与 [DiagnosisSyndromeCard.explanation]（单症候「为什么被判定存在」）**语义不同**，
-  /// 两者并存、互不覆盖。此前只落 `diagnosis_results` + 导出，UI 零消费
-  /// （`.ai/reports/2026-10-20-W34-两头配重诊断.md` §三）。属**已有数据接线**。
-  /// null / 空串 ⇒ 该行不渲染（数据诚实：不编造根因）。
+  /// W-49：本轮问题的**根因分析**（整轮问题的成因，一段话）。与 [DiagnosisSyndromeCard.explanation]
+  /// （单症候「为什么被判定存在」）**语义不同**，两者并存、互不覆盖；此前只落 `diagnosis_results` + 导出、
+  /// UI 零消费（`.ai/reports/2026-10-20-W34-两头配重诊断.md` §三），属**已有数据接线**，null / 空串 ⇒ 不渲染（数据诚实：不编造根因）。
   final String? rootCauseAnalysis;
 
-  /// W-49：本轮**反馈总结**（一段话，给学员的收束话语）。
-  ///
-  /// 同上：产出/落库/导出全通、UI 零消费，本卡只做透传。
+  /// W-49：本轮**反馈总结**（一段话，给学员的收束话语）。同上：产出/落库/导出全通、UI 零消费，本卡只做透传。
   /// null / 空串 ⇒ 不渲染。
   final String? feedbackSummary;
 
@@ -79,6 +72,9 @@ class DiagnosisResultCardPayload {
   /// 由 [ParsedDiagnosis.excluded] 透传（只传递、不加工）。空列表 ⇒ 卡片
   /// 不渲染「本轮还考虑过」区（数据诚实，不造空区）。
   final List<ParsedExclusion> excluded;
+
+  /// 下一步重点（`next_focus` 透传，**已有数据接线**非新造）；null / 空串 ⇒ 落库不落 key、呈现面不渲染。
+  final String? nextFocus;
 
   const DiagnosisResultCardPayload({
     required this.syndromeCount,
@@ -92,6 +88,7 @@ class DiagnosisResultCardPayload {
     this.rootCauseAnalysis,
     this.feedbackSummary,
     this.excluded = const [],
+    this.nextFocus,
   });
 
   factory DiagnosisResultCardPayload.fromJson(Map<String, dynamic> json) {
@@ -139,6 +136,7 @@ class DiagnosisResultCardPayload {
         json['feedbackSummary'],
         json['feedback_summary'],
       ),
+      nextFocus: _firstNonEmpty(json['next_focus'], json['nextFocus']),
       // T-20261024-05 批2：轮次级排除列表透传（与 syndromes 同款宽容 Map 写法）。
       excluded:
           (json['excluded'] as List<dynamic>?)
@@ -172,6 +170,7 @@ class DiagnosisResultCardPayload {
       'root_cause_analysis': rootCauseAnalysis,
     if (feedbackSummary != null && feedbackSummary!.isNotEmpty)
       'feedbackSummary': feedbackSummary,
+    if (nextFocus != null && nextFocus!.isNotEmpty) 'next_focus': nextFocus,
     // T-20261024-05 批2：空列表不落 key（与 focusCandidates 同款往返稳定约定）。
     if (excluded.isNotEmpty)
       'excluded': excluded.map((e) => e.toJson()).toList(),

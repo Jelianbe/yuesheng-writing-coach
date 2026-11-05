@@ -216,4 +216,118 @@ void main() {
       );
     });
   });
+
+  // ── T-20261105-03（nextFocus 三级贯通）产出侧取值链 ──────────────
+  //
+  // 真源（现场重取）：`diagnosis_parser.dart:445`
+  //   `final finalNextFocus = texts.nextFocus ?? plan.teachingPlanNextStep;`
+  //   注释声明「与 validator 链（diagnosis_validator.dart:458-460）口径一致」；
+  //   validator 侧实读 `diagnosis_validator.dart:513-515`
+  //   `nextFocus: raw.nextFocusRaw is String ? raw.nextFocusRaw : teaching.nextStep`。
+  //
+  // 与上方 T-20261024-16 组（R1–R4）的分工 —— **不是重复**：
+  //   R1–R4 钉「优先级方向 + 缺键回退 + 全缺失」三条主路径（夹具值只有 'A'/'B' 单字符）；
+  //   本组钉 R1–R4 **覆盖不到的两个入口**：类型漂移（非 String）与空串，
+  //   外加一条**整句逐字**（单字符夹具对「trim / 截断 / 改写」零鉴别力）。
+  //
+  // 负向实测（变异一次只改一行，读数见报告；**原预判保留、实测差异已标注**）：
+  //   ① 删掉回退（`= texts.nextFocus`；原预判「NP1 / NP3 红、NP2 / NP4 绿」）
+  //      ⇒ **实测** NP1 + NP2 红（+ 既有 R2 红），NP3 / NP4 绿。
+  //      差异机制：NP2 的输入是**值级 null**，删掉 `??` 后产物变 null 而非 next_step ⇒
+  //      NP2 也落在回退链上；NP3（空串，非 null）与 NP4（next_focus 有值）不经过 `??` 的
+  //      回退支路 ⇒ 不红。原预判 NP3 属**过宽**（已导出机制，非用例缺口）。
+  //   ② 让空串也回退（`trim().isEmpty` 时取 next_step）⇒ **实测**恰好 NP3 红。
+  //   ③ 呈现侧 `widget.nextFocus` → 读兄弟字段 / 读常量串 ⇒ 见 diagnosis_card_test.dart 同批注释。
+  group('T-20261105-03 产出侧：nextFocus 取值链（空串 / 类型漂移）', () {
+    /// [omitNextFocus] 区分「键缺失」与「键存在但值为 null」——
+    /// 两者在 `??` 语义下同号，但只有显式 null 能证明「值级 null 也回退」。
+    Map<String, dynamic> diagJson({
+      Object? nextFocus,
+      bool omitNextFocus = false,
+      String? nextStep,
+    }) {
+      return {
+        'syndromes': [
+          {
+            'syndrome_id': 'P001',
+            'name': '情绪标签化',
+            'severity': 'L1',
+            'evidence': ['x'],
+            'explanation': 'y',
+            'reader_impact': 'z',
+          },
+        ],
+        'suggested_actions': ['A002'],
+        'confidence': 0.75,
+        if (!omitNextFocus) 'next_focus': nextFocus,
+        if (nextStep != null)
+          'teaching_plan': {
+            'current_teaching_focus_id': 'P001',
+            'focus_reason': 'a',
+            'next_step': nextStep,
+          },
+      };
+    }
+
+    String? parseNextFocus(Map<String, dynamic> json) => parseDiagnosis(
+      '[YS_DIAGNOSIS]\n${jsonEncode(json)}\n[/YS_DIAGNOSIS]',
+    ).diagnosis!.nextFocus;
+
+    test('NP1 next_focus 类型漂移（数字）⇒ 按缺失处理回退 next_step', () {
+      final json = diagJson(nextFocus: 123, nextStep: 'B-next-step');
+      expect(
+        parseNextFocus(json),
+        'B-next-step',
+        reason:
+            '回退链被删/被改成「非 String 也原样带出」时红：'
+            '非 String ⇒ _parseOptionalTextFields 给 null ⇒ 必须走 teaching_plan.next_step',
+      );
+      // validator 链同号（口径一致的对照真源，不随本组改动）
+      expect(
+        validateDiagnosisOutput('自然语言', json).diagnosis!.nextFocus,
+        'B-next-step',
+        reason: '两链分叉即红（parser 回退 / validator 不回退）',
+      );
+    });
+
+    test('NP2 next_focus 显式 null ⇒ 回退 next_step（值级 null 与缺键同号）', () {
+      final json = diagJson(nextFocus: null, nextStep: 'B-next-step');
+      expect(
+        parseNextFocus(json),
+        'B-next-step',
+        reason: '「键在但值为 null」若被当成已给值 ⇒ 红（会得到 null）',
+      );
+      expect(
+        validateDiagnosisOutput('自然语言', json).diagnosis!.nextFocus,
+        'B-next-step',
+      );
+    });
+
+    test('NP3 next_focus 空串 ⇒ 现状口径：**不**回退，产物为空串（两链一致）', () {
+      final json = diagJson(nextFocus: '', nextStep: 'B-next-step');
+      expect(
+        parseNextFocus(json),
+        '',
+        reason:
+            '本条钉现状口径（与 validator 链一致：String 类型即视为「已给值」⇒ 不触发回退）。'
+            '两个方向都会红：① 回退链被删 ⇒ 得到 null；'
+            '② 有人把判据改成「trim 后为空也回退」⇒ 得到 B-next-step。'
+            '若内容层**有意**改口径为「空串回退」，须同步改本条并在 DECISIONS 登记。',
+      );
+      expect(
+        validateDiagnosisOutput('自然语言', json).diagnosis!.nextFocus,
+        '',
+        reason: '两链口径必须同号；validator 改成回退而 parser 不改 ⇒ 红',
+      );
+    });
+
+    test('NP4 整句逐字透传（不 trim / 不截断 / 不改写）', () {
+      const sentence = '下一轮把第三段里那两句对话拆开，删掉中间那句解释性独白，让读者自己听出情绪';
+      expect(
+        parseNextFocus(diagJson(nextFocus: sentence)),
+        sentence,
+        reason: '逐字相等：任何 trim / 截断 / 改写 / 转义差异都会红',
+      );
+    });
+  });
 }

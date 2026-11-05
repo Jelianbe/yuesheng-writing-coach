@@ -1,6 +1,6 @@
 {
  "schema": "surface-baseline/2",
- "note": "诊断链字段可见性基线（v2 格式 · 2026-10-21 S1 守卫 v4 判据对象修正后重建）。判据对象 = 「诊断链字段的三级贯通链」：L1 产出（真源 prompt schema，自动派生）→ L2 诊断卡 payload（卡片 DTO 类）→ L3 呈现面有效读点（X.field 形态，宿主非 payload/this）。字段族不硬编码（清单腐化 = 恒绿 = 静音）。本文件只登记「例外」，不登记「正常」。",
+ "note": "诊断链字段可见性基线（v2 格式 · 2026-10-21 S1 守卫 v4 判据对象修正后重建）。判据对象 = 「诊断链字段的三级贯通链」：L1 产出（真源 prompt schema，自动派生）→ L2 诊断卡 payload（卡片 DTO 类）→ L3 呈现面有效读点（X.field 形态，宿主非 payload/this）。字段族不硬编码（清单腐化 = 恒绿 = 静音）。本文件只登记「例外」，不登记「正常」。 ★ 2026-11-05（T-20261105-03）：nextFocus 已贯通 L1→L2→L3（DiagnosisResultCardPayload.nextFocus + diagnosis_flow_handler 接线 + 诊断卡尾部 `_nextFocusLine` 读点）⇒ 原豁免「S1-诊断链字段未贯通」（due 2026-11-04）已回收，exemptions 清空。日后若再现断链，须重新登记并给到期日与承载卡（不得开放式延期）。",
  "registered_fields": [
   "syndromes",
   "suggestedActions",
@@ -26,17 +26,7 @@
   "formStructure",
   "pendingContext"
  ],
- "exemptions": [
-  {
-   "id": "S1-诊断链字段未贯通",
-   "owner_card": "T-20261021-04",
-   "due": "2026-11-04",
-   "fields": [
-    "nextFocus"
-   ],
-   "reason": "★ 收窄记录（2026-10-22）：原豁免 4 字段中的 interventionValue / formFactCount / formStructure 已由 T-20261021-01（诊断卡接线第二批，主仓施工）销账——`python scripts/check_surface_visibility.py --list` 三行由「★断」转「全通」（各 1 个 L3 有效读点）。剩余 nextFocus：L2 卡片断（落 `diagnosis_results.next_focus` 列，未进 `DiagnosisResultCardPayload`）⇒ 责任卡 T-20261021-04（L2 协议改动，触 R-027 须报批）。豁免期 = 14 天，到期未修则恢复报红（S1-5 会抓「豁免名存实亡」：若 nextFocus 也贯通而本登记未收窄，守卫报红）。"
-  }
- ],
+ "exemptions": [],
  "design_non_visible": [
   {
    "field": "confidence",

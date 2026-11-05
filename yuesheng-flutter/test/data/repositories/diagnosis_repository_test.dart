@@ -3,6 +3,10 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+// drift 与 flutter_test 都导出 isNull / isNotNull（前者是顶层函数
+// `isNull(Expression)`，后者经 matcher 导出同名 Matcher）。具名导入以消歧 ——
+// T-20261105-03 是本文件首次用到这两个 matcher 的位置。
+import 'package:matcher/matcher.dart' as matcher;
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
@@ -521,6 +525,93 @@ void main() {
 
     test('#4 空 DB ⇒ 空列表', () async {
       expect(await repo.listRejectedProblems('no-such-session'), isEmpty);
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────
+  // T-20261105-03：nextFocus 落库侧（diagnosis_results.next_focus）
+  //
+  // 真源（现场重取）：
+  //   列定义 `lib/data/database/tables.dart:161` `TextColumn get nextFocus => text().nullable()();`
+  //   写入点 `lib/data/repositories/diagnosis_repository.dart:190` `nextFocus: Value(input.nextFocus),`
+  //   上游接线 `lib/services/diagnosis_flow_handler.dart:776`（`_buildDiagnosisInput`）
+  //
+  // 本组钉的是**这一层能钉的**：写入显式性 + 持久化往返 + 逐字保真。
+  // 「接线是否把值送进来」（handler → DiagnosisInput）**不在本层**——
+  // 本层夹具直接构造 DiagnosisInput，按 §第 3 步分层判定，那个条件由
+  // 呈现侧 C6（消息通道）与上游 handler 用例承担，此处不双写声称。
+  //
+  // 负向实测（见报告）：把 :190 改成 `const Value(null)` ⇒ D1 / D3 红，
+  //   D2 不红（D2 的输入本就是 null ⇒ 变异体与原实现同值，机制已导出）。
+  // ───────────────────────────────────────────────────────────
+  group('T-20261105-03 落库侧：nextFocus 写/读回往返', () {
+    DiagnosisInput input({
+      required String sessionId,
+      required String messageId,
+      String? nextFocus,
+    }) {
+      return DiagnosisInput(
+        sessionId: sessionId,
+        messageId: messageId,
+        syndromes: const [
+          {'syndrome_id': 'P002', 'name': '信息倾泻', 'severity': 'L2'},
+        ],
+        suggestedActions: const [],
+        confidence: 0.8,
+        nextFocus: nextFocus,
+      );
+    }
+
+    test('D1 整句（含首尾空格）写后读回逐字一致 —— repo 不 trim / 不截断 / 不改写', () async {
+      const sentence = ' 下一轮把第三段的两句对话拆开，删掉中间那句解释性独白 ';
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(
+        input(sessionId: sid, messageId: 'msg-nf-1', nextFocus: sentence),
+      );
+
+      final row = await repo.getLatestDiagnosis(sid);
+      expect(row, matcher.isNotNull);
+      expect(
+        row!.nextFocus,
+        sentence,
+        reason:
+            'Value(input.nextFocus) 被改成 Value(null) / 被套上 trim —— 本条红。'
+            '首尾空格是有意留的：任何归一化都会在此暴露',
+      );
+      expect(row.nextFocus!.length, sentence.length, reason: '长度逐字相等（防静默截断）');
+    });
+
+    test('D2 nextFocus=null 写后读回仍为 null（不得变成空串）', () async {
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(input(sessionId: sid, messageId: 'msg-nf-2'));
+
+      final row = await repo.getLatestDiagnosis(sid);
+      expect(row, matcher.isNotNull);
+      expect(row!.nextFocus, matcher.isNull, reason: 'null 被写成空串 ⇒ 本条红');
+      // 显式排除「空串代替 null」这一种最常见的退化
+      expect(row.nextFocus, isNot(''));
+    });
+
+    test('D3 同 session 两条诊断各自独立（后写不覆盖前一条的值）', () async {
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(
+        input(sessionId: sid, messageId: 'msg-nf-3a', nextFocus: '第一条的下步焦点'),
+      );
+      await repo.commitDiagnosis(
+        input(sessionId: sid, messageId: 'msg-nf-3b', nextFocus: '第二条的下步焦点'),
+      );
+
+      final rows = await repo.listDiagnosisHistory(sid);
+      String? focusOf(String messageId) =>
+          rows.firstWhere((r) => r.messageId == messageId).nextFocus;
+
+      expect(rows, hasLength(2));
+      expect(focusOf('msg-nf-3a'), '第一条的下步焦点');
+      expect(
+        focusOf('msg-nf-3b'),
+        '第二条的下步焦点',
+        reason: '若实现改成 UPDATE 行/沿用上一行值 ⇒ 此处读到第一条的值 ⇒ 红',
+      );
     });
   });
 }

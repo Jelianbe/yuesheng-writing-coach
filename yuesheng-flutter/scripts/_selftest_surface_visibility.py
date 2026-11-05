@@ -57,7 +57,7 @@ RAN = []  # 实跑的 check() 名清单（清单自断言用；哨兵自己那�
 EXPECTED_CHECK_COUNT = 13
 EXPECTED_CHECK_NAMES = (
     "P0 原状 rc=0",
-    "P0 断链仅剩 nextFocus（豁免登记中，不误报）",
+    "P0 全字段贯通（nextFocus 已接线、豁免已回收）",
     "P1 真源新增字段 ⇒ rc=1",
     "P1 报红点名 selftestProbeField",
     "P2 DTO 清单外字段 ⇒ rc=1",
@@ -175,23 +175,17 @@ def main() -> int:
     tmp = Path(tempfile.mkdtemp(prefix="s1_selftest_"))
     try:
         # ── P0 原状绿 ──
-        # 2026-10-22（T-20261021-01 施工后）状态迁移：原 4 断链已销 3 个
-        # （interventionValue / formFactCount / formStructure 全通，豁免收窄
-        #  为仅 nextFocus，责任卡 T-20261021-04）⇒ 原状 = rc=0 + 断链仅
-        #  nextFocus（在豁免登记中，守卫不报红）。
+        # 2026-10-22（T-20261021-01）：原 4 断链销 3 个（interventionValue /
+        #   formFactCount / formStructure 全通），豁免收窄为仅 nextFocus。
+        # 2026-11-05（T-20261105-03）：nextFocus 也贯通（DTO 接线 + 诊断卡尾部
+        #   读点），豁免整条回收 ⇒ 原状 = 全部贯通。
+        # ⇒ 判据改为**正向断言「全部贯通」分支**（仍能变红：任一字段断链 ⇒ 守卫
+        #   走 FAIL 分支，输出里不再有「全部贯通」）。
         rc, out = run(BASELINE)
         check("P0 原状 rc=0", rc == 0, "rc=%d\n%s" % (rc, out[-600:]))
-        break_line = next(
-            (l for l in out.splitlines()
-             if l.startswith("WARN") and "断链字段" in l),
-            "",
-        )
         check(
-            "P0 断链仅剩 nextFocus（豁免登记中，不误报）",
-            "nextFocus" in break_line
-            and "interventionValue" not in break_line
-            and "formFactCount" not in break_line
-            and "formStructure" not in break_line,
+            "P0 全字段贯通（nextFocus 已接线、豁免已回收）",
+            "PASS" in out and "全部贯通" in out,
             out[-500:],
         )
 
@@ -226,14 +220,25 @@ def main() -> int:
         # 已贯通且豁免已收窄 ⇒ 原「呈现面接上 iv」探针失去触发条件。
         # 等价负向验证改为**直接往豁免名单塞一个已贯通字段**——这正是
         # S1-5 要抓的形态（名存实亡的豁免会掩盖新断点）。
+        # 2026-11-05（T-20261105-03）：真仓豁免已整条回收（exemptions = []）⇒
+        #   探针改为**自己造一条**豁免、点名一个**已贯通**字段（nextFocus）——
+        #   这正是 S1-5 要抓的形态（名存实亡的豁免会掩盖新断点）。
         root3 = make_copy(tmp / "p3")
         stale = json.loads(base_text)
-        stale["exemptions"][0]["fields"] = ["nextFocus", "formFactCount"]
+        stale["exemptions"] = [
+            {
+                "id": "S1-诊断链字段未贯通",
+                "owner_card": "selftest",
+                "due": "2099-01-01",
+                "fields": ["nextFocus"],
+                "reason": "selftest 探针：nextFocus 已贯通，用于验证 S1-5",
+            }
+        ]
         rc, out = run_on(root3, json.dumps(stale, ensure_ascii=False, indent=1))
         check("P3 豁免混入已贯通字段 ⇒ rc=1", rc == 1, "rc=%d\n%s" % (rc, out[-600:]))
         check(
             "P3 报红指出豁免名存实亡",
-            "S1-5" in out and "formFactCount" in out,
+            "S1-5" in out and "nextFocus" in out,
             out[-500:],
         )
 
@@ -254,9 +259,29 @@ def main() -> int:
               "S1-6" in out and "confidence" in out, out[-500:])
 
         # ── P5 豁免到期 ⇒ 恢复报红 ──
+        # 2026-11-05（T-20261105-03）：真仓无豁免、无断链字段 ⇒「到期即红」
+        #   需要一个**处于断链态**的字段才有观测面。探针改为「注入断链字段 +
+        #   一条已逾期的豁免」⇒ S1-4 到期判据与 S1-1 报红同时成立
+        #   （判据语义一字未改：`days_left < 0 ⇒ expired`）。
+        p5root = make_copy(tmp / "p5")
+        pt5 = p5root / "lib/services/skills_l1_core_p2.dart"
+        t5 = pt5.read_text(encoding="utf-8")
+        t5 = t5.replace(
+            "- feedback_summary (string|null):",
+            "- selftest_probe_field (string|null): 自测探针字段\n- feedback_summary (string|null):",
+            1)
+        pt5.write_text(t5, encoding="utf-8")
         expired = json.loads(base_text)
-        expired["exemptions"][0]["due"] = "2026-01-01"
-        rc, out = run_on(make_copy(tmp / "p5"), json.dumps(expired, ensure_ascii=False, indent=1))
+        expired["exemptions"] = [
+            {
+                "id": "S1-诊断链字段未贯通",
+                "owner_card": "selftest",
+                "due": "2026-01-01",
+                "fields": ["selftestProbeField"],
+                "reason": "selftest 探针：验证 S1-4 豁免到期恢复报红",
+            }
+        ]
+        rc, out = run_on(p5root, json.dumps(expired, ensure_ascii=False, indent=1))
         check("P5 豁免到期 ⇒ rc=1", rc == 1, "rc=%d\n%s" % (rc, out[-600:]))
         check("P5 报红点名逾期天数", "逾期" in out, out[-400:])
 

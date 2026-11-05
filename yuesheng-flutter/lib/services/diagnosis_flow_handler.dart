@@ -1479,8 +1479,7 @@ class DiagnosisFlowHandler {
     required ParsedDiagnosis diagnosis,
     required String messageId,
   }) async {
-    // W-22 G1：本轮焦点候选（整合层 A3 产物接用户侧；null ⇒ 候选区不渲染；
-    // 提取失败静默——候选区缺席不阻断卡片）。
+    // W-22 G1：本轮焦点候选（整合层 A3 产物接用户侧；null ⇒ 候选区不渲染；提取失败静默，缺席不阻断卡片）。
     final focusCandidates = await _extractFocusCandidates(
       sessionId: sessionId,
       messageId: messageId,
@@ -1495,8 +1494,7 @@ class DiagnosisFlowHandler {
           syndromes: _displayedSyndromeCards(diagnosis),
           suggestedActions: diagnosis.suggestedActions,
           confidence: diagnosis.confidence,
-          // 批次 D-B：把 teaching_plan.focus_reason 接入诊断卡 payload，
-          // 供「诊断依据」链渲染「归因」步骤（此前该字段只进 DB + prompt）。
+          // 批次 D-B：teaching_plan.focus_reason 接入 payload，供「归因」步骤渲染（此前只进 DB + prompt）。
           focusReason: diagnosis.focusReason,
           // ADR-0006：整体判定（null ⇒ 呈现区不渲染）。
           overall: diagnosis.overall,
@@ -1505,6 +1503,8 @@ class DiagnosisFlowHandler {
           // W-49：轮次级两字段透传（产出/落库/导出早已通，只是没进卡片）。
           rootCauseAnalysis: diagnosis.rootCauseAnalysis,
           feedbackSummary: diagnosis.feedbackSummary,
+          // T-20261105-03：下一步重点透传（产出/落库已有，此前未进卡片）。
+          nextFocus: diagnosis.nextFocus,
           // T-20261024-05 批2：轮次级排除列表透传（只传递不加工）。
           excluded: diagnosis.excluded,
         ),

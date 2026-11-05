@@ -91,10 +91,9 @@ class _CardText {
   static const String emptyHint = '本次未发现显著问题';
   static const String noEvidence = '（无证据列表）';
 
-  // ── W-49：诊断话语三标签 ──
-  // 三条口径（不可违反）：① 与 whyLabel / evidenceLabel / 「归因」两两不同，
-  // 否则学员分不清哪句是哪个语义；② 不得硬编码在 widget 里；
-  // ③ 皆有对应断言（C5：两两 isNot）。
+  // ── W-49 / T-20261105-03：诊断话语标签 ──
+  // 三条口径（不可违反）：① 与 whyLabel / evidenceLabel / 「归因」两两不同，否则学员分不清语义；
+  // ② 不得硬编码在 widget 里；③ 皆有对应断言（C5：两两 isNot）。
   static const String readerImpactLabel = '对读者：';
   static const String rootCauseLabel = '根因';
   static const String feedbackSummaryLabel = '本轮小结';
@@ -102,6 +101,9 @@ class _CardText {
   // ── T-20261021-01：干预价值徽标 + 形态行标签 ──
   // 同族口径：与上述标签及「暂时无法判断」徽标两两不同（C5 断言）。
   static const String formLabel = '形态：';
+
+  /// T-20261105-03：下一步重点行标签（与上述标签两两不同，C5 断言同族）。
+  static const String nextFocusLabel = '下一步重点：';
   const _CardText._();
 }
 
@@ -132,10 +134,8 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   final double confidence;
   final bool defaultExpanded;
 
-  /// 本轮教学焦点理由（teaching_plan.focus_reason，批次 D-B）。
-  ///
-  /// 数据来源：`DiagnosisResultCardPayload.focusReason` ← `ParsedDiagnosis
-  /// .focusReason` ← AI 输出的 `teaching_plan.focus_reason`。
+  /// 本轮教学焦点理由（teaching_plan.focus_reason，批次 D-B）。数据来源：`DiagnosisResultCardPayload
+  /// .focusReason` ← `ParsedDiagnosis.focusReason` ← AI 输出的 `teaching_plan.focus_reason`；
   /// 为空时「诊断依据」链不含「归因」步骤——不编造理由。
   final String? focusReason;
 
@@ -164,21 +164,19 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   /// fallback 优先级 1 下一轮即选中它）。
   final List<FocusCandidateCard>? focusCandidates;
 
-  /// W-49：本轮问题的根因分析（轮次级，一段话）。
-  ///
-  /// 与单症候的 `explanation`（「为什么被判定存在」）**语义不同**——此处是
-  /// **整轮问题的成因**。两者并存，互不覆盖（见 `M2RecallBar.rootCauseText`
-  /// 仍在用 `explanation`）。null / 空串 ⇒ 不渲染。
+  /// W-49：本轮问题的根因分析（轮次级，一段话）。与单症候的 `explanation`（「为什么被判定存在」）
+  /// **语义不同**——此处是**整轮问题的成因**，两者并存互不覆盖（见 `M2RecallBar.rootCauseText`）；null / 空串 ⇒ 不渲染。
   final String? rootCauseAnalysis;
 
   /// W-49：本轮反馈总结（轮次级，一段话）。null / 空串 ⇒ 不渲染。
   final String? feedbackSummary;
 
-  /// T-20261024-05 批2：本轮"考虑过但未报出"的相近症候（轮次级）。
-  ///
-  /// 空列表 ⇒ 不渲染「本轮还考虑过」区（不造空区）。渲染时 syndrome_id
-  /// 反查注册表取名，未知 ID 回退原串；reason 非空才现。
+  /// T-20261024-05 批2：本轮"考虑过但未报出"的相近症候（轮次级）。空列表 ⇒ 不渲染「本轮还考虑过」区
+  /// （不造空区）。渲染时 syndrome_id 反查注册表取名，未知 ID 回退原串；reason 非空才现。
   final List<ParsedExclusion> excluded;
+
+  /// T-20261105-03：下一步重点（`next_focus` 透传，**已有数据接线**非新造）；null / 空串 ⇒ 不渲染该行。
+  final String? nextFocus;
 
   const DiagnosisCard({
     super.key,
@@ -196,6 +194,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     this.rootCauseAnalysis,
     this.feedbackSummary,
     this.excluded = const [],
+    this.nextFocus,
   });
 
   /// 便利构造：从 Message.content 的 JSON 解析 payload 渲染
@@ -224,6 +223,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         // W-49：轮次级两字段（旧消息 JSON 无这两个 key ⇒ 为 null ⇒ 不渲染）。
         rootCauseAnalysis: payload.rootCauseAnalysis,
         feedbackSummary: payload.feedbackSummary,
+        nextFocus: payload.nextFocus,
         // T-20261024-05 批2：旧消息 JSON 无 excluded key ⇒ 默认 const [] ⇒ 不渲染。
         excluded: payload.excluded,
       );
@@ -515,13 +515,15 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
-  /// 展开区尾部插槽（R-019 清偿：W-49 加「本轮小结」后 [_buildCardBody] 逼近
-  /// 50 行阈值，故把尾部两段 spread 化）。
-  ///
-  /// 顺序口径：本轮小结（轮次级收束）在前，读者层弱提示（恒显）在后 ——
+  /// 展开区尾部插槽（R-019 清偿：W-49 加「本轮小结」后 [_buildCardBody] 逼近 50 行阈值，
+  /// 故把尾部两段 spread 化）。顺序口径：本轮小结（轮次级收束）在前，读者层弱提示（恒显）在后 ——
   /// 先看完「诊断了什么 / 为什么」，再读总结，最后才是边界声明。
   List<Widget> _buildTailSlots() {
     return [
+      if (_nextFocusLine != null) ...[
+        const SizedBox(height: 12),
+        Text(_nextFocusLine!, style: context.text.caption),
+      ],
       if (_feedbackSummaryText != null) ...[
         const SizedBox(height: 12),
         _buildFeedbackSummaryBlock(),
@@ -534,9 +536,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   // ── 诊断依据区（批次 C：ConfidenceBar + ThinkingChain 竹青化接入）──
   /// 展开详情顶部：归因（焦点理由）+ 诊断信心置信条 + 诊断依据步骤链（默认折叠）。
   ///
-  /// 批次 N10：`focus_reason` 原埋在「卡片展开 + 诊断依据链展开」两重折叠内，
-  /// 走查实测需 **2 次点击**才可见（`.ai/reports/2026-09-18-N10-走查.md` §2.8）。
-  /// 现提到展开区首行直接渲染 ⇒ 折叠层数归零（展开卡片即见）。
+  /// 批次 N10：`focus_reason` 原埋在「卡片展开 + 诊断依据链展开」两重折叠内，走查实测需 **2 次点击**
+  /// 才可见（`.ai/reports/2026-09-18-N10-走查.md` §2.8）。现提到展开区首行直接渲染 ⇒ 折叠层数归零（展开卡片即见）。
   Widget _buildReasoningSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,8 +557,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
-  /// W-49：根因块（轮次级）。样式与 [_buildFocusReasonBlock] 同源但**标签不同**，
-  /// 免学员把「整轮成因」误读成「焦点选择理由」。
+  /// W-49：根因块（轮次级）。样式与 [_buildFocusReasonBlock] 同源但**标签不同**，免学员把「整轮成因」误读成「焦点选择理由」。
   Widget _buildRootCauseBlock() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,20 +576,16 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
-  /// W-49：根因展示文本（null = 不渲染）。200 字截断，理由同 [_focusReasonText]：
-  /// 截断而非改写（R-009 不替用户改写 AI 原话）。
+  /// W-49：根因展示文本（null = 不渲染）。200 字截断，理由同 [_focusReasonText]（R-009 不改写原话）。
   String? get _rootCauseText {
     final raw = widget.rootCauseAnalysis?.trim();
     if (raw == null || raw.isEmpty) return null;
     return raw.length <= 200 ? raw : '${raw.substring(0, 200)}…';
   }
 
-  /// 归因块：本轮教学焦点理由（`teaching_plan.focus_reason`）。
-  ///
-  /// 语义：AI 定义为「为什么**选这个 focus**（一句话）」——是教学焦点的
-  /// **选择**理由，而非「该症候为何被判定存在」（后者由每症候 `explanation`
-  /// 承担）。故它独立于「诊断依据」推理链渲染，不再充当链的首步
-  /// （原挂法属语义借用，见走查报告 §2.5）。文案仍沿用「归因」不引入新术语。
+  /// 归因块：本轮教学焦点理由（`teaching_plan.focus_reason`）。语义 = 「为什么**选这个 focus**」
+  /// （教学焦点的**选择**理由，非「该症候为何被判定存在」——后者由每症候 `explanation` 承担），
+  /// 故独立于「诊断依据」链渲染、不充当链首步（原挂法属语义借用，见走查报告 §2.5）；文案沿用「归因」。
   Widget _buildFocusReasonBlock() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,19 +604,15 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
-  /// focus_reason 的展示文本（null = 不渲染归因步骤）。
-  ///
-  /// 长度上限 160 字：该字段由 AI 自由生成，实测偶有长段落，
-  /// 在折叠步骤行里会撑爆一行。截断而非改写——保留原文前 160 字
-  /// 加省略号，不做摘要（R-009：不替用户改写 AI 的原话）。
+  /// focus_reason 的展示文本（null = 不渲染归因步骤）。长度上限 160 字：该字段由 AI 自由生成，
+  /// 实测偶有长段落、会撑爆一行 ⇒ 截断而非改写（保留前 160 字加省略号，不做摘要；R-009 不改写原话）。
   String? get _focusReasonText {
     final raw = widget.focusReason?.trim();
     if (raw == null || raw.isEmpty) return null;
     return raw.length <= 160 ? raw : '${raw.substring(0, 160)}…';
   }
 
-  /// W-49：本轮小结块（轮次级反馈总结）。null / 空串 ⇒ 调用方不插入本块
-  /// （[_feedbackSummaryText] 已做空态归一）。
+  /// W-49：本轮小结块（轮次级反馈总结）。null / 空串 ⇒ 调用方不插入本块（[_feedbackSummaryText] 已做空态归一）。
   Widget _buildFeedbackSummaryBlock() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -644,6 +636,14 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     final raw = widget.feedbackSummary?.trim();
     if (raw == null || raw.isEmpty) return null;
     return raw.length <= 200 ? raw : '${raw.substring(0, 200)}…';
+  }
+
+  /// T-20261105-03：下一步重点展示行（null = 不渲染）。截断口径同 [_focusReasonText]。
+  String? get _nextFocusLine {
+    final raw = widget.nextFocus?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    final text = raw.length <= 160 ? raw : '${raw.substring(0, 160)}…';
+    return '${_CardText.nextFocusLabel}$text';
   }
 
   // ── W-22 G1/G3：候选焦点区（整合层 A3 候选的用户侧权力入口）──
