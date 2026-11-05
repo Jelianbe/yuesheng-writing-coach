@@ -356,7 +356,8 @@ void _r1IdNameConsistency(_Scan scan) {
     bad,
     isEmpty,
     reason:
-        '症候「ID↔名字」不一致 ${bad.length} 处（0.3.6 重编号残留同族）:\n'
+        '症候「ID↔名字」不一致 ${bad.length} 处（0.3.6 重编号残留同族）'
+        '〔本轮实测：ID+名 命中 ${scan.pairHits.length} 处 / 扫描 ${scan.filesScanned} 文件〕:\n'
         '${bad.join('\n')}',
   );
 }
@@ -372,7 +373,9 @@ void _r2NoDanglingIds(_Scan scan) {
     isEmpty,
     reason:
         'lib/ 出现注册表外的症候 ID（悬空引用）: ${bad.toList()..sort()}\n'
-        '（注：P001–P049 全部是合法 legacy 编号，见 kSyndromeMergeMap）',
+        '（注：P001–P049 全部是合法 legacy 编号，见 kSyndromeMergeMap）\n'
+        '〔本轮实测：ID 出现 ${scan.idTokens.length} 处 / 去重 '
+        '${scan.idTokens.toSet().length} 个 / 扫描 ${scan.filesScanned} 文件〕',
   );
 }
 
@@ -432,7 +435,10 @@ void _r4PositiveControls(_Scan scan) {
   expect(
     scan.filesScanned,
     greaterThanOrEqualTo(300),
-    reason: '扫描面过窄（2026-10-31 实测 517 个 .dart）—— 疑似只扫到部分目录',
+    reason:
+        '扫描面过窄（2026-10-31 实测 517 个 .dart）—— 疑似只扫到部分目录；'
+        '〔本轮实测：${scan.filesScanned} 文件 / ${scan.pairHits.length} 对 / '
+        '${scan.idTokens.length} ID〕',
   );
   expect(
     scan.pairHits,
@@ -462,11 +468,27 @@ void main() {
   final scan = _buildScan();
 
   group('症候引用完整性（全域 · 2026-09-30）', () {
-    test('#R1 全域「ID↔名字」一致（实测 ${scan.pairHits.length} 处）', () {
+    // ★★ 用例名 = 门禁 2 的 P2 例集指纹输入，**不许**带任何运行期量。★★
+    //
+    //   机理（真源 `scripts/lib_gate_evidence.sh` 的 `_ev_suite_fingerprint`）：
+    //   指纹 = json 报告里每个 `testStart.name`（组描述 + 空格 + 用例描述）经
+    //   `LC_ALL=C sort -u` 后取 sha256 前 16 位。⇒ `test('… ${scan.x} …')` 这种插值
+    //   等于把「被测语料的实测形状」编进判据输入：
+    //     · `${scan.filesScanned}` = **lib/ 下的 .dart 文件数** ⇒ 任何新增 lib 文件
+    //       都机械改变用例名 ⇒ 指纹翻红 ⇒ 每批都要人工 `UPDATE_TEST_BASELINE=1` 重钉。
+    //     · `${scan.pairHits.length}` / `${scan.idTokens.length}` = 内容层命中数
+    //       ⇒ 任何补一条症候引用的批也会翻红（T-20261103-01 实测 1561→1566 就是这么红的，
+    //       见 `DECISIONS §4-428`）。
+    //   ⇒ 本组四条用例名一律**稳定措辞**（零插值）；实测计数改由各断言函数的
+    //   `reason:` 承载（失败时逐字可见）+ 文件头 ① 的带日期现测读数。
+    //   ★ 反向纪律：**别为了「名字更informative」把计数加回来** —— 一次改名 = 一次指纹重钉，
+    //     即等于把这道纪律门自己松开（同族：`skill gate2-case-set-fingerprint-discipline`
+    //     第 3 步 A 档「为文字修饰重钉基线 = 自己把门松开」）。
+    test('#R1 全域「ID↔名字」一致', () {
       _r1IdNameConsistency(scan);
     });
 
-    test('#R2 全域无悬空 ID（实测 ${scan.idTokens.length} 处）', () {
+    test('#R2 全域无悬空 ID', () {
       _r2NoDanglingIds(scan);
     });
 
@@ -474,8 +496,7 @@ void main() {
       _r3CarrierMatrix();
     });
 
-    test('#R4 阳性对照：扫描器必须真命中（检出 ${scan.pairHits.length} 对 / '
-        '${scan.idTokens.length} ID / ${scan.filesScanned} 文件）', () {
+    test('#R4 阳性对照：扫描器必须真命中', () {
       _r4PositiveControls(scan);
     });
   });
