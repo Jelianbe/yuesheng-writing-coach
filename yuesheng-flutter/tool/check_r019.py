@@ -436,6 +436,17 @@ def main():
     report_hits = sorted(report_hits, key=lambda r: -r['lines'])
     shown = report_hits[:args.top] if args.top else report_hits
 
+    # ★ 空分母守卫（2026-11-06 机制体检 N1）：目录不存在 / cwd 不对 / 全是生成文件时
+    #   file_count=0，旧版仍打印「无新增超限 ✓」并 rc=0 ⇒ 典型 fail-open。
+    #   分母为 0 时结论恒真，那叫「没测」不叫「通过」，必须显式报错并拒绝落基线。
+    if file_count == 0:
+        print('DENOM dart_files count=0 (dir=%s, cwd=%s)'
+              % (args.dir, os.getcwd()))
+        print('EMPTY-DENOMINATOR denom=dart_files count=0 —— '
+              '扫描分母为 0 时禁止判绿（检查 --dir 与当前工作目录）',
+              file=sys.stderr)
+        return 2
+
     mode = ('止血模式（基线 %s，存量 %d 个豁免，只报新增）'
             % (args.baseline, baseline_total)) if args.baseline else '全量模式'
     print('=' * 68)
