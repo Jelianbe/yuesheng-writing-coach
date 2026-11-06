@@ -31,6 +31,7 @@ import '../../services/chapter_position.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../services/session_harvest_assembler.dart';
 import '../../services/story_structure_profile.dart';
+import '../../services/verification_gate.dart';
 import '../../types/teaching_types.dart';
 import 'diagnosis_complete_snack.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
@@ -146,6 +147,9 @@ class WritingCoachDiagnosisRunner {
           .appendStreamingContent(delta),
       // ADR-C87 延伸：分块诊断中途可取消（每块前/合并前检查）
       cancelToken: cancelToken,
+      // 验证层（ADR-0014）：一次一变量，只接本条链（chat 链 `:179` 不动）。
+      // 三键缺省即禁用 ⇒ 未配置时零出站、主链零变化。
+      verificationGate: VerificationGate.fromStorage(),
     );
 
     final targets = _prepareTargets(diagPrefs);

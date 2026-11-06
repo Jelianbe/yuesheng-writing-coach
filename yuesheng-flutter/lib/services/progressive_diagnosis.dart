@@ -26,6 +26,7 @@ import 'llm_call_log_sink.dart';
 import 'llm_client.dart';
 import 'llm_usage.dart';
 import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
+import 'verification_gate.dart';
 // 治理续批第二批（2026-10-20 · 路 α · R-027 批准）：S3 三判据 + 形态字段段的**唯一定义源**。
 // 两宿主（merge 链 / 单次链）各插值引用 ⇒ 跨链判据逐字同一、零复制漂移。
 import 'intervention_value.dart'
@@ -1088,6 +1089,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   double? mergeTemperature,
   Set<String> activeSyndromeIds = const {},
   MergePromptSnapshotWriter? snapshotWriter,
+  VerificationGate? verificationGate,
 }) async {
   if (content.length <= kDiagnosisChunkThreshold) {
     return null;
@@ -1140,12 +1142,56 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
     snapshotWriter: snapshotWriter,
   );
 
+  // 验证层（ADR-0014）：主判已产出、主链返回对象已定型之后才执行（旁路/后置）。
+  // ★ 不写 ProgressiveResult、不改任何主判字段 ⇒ V-4(a) 返回对象逐字段 diff = 0。
+  // ★ 四态一律在 gate 内部闭合、不外抛 ⇒ V-4(b)(c)。
+  await verificationGate?.run(
+    hypotheses: collectVerificationHypotheses(
+      chunkResults,
+      disabledSyndromeIds: disabledSyndromeIds,
+    ),
+    cancelled: cancelToken?.isCancelled ?? false,
+  );
+
   return ProgressiveResult(
     fullContent: fullContent,
     chunkCount: chunks.length,
     failedChunks: failedChunks,
     chunkCoverage: chunkCoverage,
   );
+}
+
+/// 收集验证层输入：**只取候选编号 + 症候编号 + 原文证据**，丢弃发现层的
+/// description / severity / excluded（S-7：验证上下文不得含发现层结论）。
+///
+/// ★ S-5 晋升闸缺位登记（R-027 施工稿 §4 C7）：本函数当前等价「结构筛」——
+/// 成功块 + 非 uncertain + 症候 id 非空 + 证据非空 + 未被禁用。S-5 要求的
+/// 「候选→假设晋升闸」逐字口径归 B2b（另批、不在本卡）；晋升闸落地前
+/// 验证层**生产恒处未配置态**（无三键 UI 入口），本函数不对外生效。
+/// 晋升闸落地时只改本函数一处即可切换输入源。
+List<VerificationHypothesis> collectVerificationHypotheses(
+  List<ChunkAnalysisResult> chunkResults, {
+  Set<String> disabledSyndromeIds = const {},
+}) {
+  final hypotheses = <VerificationHypothesis>[];
+  var sequence = 0;
+  for (final result in chunkResults) {
+    if (!result.success) continue;
+    for (final note in result.notes) {
+      if (note.uncertain) continue;
+      if (note.syndromeId.isEmpty || note.evidence.isEmpty) continue;
+      if (disabledSyndromeIds.contains(note.syndromeId)) continue;
+      sequence++;
+      hypotheses.add(
+        VerificationHypothesis(
+          id: 'h$sequence',
+          syndromeId: note.syndromeId,
+          evidence: List<String>.unmodifiable(note.evidence),
+        ),
+      );
+    }
+  }
+  return hypotheses;
 }
 
 /// W-15-B：merge 段执行（预算预检三态 → 发送快照 → 流式合并）。

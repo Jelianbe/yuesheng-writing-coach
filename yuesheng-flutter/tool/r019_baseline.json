@@ -2,7 +2,7 @@
   "dir": "lib",
   "limit": 50,
   "fileLimit": 300,
-  "fileCount": 520,
+  "fileCount": 521,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
@@ -17,6 +17,13 @@
       "start": 476,
       "end": 535,
       "lines": 60
+    },
+    {
+      "file": "lib/features/writing/writing_coach_panel_diagnosis_runner.dart",
+      "func": "_runProgressiveOrSend",
+      "start": 121,
+      "end": 172,
+      "lines": 52
     },
     {
       "file": "lib/providers/writing_providers.dart",
@@ -49,8 +56,8 @@
     {
       "file": "lib/services/progressive_diagnosis.dart",
       "func": "_chunkParagraphs",
-      "start": 344,
-      "end": 394,
+      "start": 345,
+      "end": 395,
       "lines": 51
     }
   ],
@@ -281,7 +288,7 @@
     },
     {
       "file": "lib/features/writing/writing_coach_panel_diagnosis_runner.dart",
-      "lines": 318
+      "lines": 322
     },
     {
       "file": "lib/features/writing/writing_coach_panel_message_list.dart",
@@ -405,7 +412,7 @@
     },
     {
       "file": "lib/services/message_card_service.dart",
-      "lines": 1039
+      "lines": 1038
     },
     {
       "file": "lib/services/message_injector.dart",
@@ -417,7 +424,7 @@
     },
     {
       "file": "lib/services/progressive_diagnosis.dart",
-      "lines": 1448
+      "lines": 1494
     },
     {
       "file": "lib/services/progress_service.dart",
