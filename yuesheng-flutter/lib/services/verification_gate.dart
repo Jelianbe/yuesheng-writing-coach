@@ -56,6 +56,29 @@ class VerificationKeysStorage {
     final model = await _storage.read(key: kVerificationKeyModel) ?? '';
     return VerificationKeys(baseUrl: baseUrl, apiKey: apiKey, model: model);
   }
+
+  /// 保存独立三键（写入前 trim；范式同 llm_config_storage.dart:57-63 的
+  /// `Future.wait` 三 write）。trim 后空串等价未配置，与
+  /// [VerificationKeys.isComplete] 同语义，不引入第四态。
+  /// 异常上抛，由调用方（UI 边界层）非空 catch + SnackBar 反馈。
+  Future<void> save(VerificationKeys keys) async {
+    await Future.wait([
+      _storage.write(key: kVerificationKeyBaseUrl, value: keys.baseUrl.trim()),
+      _storage.write(key: kVerificationKeyApiKey, value: keys.apiKey.trim()),
+      _storage.write(key: kVerificationKeyModel, value: keys.model.trim()),
+    ]);
+  }
+
+  /// 清除独立三键（**只删这三个**）。验证层没有 fallback 键，
+  /// 不照抄 llm_config_storage.dart 的 `_kKeyApiFallbacks`、不引入第四键。
+  /// 判据：clear() 后 `load().isComplete == false`（空串与缺键同义）。
+  Future<void> clear() async {
+    await Future.wait([
+      _storage.delete(key: kVerificationKeyBaseUrl),
+      _storage.delete(key: kVerificationKeyApiKey),
+      _storage.delete(key: kVerificationKeyModel),
+    ]);
+  }
 }
 
 /// 验证结论三态（S-6）。**没有第四态**：非法值一律 parseFail 并降级（V-5）。

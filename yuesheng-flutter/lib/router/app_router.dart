@@ -36,6 +36,7 @@ import '../features/manuscript/manuscript_detail_page.dart';
 import '../widgets/placeholder_page.dart';
 import '../widgets/progress_detail_page.dart';
 import '../features/app_settings/api_config_page.dart';
+import '../features/app_settings/verification_config_page.dart';
 import '../features/app_settings/free_tier_guide_page.dart';
 import '../features/app_settings/project_settings_page.dart';
 import '../features/app_settings/settings_page.dart';
@@ -338,6 +339,13 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.apiConfig,
       builder: (context, state) => const ApiConfigPage(),
+    ),
+
+    // ── 独立核对（验证层）三键配置子页（设置页末尾 SectionCard 入口）──
+    // 顶层路由（非 shell 内）：与 apiConfig 同构，自带 AppBar + 返回。
+    GoRoute(
+      path: AppRoutes.verificationConfig,
+      builder: (context, state) => const VerificationConfigPage(),
     ),
 
     // ── Tab 布局：StatefulShellRoute.indexedStack ──

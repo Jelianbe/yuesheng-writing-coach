@@ -2,7 +2,7 @@
   "dir": "lib",
   "limit": 50,
   "fileLimit": 300,
-  "fileCount": 521,
+  "fileCount": 525,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
@@ -56,8 +56,8 @@
     {
       "file": "lib/services/progressive_diagnosis.dart",
       "func": "_chunkParagraphs",
-      "start": 345,
-      "end": 395,
+      "start": 348,
+      "end": 398,
       "lines": 51
     }
   ],
@@ -136,7 +136,7 @@
     },
     {
       "file": "lib/features/app_settings/settings_page.dart",
-      "lines": 1209
+      "lines": 1210
     },
     {
       "file": "lib/features/character/character_detail_page.dart",
@@ -328,7 +328,7 @@
     },
     {
       "file": "lib/router/app_router.dart",
-      "lines": 435
+      "lines": 443
     },
     {
       "file": "lib/services/chat_context_builder.dart",
@@ -424,7 +424,7 @@
     },
     {
       "file": "lib/services/progressive_diagnosis.dart",
-      "lines": 1494
+      "lines": 1472
     },
     {
       "file": "lib/services/progress_service.dart",
@@ -521,6 +521,10 @@
     {
       "file": "lib/services/training_kb_content_4.dart",
       "lines": 388
+    },
+    {
+      "file": "lib/services/verification_gate.dart",
+      "lines": 323
     },
     {
       "file": "lib/services/p0_verify/anchor.dart",

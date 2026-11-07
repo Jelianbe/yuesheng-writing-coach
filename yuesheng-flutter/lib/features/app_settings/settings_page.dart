@@ -46,6 +46,7 @@ import '../../services/session_export_service.dart';
 import '../../widgets/privacy_notice_dialog.dart';
 import '../../theme/app_typography.dart';
 import 'coach_settings_page.dart';
+import 'verification_config_section.dart';
 import 'widgets/settings_cards.dart';
 import '../../config/svc_copy.dart';
 
@@ -379,7 +380,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          // 批次 38：学习进度区块（学习进度从书架移至设置，书架保持纯洁）
           if (_progressSummary != null) ...[
             _ProgressSection(
               summary: _progressSummary!,
@@ -402,6 +402,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           _buildMaintenanceSection(),
           const SizedBox(height: 12),
           _buildAboutSection(),
+          const VerificationConfigSection(),
         ],
       ),
     );
