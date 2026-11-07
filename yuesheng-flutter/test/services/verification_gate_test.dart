@@ -19,8 +19,8 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:writingcoach/services/discovery_call.dart';
 import 'package:writingcoach/services/llm_client.dart';
-import 'package:writingcoach/services/progressive_diagnosis.dart';
 import 'package:writingcoach/services/verification_gate.dart';
 
 /// 出站替身：行为由 handler 决定，记录调用次数与最后一条 messages。
@@ -287,26 +287,21 @@ void main() {
   });
 
   group('S-7 上下文不含发现层结论', () {
-    test('description 哨兵不出现在实际发出的 user 内容里', () async {
+    test('inference 哨兵不出现在实际发出的 user 内容里', () async {
       const sentinel = 'ZZ_DESC_SENTINEL';
-      // 发现层笔记：description 带哨兵，evidence 是原文子串。
-      final results = <ChunkAnalysisResult>[
-        const ChunkAnalysisResult(
-          chunkIndex: 0,
-          notes: [
-            ChunkNote(
-              syndromeId: 'S-01',
-              description: '$sentinel 这条描述不得进入验证上下文',
-              evidence: ['他把杯子放回桌面，没有说话。'],
-              severity: 'L2',
-            ),
-          ],
-          success: true,
-        ),
-      ];
+      // ★ 哨兵刻意放 `inference`（DiscoveryNote 真有的字段）而不是 `description`
+      // （`VerificationHypothesis` 类型层就没有该字段 ⇒ 放那里测不到东西）。
+      // 链路走真实解析器，不手工构造 parsed：手工构造时断言的是自己写死的值。
+      final raw =
+          '{"observations":[{"exit":"promoted",'
+          '"anchorQuotes":["他把杯子放回桌面，没有说话。"],'
+          '"inference":"$sentinel 这条推测不得进入验证上下文",'
+          '"syndromeId":"S-01"}]}';
+      final parsed = parseDiscoveryNotes(raw, '他把杯子放回桌面，没有说话。');
+      expect(parsed.rawCount, 1, reason: '分母非空：否则下面的断言恒真');
 
-      final hypotheses = collectVerificationHypotheses(results);
-      expect(hypotheses.length, 1, reason: '结构筛应放行 1 条');
+      final hypotheses = toHypotheses(parsed);
+      expect(hypotheses.length, 1, reason: '出口一 + 有编号应放行 1 条');
 
       final client = _SpyClient((_) async => _okOneItem);
       await _gate(client: client).run(hypotheses: hypotheses);
@@ -319,7 +314,7 @@ void main() {
       expect(
         userContent.contains(sentinel),
         isFalse,
-        reason: '验证上下文含发现层 description ⇒ S-7 破防',
+        reason: '验证上下文含发现层 inference ⇒ S-7 破防',
       );
       // 阳性对照：证据与症候编号必须在（防「发空串也算不含哨兵」）。
       expect(userContent.contains('他把杯子放回桌面'), isTrue);
@@ -331,66 +326,25 @@ void main() {
       expect(systemContent.contains(sentinel), isFalse);
     });
 
-    test('结构筛：uncertain / 空症候 / 空证据 / 已禁用 四类均不入', () {
-      final results = <ChunkAnalysisResult>[
-        const ChunkAnalysisResult(
-          chunkIndex: 0,
-          notes: [
-            ChunkNote(
-              syndromeId: 'S-01',
-              description: 'd',
-              evidence: ['e1'],
-              severity: 'L2',
-            ),
-            ChunkNote(
-              syndromeId: 'S-02',
-              description: 'd',
-              evidence: ['e2'],
-              severity: 'L2',
-              uncertain: true,
-            ),
-            ChunkNote(
-              syndromeId: '',
-              description: 'd',
-              evidence: ['e3'],
-              severity: 'L2',
-            ),
-            ChunkNote(
-              syndromeId: 'S-04',
-              description: 'd',
-              evidence: [],
-              severity: 'L2',
-            ),
-            ChunkNote(
-              syndromeId: 'S-05',
-              description: 'd',
-              evidence: ['e5'],
-              severity: 'L2',
-            ),
-          ],
-          success: true,
-        ),
-        const ChunkAnalysisResult(
-          chunkIndex: 1,
-          notes: [
-            ChunkNote(
-              syndromeId: 'S-06',
-              description: 'd',
-              evidence: ['e6'],
-              severity: 'L2',
-            ),
-          ],
-          success: false,
-        ),
-      ];
+    test('三出口：只有 exit=promoted 且有编号者入验证层（分母成对断言）', () {
+      final raw =
+          '{"observations":['
+          '{"exit":"promoted","anchorQuotes":["e1"],"inference":"i1",'
+          '"syndromeId":"S-01"},'
+          '{"exit":"observation","anchorQuotes":["e2"],"reason":"r2"},'
+          '{"exit":"unclassified","anchorQuotes":["e3"],"reason":"r3"}]}';
+      final parsed = parseDiscoveryNotes(raw, 'e1 e2 e3');
 
-      final hypotheses = collectVerificationHypotheses(
-        results,
-        disabledSyndromeIds: const {'S-05'},
-      );
+      final hypotheses = toHypotheses(parsed);
 
+      // 集合断言：出口一且有编号者才进。
       expect(hypotheses.map((item) => item.syndromeId).toList(), ['S-01']);
       expect(hypotheses.single.id, 'h1');
+      // ★ 分母断言与集合断言**必须成对**：只断言 length == 1 时，
+      // 「把该进的都丢掉」也满足（空集恒绿）。
+      expect(parsed.rawCount, 3);
+      expect(parsed.promoted, 1);
+      expect(parsed.dropped, 0);
     });
   });
 

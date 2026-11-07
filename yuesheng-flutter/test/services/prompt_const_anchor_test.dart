@@ -202,10 +202,13 @@ CollectedPromptConsts _buildCurrent() {
           chunkCount: kPayloadSampleCount,
         ),
       ),
-      // B2c（T-20261102-01）：发现层三常量（**未接线**资产，公开常量直接引用）。
+      // B2c（T-20261102-01）：发现层三常量（公开常量直接引用）。
+      // T-20261106-04 接线批：三常量已装配进独立发现帧（S-1），本帧**不拼进**
+      // kChunkSystemPrompt ⇒ 上面四键期望零漂移，只新增下面一个键。
       'D1': _textAnchor(kDiscoveryDirectionSet),
       'D2': _textAnchor(kDiscoveryDirectionDiscipline),
       'P1': _textAnchor(kCandidatePromotionGate),
+      'discoveryCallPrompt': _textAnchor(buildDiscoverySystemPrompt()),
       'meta': {
         'exceptionIds': ids,
         'exceptionLineCount': exceptionLineCount,
@@ -307,6 +310,8 @@ const List<String> kPinnedKeys = [
   'D1',
   'D2',
   'P1',
+  // T-20261106-04：发现帧装配产物（D1 + D2 + P1 + 输出协议），独立帧。
+  'discoveryCallPrompt',
 ];
 
 // ── H9 payload 样张入参（固定值 ⇒ 样张可逐字节比对）──

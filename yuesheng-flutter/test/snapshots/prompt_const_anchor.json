@@ -27,6 +27,10 @@
     "len": 543,
     "fnv": "5f0daf98c56cb166"
   },
+  "discoveryCallPrompt": {
+    "len": 1538,
+    "fnv": "c3ebc432f74ff26"
+  },
   "meta": {
     "exceptionIds": [
       "P001",

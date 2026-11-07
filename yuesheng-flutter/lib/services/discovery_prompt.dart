@@ -1,13 +1,15 @@
 // ─────────────────────────────────────────────────────────────
-// 发现层 prompt 资产（**未接线**）。
+// 发现层 prompt 资产。
 //
 // 卡：T-20261102-01 批 B2c。逐字文本 = 报批稿
 // `.ai/reports/2026-11-03-报批稿-B2落点乙-发现方向集与晋升闸.md` §2.1/§2.2/§2.3
 // （R-027，舰长 2026-11-03 14:16「按建议全批」）——三常量为授权面，改一字即超授权。
 //
-// ⚠️ 本文件是**未接线**的发现层资产：三常量未装配进任何注入面，
-//    对现行 prompt 行为**零变化**；接线归后续报批批（ADR-0013 J-3）。
-//    在接线批落地前，不得据本文件宣称任何检出力 / 召回变化。
+// 接线状态（2026-11-07 · T-20261106-04 批）：下文 `kDiscoveryOutputFormat`
+// 与 `buildDiscoverySystemPrompt()` 为本批新增授权面，装配点为
+// `discovery_call.dart` 的 `runDiscoveryThenVerify()`。★ 该帧**独立**，
+// 不拼进 `buildChunkSystemPrompt()`（S-1 的机制保证）。
+//    行为读数仍挂 U4：结构牙（J1–J7）可判，检出增量未验，不得据本文件宣称任何召回变化。
 //
 // ⚠️ D1 方向名与实验侧 `PROMPTS-DRAFT.md` **形似不逐字是有意设计**
 //    （防实验资产与产品资产互为真相源），不得改回与实验侧逐字一致。
@@ -41,3 +43,40 @@ const String kCandidatePromotionGate =
     '- 「暂无合适症候」与「问题不存在」是两回事：清单用于归认与命名，不用于否决观察本身。\n'
     '- 未晋升为候选假设的条目，不触发任何训练建议。\n'
     '- 三个出口之外不得自创去向；某条观察确实三个出口都不适用时，按出口二登记并写明原因。';
+
+/// 发现调用输出协议（R-027 · 本批新增注入面）。
+///
+/// 顶层键刻意用 `observations` 而非 `notes`：与分块协议（`chunk_prompt.dart`
+/// `_kChunkOutputFormat`）**不共用键名**，防两帧产物混用与被同一解析器误收。
+///
+/// `exit` 三值与 `verification_gate.dart` 的 `VerificationVerdict` 同风格（英文 wire 值）。
+/// ★ 本常量一字不动地对应报批稿 §2.1；改一字即超授权面。
+const String kDiscoveryOutputFormat =
+    '输出格式（只输出 JSON，不要任何解释文字）：\n'
+    '{"observations":[{"exit":"<三选一>","anchorQuotes":["<本片段原文逐字子串>"],'
+    '"inference":"<仅 promoted 必填：一句话推测>",'
+    '"reason":"<仅 observation / unclassified 必填：缺什么、为何暂缓或为何未覆盖>",'
+    '"syndromeId":"<仅 promoted 且清单有合适条目时填编号，否则填空字符串>"}]}\n'
+    'exit 取值只能是以下三个之一：\n'
+    '- "promoted"：已晋升为候选假设。anchorQuotes 至少 1 条，inference 必须非空。\n'
+    '- "observation"：登记为观察记录。anchorQuotes 至少 1 条，reason 必须非空。\n'
+    '- "unclassified"：登记为未归类现象。anchorQuotes 至少 1 条，reason 必须非空。\n'
+    '硬性要求：\n'
+    '1. anchorQuotes 每一项都必须是输入文本的逐字子串：不得改写、不得拼接、不得把全角标点改成半角。\n'
+    '2. 一条观察只填一个 exit 值。填两个等于未按协议输出，该条作废。\n'
+    '3. anchorQuotes 为空、或全部不是逐字子串的条目，整条作废，不要输出。\n'
+    '4. 除 JSON 之外不输出任何文字。';
+
+/// 发现帧装配：D1 方向集 + D2 方向纪律 + P1 晋升闸 + 输出协议。
+///
+/// ★ 独立成帧（S-1）：**不拼进** `buildChunkSystemPrompt()`，不含
+/// `syndrome_registry` 的 oneLine / manual 判据正文，也不含症候编号与名称
+/// （见报批稿裁点 A：不带清单）。因此 `kChunkSystemPrompt` 等 4 个正文键
+/// 期望零漂移；本函数产物**另立新锚键** `discoveryCallPrompt`。
+///
+/// 纯函数、无入参：四个构件全是常量，产物在进程内恒定 ⇒ 可被锚点测试逐字节钉。
+String buildDiscoverySystemPrompt() =>
+    '$kDiscoveryDirectionSet\n\n'
+    '$kDiscoveryDirectionDiscipline\n\n'
+    '$kCandidatePromotionGate\n\n'
+    '$kDiscoveryOutputFormat\n';

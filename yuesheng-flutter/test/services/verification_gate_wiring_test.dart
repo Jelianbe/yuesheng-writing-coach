@@ -19,14 +19,25 @@ import 'package:writingcoach/services/progressive_diagnosis.dart';
 import 'package:writingcoach/services/verification_gate.dart';
 
 /// 主链替身：分块分析走 [chatCompletion]，merge 走 [streamChat]。
+///
+/// ★ T-20261106-04（S-5 接线）起，**同一个 client 也会收到发现帧**：
+/// `runDiscoveryThenVerify` 用主链 `llmClient` 出站（发现层不是第二模型）。
+/// 故本桩必须**按 system 帧分派**，否则发现调用会拿到分块笔记的 JSON、
+/// 解析出 0 条出口一 ⇒ 验证层输入恒空 ⇒ 「验证层真的出站」变成空转绿。
 class _ChainClient extends LlmClient {
   static const String _chatResponse =
       '{"notes":[{"syndromeId":"P001","description":"情绪标签化",'
       '"evidence":["XXXXXXXXXX"],"severity":"L1"}]}';
 
+  /// 发现帧应答：1 条出口一 + 逐字锚点（`XXXXXXXXXX` 是每段原文的子串）。
+  static const String _discoveryResponse =
+      '{"observations":[{"exit":"promoted","anchorQuotes":["XXXXXXXXXX"],'
+      '"inference":"疑似情绪标签化","syndromeId":"P001"}]}';
+
   static const String _streamResponse = '合并后的诊断结果';
 
   int chatCalls = 0;
+  int discoveryCalls = 0;
 
   @override
   Future<String> chatCompletion(
@@ -36,6 +47,14 @@ class _ChainClient extends LlmClient {
     CancelToken? cancelToken,
   }) async {
     chatCalls++;
+    // 发现帧独有词 `anchorQuotes`（S-1 帧隔离的可判形态）⇒ 按帧分派。
+    final system = messages
+        .firstWhere((message) => message.role == 'system')
+        .content;
+    if (system.contains('anchorQuotes')) {
+      discoveryCalls++;
+      return _discoveryResponse;
+    }
     return _chatResponse;
   }
 
@@ -222,7 +241,7 @@ void main() {
   });
 
   group('未配置态零出站且不阻塞', () {
-    test('三键全空 ⇒ 出站 0、client 都不造、仍留一条 notConfigured 读数', () async {
+    test('三键全空 ⇒ 发现层与验证层都零出站、client 都不造、零读数', () async {
       final content = _longContent();
 
       // 基线耗时（gate = null）。
@@ -251,11 +270,12 @@ void main() {
       );
 
       final watch = Stopwatch()..start();
+      final chain = _ChainClient();
       final result = await runProgressiveDiagnosis(
         content: content,
         title: '接线测试',
         onContent: (_) {},
-        llmClient: _ChainClient(),
+        llmClient: chain,
         verificationGate: gate,
       );
       watch.stop();
@@ -263,15 +283,42 @@ void main() {
       expect(result, isNotNull);
       expect(factoryCalls, 0, reason: '未配置态连 client 都不该造');
       expect(verifyClient.calls, 0, reason: '未配置态必须零出站');
+      expect(chain.discoveryCalls, 0, reason: '三键门前置于发现调用（裁点 E）');
 
-      expect(records.length, 1, reason: '未配置也留 1 条读数');
-      expect(records.single.outcome, VerificationOutcome.notConfigured);
-      // 防空转：输入侧确实有候选，否则「零出站」是假绿。
-      expect(
-        records.single.hypothesisCount,
-        greaterThan(0),
-        reason: '候选数必须 > 0，否则未配置与「没有候选」不可区分',
+      // ★ 改判（T-20261106-04 · S-5 接线）：旧链路里「有候选 + 未配置」会留 1 条
+      // notConfigured 读数；新链路里三键门**前置于发现调用** ⇒ 未配置时发现层也
+      // 不跑 ⇒ 验证层输入恒空 ⇒ `gate.run` 按既有语义（`hypotheses.isEmpty ⇒
+      // return null`）**不留读数**。这不是「零读数更安全」，而是**可观测性下降**，
+      // 已登记为本批已知代价（见施工回执 §6）。
+      expect(records, isEmpty, reason: '未配置态不再产生 notConfigured 读数');
+
+      // 防空转（保留原用例意图，换判据）：同一条主链，仅把三键填满 ⇒
+      // 发现层必须真的出站 1 次 ⇒ 证明上面的零出站来自三键门，
+      // **不是「没东西可发」**。
+      var fullFactoryCalls = 0;
+      final fullVerify = _VerifyClient(
+        () async => '[{"id":"h1","verdict":"confirmed"}]',
       );
+      final fullGate = VerificationGate(
+        keysLoader: () async => _fullKeys,
+        clientFactory: (_) {
+          fullFactoryCalls++;
+          return fullVerify;
+        },
+        sink: (_) {},
+      );
+      final fullChain = _ChainClient();
+      await runProgressiveDiagnosis(
+        content: content,
+        title: '接线测试',
+        onContent: (_) {},
+        llmClient: fullChain,
+        verificationGate: fullGate,
+      );
+
+      expect(fullChain.discoveryCalls, 1, reason: '三键齐 ⇒ 发现调用恰 1 次');
+      expect(fullFactoryCalls, 1, reason: '三键齐 ⇒ 验证 client 造 1 次');
+      expect(fullVerify.calls, 1, reason: '三键齐 ⇒ 验证层出站 1 次');
 
       expect(
         watch.elapsedMilliseconds - baselineWatch.elapsedMilliseconds,
