@@ -206,6 +206,48 @@ void main() {
       expect(hypotheses.single.evidence.join().contains('伪造'), isFalse);
       expect(parsed.dropped, 0);
     });
+
+    // ★ 登记项（独立复核 F1，2026-11-07）：报批稿 §2.4 只对 `exit` 授权
+    // `trim + toLowerCase`，对 `anchorQuotes` 未授权 trim；而实现做的是
+    // `content.contains(item.trim())`。这是**第 13 条偏差**，方向宽容。
+    // 不给它判据的后果：下次重构可以静默收紧（正常引句被丢）或静默放宽
+    // （去空白后比对 ⇒ 模型能靠删空格把不存在的话拼成子串）。
+    // ⇒ 本用例把**当前语义的两侧边界**同时钉死。
+    test('引句首尾空白宽容，但不吃中间空白（F1 登记 · 两侧都钉）', () {
+      const content = '他把杯子放回桌面，没有说话。';
+      const paddedQuote = '  他把杯子放回桌面，没有说话。  ';
+
+      // 对照：带首尾空白的原串**不是**正文子串 ⇒ 下面若通过，只能是 trim 的功劳。
+      expect(
+        content.contains(paddedQuote),
+        isFalse,
+        reason: '对照失效（原串本来就是子串）⇒ 本用例失去意义',
+      );
+
+      final accepted = parseDiscoveryNotes(
+        '{"observations":[${_promoted(quotes: '["$paddedQuote"]')}]}',
+        content,
+      );
+      // 收紧侧：去掉 trim ⇒ 该条被 dropped ⇒ promoted 变 0 ⇒ 这里红。
+      expect(accepted.promoted, 1, reason: '首尾空白应被 trim 后判通过（当前语义）');
+      expect(accepted.dropped, 0);
+      // 证据形态也是语义的一部分：进验证层的是 trim 后形态，不是模型原样输出。
+      expect(
+        accepted.notes.single.anchorQuotes.single,
+        '他把杯子放回桌面，没有说话。',
+        reason: '证据应被替换为 trim 后的形态（登记事实，非缺陷）',
+      );
+
+      // 放宽侧：只去首尾、**不吃中间空白** ⇒ 删空格的引句必须 dropped。
+      // 这里拦的是「把比对改成正文与引句**双去空白**」那种放宽（下例中两侧
+      // 去空白后恰好相等）⇒ 那会让模型靠删空格把不存在的连续串拼成锚点。
+      final collapsed = parseDiscoveryNotes(
+        '{"observations":[${_promoted(quotes: '["他把杯子放回桌面。"]')}]}',
+        '他把 杯子放回桌面。',
+      );
+      expect(collapsed.promoted, 0, reason: '双去空白的放宽会让该条误判通过 ⇒ 锚点退化到「字数对得上」');
+      expect(collapsed.dropped, 1);
+    });
   });
 
   group('J6 · 协议违规', () {
