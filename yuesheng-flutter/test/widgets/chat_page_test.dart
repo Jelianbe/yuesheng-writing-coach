@@ -450,6 +450,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('A末尾标记'), findsOneWidget);
 
+      // 等切换触发的收敛链彻底终结再模拟用户滚动。pumpAndSettle 只判「无待排帧」，
+      // 而 _settleAtBottom 末帧 jumpTo 无位移时不 scheduleFrame、复校 postFrame 仍留在
+      // 队列里（attempt<6 时它还会 jumpTo(max)），置顶后即被它拉回底部 → 假红。
+      // pump 自身也只在有排帧时才跑帧，故须 ensureVisualUpdate 主动出帧冲队列。
+      // 判据：连续 2 帧无待排帧 ⇒ 残留复校帧已执行且未再排帧，链已终结。
+      var quietFrames = 0;
+      for (var i = 0; i < 20 && quietFrames < 2; i++) {
+        tester.binding.ensureVisualUpdate();
+        await tester.pump(const Duration(milliseconds: 16));
+        quietFrames = tester.binding.hasScheduledFrame ? 0 : quietFrames + 1;
+      }
+
       // 模拟用户读历史：跳回顶部（末条不可见）
       tester
           .state<ScrollableState>(find.byType(Scrollable).first)
