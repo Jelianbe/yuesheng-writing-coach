@@ -175,12 +175,6 @@ class VerificationGate {
     this.debugTimeoutOverride,
   });
 
-  /// 生产装配用：从 secure storage 读独立三键，独立 client 只带这三键。
-  static VerificationGate fromStorage() => VerificationGate(
-    keysLoader: VerificationKeysStorage().load,
-    clientFactory: _buildVerificationClient,
-  );
-
   /// 硬超时上限（C3 定值 = 复用 `LlmConfig.testTimeoutMs`，**不新增常量**）。
   ///
   /// 代价：与「测试连通性」共用同一数值。若将来要独立调档 ⇒ 属判据口径变更，
@@ -320,4 +314,10 @@ LlmClient _buildVerificationClient(VerificationKeys keys) => LlmClient(
   ),
   LlmCircuitBreaker(),
   LlmConcurrencyGate(),
+);
+
+/// ADR-0014 V-1 **唯一装配点**：两条链都经此，调用方不得另建入口（V-2「全集 ⇒ 出站恰 = 1」依赖单点）。
+VerificationGate productionVerificationGate() => VerificationGate(
+  keysLoader: VerificationKeysStorage().load,
+  clientFactory: _buildVerificationClient,
 );

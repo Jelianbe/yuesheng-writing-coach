@@ -30,6 +30,7 @@ import '../../services/chapter_position.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../services/story_structure_profile.dart';
 import '../../services/syndrome_tracker.dart';
+import '../../services/verification_gate.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
 import '../../theme/app_typography.dart';
@@ -167,11 +168,10 @@ class ChatDiagnosisController {
       bootstrap.sessionId,
     );
     // 1. 超长分块（>4000 字）优先，质量更好（对齐 RN T-011）
-    // 诊断编辑器：读用户全局启用集，关闭的症候不进分块 prompt
+    // 诊断编辑器：读用户全局启用集 —— 分块 prompt 与短文本链路（单次 sendMessage）共用
     final diagPrefs = await AppStateRepository(
       host.ref.read(appDatabaseProvider),
     ).getDiagnosisPrefs();
-    // 诊断编辑器：短文本链路（单次 sendMessage）也用同一启用集
     host.ref.read(chatServiceProvider).disabledSyndromeIds =
         diagPrefs?.effectiveDisabledIds ?? const {};
     // W-45 窄改① / 件2：位次一次读取，分块与回退共用（null ⇒ 不注入、不过滤）。
@@ -182,13 +182,14 @@ class ChatDiagnosisController {
       llmClient: host.ref.read(llmClientProvider),
       sessionId: bootstrap.sessionId,
       diagnosisContext: historySection,
-      // ADR-0006：结构画像（覆盖度不足/事件表空 ⇒ 空串，零行为变更）
       structureProfile: await _structureProfileText(chapter),
       disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
       chapterOrder: position?.order,
       totalChapters: position?.total,
       mergeTemperature: await _mergeTemperature(),
       activeSyndromeIds: await _activeSyndromeIds(bootstrap.sessionId),
+      // ADR-0014 V-1：本链与写作页链经**同一个**装配入口，不自行 fromStorage。
+      verificationGate: productionVerificationGate(),
       onContent: (delta) {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },
@@ -196,8 +197,7 @@ class ChatDiagnosisController {
     if (progressive != null) {
       await _commitChunkedDiagnosis(progressive, chapter, bootstrap.sessionId);
     } else {
-      // 2. 回退：单次诊断 prompt。对话历史只展示简洁消息（「已发送章节」），
-      // 全文由 chapterFullText 运行时注入（不落库，AI 仍收到全部内容）。
+      // 2. 回退：单次诊断 prompt（历史只展示「已发送章节」，全文由 chapterFullText 运行时注入、不落库）。
       // W-45 窄改①：把真实位次一并传入，让位置敏感症候按真实位置筛选。
       await teaching.handleSend(
         '请诊断本章：《${chapter.title}》',

@@ -149,7 +149,7 @@ class WritingCoachDiagnosisRunner {
       cancelToken: cancelToken,
       // 验证层（ADR-0014）：一次一变量，只接本条链（chat 链 `:179` 不动）。
       // 三键缺省即禁用 ⇒ 未配置时零出站、主链零变化。
-      verificationGate: VerificationGate.fromStorage(),
+      verificationGate: productionVerificationGate(),
     );
 
     final targets = _prepareTargets(diagPrefs);

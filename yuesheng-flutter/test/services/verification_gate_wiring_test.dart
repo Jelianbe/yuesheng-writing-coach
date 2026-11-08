@@ -11,6 +11,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -359,6 +360,72 @@ void main() {
 
       expect(verifyClient.calls, 0);
       expect(records, isEmpty);
+    });
+  });
+
+  group('V-1 ② 调用图断言：装配点唯一 · 两条链都接上', () {
+    // 扫 lib/ 全部 dart 文件。★ 分母非空守卫：cwd 不对 / 目录缺失时 files=0，
+    // 下面每条「不存在」断言都会退化成恒真空集（本仓已踩过这个坑）。
+    ({
+      int files,
+      List<String> defined,
+      List<String> called,
+      List<String> legacy,
+    })
+    scan() {
+      var files = 0;
+      final defined = <String>[];
+      final called = <String>[];
+      final legacy = <String>[];
+      for (final e in Directory('lib').listSync(recursive: true)) {
+        if (e is! File || !e.path.endsWith('.dart')) continue;
+        files++;
+        final rel = e.path.replaceAll('\\', '/'); // Windows 路径归一
+        final src = e.readAsStringSync();
+        if (src.contains('VerificationGate productionVerificationGate()')) {
+          defined.add(rel);
+        }
+        if (src.contains('productionVerificationGate()')) called.add(rel);
+        if (src.contains('VerificationGate.fromStorage')) legacy.add(rel);
+      }
+      return (files: files, defined: defined, called: called, legacy: legacy);
+    }
+
+    test('★#B4-1 装配入口唯一：定义恰 1 处 · 旧 fromStorage 已消失', () {
+      final r = scan();
+      expect(r.files, greaterThan(100), reason: '扫描分母必须非空，否则本条恒真');
+      expect(r.defined, [
+        'lib/services/verification_gate.dart',
+      ], reason: 'V-1：装配点须唯一落在 lib/services/ 侧；出现第二处即已分叉');
+      expect(
+        r.legacy,
+        isEmpty,
+        reason: '旧静态入口 fromStorage 不得复活——V-2「全集 ⇒ 出站恰 = 1」依赖单点装配',
+      );
+    });
+
+    test('★#B4-2 两条链都以「传参」形态接上（不只是 import）', () {
+      final r = scan();
+      expect(r.called.length, 3, reason: '1 处定义 + 两条链各 1 处调用');
+      for (final f in const [
+        'lib/features/chat/chat_diagnosis_controller.dart',
+        'lib/features/writing/writing_coach_panel_diagnosis_runner.dart',
+      ]) {
+        final src = File(f).readAsStringSync();
+        expect(
+          src.contains('verificationGate: productionVerificationGate()'),
+          isTrue,
+          reason: '$f 必须把 gate 作为 runProgressiveDiagnosis 的参数传入',
+        );
+      }
+    });
+
+    test('★#B4-3 装配结果可用，且三键读取是惰性的（构造期不碰 storage）', () {
+      // 若 keysLoader 在构造期就执行，test 环境无 platform channel ⇒ 会抛。
+      // 能构造出来即证明读取是惰性闭包——这也是「未配置态不崩主链」的前提。
+      final gate = productionVerificationGate();
+      expect(gate.keysLoader, isNotNull);
+      expect(gate.clientFactory, isNotNull);
     });
   });
 }
