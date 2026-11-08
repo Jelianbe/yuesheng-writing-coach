@@ -1,9 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// WritingCoachDiagnosisRunner — 诊断链路执行器（独立类，无 part）
-//
-// R-019 真分解：从写作教练诊断流程中抽出的**独立类**，负责分块/单次诊断
-// 链路编排、流式回调、取消/错误优雅复位。所需能力经 WritingCoachPanelHost
-// 注入，不隐式依赖 State 私有成员，也不使用 part / extension。
+// WritingCoachDiagnosisRunner — 诊断链路执行器（独立类，无 part）。
+// R-019 真分解：负责分块/单次诊断链路编排、流式回调、取消/错误优雅复位；
+// 能力经 WritingCoachPanelHost 注入，不隐式依赖 State 私有成员、不用 part/extension。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -28,6 +26,8 @@ import '../../services/chat_message_types.dart'
 import '../../services/chat_service.dart';
 import '../../services/chapter_completion_querier.dart';
 import '../../services/chapter_position.dart';
+import '../../services/discovery_card_payload.dart';
+import '../../services/discovery_note.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../services/session_harvest_assembler.dart';
 import '../../services/story_structure_profile.dart';
@@ -47,8 +47,7 @@ class WritingCoachDiagnosisRunner {
 
   String get _chapterId => _host.chapterId;
 
-  /// ADR-0006 + T-20261025-06 件2：一次读取同时产出结构画像与真实位次
-  /// （失败/降级 ⇒ null ⇒ 调用方按空串 / 无位次处理）。
+  /// ADR-0006 + T-20261025-06 件2：一次读取同时产出结构画像与真实位次（失败/降级 ⇒ null）。
   Future<({String? profile, ({int order, int total})? position})?>
   _buildProfileFacts() async {
     final db = _ref.read(appDatabaseProvider);
@@ -66,7 +65,7 @@ class WritingCoachDiagnosisRunner {
     );
   }
 
-  /// 诊断链路编排：共用取消令牌 + 分块/单次路由 + 取消/错误处理。
+  /// 诊断链路编排：共用取消令牌（ADR-C87，全链路）+ 分块/单次路由 + 取消/错误处理。
   Future<void> runChain({
     required String sid,
     required String content,
@@ -74,7 +73,6 @@ class WritingCoachDiagnosisRunner {
     required String diagPrompt,
     required bool isSelection,
   }) async {
-    // ADR-C87 延伸：诊断全链路（分块+单次）共用取消令牌
     final cancelToken = CancelToken();
     _host.cancelToken = cancelToken;
     try {
@@ -86,8 +84,7 @@ class WritingCoachDiagnosisRunner {
         cancelToken: cancelToken,
       );
     } on ProgressiveMergeOverBudget catch (e) {
-      // W-15-B B1：merge 预算拒发——显式提示（设计稿 §3.1「UI 显式报」），
-      // 不落入下方通用 catch（「超限静默继续发送」是本批要消灭的形态）。
+      // W-15-B B1：merge 预算拒发——显式提示（设计稿 §3.1「UI 显式报」），不落通用 catch。
       handleError(e.userMessage);
     } on ProgressiveDiagnosisCancelled {
       // 用户主动停止分块诊断：优雅复位（不标记失败、不弹红错）
@@ -98,8 +95,6 @@ class WritingCoachDiagnosisRunner {
       _host.cancelToken = null;
     }
   }
-
-  /// 长度路由执行：先分块链路（长文本），null（≤THRESHOLD）则单次 sendMessage。
 
   /// W-18 用户温度档（merge 段；灵活档 ⇒ null ⇒ 请求体逐字节不变）。
   Future<double?> _mergeTemperature() async => mergeTemperatureFor(
@@ -118,6 +113,7 @@ class WritingCoachDiagnosisRunner {
     return (store: store, chatService: chatService);
   }
 
+  /// 长度路由执行：先分块链路（长文本），null（≤THRESHOLD）则单次 sendMessage。
   Future<void> _runProgressiveOrSend({
     required String sid,
     required String content,
@@ -125,12 +121,13 @@ class WritingCoachDiagnosisRunner {
     required String diagPrompt,
     required CancelToken cancelToken,
   }) async {
-    // D2：长度路由 — 先尝试分块链路（长文本）
     final diagPrefs = await AppStateRepository(
       _ref.read(appDatabaseProvider),
     ).getDiagnosisPrefs();
-    // ADR-0006：结构画像 + 件2 位次同一次读取（拿不到 ⇒ 空串 / 不过滤）。
     final facts = await _buildProfileFacts();
+    // S3 接线（R-027 已批）：configured=三键齐轮次快照（异常安全读数）；发现层产物每轮恰广播 1 次。
+    final configured = await discoveryConfigured();
+    DiscoveryParseResult? discoveryResult;
     final progressive = await runProgressiveDiagnosis(
       content: content,
       title: title,
@@ -145,17 +142,22 @@ class WritingCoachDiagnosisRunner {
       onContent: (delta) => _ref
           .read(writingCoachStoreProvider(_chapterId).notifier)
           .appendStreamingContent(delta),
-      // ADR-C87 延伸：分块诊断中途可取消（每块前/合并前检查）
       cancelToken: cancelToken,
-      // 验证层（ADR-0014）：一次一变量，只接本条链（chat 链 `:179` 不动）。
-      // 三键缺省即禁用 ⇒ 未配置时零出站、主链零变化。
+      // 验证层（ADR-0014）：只接本条链（chat 链 `:179` 不动）；三键缺省即禁用。
       verificationGate: productionVerificationGate(),
+      // S3（R-027 已批）：发现结果出主链——单向广播，每轮恰 1 次，不写返回值。
+      onDiscovery: (r) => discoveryResult = r,
     );
 
     final targets = _prepareTargets(diagPrefs);
     if (progressive != null) {
-      // D4-A：分块链路完成 → 解析+持久化+卡片插入
-      await _commitProgressive(sid, progressive, content, targets.chatService);
+      await _commitProgressive(
+        sid,
+        progressive,
+        content,
+        targets.chatService,
+        discoverySectionOf(configured, discoveryResult),
+      );
       await handleComplete(sid);
       return;
     }
@@ -177,11 +179,14 @@ class WritingCoachDiagnosisRunner {
     ProgressiveResult progressive,
     String content,
     ChatService chatService,
+    DiscoverySectionCard? discovery,
   ) async {
     await chatService.commitDiagnosisFromContent(
       sessionId: sid,
       fullContent: progressive.fullContent,
       chapterContent: content,
+      // S3：出口三折叠条数据随诊断卡落库（null ⇒ 不落 key ⇒ S0）。
+      discovery: discovery,
     );
   }
 
@@ -224,17 +229,14 @@ class WritingCoachDiagnosisRunner {
     final store = _ref.read(writingCoachStoreProvider(_chapterId).notifier);
     store.setMessages(messages);
     store.setStreaming(false);
-    // D5-A：复位诊断中标志 + 完成反馈（短时 SnackBar，不遮挡后续操作）
     if (_host.isMounted) {
       _host.isDiagnosing = false;
       _host.streamStageLabel = null;
-      // 已由 _host.isMounted 守护（mounted 时 context 仍有效）。
       // ignore: use_build_context_synchronously
       showDiagnosisCompleteSnack(_host.context);
     }
-    // T-20261018-02（A 议题）：会话收口卡——触发判定 + 装配在 assembler 内
-    // （三条件全不满足不出卡；失败静默不阻断主流程）。插入后刷新一次消息，
-    // 使收口卡即时出现在消息流（重开会话亦经消息持久化恢复）。
+    // T-20261018-02（A 议题）：会话收口卡——三条件全不满足不出卡、失败静默；
+    // 插入后刷新一次消息使收口卡即时出现（重开会话亦经消息持久化恢复）。
     await _emitSessionHarvest(sid);
     if (_host.isMounted) {
       final refreshed = await sessionRepo.listMessages(sid);
@@ -244,10 +246,8 @@ class WritingCoachDiagnosisRunner {
     }
   }
 
-  /// 装配并插入会话收口卡（T-20261018-02）。
-  ///
-  /// 本次诊断症候集与焦点从落库行直读（history[0] = 本次），避免依赖
-  /// 诊断链中间态；assembler 内部自判触发条件。
+  /// 装配并插入会话收口卡（T-20261018-02）：症候集/焦点从落库行直读
+  /// （history[0] = 本次），assembler 内部自判触发条件。
   Future<void> _emitSessionHarvest(String sid) async {
     try {
       final db = _ref.read(appDatabaseProvider);

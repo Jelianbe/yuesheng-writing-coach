@@ -9,12 +9,11 @@
 //   - _handleTrainingResult
 //
 // ★ 现状披露（2026-10-12 D5-B1 订正，外部评审 N3）：上述「4 个方法」是
-//   **K-9 迁入时的起点**，不是当前职责面。本类现已承载落库序列
-//   （_runDiagnosisCommitSequence，含 D4/O1 顺序不变量）、阶段迁移调用、
-//   Teacher 触发、GenUI 卡片、事实抽取、V3 信号埋点、风格画像旁路等多类
-//   关注点；ADR-0005 D3 又新增 5 阀裁决链的调用透传。行数与成员数以
-//   `wc -l` / grep 实测为准，**不以本头注为准**——头注只写迁入史。
-//   U7（1506 行拆分评估）排期见 `.ai/reports/2026-10-12-诊断链二次排期-0005与0006合并序列.md` D5 节。
+//   **K-9 迁入时的起点**，不是当前职责面。本类现已承载落库序列、阶段迁移、
+//   Teacher 触发、GenUI 卡片、事实抽取、V3 埋点、风格画像旁路等多类关注点；
+//   ADR-0005 D3 又新增 5 阀裁决链的调用透传。行数与成员数以 `wc -l` / grep
+//   实测为准，**不以本头注为准**（头注只写迁入史；U7 排期见
+//   `.ai/reports/2026-10-12-诊断链二次排期-0005与0006合并序列.md` D5 节）。
 //
 // 字段依赖建模原则（同 DiagnosisCommitter / MessageInjector 样板）：
 //   - 必备依赖（required）：10 个仓储 / 服务 / 编排器
@@ -67,6 +66,8 @@ import 'package:writingcoach/services/chat_training_parser.dart'
 import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
+// S3（T-20261108-02 · R-027 已批）：出口三折叠条 payload 随诊断卡落库
+import 'package:writingcoach/services/discovery_card_payload.dart';
 // V3 埋点（ADR-0005）：出块事件 = 假报判读口径的分母，必须在解析成功处登记
 import 'package:writingcoach/services/diagnosis_signal_monitor.dart';
 import 'package:writingcoach/services/fact_parser.dart' show stripFactBlock;
@@ -376,6 +377,8 @@ class DiagnosisFlowHandler {
     required String sessionId,
     required String fullContent,
     String? chapterContent,
+    // S3：本轮发现层折叠条数据（null = 未走到发现层 ⇒ 卡片不落 key ⇒ S0）。
+    DiscoverySectionCard? discovery,
   }) async {
     // 合并 / 跨章唯一出口：排除前提层不可诊（P031），但**保留** P022（跨章侧仍判）。
     final rawParse = _filterDisabled(
@@ -407,6 +410,7 @@ class DiagnosisFlowHandler {
       fullContent: fullContent,
       diagnosis: diagnosis,
       chapterContent: chapterContent,
+      discovery: discovery,
     );
     // V3 埋点（ADR-0005）：长文链路同样出块 ⇒ 分母必须含此路径，
     // 否则写作面板诊断的确认/质疑（分子全）会**虚高**质疑率（分母缺）。
@@ -429,6 +433,7 @@ class DiagnosisFlowHandler {
     required String fullContent,
     required ParsedDiagnosis? diagnosis,
     required String? chapterContent,
+    required DiscoverySectionCard? discovery,
   }) async {
     // C103：长文链路补齐 GenUI 卡片（短链路在 commit 前插入，卡片顺序一致）。
     await _insertGenuiCardFromContent(sessionId, fullContent);
@@ -442,21 +447,15 @@ class DiagnosisFlowHandler {
       messageId: messageId,
       diagnosis: diagnosis,
       chapterContent: chapterContent,
+      discovery: discovery,
     );
   }
 
-  /// P0-a 锚定探针（旁路观测，**零行为变更**）。
-  ///
-  /// 用**整章原文**锚定，而不是逐块锚定：合并后的诊断条目已不带块索引，
-  /// 逐块锚定得先在 merge 阶段保留来源块（改动深一层、且会动 merge 契约）。
-  /// 整章锚定对跨块引文更宽松，也更接近真实 —— 引文本来就该在原文某处。
-  ///
-  /// 失败静默（同 [applyPhaseMigration] 的旁路纪律）：观测设施不许把诊断链路带崩。
-  /// 也**不**上 `error_logs` —— 探针自身故障混进产品错误率，就是把两个指标搅在一起，
-  /// 之后谁也说不清错误率升的是哪一类。
-  ///
-  /// **未测也落库**：`skip` 行是「这条链路没拿到原文」的唯一证据。只落已测会让
-  /// 「一直没测」永远看不见 —— 与「未测 ≠ 0 命中」是同一条纪律。
+  /// P0-a 锚定探针（旁路观测，**零行为变更**）。用**整章原文**锚定（合并后
+  /// 条目不带块索引，逐块锚定得先在 merge 阶段保留来源块、会动 merge 契约）。
+  /// 失败静默（同 [applyPhaseMigration] 旁路纪律），也**不**上 `error_logs` ——
+  /// 探针自身故障混进产品错误率会搅浑指标，之后说不清错误率升的是哪一类。
+  /// **未测也落库**：`skip` 行是「这条链路没拿到原文」的唯一证据（未测 ≠ 0 命中）。
   Future<void> _probeAnchors(
     String sessionId,
     ParsedDiagnosis diagnosis,
@@ -485,14 +484,14 @@ class DiagnosisFlowHandler {
     }
   }
 
-  /// C103：长文（批处理）链路「诊断落库序列 + 教师建议」组合（短链路在
-  /// [commitDiagnosisAndSuggestions] 内等价编排）。抽出以把 [commitDiagnosisFromContent]
-  /// 控制在 50 行内，并保持 GenUI（commit 前）→ commit → 教师（commit 后）顺序。
+  /// C103：长文（批处理）链路「诊断落库序列 + 教师建议」组合。抽出以把
+  /// [commitDiagnosisFromContent] 控制在 50 行内，并保持 GenUI → commit → 教师顺序。
   Future<void> _commitDiagnosisWithTeacher({
     required String sessionId,
     required String messageId,
     required ParsedDiagnosis diagnosis,
     required String? chapterContent,
+    required DiscoverySectionCard? discovery,
   }) async {
     final ref = await _resolvePrimaryRef(sessionId);
     await _runDiagnosisCommitSequence(
@@ -501,6 +500,7 @@ class DiagnosisFlowHandler {
       diagnosis: diagnosis,
       refType: ref.refType,
       refId: ref.refId,
+      discovery: discovery,
     );
     if (chapterContent != null) {
       await _triggerTeacherForLongPath(
@@ -723,6 +723,7 @@ class DiagnosisFlowHandler {
     required String? refType,
     required String? refId,
     bool isTeachingRound = false,
+    DiscoverySectionCard? discovery,
   }) async {
     try {
       await _diagnosisService.commitDiagnosisWithHistory(
@@ -744,6 +745,7 @@ class DiagnosisFlowHandler {
         sessionId: sessionId,
         diagnosis: diagnosis,
         messageId: messageId,
+        discovery: discovery,
       );
       await _diagnosisCommitter.applyPhaseMigration(
         sessionId: sessionId,
@@ -779,8 +781,7 @@ class DiagnosisFlowHandler {
       targetRefType: refType,
       targetRefId: refId,
       isTeachingRound: isTeachingRound,
-      // ADR-0012（v50）：轮次级排除记录透传落库（唯一映射行；
-      // ParsedDiagnosis.excluded 批 2 已落，此处只是抄进 DiagnosisInput）。
+      // ADR-0012（v50）：轮次级排除记录透传落库（ParsedDiagnosis.excluded 抄进 DiagnosisInput）。
       excluded: diagnosis.excluded,
     );
   }
@@ -1424,8 +1425,7 @@ class DiagnosisFlowHandler {
         nowSec: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
       // 档 A 探针：A2/A4 产物调试态可见（不落库、零自动行为）——设计稿
-      // A4「禁止静默丢弃」原则的当期满足形态；产品面消费属阶段三，
-      // prompt 向涉 R-027 须报批。
+      // A4「禁止静默丢弃」的当期满足形态；产品面消费属阶段三，prompt 向涉 R-027。
       if (kDebugMode) {
         final probe = formatIntegrationProbeSummary(snapshot);
         if (probe.isNotEmpty) debugPrint(probe);
@@ -1454,8 +1454,7 @@ class DiagnosisFlowHandler {
             severity: s.severity.value,
             evidenceCount: s.evidence.length,
             evidence: s.evidence,
-            // 批次 N10：透传症候教学解释。此前 payload 未接该字段，
-            // 导致「这条症候为什么被判定」用户侧完全不可见。
+            // 批次 N10：透传症候教学解释（此前 payload 未接，用户侧不可见）。
             explanation: s.explanation,
             // W-19-A：透传干预价值档位（null = 未评定，渲染层可空缺）。
             interventionValue: s.interventionValue,
@@ -1476,6 +1475,7 @@ class DiagnosisFlowHandler {
     required String sessionId,
     required ParsedDiagnosis diagnosis,
     required String messageId,
+    required DiscoverySectionCard? discovery,
   }) async {
     // W-22 G1：本轮焦点候选（整合层 A3 产物接用户侧；null ⇒ 候选区不渲染；提取失败静默，缺席不阻断卡片）。
     final focusCandidates = await _extractFocusCandidates(
@@ -1505,6 +1505,8 @@ class DiagnosisFlowHandler {
           nextFocus: diagnosis.nextFocus,
           // T-20261024-05 批2：轮次级排除列表透传（只传递不加工）。
           excluded: diagnosis.excluded,
+          // S3：出口三折叠条数据透传（null ⇒ 不落 key ⇒ S0 不渲染）。
+          discovery: discovery,
         ),
       );
     } catch (e, s) {

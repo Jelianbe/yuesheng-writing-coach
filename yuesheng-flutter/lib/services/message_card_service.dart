@@ -20,6 +20,7 @@ import 'dart:convert';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/services/diagnosis_integration_service.dart'
     show TeachingFocusCandidate;
+import 'package:writingcoach/services/discovery_card_payload.dart';
 import 'package:writingcoach/services/genui_parser.dart';
 import 'package:writingcoach/services/syndrome_registry.dart'
     show syndromeNameOf;
@@ -47,20 +48,15 @@ class DiagnosisResultCardPayload {
 
   final String diagnosisId;
 
-  /// W-22 G1：本轮教学焦点候选（W-21 整合层 A3 产物的用户侧接线）。
-  ///
-  /// 此前 `buildIntegrationSnapshot(...)` 的 candidates 在
-  /// diagnosis_flow_handler 里**产出即弃**（无赋值无消费）——W-22 把候选集
-  /// 经本 payload（既有消息持久化通道）接到诊断卡「候选焦点」区。
-  /// null/空 = 本轮无候选（评分全零/无分组）⇒ 候选区不渲染（不造空区）。
-  ///
-  /// 语义（设计批 §6.1 修正一）：候选是**轮次快照**，不建表；学员操作
-  /// （确认/改选/拒绝）落既有 active_problem.confirmation_status。
+  /// W-22 G1：本轮教学焦点候选（W-21 整合层 A3 产物的用户侧接线；此前
+  /// candidates 在 flow_handler 里产出即弃）。null/空 = 本轮无候选 ⇒ 候选区
+  /// 不渲染（不造空区）。语义（设计批 §6.1 修正一）：候选是**轮次快照**，
+  /// 不建表；学员操作（确认/改选/拒绝）落既有 active_problem.confirmation_status。
   final List<FocusCandidateCard>? focusCandidates;
 
-  /// W-49：本轮问题的**根因分析**（整轮问题的成因，一段话）。与 [DiagnosisSyndromeCard.explanation]
-  /// （单症候「为什么被判定存在」）**语义不同**，两者并存、互不覆盖；此前只落 `diagnosis_results` + 导出、
-  /// UI 零消费（`.ai/reports/2026-10-20-W34-两头配重诊断.md` §三），属**已有数据接线**，null / 空串 ⇒ 不渲染（数据诚实：不编造根因）。
+  /// W-49：本轮问题的**根因分析**（整轮问题的成因，一段话）。与
+  /// [DiagnosisSyndromeCard.explanation]（单症候「为什么被判定存在」）**语义
+  /// 不同**，两者并存互不覆盖；属已有数据接线，null / 空串 ⇒ 不渲染（数据诚实）。
   final String? rootCauseAnalysis;
 
   /// W-49：本轮**反馈总结**（一段话，给学员的收束话语）。同上：产出/落库/导出全通、UI 零消费，本卡只做透传。
@@ -76,6 +72,10 @@ class DiagnosisResultCardPayload {
   /// 下一步重点（`next_focus` 透传，**已有数据接线**非新造）；null / 空串 ⇒ 落库不落 key、呈现面不渲染。
   final String? nextFocus;
 
+  /// S3（T-20261108-02 · R-027 已批）：出口三「本次未归类」折叠条数据。
+  /// null = 本轮未走到发现层（短文单次链路 / 旧消息）⇒ 不落 key ⇒ S0 不渲染。
+  final DiscoverySectionCard? discovery;
+
   const DiagnosisResultCardPayload({
     required this.syndromeCount,
     required this.syndromes,
@@ -89,6 +89,7 @@ class DiagnosisResultCardPayload {
     this.feedbackSummary,
     this.excluded = const [],
     this.nextFocus,
+    this.discovery,
   });
 
   factory DiagnosisResultCardPayload.fromJson(Map<String, dynamic> json) {
@@ -108,11 +109,9 @@ class DiagnosisResultCardPayload {
       suggestedActions: actionsRaw.map((e) => e.toString()).toList(),
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
       focusReason: (fr is String && fr.isNotEmpty) ? fr : null,
-      // H-3：缺 coverage 的整体判定不入 payload（防御性二次校验——
-      // parser/validator 已拦一道，此处防旧库数据/手工 JSON 绕过）。
-      // 类型判断用 Map（非 Map<String, dynamic>）：生产经 jsonDecode 是
-      // Map<String, dynamic>，但测试/调用方直传 toJson 产物是
-      // Map<String, Object>——两者都须接受（与 syndromes 项同款宽容写法）。
+      // H-3：缺 coverage 的整体判定不入 payload（防御性二次校验，防旧库
+      // 数据/手工 JSON 绕过）。类型判断用 Map：生产 jsonDecode 与测试直传
+      // toJson 产物（Map<String, Object>）都须接受（与 syndromes 项同款宽容写法）。
       overall: overallRaw is Map
           ? _parseCardOverall(Map<String, dynamic>.from(overallRaw))
           : null,
@@ -126,8 +125,7 @@ class DiagnosisResultCardPayload {
             ),
           )
           .toList(),
-      // W-49：camel / snake 双写均接受（与 focusReason 同款容错）；
-      // 空串归一为 null，保证 toJson→fromJson 往返稳定。
+      // W-49：camel / snake 双写均接受；空串归一为 null（往返稳定）。
       rootCauseAnalysis: _firstNonEmpty(
         json['root_cause_analysis'],
         json['rootCauseAnalysis'],
@@ -147,6 +145,12 @@ class DiagnosisResultCardPayload {
               )
               .toList() ??
           const [],
+      // S3：'discovery' key 缺失 ⇒ null（S0）；宽容 Map 写法同 syndromes。
+      discovery: json['discovery'] is Map
+          ? DiscoverySectionCard.fromJson(
+              Map<String, dynamic>.from(json['discovery'] as Map),
+            )
+          : null,
     );
   }
 
@@ -156,13 +160,12 @@ class DiagnosisResultCardPayload {
     'suggestedActions': suggestedActions,
     'confidence': confidence,
     // 空串与 null 同等对待：都不落 key（fromJson 亦把空串归一为 null，
-    // 保证 toJson→fromJson 往返稳定）。
+    // 保证往返稳定）。
     if (focusReason != null && focusReason!.isNotEmpty)
       'focusReason': focusReason,
     if (overall != null) 'overall': overall!.toJson(),
     'diagnosisId': diagnosisId,
-    // W-22 G1：空列表不落 key（与 focusReason 同款往返稳定约定；
-    // fromJson 侧 null 与空列表都归一为「不渲染」）。
+    // W-22 G1：空列表不落 key（与 focusReason 同款往返稳定约定）。
     if (focusCandidates != null && focusCandidates!.isNotEmpty)
       'focusCandidates': focusCandidates!.map((c) => c.toJson()).toList(),
     // W-49：空串与 null 同等对待，都不落 key（往返稳定）。
@@ -171,9 +174,11 @@ class DiagnosisResultCardPayload {
     if (feedbackSummary != null && feedbackSummary!.isNotEmpty)
       'feedbackSummary': feedbackSummary,
     if (nextFocus != null && nextFocus!.isNotEmpty) 'next_focus': nextFocus,
-    // T-20261024-05 批2：空列表不落 key（与 focusCandidates 同款往返稳定约定）。
+    // T-20261024-05 批2 / S3：空列表与 null 都不落 key（往返稳定；
+    // S0 与态①靠 'discovery' key 有无区分）。
     if (excluded.isNotEmpty)
       'excluded': excluded.map((e) => e.toJson()).toList(),
+    if (discovery != null) 'discovery': discovery!.toJson(),
   };
 }
 
@@ -231,9 +236,7 @@ List<FocusCandidateCard> toFocusCandidateCards(
 }
 
 /// W-49：双写 key 容错读取 —— 先 camel 后 snake（或反之），空串归一为 null。
-///
-/// 与 `focusReason` 的单 key 容错同源：历史消息、手工构造 JSON、测试直传
-/// `toJson` 产物三种来源的写法并不统一，读取侧统一吸收，写入侧只按一种输出。
+/// 写入侧只按一种输出，读取侧统一吸收历史消息/手工 JSON/测试直传三种来源。
 String? _firstNonEmpty(Object? primary, Object? fallback) {
   if (primary is String && primary.isNotEmpty) return primary;
   if (fallback is String && fallback.isNotEmpty) return fallback;
@@ -241,7 +244,6 @@ String? _firstNonEmpty(Object? primary, Object? fallback) {
 }
 
 /// payload 侧的整体判定解析（H-3 防御性二次校验）。
-///
 /// parser/validator 已拦过一道；此处防旧库数据/手工构造 JSON 绕过。
 /// verdict 非三档或 coverage 空 ⇒ null（呈现区不渲染）。
 OverallDiagnosis? _parseCardOverall(Map<String, dynamic> raw) {
@@ -380,7 +382,6 @@ class DiagnosisSyndromeCard {
 }
 
 /// 诊断完成后，确定性插入诊断结果卡片
-///
 /// 真源：message-card-service.ts insertDiagnosisResultCard
 ///
 /// 在 commitDiagnosisWithHistory 成功后调用。
@@ -417,7 +418,6 @@ class DiagnosisFailedCardPayload {
 }
 
 /// 诊断失败时，确定性插入诊断失败卡片（assistant 角色）
-///
 /// 真源：message-card-service.ts insertDiagnosisFailedCard
 Future<String> insertDiagnosisFailedCard(
   SessionRepository sessionRepo,

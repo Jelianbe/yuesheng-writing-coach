@@ -27,6 +27,8 @@ import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
 import '../../providers/session_providers.dart';
 import '../../services/chapter_position.dart';
+import '../../services/discovery_card_payload.dart';
+import '../../services/discovery_note.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../services/story_structure_profile.dart';
 import '../../services/syndrome_tracker.dart';
@@ -43,17 +45,10 @@ class ChatDiagnosisController {
 
   ChatDiagnosisController(this.host, this.teaching);
 
-  /// 批次 13 自动诊断：成长页「写作诊断」选章后进入对话页触发。
-  ///
-  /// 对齐 RN sendDiagnosisMessage：读章节 → 长度校验 → 超长走分块
-  /// （runProgressiveDiagnosis + commitDiagnosisFromContent），否则回退
-  /// 单次诊断 prompt（显式要求 [YS_DIAGNOSIS] 格式）。
-  ///
-  /// 上传即诊断修复：+号上传文本点「立即诊断」时，章节行/正文可能尚未对
-  /// 当前读连接可见（导入事务刚提交、provider 监听同步触发）。旧实现只读
-  /// 一次 getChapter，拿不到就静默 return → 用户看到「无内容返回」。现改为：
-  /// 先显示 loading，短暂轮询等待正文落盘可见；就绪才发诊断；超时给明确
-  /// 失败提示而不是静默吞掉。
+  /// 批次 13 自动诊断：成长页「写作诊断」选章后进入对话页触发。对齐 RN sendDiagnosisMessage：
+  /// 读章节 → 长度校验 → 超长走分块（runProgressiveDiagnosis + commitDiagnosisFromContent），
+  /// 否则回退单次诊断 prompt（要求 [YS_DIAGNOSIS]）。上传即诊断修复：+号上传后章节行/正文
+  /// 可能尚未对当前读连接可见（导入事务刚提交），现改为短暂轮询等待正文落盘可见，就绪才发诊断。
   Future<void> handleAutoDiagnose(String chapterId) async {
     // 清空 pending，避免重复触发（对齐 RN diagnosisStartedRef）
     host.ref.read(pendingDiagnosisChapterProvider.notifier).state = null;
@@ -61,9 +56,8 @@ class ChatDiagnosisController {
     if (bootstrap == null) return;
 
     final db = host.ref.read(appDatabaseProvider);
-    // W-15-B：messenger 在首个 await 前捕获——拒发提示发生在深异步之后，
-    // host.context 跨 async gap 会触发 use_build_context_synchronously；
-    // ScaffoldMessengerState 本体非 BuildContext，捕获后安全复用。
+    // W-15-B：messenger 在首个 await 前捕获——host.context 跨 async gap 会触发
+    // use_build_context_synchronously（messenger 本体非 BuildContext，捕获后安全复用）。
     final messenger = ScaffoldMessenger.of(host.context);
     // 先上屏 loading：等待落盘期间用户看到「正在准备诊断内容…」而非无响应。
     host.ref
@@ -85,8 +79,7 @@ class ChatDiagnosisController {
       }
       await _runDiagnosis(chapter, bootstrap);
     } on ProgressiveMergeOverBudget catch (e) {
-      // W-15-B B1：merge 预算拒发——显式提示（设计稿 §3.1「UI 显式报」），
-      // 不落入下方通用静默 catch（「超限静默继续发送」是本批要消灭的形态）。
+      // W-15-B B1：merge 预算拒发——显式提示（设计稿 §3.1「UI 显式报」），不落入下方通用静默 catch。
       if (host.mounted) {
         host.ref.read(chatStoreProvider.notifier).cancelStreaming();
         messenger.showSnackBar(SnackBar(content: Text(e.userMessage)));
@@ -98,8 +91,8 @@ class ChatDiagnosisController {
     }
   }
 
-  /// 轮询等待章节正文落盘可见。上传即诊断时章节行可能刚由导入事务写入，
-  /// 首次 getChapter 可能拿不到或 content 为空。最多等 ~1s（10×100ms）。
+  /// 轮询等待章节正文落盘可见。上传即诊断时章节行可能刚由导入事务写入，首次
+  /// getChapter 可能拿不到或 content 为空。最多等 ~1s（10×100ms）；
   /// 返回 (chapter: 就绪章节 / null, tooShort: 章节已在但正文不足门槛)。
   Future<({Chapter? chapter, bool tooShort})> _waitForDiagnosableChapter(
     AppDatabase db,
@@ -126,8 +119,7 @@ class ChatDiagnosisController {
     );
   }
 
-  /// 执行诊断：超长分块优先，失败回退单次诊断 prompt。
-  /// ADR-0006：本书结构画像文本（覆盖度不足/事件表空/异常 ⇒ 空串）。
+  /// 本书结构画像文本（ADR-0006：覆盖度不足/事件表空/异常 ⇒ 空串）。
   Future<String> _structureProfileText(Chapter chapter) async {
     final db = host.ref.read(appDatabaseProvider);
     final text = await buildStoryStructureProfileText(
@@ -139,8 +131,7 @@ class ChatDiagnosisController {
     return text ?? '';
   }
 
-  /// W-15-B B1 级序 b：会话当前活跃症候 ID 集（merge 超预算降级时的过滤
-  /// 判据；加载失败返空集 = 级序 b 跳过，不私造语义）。
+  /// W-15-B B1 级序 b：会话活跃症候 ID 集（merge 超预算降级过滤判据；加载失败返空集=级序 b 跳过）。
   Future<Set<String>> _activeSyndromeIds(String sessionId) async {
     try {
       final problems = await DiagnosisRepository(
@@ -163,19 +154,18 @@ class ChatDiagnosisController {
     Chapter chapter,
     SessionBootstrapState bootstrap,
   ) async {
-    // B 档：加载跨轮次症候历史（出现次数/趋势）→ 分块合并 prompt 注入
     final historySection = await loadSyndromeHistorySection(
       bootstrap.sessionId,
     );
-    // 1. 超长分块（>4000 字）优先，质量更好（对齐 RN T-011）
-    // 诊断编辑器：读用户全局启用集 —— 分块 prompt 与短文本链路（单次 sendMessage）共用
     final diagPrefs = await AppStateRepository(
       host.ref.read(appDatabaseProvider),
     ).getDiagnosisPrefs();
     host.ref.read(chatServiceProvider).disabledSyndromeIds =
         diagPrefs?.effectiveDisabledIds ?? const {};
-    // W-45 窄改① / 件2：位次一次读取，分块与回退共用（null ⇒ 不注入、不过滤）。
     final position = await _positionOf(chapter);
+    // S3 接线（R-027 已批）：configured=三键齐轮次快照；发现层产物每轮恰广播 1 次。
+    final configured = await discoveryConfigured();
+    DiscoveryParseResult? discoveryResult;
     final progressive = await runProgressiveDiagnosis(
       content: chapter.content,
       title: chapter.title,
@@ -188,17 +178,20 @@ class ChatDiagnosisController {
       totalChapters: position?.total,
       mergeTemperature: await _mergeTemperature(),
       activeSyndromeIds: await _activeSyndromeIds(bootstrap.sessionId),
-      // ADR-0014 V-1：本链与写作页链经**同一个**装配入口，不自行 fromStorage。
       verificationGate: productionVerificationGate(),
+      onDiscovery: (r) => discoveryResult = r,
       onContent: (delta) {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },
     );
     if (progressive != null) {
-      await _commitChunkedDiagnosis(progressive, chapter, bootstrap.sessionId);
+      await _commitChunkedDiagnosis(
+        progressive,
+        chapter,
+        bootstrap.sessionId,
+        discoverySectionOf(configured, discoveryResult),
+      );
     } else {
-      // 2. 回退：单次诊断 prompt（历史只展示「已发送章节」，全文由 chapterFullText 运行时注入、不落库）。
-      // W-45 窄改①：把真实位次一并传入，让位置敏感症候按真实位置筛选。
       await teaching.handleSend(
         '请诊断本章：《${chapter.title}》',
         stageLabel: '正在诊断本章…',
@@ -213,6 +206,7 @@ class ChatDiagnosisController {
     ProgressiveResult progressive,
     Chapter chapter,
     String sessionId,
+    DiscoverySectionCard? discovery,
   ) async {
     await host.ref
         .read(chatServiceProvider)
@@ -220,6 +214,8 @@ class ChatDiagnosisController {
           sessionId: sessionId,
           fullContent: progressive.fullContent,
           chapterContent: chapter.content,
+          // S3：出口三折叠条数据随诊断卡落库（null ⇒ 不落 key ⇒ S0）。
+          discovery: discovery,
         );
   }
 

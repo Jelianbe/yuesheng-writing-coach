@@ -127,10 +127,17 @@ DTO_STRUCTURAL = {
     # DiagnosisResultCardPayload
     "syndromeCount", "syndromes", "diagnosisId", "messageId", "status",
     "focusCandidates",
+    # ★ discovery（T-20261108-02 S3）：发现层旁路产物快照，系统侧落库时挂上
+    #   （真源 = discovery_prompt.dart 独立协议，非 YS_DIAGNOSIS 产出）。
+    #   不进 SRC_PROMPTS：那是给模型的输出格式声明，登记进去 = 教模型输出
+    #   discovery 字段（语义错误）。三态可见性由 S3 判据①②③单独验收，
+    #   不走 L1↔L3 贯通链。
     # DiagnosisSyndromeCard
     "syndromeId", "name", "severity", "evidenceCount",
     # FocusCandidateCard（候选焦点区）
     "total", "rationale",
+    # DiagnosisResultCardPayload（续）
+    "discovery",
 }
 
 # ── 诊断卡语义域的**真源归属** ──

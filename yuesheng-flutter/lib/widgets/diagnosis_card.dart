@@ -31,6 +31,7 @@ import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/edit_diff_event_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../services/decode_guard.dart';
+import '../services/discovery_card_payload.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/session_providers.dart';
@@ -42,6 +43,7 @@ import '../services/teaching_state_cache.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
 import 'excluded_folded_section.dart';
+import 'discovery_folded_section.dart';
 import 'm2_recall_bar.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
@@ -78,8 +80,7 @@ Color _teachingStateDotColor(BuildContext context, TeachingState state) =>
       TeachingState.mastered => context.palette.disabledText, // 已掌握 → 禁用灰
     };
 
-/// 卡片默认文案
-/// 注意：不用 record 类型，因为 record 的字段访问不能出现在 const 表达式中
+/// 卡片默认文案（不用 record 类型：字段访问不能出现在 const 表达式中）
 class _CardText {
   static const String headerTitle = '本次诊断';
   static const String problemSuffix = ' 个问题';
@@ -150,33 +151,34 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   /// ADR-C132 批3（anchor_ack）：诊断消息 ID（埋点关联触发反馈用）。
   final String? messageId;
 
-  /// ADR-0006：整体判定（结构完整度诊断，非文学打分）。
-  ///
-  /// null = 不渲染整体判定区（协议未输出 / H-3 coverage 缺失）。
-  /// 呈现规则：verdict + 覆盖度 + reasons + keep + priority，**无分数**。
+  /// ADR-0006：整体判定（结构完整度诊断，非文学打分）。null = 不渲染整体
+  /// 判定区（协议未输出 / H-3 coverage 缺失）。呈现规则：verdict + 覆盖度 +
+  /// reasons + keep + priority，**无分数**。
   final OverallDiagnosis? overall;
 
-  /// W-22 G1：本轮教学焦点候选（整合层 A3 产物接用户侧）。
-  ///
-  /// null/空 = 本轮无候选（评分全零/无分组/提取失败）⇒ 候选区不渲染
-  /// （不造空区）。操作落点见 `_switchFocusTo`（改选 = 对目标症候
-  /// confirmDiagnosis，severity 传该行现值 ⇒ 零升级；focus_resolver
-  /// fallback 优先级 1 下一轮即选中它）。
+  /// W-22 G1：本轮教学焦点候选（整合层 A3 产物接用户侧）。null/空 = 本轮无
+  /// 候选 ⇒ 候选区不渲染（不造空区）。操作落点见 `_switchFocusTo`
+  /// （改选 = 对目标症候 confirmDiagnosis，severity 传该行现值 ⇒ 零升级）。
   final List<FocusCandidateCard>? focusCandidates;
 
-  /// W-49：本轮问题的根因分析（轮次级，一段话）。与单症候的 `explanation`（「为什么被判定存在」）
-  /// **语义不同**——此处是**整轮问题的成因**，两者并存互不覆盖（见 `M2RecallBar.rootCauseText`）；null / 空串 ⇒ 不渲染。
+  /// W-49：本轮问题的根因分析（轮次级，一段话）。与单症候的 `explanation`
+  /// （「为什么被判定存在」）**语义不同**——此处是**整轮问题的成因**；
+  /// null / 空串 ⇒ 不渲染。
   final String? rootCauseAnalysis;
 
   /// W-49：本轮反馈总结（轮次级，一段话）。null / 空串 ⇒ 不渲染。
   final String? feedbackSummary;
 
-  /// T-20261024-05 批2：本轮"考虑过但未报出"的相近症候（轮次级）。空列表 ⇒ 不渲染「本轮还考虑过」区
-  /// （不造空区）。渲染时 syndrome_id 反查注册表取名，未知 ID 回退原串；reason 非空才现。
+  /// T-20261024-05 批2：本轮"考虑过但未报出"的相近症候（轮次级）。空列表 ⇒
+  /// 不渲染「本轮还考虑过」区（不造空区）。渲染时 syndrome_id 反查注册表取名。
   final List<ParsedExclusion> excluded;
 
   /// T-20261105-03：下一步重点（`next_focus` 透传，**已有数据接线**非新造）；null / 空串 ⇒ 不渲染该行。
   final String? nextFocus;
+
+  /// S3（T-20261108-02 · R-027 已批）：出口三「本次未归类」折叠条数据。
+  /// null = 本轮未走到发现层（短文单次链路 / 旧消息）⇒ 折叠条整体不渲染（S0）。
+  final DiscoverySectionCard? discovery;
 
   const DiagnosisCard({
     super.key,
@@ -195,6 +197,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     this.feedbackSummary,
     this.excluded = const [],
     this.nextFocus,
+    this.discovery,
   });
 
   /// 便利构造：从 Message.content 的 JSON 解析 payload 渲染
@@ -226,6 +229,8 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         nextFocus: payload.nextFocus,
         // T-20261024-05 批2：旧消息 JSON 无 excluded key ⇒ 默认 const [] ⇒ 不渲染。
         excluded: payload.excluded,
+        // S3：旧消息 JSON 无 discovery key ⇒ null ⇒ S0 不渲染。
+        discovery: payload.discovery,
       );
     } catch (_) {
       // 兜底：空诊断卡
@@ -250,12 +255,10 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   late bool _expanded = widget.defaultExpanded;
   late final AnimationController _expandAnim;
 
-  /// 症候ID → 教学状态（批次 45：对齐 RN loadSyndromeTeachingStates，
-  /// sessionId 非空时加载画像聚合，标签行色点按教学状态着色）
+  /// 症候ID → 教学状态（批次 45 对齐 RN：sessionId 非空时加载画像聚合着色色点）
   Map<String, TeachingState> _teachingStates = const {};
 
-  /// 症候ID → 跨轮次追踪（出现次数/趋势；用于「第 N 次出现」角标与好转提示）。
-  /// 异步加载，失败静默回退空 map——不阻断卡片渲染。
+  /// 症候ID → 跨轮次追踪（出现次数/趋势；异步加载失败静默回退空 map）。
   Map<String, SyndromeTracked> _trends = const {};
 
   /// ADR-C132 批3（anchor_ack）：诊断所属章节 ID（未显式传入时按
@@ -457,27 +460,25 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       children: [
         _buildHeader(),
         _buildTagRow(),
-        // T-20261024-05 批2：「本轮还考虑过」——症候列表之后、整体判定之前。
-        // T-20261030-02：默认折叠成一行（展开内联）；往轮分组只分不并。
+        // T-20261024-05 批2 / T-20261030-02：「本轮还考虑过」默认折叠成一行，往轮只分不并。
         ExcludedFoldedSection(
           excluded: widget.excluded,
           history: _historyExcluded,
         ),
-        // P1-7：常驻弱提示——条目≠总评（prompt 里只写给模型听，UI 反而渲染成
-        // 「严重度评估」让学员当成整篇总评）。
+        // S3（R-027 已批）：「本次未归类」折叠条；discovery null（短文/旧消息）⇒ S0 不渲染。
+        DiscoveryFoldedSection(section: widget.discovery),
+        // P1-7：常驻弱提示——条目≠总评（prompt 写给模型听，UI 若渲染成
+        // 「严重度评估」会被当成整篇总评）。
         _buildNotOverallHint(),
-        // ADR-0006：整体判定区——结构完整度诊断（非文学打分、无分数），
-        // 置 P1-7 提示**上方**：该提示的「总评」指逐条症候清单，本区是
-        // 显式的结构画像结论，语义分区明示后不矛盾（报批确认点 4）。
+        // ADR-0006：整体判定区（结构完整度诊断，非文学打分），置 P1-7 上方：
+        // 该提示的「总评」指逐条症候清单，本区是结构画像结论，语义不矛盾。
         _buildOverallSection(),
         _buildExpandedSection(),
       ],
     );
   }
 
-  /// 展开区（R-019 从 [_buildCardBody] 拆出：SizeTransition 动画块内聚，
-  /// 含分隔线 / 推理区 / 逻辑链提示 / 症候详情 / 候选焦点 / 改写块 / 尾部小结）。
-  /// 纯搬运，行为不变。
+  /// 展开区（R-019 从 [_buildCardBody] 拆出：SizeTransition 动画块内聚，纯搬运）。
   Widget _buildExpandedSection() {
     return SizeTransition(
       sizeFactor: CurvedAnimation(
@@ -506,8 +507,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               const SizedBox(height: 16),
               _buildRewriteBlock(),
             ],
-            // W-49：本轮小结（轮次级收束话语）。置于展开区末尾、
-            // 读者层弱提示之前 —— 先看完「诊断了什么 / 为什么」，再读总结。
+            // W-49：本轮小结（轮次级收束话语），置于展开区末尾、读者层弱提示之前。
             ..._buildTailSlots(),
           ],
         ),

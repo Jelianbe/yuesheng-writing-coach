@@ -1,1 +1,1 @@
-{"count": 5549, "head": "c60a4e7a", "generated_at": "2026-11-08T16:56:03+0800", "reason": "flutter test 全绿轮次的 +N（基线只卡下降，不卡等号）", "suite_size": 5540, "suite_fingerprint": "1925ff65875faca8"}
+{"count": 5567, "head": "ca8b82a3", "generated_at": "2026-11-08T19:41:34+0800", "reason": "flutter test 全绿轮次的 +N（基线只卡下降，不卡等号）", "suite_size": 5558, "suite_fingerprint": "10866fa795736eaf"}

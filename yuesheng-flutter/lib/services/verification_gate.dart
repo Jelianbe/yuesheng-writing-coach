@@ -1,10 +1,7 @@
-// ─────────────────────────────────────────────────────────────
 // VerificationGate — 验证层第二模型接入（ADR-0014 · R-027 施工稿）
-// 定位：主判产出之后的旁路（不写主判 / 不改返回对象 / 不直报 / 不触发训练）。
+// 定位：主判产出之后的旁路（不写主判 / 不改返回对象 / 不直报 / 不触发训练）；
 // 四态（V-4）：notConfigured / timeout / error / parseFail —— 不外抛、不重试、不排队。
-// 读数恒 E2、永不进必过门（V-6）；独立熔断 + 独立并发闸（V-2 / V-3）。
-// 硬超时复用 `LlmConfig.testTimeoutMs`（C3 定值，不新增常量）。
-// ─────────────────────────────────────────────────────────────
+// 读数恒 E2、永不进必过门（V-6）；独立熔断 + 独立并发闸（V-2 / V-3）；硬超时复用 LlmConfig.testTimeoutMs（C3 定值，不新增常量）。
 
 import 'dart:async';
 import 'dart:convert';
@@ -58,9 +55,8 @@ class VerificationKeysStorage {
   }
 
   /// 保存独立三键（写入前 trim；范式同 llm_config_storage.dart:57-63 的
-  /// `Future.wait` 三 write）。trim 后空串等价未配置，与
-  /// [VerificationKeys.isComplete] 同语义，不引入第四态。
-  /// 异常上抛，由调用方（UI 边界层）非空 catch + SnackBar 反馈。
+  /// `Future.wait` 三 write）。trim 后空串等价未配置（同 [VerificationKeys.isComplete]
+  /// 语义，不引入第四态）；异常上抛，由 UI 边界层非空 catch + SnackBar 反馈。
   Future<void> save(VerificationKeys keys) async {
     await Future.wait([
       _storage.write(key: kVerificationKeyBaseUrl, value: keys.baseUrl.trim()),
@@ -69,9 +65,8 @@ class VerificationKeysStorage {
     ]);
   }
 
-  /// 清除独立三键（**只删这三个**）。验证层没有 fallback 键，
-  /// 不照抄 llm_config_storage.dart 的 `_kKeyApiFallbacks`、不引入第四键。
-  /// 判据：clear() 后 `load().isComplete == false`（空串与缺键同义）。
+  /// 清除独立三键（**只删这三个**，无 fallback 键、不引入第四键）；判据：
+  /// clear() 后 `load().isComplete == false`（空串与缺键同义）。
   Future<void> clear() async {
     await Future.wait([
       _storage.delete(key: kVerificationKeyBaseUrl),
@@ -84,8 +79,7 @@ class VerificationKeysStorage {
 /// 验证结论三态（S-6）。**没有第四态**：非法值一律 parseFail 并降级（V-5）。
 enum VerificationVerdict { rejected, confirmed, needsFullText }
 
-/// 三态与线上字面量的唯一映射表。新增字面量必须同时改本表**与**
-/// `verification_gate_test.dart` 的非法值负向用例，否则「恰 3 值」会退化成「表里几个算几个」。
+/// 三态与线上字面量的唯一映射表；新增字面量必须同时改本表与 `verification_gate_test.dart` 的非法值负向用例（否则「恰 3 值」退化）。
 const Map<String, VerificationVerdict> kVerdictWire = {
   'rejected': VerificationVerdict.rejected,
   'confirmed': VerificationVerdict.confirmed,
@@ -95,10 +89,8 @@ const Map<String, VerificationVerdict> kVerdictWire = {
 /// 四态降级枚举（V-4）。[ok] 是唯一「验证层真的执行了判定」的态。
 enum VerificationOutcome { notConfigured, timeout, error, parseFail, ok }
 
-/// 一条待核对假设：**只含候选编号、症候编号、原文证据**。
-///
-/// ★ 刻意不含发现层的 `description` / `severity` / `excluded`：验证上下文
-/// 不得含发现层结论（S-7）。结构上不提供入口，比事后断言更难破。
+/// 一条待核对假设：只含候选编号、症候编号、原文证据；刻意不含发现层
+/// description / severity / excluded（S-7：验证上下文不得含发现层结论，结构上不提供入口）。
 class VerificationHypothesis {
   final String id;
   final String syndromeId;
@@ -141,15 +133,11 @@ void _defaultSink(VerificationRecord record) {
   debugPrint('[verification_gate] ${jsonEncode(record.toJson())}');
 }
 
-/// 验证层系统提示词（**新增注入面**，逐字授权见 R-027 施工稿 §3.1）。
-///
-/// 约束来源：R-009（不替用户改写、不替用户做剧情决定）、S-6（恰三态）、
-/// S-7（只给证据、不给发现层结论）。**不含**任何厂商名 / 模型名（V-3）。
+/// 验证层系统提示词（**新增注入面**，逐字授权见 R-027 施工稿 §3.1）。约束来源：
+/// R-009（不替用户改写、不替用户做剧情决定）、S-6（恰三态）、S-7（只给证据）；**不含**任何厂商名 / 模型名（V-3）。
 const String kVerificationSystemPrompt =
-    '你是独立的文本核对者。下面给出若干「候选症候」及各自在原文中的证据片段。\n'
-    '\n'
-    '对每一条，只回答一个问题：仅凭给出的证据，这条候选是否成立？\n'
-    '\n'
+    '你是独立的文本核对者。下面给出若干「候选症候」及各自在原文中的证据片段。\n\n'
+    '对每一条，只回答一个问题：仅凭给出的证据，这条候选是否成立？\n\n'
     '规则：\n'
     '1. 只依据给出的证据判断，不得补充证据之外的信息。\n'
     '2. 证据不足以判断时回答 needs_full_text，不得猜测。\n'
@@ -164,8 +152,7 @@ class VerificationGate {
   final LlmClient Function(VerificationKeys keys) clientFactory;
   final VerificationSink sink;
 
-  /// 仅测试可传：把 15 s 硬上限压到毫秒级，避免真等 15 s。
-  /// 生产恒为 null ⇒ 用 [hardTimeout]（该字段不影响硬值判据，见 §8 T-3）。
+  /// 仅测试可传：把 15 s 硬上限压到毫秒级，避免真等 15 s（生产恒 null ⇒ 用 [hardTimeout]，不影响硬值判据 §8 T-3）。
   final Duration? debugTimeoutOverride;
 
   const VerificationGate({
@@ -176,7 +163,6 @@ class VerificationGate {
   });
 
   /// 硬超时上限（C3 定值 = 复用 `LlmConfig.testTimeoutMs`，**不新增常量**）。
-  ///
   /// 代价：与「测试连通性」共用同一数值。若将来要独立调档 ⇒ 属判据口径变更，
   /// 须另走 R-027，不得就地改数。
   static const Duration hardTimeout = Duration(
@@ -223,7 +209,7 @@ class VerificationGate {
     return _emit(VerificationOutcome.ok, hypotheses, verdicts);
   }
 
-  /// 只拼「候选编号 + 症候编号 + 原文证据」——不带任何解读性字段（S-7）。
+  /// 只拼「候选编号 + 症候编号 + 原文证据」（S-7：不带任何解读性字段）。
   String _buildUserContent(List<VerificationHypothesis> hypotheses) {
     final buffer = StringBuffer();
     for (var i = 0; i < hypotheses.length; i++) {
@@ -273,8 +259,8 @@ class VerificationGate {
     return parsed;
   }
 
-  /// 取首个 `[` 到末个 `]`（模型常包代码围栏或加一句前言）。
-  /// 抽不出 ⇒ null ⇒ parseFail；**不做「猜哪段像 JSON」的启发式**。
+  /// 取首个 `[` 到末个 `]`（模型常包代码围栏或加一句前言）；抽不出 ⇒ null ⇒
+  /// parseFail；**不做「猜哪段像 JSON」的启发式**。
   String? _extractJsonArray(String text) {
     final start = text.indexOf('[');
     final end = text.lastIndexOf(']');
@@ -321,3 +307,17 @@ VerificationGate productionVerificationGate() => VerificationGate(
   keysLoader: VerificationKeysStorage().load,
   clientFactory: _buildVerificationClient,
 );
+
+/// S3（T-20261108-02）：configured 轮次快照读数（异常安全 + 兜底超时）。存储读
+/// 不到**或挂起**（故障；测试环境无平台通道实测挂起不抛——B13-1）一律按未配置，
+/// fail-closed 到态①明示文案，绝不阻断诊断主链（同 [VerificationKeysStorage] 不抛纪律）。
+Future<bool> discoveryConfigured() async {
+  try {
+    final keys = await VerificationKeysStorage().load().timeout(
+      const Duration(milliseconds: 500),
+    );
+    return keys.isComplete;
+  } catch (_) {
+    return false;
+  }
+}

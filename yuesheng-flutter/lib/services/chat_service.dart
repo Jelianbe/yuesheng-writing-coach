@@ -71,6 +71,7 @@ import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/genui_parser.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
+import 'package:writingcoach/services/discovery_card_payload.dart';
 import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_output_guard.dart';
@@ -137,33 +138,31 @@ class ChatService {
   /// 必须是「独立类 + DI」模式，不可用 extension 拆分。
   final MessageInjector _messageInjector;
 
-  /// 诊断流编排器（ADR-C74 K-9）
-  ///
-  /// sendMessage 主流程中 4 个诊断链方法（步骤 9-10 解析 + 持久化 /
-  /// 步骤 11 提交 + Teacher + GenUI / 步骤 11 FEEDBACK 训练结果）的独立持有者。
-  /// 连续失败计数、_diagnosisDropLog、_recordDiagnosisOutcome、_readOutlineEntityCount
-  /// 等 helper 一并随方法迁入本类。X-025-ARCH 教训：必须是「独立类 + DI」模式，
-  /// 不可用 extension 拆分。
+  /// 诊断流编排器（ADR-C74 K-9）：sendMessage 主流程中诊断链方法（步骤 9-10
+  /// 解析 + 持久化 / 步骤 11 提交 + Teacher + GenUI / 步骤 11 FEEDBACK 训练
+  /// 结果）的独立持有者；连续失败计数等 helper 随方法迁入。X-025-ARCH 教训：
+  /// 必须是「独立类 + DI」模式，不可用 extension 拆分。
   final DiagnosisFlowHandler _diagnosisFlowHandler;
 
-  /// 阶段总结卡 helper（ADR-C74 K-7 随 _injectDiagnosisLock / _handleTrainingResult
-  /// 迁至 MessageInjector，见 lib/services/message_injector.dart）。
+  /// 阶段总结卡 helper 已迁 MessageInjector（ADR-C74 K-7，见 message_injector.dart）。
 
   /// 公开委派（ADR-C74 K-9）：分块诊断生成的完整 AI 输出（D4-A）。
   ///
-  /// 由 ChatDiagnosisController 调用（lib/widgets/chat_diagnosis_controller.dart）。
-  /// 实现已迁 DiagnosisFlowHandler；本方法保留同名同参同返回以保证
-  /// 调用方零改动（K-5 同款薄壳委派）。
+  /// 由 ChatDiagnosisController / WritingCoachDiagnosisRunner 调用；实现已迁
+  /// DiagnosisFlowHandler，本方法薄壳委派（K-5 同款同名同参同返回）。
+  /// S3（R-027 已批）：discovery = 出口三折叠条数据（null ⇒ 不落 key ⇒ S0）。
   Future<String> commitDiagnosisFromContent({
     required String sessionId,
     required String fullContent,
     String? chapterContent,
+    DiscoverySectionCard? discovery,
   }) async {
     _diagnosisFlowHandler.disabledSyndromeIds = disabledSyndromeIds;
     return _diagnosisFlowHandler.commitDiagnosisFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
       chapterContent: chapterContent,
+      discovery: discovery,
     );
   }
 
