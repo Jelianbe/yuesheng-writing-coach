@@ -322,7 +322,14 @@ void main() {
     expect(cards.single.content, contains('守在巷口三十年'));
 
     // assistant 消息剥离协议
-    final assistant = messages.singleWhere((m) => m.role == 'assistant');
+    // ★ 这里要的是「正文那条」，不是「唯一一条 assistant」：本用例的诊断被参数校验
+    //   拒掉（`syndrome_severity_invalid` ⇒ diagnosis == null），A1 起**首次失败即插
+    //   `diagnosis_failed` 卡**，而那张卡也是 `role == 'assistant'` ⇒ 旧写法
+    //   `singleWhere((m) => m.role == 'assistant')` 会命中 2 条、抛 `Too many elements`。
+    //   收窄的是「选哪条消息」，不是放宽断言 —— 下方四处 expect 一字未动。
+    final assistant = messages.singleWhere(
+      (m) => m.role == 'assistant' && m.messageType != 'diagnosis_failed',
+    );
     expect(assistant.content, contains('王建国这个人物塑造得很扎实'));
     expect(assistant.content, contains('试试把情绪换成动作。'));
     expect(assistant.content.contains('YS_ENTITY'), false);

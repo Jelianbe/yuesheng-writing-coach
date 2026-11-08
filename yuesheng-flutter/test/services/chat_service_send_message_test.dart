@@ -1311,6 +1311,39 @@ void main() {
     );
   });
 
+  test('★#A1-1 单次诊断失败 ⇒ 即刻插入 1 张失败卡（旧行为卡阈值 2 ⇒ 本用例必红）', () async {
+    // 背景：`diagnosis_flow_handler.dart` 曾以 `UILimits.failureWarningThreshold`
+    // **兼作「是否插卡」的闸门**（=2）⇒ 首次失败完全静默，用户只看到流式正文
+    // 结束，无法区分「AI 还在写」与「本轮已经失败」。现改为每次失败都插卡，
+    // 该常量只负责卡片内的「额外提示」（`diagnosis_failed_card.dart:83`）。
+    // ★ 反证力：把闸门改回 `if (count >= 2)`，下方 `length == 1` 立刻转红 ——
+    //   这正是「旧代码下本用例必红、新代码下必绿」的鉴别力所在。
+    const brokenDiagnosis =
+        '我看了一下。\n'
+        '[YS_DIAGNOSIS]\n'
+        '{这不是合法 JSON}\n'
+        '[/YS_DIAGNOSIS]';
+    final chatService = buildChatService(FakeLlmClient(brokenDiagnosis));
+
+    await chatService.sendMessage(
+      sessionId,
+      '第一轮。',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
+
+    final messages = await sessionRepo.listMessages(sessionId);
+    final failedCards = messages
+        .where((m) => m.messageType == 'diagnosis_failed')
+        .toList();
+    expect(failedCards.length, 1, reason: '单次失败即须给出结构化反馈，不等第 2 次');
+    expect(failedCards.single.content, contains('"failureCount":1'));
+  });
+
   test('★#C105-1b⑤ 顺序无关：`[YS_TRAINING]` 排在诊断块**之前** ⇒ 非法诊断仍计失败', () async {
     // ADR-C105 v5 第 2 轮自检 P2-2 查出的**假阴性**：流式只把「最早标记」与诊断
     // 标记比对，而命中即 `blockIntercepted` 短路 ⇒ 训练块在前时其后的

@@ -40,7 +40,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart'
     show debugPrint, kDebugMode, visibleForTesting;
-import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/svc_copy.dart';
 import 'package:writingcoach/contracts/genui_capability.dart'
     show GenUiCapability, GenUiComponent;
@@ -219,9 +218,9 @@ class DiagnosisFlowHandler {
   })?
   _onFactBatch;
 
-  /// B1：诊断连续失败计数（来自 ChatService K-1 迁出，按 session 隔离）。
-  /// 用于诊断失败卡阈值门控——连续失败达 UILimits.failureWarningThreshold 才插卡，
-  /// 避免偶发单次失败也打扰用户；普通聊天（非诊断轮次）不计入。
+  /// B1：诊断连续失败计数（来自 ChatService K-1 迁出，按 session 隔离；普通聊天不计入）。
+  /// **每次**失败都插卡（首次也不例外）：否则用户只看到流式正文结束，分不清「还在写」与「已失败」。
+  /// 卡内「额外提示」阈值仍由 `UILimits.failureWarningThreshold` 在 widget 侧判（`diagnosis_failed_card.dart:83`）。
   final Map<String, int> _consecutiveDiagnosisFails = {};
 
   DiagnosisFlowHandler({
@@ -339,12 +338,11 @@ class DiagnosisFlowHandler {
     }
     final count = (_consecutiveDiagnosisFails[sessionId] ?? 0) + 1;
     _consecutiveDiagnosisFails[sessionId] = count;
-    if (count >= UILimits.failureWarningThreshold) {
-      try {
-        await insertDiagnosisFailedCard(_sessionRepo, sessionId, count);
-      } catch (e, s) {
-        _logSafeRun('诊断失败卡插入失败不阻断主流程', e, s);
-      }
+    // 每次失败都插卡（阈值只管卡片内额外提示，见 diagnosis_failed_card.dart:83）。
+    try {
+      await insertDiagnosisFailedCard(_sessionRepo, sessionId, count);
+    } catch (e, s) {
+      _logSafeRun('诊断失败卡插入失败不阻断主流程', e, s);
     }
   }
 
