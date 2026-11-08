@@ -187,5 +187,44 @@ void main() {
         reason: "'chat' 是现有 user 消息的 messageType，入白名单会剔掉学员真实输入",
       );
     });
+
+    test('★#B5 失败卡不进喂 LLM 的 history（陪跑：不误剔本轮 user 消息）', () async {
+      // 落库形态与 insertDiagnosisFailedCard 逐字一致：role='assistant' + 该 payload。
+      await sessionRepo.addMessage(
+        sessionId,
+        'assistant',
+        '{"failureCount":1}',
+        messageType: 'diagnosis_failed',
+      );
+
+      final raw = await sessionRepo.listMessages(sessionId);
+      // ★ 负向前提：过滤前它**确实**在。否则下方「过滤后不在」是恒真空断言。
+      expect(
+        raw.any((m) => m.messageType == 'diagnosis_failed'),
+        isTrue,
+        reason: '夹具前提：失败卡须真实落库，否则本条无鉴别力',
+      );
+
+      final kept = excludeFromLlmHistory(raw);
+      // 能变红判据：从白名单里删掉 'diagnosis_failed' ⇒ 本条立刻转红。
+      expect(
+        kept.any((m) => m.messageType == 'diagnosis_failed'),
+        isFalse,
+        reason: 'B5：失败卡是机器态 payload，喂模型只会让它模仿失败口吻',
+      );
+      // 报批单点名的「陪跑不变量」：剔失败卡不得连带剔掉学员真实输入。
+      expect(
+        kept.map((m) => m.content).contains('我改完了，再帮我看看这一章'),
+        isTrue,
+        reason: '剔除失败卡后本轮 user 消息必须仍在（否则上下文被毁）',
+      );
+      // 与 #5 同口径：只动副本，DB 仍留（UI 的 DiagnosisFailedCard 靠它渲染）。
+      final after = await sessionRepo.listMessages(sessionId);
+      expect(
+        after.any((m) => m.messageType == 'diagnosis_failed'),
+        isTrue,
+        reason: '失败卡必须仍留在 DB 里（UI 全量展示依赖 message_type 分派）',
+      );
+    });
   });
 }

@@ -98,21 +98,21 @@ typedef SendContextResult = ({
 ///   不是学员真实写作文本，混入诊断上下文会污染后续真实诊断。
 /// - `diagnosis_result`（P1 · 外部反馈 2026-10-08）：payload JSON 内
 ///   `syndromes[].evidence` 是**学员原文的逐字引用**，且落成 role='system'；
-///   `_appendHistory` 不看 messageType、原样全量追加（窗口 20–29 条）
-///   ⇒ 旧证据句能存活 10 轮以上。学员改完文本回来二次诊断时，模型逐字复制
-///   旧证据句比在「## 待诊断全文」里重新定位便宜得多 ⇒「明明改了还照样
-///   指出来、引的还是原来那句」。
+///   `_appendHistory` 不看 messageType、原样全量追加（窗口 20–29 条）⇒ 旧证据句
+///   能存活 10 轮以上。学员改完文本回来二次诊断时，模型逐字复制旧证据句比在
+///   「## 待诊断全文」里重新定位便宜得多 ⇒「明明改了还照样指出来」。
+/// - `diagnosis_failed`（A1 后）：payload 是 `{"failureCount":n}` 机器态，喂模型只会让它模仿失败口吻。
 ///
-/// ★ 两条都**只作用于喂 LLM 的副本**：不改 DB、不影响 UI 全量展示。
-/// ★ 剔掉 `diagnosis_result` 不损失教学连续性：结构化症候记忆走
-///   `injectDiagnosisLock(activeProblems:)` 的 DB 查询路（`listActiveProblems`），
-///   不依赖 history ⇒ 切断「逐字句复制」、保留「此前诊断过哪些症候」。
+/// ★ 三条都**只作用于喂 LLM 的副本**：不改 DB、不影响 UI 全量展示。
+/// ★ 剔掉 `diagnosis_result` 不损失教学连续性：结构化症候记忆走 DB 查询路
+///   （`injectDiagnosisLock(activeProblems:)` → `listActiveProblems`），不依赖 history。
 /// ★ messageType 为 TEXT 自由取值（无 CHECK 约束），新增过滤值零 schema 迁移。
 /// ⚠️ 不变量：剔除后**必须仍含本轮 user 消息** —— 现有 user 消息的
 ///   messageType 是 `'chat'`（`tables.dart` 默认值），故 `'chat'` 绝不可入白名单。
 const Set<String> kHistoryExcludedMessageTypes = {
   kNoviceMessageType,
   'diagnosis_result',
+  'diagnosis_failed',
 };
 
 /// 按 [kHistoryExcludedMessageTypes] 剔除消息类型（纯函数、无状态）。
