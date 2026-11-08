@@ -249,8 +249,8 @@ class LlmClient {
   /// 无次数限制、无开关——判定 = 未配置 API Key 自动启用；不伪造诊断，
   /// 固定文案由解析类调用方走各自现有失败兜底（editor 兜底 / 诊断失败卡）。
   static const String _kFreeTestReply =
-      '（免费测试模式）我现在处于离线示例模式。配置 API Key 后，'
-      '我就能为你做真实的写作诊断与编辑观察——去「设置」中填入即可。';
+      '（免费测试模式）我现在处于离线示例模式，本次未进行诊断——没有调用真实模型。'
+      '配置 API Key 后，我就能为你做真实的写作诊断与编辑观察，去「设置」中填入即可。';
 
   static const _kConfigMissing = TestConnectionResult(
     success: false,
@@ -690,8 +690,8 @@ class LlmClient {
   ) async {
     if (cancelToken?.isCancelled ?? false) throw LlmRequestCancelledException();
     const chunks = <String>[
-      '（免费测试模式）我现在处于离线示例模式。',
-      '配置 API Key 后，我就能为你做真实的写作诊断与编辑观察——',
+      '（免费测试模式）我现在处于离线示例模式，本次未进行诊断——',
+      '没有调用真实模型。配置 API Key 后，我就能为你做真实的写作诊断与编辑观察，',
       '去「设置」中填入即可。',
     ];
     for (final chunk in chunks) {

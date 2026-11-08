@@ -26,10 +26,13 @@ import 'package:writingcoach/services/llm_client.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // 与 llm_client.dart:639-643 _emitFreeTestStream 的 chunks 逐字对齐。
+  // 与 llm_client.dart 的 _emitFreeTestStream chunks 逐字对齐。
+  // ★ R-027 B1 甲（2026-11-08）：文案须显式声明「本次未进行诊断」。
+  //   这份副本的职责就是「文案一变就红」⇒ 它不是冗余，是**可变的判据**；
+  //   改 lib 文案必须同改这里，否则本文件立刻转红（这正是它的牙齿）。
   const expectedChunks = <String>[
-    '（免费测试模式）我现在处于离线示例模式。',
-    '配置 API Key 后，我就能为你做真实的写作诊断与编辑观察——',
+    '（免费测试模式）我现在处于离线示例模式，本次未进行诊断——',
+    '没有调用真实模型。配置 API Key 后，我就能为你做真实的写作诊断与编辑观察，',
     '去「设置」中填入即可。',
   ];
 
@@ -79,6 +82,33 @@ void main() {
       // ── 5. 拼接后语义 = 固定免费引导文案 ──
       expect(allText, contains('免费测试模式'));
       expect(allText, contains('配置 API Key'));
+
+      // ── 6. R-027 B1 甲：必须**显式声明本次未进行诊断** ──
+      // 能变红判据：把 chunks 里的「本次未进行诊断」删掉 ⇒ 本断言立刻转红。
+      // 理由：无 key 时用户点诊断看到的正是这段文本，只写「离线示例模式」
+      // 会让人以为是诊断结论，这是最伤认知的错位。
+      expect(
+        allText,
+        contains('本次未进行诊断'),
+        reason: 'B1：无 key 时用户看到的必须是「没有诊断」，不是「诊断结果」',
+      );
+    });
+
+    test('★#B1 非流式路径同样明示未进行诊断（两条路径文案同源）', () async {
+      final client = LlmClient(null, null, () async => null);
+      final r = await client.chatCompletionWithMeta(const [
+        ChatMessage(role: 'user', content: '帮我看看这段'),
+      ]);
+      expect(
+        r.content,
+        contains('本次未进行诊断'),
+        reason: 'B1 甲：chatCompletionWithMeta 与 streamChat 的文案必须同源同义',
+      );
+      expect(
+        r.content,
+        contains('设置'),
+        reason: '须给出可执行的下一步（去设置配置 API Key），否则用户无处可去',
+      );
     });
   });
 }
