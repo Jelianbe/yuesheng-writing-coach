@@ -52,6 +52,10 @@ void main() {
             'outputs/polish/persona_$key.txt 缺失，跳过'
             '（先运行 outputs/polish/generate_personas.py）',
           );
+          // markTestSkipped 只打标记、不终止用例体 ⇒ 缺 return 会落到下面
+          // systemPromptFragment: polished! 抛 null 断言。asset 被 .gitignore
+          // 排除 ⇒ 任何干净 clone 都缺这些文件 ⇒ 该 clone 里本文件必红。
+          return;
         }
 
         final persona = CoachPersona(
@@ -60,7 +64,7 @@ void main() {
           label: '自定义教练',
           isSystem: false,
           attitudeLevel: AttitudeLevel.gentle,
-          systemPromptFragment: polished!,
+          systemPromptFragment: polished,
         );
 
         final ctx = SkillLoadContext(
