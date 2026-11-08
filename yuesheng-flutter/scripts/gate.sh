@@ -987,6 +987,8 @@ log_result "prompt 体积红线" "$RC_PROMPT_VOLUME"
 # 定性：**约定层守卫，非门禁**（与 check_extension_shape.py 首接形态同款）。
 #   报红 ⇒ 当场处置（补读侧或登记豁免），不阻断收尾；升阻断须用户裁定。
 echo "--> 约定层守卫: DB 列活性（只报新增死列；WARN 级，2026-10-18 审查批起接）"
+# 结论进报告用（**不进 pass/fail 计数**）：`SKIP` = 未真正执行，`WARN` = 当场要处置。
+WIRING_VERDICT="SKIP"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3/ python，跳过 DB 列活性守卫"
   echo "SKIP: (NOT EXECUTED) python not available" > "$WIRING_LOG"
@@ -995,9 +997,11 @@ elif [ ! -f "$ROOT/tool/wiring_baseline.json" ]; then
   echo "SKIP: (NOT EXECUTED) baseline missing" > "$WIRING_LOG"
 else
   if "$PY_BIN" scripts/check_wiring.py --baseline tool/wiring_baseline.json > "$WIRING_LOG" 2>&1; then
+    WIRING_VERDICT="PASS"
     echo "  [PASS] DB 列活性（无新增死列）"
   else
     # WARN 级：打印但不置 RC_ 变量、不进 pass/fail 计数
+    WIRING_VERDICT="WARN"
     echo "  [WARN] 新增死列/基线异常——当场处置（补读侧或登记豁免），详见 $WIRING_LOG"
     cat "$WIRING_LOG"
   fi
@@ -1017,6 +1021,8 @@ fi
 #   · S1 判「造出来的东西用户在诊断卡上看得见吗」⇒ 三道互补，都不可互相替代。
 #   同一字段可同时「活」（被评分端消费）与「死」（UI 零引用）⇒ 三道必须都跑。
 echo "--> 约定层守卫: 诊断链字段三级贯通（S1，WARN 级，2026-10-21 起接）"
+# 结论进报告用（**不进 pass/fail 计数**）。
+SURFACE_VERDICT="SKIP"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3/ python，跳过可见性守卫"
   echo "SKIP: (NOT EXECUTED) python not available" > "$SURFACE_LOG"
@@ -1025,9 +1031,11 @@ elif [ ! -f "$ROOT/tool/surface_baseline.json" ]; then
   echo "SKIP: (NOT EXECUTED) baseline missing" > "$SURFACE_LOG"
 else
   if "$PY_BIN" scripts/check_surface_visibility.py --baseline tool/surface_baseline.json > "$SURFACE_LOG" 2>&1; then
+    SURFACE_VERDICT="PASS"
     echo "  [PASS] 诊断链字段三级贯通（在阈值内或豁免期内）"
   else
     # WARN 级：打印但不置 RC_ 变量、不进 pass/fail 计数
+    SURFACE_VERDICT="WARN"
     echo "  [WARN] 诊断链字段断链（没上卡 / 上了卡没渲染）或豁免到期——当场处置，详见 $SURFACE_LOG"
     cat "$SURFACE_LOG"
   fi
@@ -1057,6 +1065,8 @@ fi
 #   且真源**自动发现** ⇒ 新增真源未登记即报红（防清单腐化）。
 #   分工：S1 量「判据语言词频」· S4 验「真源→出口关系」。两道都要跑。
 echo "--> 约定层守卫: 真源→出口对账（S4，WARN 级，2026-10-21 起接）"
+# 结论进报告用（**不进 pass/fail 计数**）。
+SOURCE_EXIT_VERDICT="SKIP"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3/ python，跳过真源出口守卫"
   echo "SKIP: (NOT EXECUTED) python not available" > "$SOURCE_EXIT_LOG"
@@ -1065,8 +1075,10 @@ elif [ ! -f "$ROOT/tool/source_exit_baseline.json" ]; then
   echo "SKIP: (NOT EXECUTED) baseline missing" > "$SOURCE_EXIT_LOG"
 else
   if "$PY_BIN" scripts/check_source_exit.py --baseline tool/source_exit_baseline.json > "$SOURCE_EXIT_LOG" 2>&1; then
+    SOURCE_EXIT_VERDICT="PASS"
     echo "  [PASS] 真源→出口关系自洽（全部登记在册）"
   else
+    SOURCE_EXIT_VERDICT="WARN"
     echo "  [WARN] 真源出口断裂 / 新真源未登记 / 基线腐烂——当场处置，详见 $SOURCE_EXIT_LOG"
     cat "$SOURCE_EXIT_LOG"
   fi
@@ -1185,6 +1197,27 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 
 汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP）
 
+## 约定层守卫（WARN 级 · **不计入**上方十九道 · 不阻断收尾）
+
+| 守卫 | 结果 | 日志 |
+|:--|:--|:--|
+| DB 列活性（只报新增死列） | ${WIRING_VERDICT} | outputs/gate/wiring.txt |
+| S1 诊断链字段三级贯通 | ${SURFACE_VERDICT} | outputs/gate/surface_visibility.txt |
+| S4 真源→出口对账 | ${SOURCE_EXIT_VERDICT} | outputs/gate/source_exit.txt |
+| S5 证据链判据自测 | ${SELFTEST_EVID_VERDICT} | outputs/gate/selftest_gate_evidence.txt |
+
+> 这 4 项**不是**十九道之一，**不进**上方「汇总」的 pass/fail/SKIP 计数。
+> 「不进道数」不等于「不用看」：任一「WARN」都表示对应守卫当场要处置（补读侧 / 登记豁免 / 查判据是否退化）。
+> 「SKIP」表示**未真正执行**（缺 python 或基线），与门禁道数里的 SKIP 同义。
+>
+> 沿革（2026-11-08 修）：本报告此前「详细日志」只列了 DB 列活性 与 S5 两项，
+> **S1 与 S4 完全不可见** ⇒ 报告写着「19 通过」、读者无从知道另外两道守卫红没红。
+> 该缺陷在「§一.214 六⑵」登记为「既有真缺陷」，本次补成一张表并给三项补上结论变量。
+> **本次只改呈现，未改任何判定与计数**：新增的 3 个「*_VERDICT」变量不参与 pass/fail/SKIP 计算。
+> ★ 说明文字里**禁止使用反引号**：本段落落在未加引号的 heredoc（EOF 无引号）内，
+>   反引号会被 bash 当命令替换执行 ⇒ 术语被吞成空、同时打出 command not found
+>   （2026-11-08 实测：6 处反引号 ⇒ 报告缺字 + 6 条报错）。强调一律用「」。
+
 ## 详细日志
 - 格式: outputs/gate/format.txt
 - 静态分析: outputs/gate/typecheck.txt
@@ -1205,7 +1238,9 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - hook 副本同步: outputs/gate/hook_sync.txt
 - 台账新鲜度: outputs/gate/ledger_freshness.txt
 - Prompt 体积红线: outputs/gate/prompt_volume.txt
-- 约定层守卫·DB 列活性（WARN 级，不计道数）: outputs/gate/wiring.txt
+- 约定层守卫·DB 列活性（WARN 级，不计道数）: outputs/gate/wiring.txt — 结果: ${WIRING_VERDICT}
+- 约定层守卫·S1 诊断链字段三级贯通（WARN 级，不计道数）: outputs/gate/surface_visibility.txt — 结果: ${SURFACE_VERDICT}
+- 约定层守卫·S4 真源→出口对账（WARN 级，不计道数）: outputs/gate/source_exit.txt — 结果: ${SOURCE_EXIT_VERDICT}
 - 约定层守卫·证据链判据自测（WARN 级，不计道数）: outputs/gate/selftest_gate_evidence.txt — 结果: ${SELFTEST_EVID_VERDICT}
 EOF
 
