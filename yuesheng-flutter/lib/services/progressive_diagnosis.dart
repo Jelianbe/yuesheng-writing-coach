@@ -1070,11 +1070,9 @@ typedef ProgressCallback = void Function(String phase, int current, int total);
 /// merge（流式）段请求体温度覆盖。null = 现网默认（不产 extraBody 键，
 /// 请求体逐字节不变）；仅作用于 merge 段——单块分析段与教学链路不受影响。
 ///
-/// [activeSyndromeIds]（W-15-B B1 级序 b）：会话当前活跃症候 ID 集合，仅在
-/// merge 超预算降级时用于过滤 diagnosisContext；空集 = 无判据，级序 b 跳过。
+/// [activeSyndromeIds]（W-15-B B1 级序 b）：活跃症候 ID 集，仅 merge 超预算降级时过滤 diagnosisContext；空集 = 跳级序 b。
 ///
-/// [snapshotWriter]（W-15-B B3）：merge prompt 发送快照出口，缺省走
-/// error_logs（`emitMergePromptSnapshot`）；测试注入收集器断言载荷。
+/// [snapshotWriter]（W-15-B B3）：merge prompt 快照出口，缺省 `emitMergePromptSnapshot`（error_logs）。
 Future<ProgressiveResult?> runProgressiveDiagnosis({
   required String content,
   required String title,
@@ -1093,6 +1091,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   Set<String> activeSyndromeIds = const {},
   MergePromptSnapshotWriter? snapshotWriter,
   VerificationGate? verificationGate,
+  void Function(DiscoveryParseResult)? onDiscovery,
 }) async {
   if (content.length <= kDiagnosisChunkThreshold) {
     return null;
@@ -1148,8 +1147,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   // 验证层（ADR-0014）：主判已产出、主链返回对象已定型之后才执行（旁路/后置）。
   // ★ 不写 ProgressiveResult、不改任何主判字段 ⇒ V-4(a) 返回对象逐字段 diff = 0。
   // ★ 四态一律在 gate 内部闭合、不外抛 ⇒ V-4(b)(c)。
-  // ★ S-5（ADR-0013）：输入源 = 独立发现调用的「出口一 + 逐字锚点」，
-  //   不再是分块笔记的结构筛。发现与验证同门（三键不全 ⇒ 两者皆零出站）。
+  // ★ S-5（ADR-0013）：输入源 = 独立发现调用的「出口一 + 逐字锚点」，非分块笔记结构筛；同门（三键不全 ⇒ 零出站）。
   final parsed = verificationGate == null
       ? DiscoveryParseResult.empty
       : await runDiscoveryThenVerify(
@@ -1159,6 +1157,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
           disabledSyndromeIds: disabledSyndromeIds,
           cancelled: cancelToken?.isCancelled ?? false,
         );
+  // S2 乙（R-027 已批）：发现结果出主链 —— 单向广播，不写返回值、不改主判字段；gate=null 也传 empty。
+  onDiscovery?.call(parsed);
   await verificationGate?.run(
     hypotheses: toHypotheses(parsed),
     cancelled: cancelToken?.isCancelled ?? false,

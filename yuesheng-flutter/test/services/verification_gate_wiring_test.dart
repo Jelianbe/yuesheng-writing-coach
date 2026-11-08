@@ -15,6 +15,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:writingcoach/services/discovery_note.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/progressive_diagnosis.dart';
 import 'package:writingcoach/services/verification_gate.dart';
@@ -426,6 +427,84 @@ void main() {
       final gate = productionVerificationGate();
       expect(gate.keysLoader, isNotNull);
       expect(gate.clientFactory, isNotNull);
+    });
+  });
+
+  group('S2 乙：发现结果出主链（onDiscovery 旁路 sink · R-027 已批 · T-20261108-01）', () {
+    test('★#S2-1 gate=null 时回调**恰调 1 次**且传出 empty（是「零发现」不是「没调用」）', () async {
+      final captured = <DiscoveryParseResult>[];
+      final result = await runProgressiveDiagnosis(
+        content: _longContent(),
+        title: 'S2 接线',
+        onContent: (_) {},
+        llmClient: _ChainClient(),
+        onDiscovery: captured.add,
+      );
+
+      expect(result, isNotNull);
+      // 能变红判据：把 onDiscovery?.call(parsed) 挪进 `verificationGate != null` 分支 ⇒ 本条立刻红。
+      expect(
+        captured.length,
+        1,
+        reason: 'gate=null 也必须调 1 次 —— 不调用会让 UI 无法区分「未启用」与「启用了但零发现」',
+      );
+      // 能变红判据：改成 `captured.add(DiscoveryParseResult(rawCount:0,promoted:0,dropped:0,notes:[]))`
+      // ⇒ 本条红（不是同一个 const 实例，UI 就无法用 identical 判「未启用」）。
+      expect(
+        identical(captured.single, DiscoveryParseResult.empty),
+        isTrue,
+        reason: 'gate=null ⇒ 必须原样传出 empty 常量，不得另造等值对象',
+      );
+    });
+
+    test('★#S2-2 gate=三键全集时回调恰调 1 次且 notes 非空（数据真的出来了）', () async {
+      final captured = <DiscoveryParseResult>[];
+      final gate = VerificationGate(
+        keysLoader: () async => _fullKeys,
+        clientFactory: (_) => _VerifyClient(() async => '{"verdicts":[]}'),
+        sink: (_) {},
+      );
+
+      final result = await runProgressiveDiagnosis(
+        content: _longContent(),
+        title: 'S2 接线',
+        onContent: (_) {},
+        llmClient: _ChainClient(),
+        verificationGate: gate,
+        onDiscovery: captured.add,
+      );
+
+      expect(result, isNotNull);
+      expect(captured.length, 1, reason: '单向广播：一次诊断恰广播一次');
+      // 能变红判据：删掉 onDiscovery?.call(parsed) ⇒ notes 为空、本条红。
+      expect(
+        captured.single.notes,
+        isNotEmpty,
+        reason: '_ChainClient 的发现帧应答含 1 条 promoted ⇒ sink 必须收到它',
+      );
+      expect(
+        identical(captured.single, DiscoveryParseResult.empty),
+        isFalse,
+        reason: '已配置且有发现 ⇒ 不得与「未启用」同形',
+      );
+    });
+
+    test('★#S2-3 加了 onDiscovery 后返回对象仍 4 字段（V-4(a) 的分母不变）', () async {
+      final captured = <DiscoveryParseResult>[];
+      final result = await runProgressiveDiagnosis(
+        content: _longContent(),
+        title: 'S2 接线',
+        onContent: (_) {},
+        llmClient: _ChainClient(),
+        onDiscovery: captured.add,
+      );
+
+      // 能变红判据：把 onDiscovery 的产物塞进 ProgressiveResult（甲案形态）⇒ 本条红。
+      expect(
+        _resultShape(result!).length,
+        4,
+        reason: 'V-4(a) 分母 = 4 字段；S2 走乙案只加出参、不改返回类型',
+      );
     });
   });
 }
