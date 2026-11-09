@@ -367,4 +367,46 @@ void main() {
       }
     });
   });
+
+  // ── T-20261031-04（2026-11-09 舰长批「批，继续」· 裁甲）：跨作品参照布尔维度 ──
+  // 甲案口径：只落结构化标记 + 一致性可读守卫；不接生产诊断链、不改注入 prompt。
+  // 取值表真源：`.ai/reports/2026-11-09-39条needsCrossWorkReference取值表.md` §二 39 行表。
+  // 两条守卫均只读：C1 钉集合硬锚（改注册表必红），C2 钉文档对表（改取值表必红）。
+  group('T-20261031-04 · needsCrossWorkReference 布尔维度（甲案）', () {
+    test('needsCrossWorkReference=true 恰 {P035}（集合硬锚，非派生）', () {
+      final trueIds = kSyndromeRegistry
+          .where((s) => s.needsCrossWorkReference)
+          .map((s) => s.id)
+          .toSet();
+      expect(trueIds, {'P035'});
+    });
+
+    test('C2 取值表 39 行与注册表逐条对表，差 0 行', () {
+      final file = File(
+        '../.ai/reports/2026-11-09-39条needsCrossWorkReference取值表.md',
+      );
+      expect(file.existsSync(), isTrue, reason: '缺取值表 ${file.path}');
+      final table = <String, bool>{};
+      final row = RegExp(
+        r'^\|\s*(P\d{3})\s*\|[^|]*\|\s*\*{0,2}(true|false)\*{0,2}\s*\|',
+        multiLine: true,
+      );
+      for (final m in row.allMatches(file.readAsStringSync())) {
+        table[m.group(1)!] = m.group(2) == 'true';
+      }
+      expect(table.length, 39, reason: '取值表须恰 39 行（分母硬锚）');
+      expect(
+        table.keys.toSet(),
+        kSyndromeRegistry.map((s) => s.id).toSet(),
+        reason: '取值表 ID 集与注册表 ID 集必须完全一致',
+      );
+      for (final s in kSyndromeRegistry) {
+        expect(
+          table[s.id],
+          s.needsCrossWorkReference,
+          reason: '${s.id} 取值表与注册表不一致（两处真源漂移）',
+        );
+      }
+    });
+  });
 }

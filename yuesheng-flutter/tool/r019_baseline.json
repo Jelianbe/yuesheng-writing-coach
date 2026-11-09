@@ -496,7 +496,7 @@
     },
     {
       "file": "lib/services/syndrome_registry.dart",
-      "lines": 996
+      "lines": 1002
     },
     {
       "file": "lib/services/teacher_validator.dart",

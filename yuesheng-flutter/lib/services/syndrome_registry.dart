@@ -134,6 +134,10 @@ class SyndromeRecord {
   /// position_sensitivity：取值见 kPositionSemantics（position_semantics.dart）
   final String position;
 
+  /// 判定本症候是否需要以「另一部作品」为参照系（P035 遮名测试）。
+  /// 与 position 正交：position 表达「看多大」，本字段表达「跟什么比」。
+  final bool needsCrossWorkReference;
+
   /// 推荐技法 ID 列表（首选在首位，可含备选；与 kTechniquesBySyndrome 一致）
   final List<String> techniques;
 
@@ -160,6 +164,7 @@ class SyndromeRecord {
     required this.presentationGroup,
     this.quantityTag,
     required this.position,
+    this.needsCrossWorkReference = false,
     required this.techniques,
     required this.actions,
     this.v1ActionName,
@@ -910,6 +915,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     group: MaxAttemptsGroup.deep,
     presentationGroup: PresentationGroup.plot,
     position: 'global',
+    needsCrossWorkReference: true,
     techniques: ['T016', 'T020', 'T024'],
     actions: ['A004', 'A011'],
   ),
