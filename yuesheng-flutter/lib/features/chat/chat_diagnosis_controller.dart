@@ -32,6 +32,7 @@ import '../../services/discovery_card_payload.dart';
 import '../../services/discovery_chat_pilot.dart';
 import '../../services/discovery_note.dart';
 import '../../services/progressive_diagnosis.dart';
+import '../../services/source_plane_capture.dart';
 import '../../services/story_structure_profile.dart';
 import '../../services/syndrome_tracker.dart';
 import '../../services/verification_gate.dart';
@@ -75,6 +76,13 @@ class ChatDiagnosisController {
         }
         return;
       }
+      // B0c 后半件：诊断发起前留 D2 源面快照（纯仪器，失败不阻断主链）。
+      unawaited(
+        captureDiagnosisSourcePlane(
+          chapterText: chapter.content,
+          loader: sessionMessageLoader(db, bootstrap.sessionId),
+        ),
+      );
       await _runDiagnosis(chapter, bootstrap);
     } on ProgressiveMergeOverBudget catch (e) {
       // W-15-B B1：merge 预算拒发——显式提示（设计稿 §3.1「UI 显式报」），不落入下方通用静默 catch。
