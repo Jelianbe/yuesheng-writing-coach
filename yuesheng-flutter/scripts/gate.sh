@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 月笙写作教练 Flutter 端 — 十九道门禁 (R-027 + 宪法 §二)
+# 月笙写作教练 Flutter 端 — 二十道门禁 (R-027 + 宪法 §二)
 #
 # ★ 统一入口：`bash scripts/gate-run.sh`（默认即本脚本）。
 #   本文件仍是**判据真源**；gate-run.sh 只做选路 / 透传 / 记运行流水，**不含任何判据**。
@@ -21,7 +21,8 @@
 #   ⚠️ 【口径注 2026-10-14，T-20261014-05】上表 = **道 0–13 时期（14 道口径）的实测**；
 #      道 14–18 于后续批次新增（flag 契约 / ADR 悬空 / hook 副本 / 台账新鲜度 /
 #      prompt 体积），**无独立逐道耗时实测**，均为轻量脚本（估 ≤1s/道）。
-#      本表现行总道数 = **19 道（0–18）**，与下方 echo「门禁 X/19」一致。
+#      本表现行总道数 = **20 道（0–19）**，与下方 echo「门禁 X/20」一致
+#      （2026-11-09 接入 L0-b 静态审计为第 20 道；上表耗时实测仍是 14 道时期口径，未重测）。
 #   ⇒ 14 道时期：13 道（除主力）合计 ≈12.6s（4.1%），故：
 #     · 「合并去重」若按「减少道数」做，**收益上限 4%** —— 不做
 #     · 「加并行提速」不是可选项（实测可用内存仅 5.8 GiB/ 32 核，内存优先）
@@ -30,13 +31,14 @@
 #   ⚠️ **分档 ≠ 可以少跑**。三档只用于「定位失败在哪一档」与「估算收尾时间」，
 #      **绝不可据此跳过任何一道**（既有纪律：绝不用「减少检查项」换速度）。
 #
-#   ⚠️ **与 CI 的口径分叉（事实登记，非待办；2026-10-14 按 19 道口径订正）**：
-#      本文件 **19 道全跑**；
+#   ⚠️ **与 CI 的口径分叉（事实登记，非待办；2026-10-14 按 19 道口径订正，
+#      2026-11-09 第 20 道接入后同步为 20 道口径）**：
+#      本文件 **20 道全跑**；
 #      仓库根 `.github/workflows/flutter_ci.yaml` **只跑其中 6 道**
 #      （0/1/2/3/4 + 6）+ CI 独有的依赖健康，
-#      **门禁 5/7/8/9/10/11/12/13/14/15/16/17/18 从不在 CI 出现**
-#      ⇒ **「本地全绿」才是收尾；「CI 全绿」≠ 十九道全绿**。
-#      分叉理由与成本实测见该文件同处注释（该文件头部口径已于 2026-10-14 同批对齐 19 道）。
+#      **门禁 5/7/8/9/10/11/12/13/14/15/16/17/18/19 从不在 CI 出现**
+#      ⇒ **「本地全绿」才是收尾；「CI 全绿」≠ 二十道全绿**。
+#      分叉理由与成本实测见该文件同处注释（头部口径已随第 20 道接入同步）。
 #
 # 门禁 0: 代码格式 (dart format --set-exit-if-changed lib test integration_test tool)
 #         ⚠️ 2026-09-17 扩范围：原为 `lib`，**test/ 从未被格式检查**——实测 325 个
@@ -130,11 +132,13 @@ ADR_DANGLING_LOG="$OUT_DIR/adr_dangling.txt"
 HOOK_SYNC_LOG="$OUT_DIR/hook_sync.txt"
 LEDGER_FRESH_LOG="$OUT_DIR/ledger_freshness.txt"
 PROMPT_VOLUME_LOG="$OUT_DIR/prompt_volume.txt"
+L0B_LOG="$OUT_DIR/l0b.txt"
+L0B_JSON="$OUT_DIR/l0b_audit.json"
 WIRING_LOG="$OUT_DIR/wiring.txt"
 SURFACE_LOG="$OUT_DIR/surface_visibility.txt"
 SURFACE_SELFTEST_LOG="$OUT_DIR/surface_visibility_selftest.txt"
 SOURCE_EXIT_LOG="$OUT_DIR/source_exit.txt"
-# 证据链判据自测的日志（WARN 级守卫，不计入十九道）。输出的落点必须固定，
+# 证据链判据自测的日志（WARN 级守卫，不计入二十道）。输出的落点必须固定，
 # 否则「自测跑过」与「自测没跑」在事后看只差一个没人读的 stdout。
 SELFTEST_EVID_LOG="$OUT_DIR/selftest_gate_evidence.txt"
 
@@ -164,7 +168,7 @@ degraded=0   # 因环境缺失而**未真正执行**的门禁数（fail-closed�
 
 # ---------- 命中率流水（2026-10-20 新增 · 汇总见 scripts/gate_hits_report.py）----------
 #
-# 【要解决的问题】19 道门禁里，**没有任何一处记录「它上次真的失败是什么时候」**。
+# 【要解决的问题】20 道门禁里，**没有任何一处记录「它上次真的失败是什么时候」**。
 #   于是「这道门重要」全靠记忆与感觉，而「这道门从没拦住过任何东西」这个事实
 #   **完全不可见** —— 零命中与一直很稳，在现有输出里长得一模一样。
 #   ⇒ 每道结果追加一行 JSONL，让「命中率」变成可查事实，而不是印象。
@@ -180,7 +184,7 @@ degraded=0   # 因环境缺失而**未真正执行**的门禁数（fail-closed�
 #     `dur_s` = 与**上一次 log_result** 的间隔 ⇒ 免去在 19 处门禁体内各插一次计时，
 #     且天然就是「本道耗时」（首道除外，它含 python 探测等前置开销，报告中会标注）。
 #     `cov_flag` = 本轮 wrapper **实际生效**的 COV_FLAG（见下方 P4b）。
-#   · 本文件**不记** dirty：hits.jsonl 是**每道一行**，19 道各跑一次 `git status`
+#   · 本文件**不记** dirty：hits.jsonl 是**每道一行**，20 道各跑一次 `git status`
 #     （本机实测 111 ms）合计约 2 s，而同一轮内这 19 个值**完全相同** ⇒ 重复 19 份，
 #     零信息增量。这是「不值得在每道门禁上各测一次」，**不是**「脏度不值得记」。
 #     ⚠️ 2026-10-25 修正（T-20261025-04 P5）：原注释只论证了**布尔**脏度「几乎恒为 1、
@@ -253,7 +257,7 @@ record_hit() {
   local esc=${name//\\/\\\\}; esc=${esc//\"/\\\"}
   # P4b：记录**本轮 wrapper 实际生效的 COV_FLAG**，不是 gate.sh 导出的环境变量。
   #   取值来源 = wrapper 写的 cov_flag.txt（`_ev_p4b_read` 用内建 read，零 fork；
-  #   本函数每轮要跑 19 次，用 `$(…)` 会白送 19 个进程）。
+  #   本函数每轮要跑 20 次，用 `$(…)` 会白送 20 个进程）。
   #   文件缺失 ⇒ `UNKNOWN`（**不是**空串、**不许**省略字段）：
   #     空串 = wrapper 跑了且明确没开覆盖率；UNKNOWN = 不知道跑没跑 / 哪版 wrapper。
   #     把这两态压成同一态，就又造了一个不可证伪的 PASS（P4b 要求 3）。
@@ -292,7 +296,7 @@ log_result() {
 }
 
 echo "=================================================="
-echo "月笙 Flutter 十九道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
+echo "月笙 Flutter 二十道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================="
 
 # ---------- 公共：定位 python（门禁 3 / 5 / 6 共用）----------
@@ -307,7 +311,7 @@ else
 fi
 
 # ---------- 门禁 0: 格式（宪法 §二.2）----------
-echo "--> 门禁 0/19: 格式校验 (dart format lib test integration_test tool)"
+echo "--> 门禁 0/20: 格式校验 (dart format lib test integration_test tool)"
 if dart format --set-exit-if-changed -o none lib test integration_test tool > "$FORMAT_LOG" 2>&1; then
   RC_FORMAT=0
 else
@@ -318,7 +322,7 @@ log_result "格式校验 (dart format)" "$RC_FORMAT"
 
 # ---------- 门禁 1: 静态分析 ----------
 # 2026-09-17 扩范围 lib → lib + integration_test + tool（实测 rc=0，零新增阻断）。
-echo "--> 门禁 1/19: 静态分析 (dart analyze lib integration_test tool test)"
+echo "--> 门禁 1/20: 静态分析 (dart analyze lib integration_test tool test)"
 if dart analyze lib integration_test tool test > "$TYPECHECK_LOG" 2>&1; then
   RC_ANALYZE=0
 else
@@ -328,7 +332,7 @@ fi
 log_result "静态分析 (analyze lib+integration_test+tool+test)" "$RC_ANALYZE"
 
 # ---------- 门禁 2: 测试 ----------
-echo "--> 门禁 2/19: 单元测试 (flutter test)"
+echo "--> 门禁 2/20: 单元测试 (flutter test)"
 # V4.18：会话注入的 HTTP_PROXY 会劫持 Dart VM ↔ flutter_tester 的
 # localhost WebSocket，导致全量测试加载失败（错误行同样带 [E]，
 # 看起来每个测试都失败）。门禁脚本必须主动清空代理环境变量，
@@ -363,7 +367,7 @@ fi
 #   ⇒ 「只破坏 P1 不动测试本身」时，唯一的红点就是 P1 —— 这正是单点归因的前提。
 #
 # 【为什么不新开道】三条判据讲的都是「本道的 PASS 有没有证据」，语义上就属于本道。
-#   新开道要同步改 ~25 处「十九道」文案 + `.ai/STATE.md` 的道数 ⇒ 属另一批范围。
+#   本批已新开第 20 道并同步口径文案（2026-11-09）；本道三条判据仍不另开道。
 #
 # 【判据实现在哪】scripts/lib_gate_evidence.sh。自测 scripts/_selftest_gate_evidence.py
 #   直接调用**同一份**函数（44 条探针）—— 不是另写一份实现，所以测的就是上线的逻辑。
@@ -437,7 +441,7 @@ log_result "单元测试 (flutter test)" "$RC_TEST"
 #    否则门禁会一直停留在「只卡新增」的弱化状态。
 #    tool/circular_baseline.json 已重生成空数组并保留在库中，
 #    供将来确需临时豁免时按同一格式使用（届时必须同时登记清偿计划）。
-echo "--> 门禁 3/19: 循环依赖扫描 (lib import 图，全量卡口)"
+echo "--> 门禁 3/20: 循环依赖扫描 (lib import 图，全量卡口)"
 if [ -n "$PY_BIN" ]; then
   if "$PY_BIN" scripts/check_circular.py . > "$CIRCULAR_LOG" 2>&1; then
     RC_CIRCULAR=0
@@ -454,7 +458,7 @@ fi
 log_result "循环依赖扫描" "$RC_CIRCULAR"
 
 # ---------- 门禁 4: 安全 / 密钥（调用独立脚本 scripts/check_secrets.sh）----------
-echo "--> 门禁 4/19: 安全/密钥扫描"
+echo "--> 门禁 4/20: 安全/密钥扫描"
 if bash scripts/check_secrets.sh "$ROOT" > "$SECURITY_LOG" 2>&1; then
   RC_SECRETS=0
 else
@@ -469,7 +473,7 @@ log_result "安全/密钥扫描" "$RC_SECRETS"
 # 债务已累积到 264 个（手写 237 个）却无人察觉。本门禁不追溯存量——
 # 以 tool/r019_baseline.json 为基线，只阻止**新增**超限，避免一次性阻塞所有提交。
 # 待债务按期清偿后，可去掉 --baseline 改为全量卡口。
-echo "--> 门禁 5/19: R-019 函数行数（基线豁免，只卡新增）"
+echo "--> 门禁 5/20: R-019 函数行数（基线豁免，只卡新增）"
 if [ -n "$PY_BIN" ] && [ -f "$ROOT/tool/r019_baseline.json" ]; then
   if "$PY_BIN" tool/check_r019.py --baseline tool/r019_baseline.json > "$R019_LOG" 2>&1; then
     RC_R019=0
@@ -519,7 +523,7 @@ log_result "R-019 函数行数" "$RC_R019"
 # 退出码语义（check_coverage.py）：0 = T1 PASS/WARN 且 T2 全过；
 #    1 = T1 FAIL 或任一 T2 FAIL/缺失 或 T2 数量不符护栏；
 #    2 = 环境错误（lcov 缺失 / 解析 0 记录 / --t2 语法错）。
-echo "--> 门禁 6/19: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
+echo "--> 门禁 6/20: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
 
 # ---------- P4b：本轮实际生效的 COV_FLAG（T-20261025-04）----------
 # 【判据】读 wrapper 写的 cov_flag.txt，**不读 gate.sh 自己导出的 env** ——
@@ -625,7 +629,7 @@ log_result "覆盖率检查" "$RC_COVERAGE"
 #
 # 退出码语义（check_prompt_antipattern.py）：0 = 无新增（diff 模式）；
 #    1 = 有新增命中 / 规则数不符护栏。
-echo "--> 门禁 7/19: Prompt 反模式（diff-baseline，只卡新增）"
+echo "--> 门禁 7/20: Prompt 反模式（diff-baseline，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 prompt 反模式扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$PROMPT_LINT_LOG"
@@ -654,7 +658,7 @@ log_result "Prompt 反模式" "$RC_PROMPT"
 #
 # ⚠️ 必须用 --strict：非 strict 模式下有 finding 也是 rc=0（advisory），
 #    接为门禁会恒绿、零价值。--strict 才有「有 finding → 1」的阻断语义。
-echo "--> 门禁 8/19: 内容元数据（--strict，只卡新增缺失）"
+echo "--> 门禁 8/20: 内容元数据（--strict，只卡新增缺失）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过内容元数据检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$META_LOG"
@@ -677,7 +681,7 @@ log_result "内容元数据" "$RC_META"
 # ⚠️ 空 lib 扫描会假绿（2026-09-12 规格验证）：若 lib 下无 .dart 文件，
 #    脚本会 rc=0「什么都没扫到」——这不是「通过」，是「没检查」。故 wrapper
 #    先判 lib 下有 .dart，否则记 SKIP（fail-closed，绝不记 PASS）。
-echo "--> 门禁 9/19: 交互回归（仅 P0 阻断，P1 报告）"
+echo "--> 门禁 9/20: 交互回归（仅 P0 阻断，P1 报告）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过交互回归扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$INTERACTION_LOG"
@@ -720,7 +724,7 @@ log_result "交互回归" "$RC_INTERACTION"
 #
 # 退出码语义（check_split_shape.py）：0 = 通过/无新增；1 = 有违规/新增；
 #    2 = 环境错误（lib 缺失 / 0 个 dart / --json 与 --baseline 同传）。
-echo "--> 门禁 10/19: 伪拆分形态（基线豁免，只卡新增）"
+echo "--> 门禁 10/20: 伪拆分形态（基线豁免，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过伪拆分扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$SPLIT_LOG"
@@ -769,7 +773,7 @@ log_result "伪拆分形态" "$RC_SPLIT"
 # 退出码语义（check_a_class_exemption.py）：0 = 通过/无新增；1 = 有违规/新增/守卫失败；
 #    2 = 环境错误（lib 缺失 / 0 个 dart / 0 个豁免文件 / 真源缺失或载入失败 /
 #    基线结构非法 / --json 与 --baseline 同传）。
-echo "--> 门禁 11/19: A 类豁免准入守卫（基线豁免，只卡新增）"
+echo "--> 门禁 11/20: A 类豁免准入守卫（基线豁免，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 A 类豁免准入扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$A_CLASS_LOG"
@@ -797,7 +801,7 @@ fi
 log_result "A 类豁免准入" "$RC_ACLASS"
 
 # ---------- 门禁 12: Skill 公共库链接（ADR-C115）----------
-echo "--> 门禁 12/19: Skill 公共库链接校验 (scripts/check_skills_links.py)"
+echo "--> 门禁 12/20: Skill 公共库链接校验 (scripts/check_skills_links.py)"
 if [ -n "$PY_BIN" ]; then
   if "$PY_BIN" scripts/check_skills_links.py . > "$SKILLS_LINKS_LOG" 2>&1; then
     RC_SKILLS_LINKS=0
@@ -827,7 +831,7 @@ log_result "Skill 公共库链接" "$RC_SKILLS_LINKS"
 #   该批须同批删豁免、把 E1 升为全量卡口并做负向验证。
 # 退出码：0 通过 / 1 有新增或失效豁免 / 2 环境或基线非法。
 #   ⚠️ rc=2 一律判 FAIL 不当 SKIP —— 空扫等于没检查（守卫内建 G1）。
-echo "--> 门禁 13/19: extension 单块行数（基线豁免，只卡新增；ADR-0004 R-2）"
+echo "--> 门禁 13/20: extension 单块行数（基线豁免，只卡新增；ADR-0004 R-2）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 extension 分块扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$EXT_SHAPE_LOG"
@@ -856,7 +860,7 @@ log_result "extension 单块行数" "$RC_EXTENSION_SHAPE"
 # 判据（守卫内建）：G1 空扫 fail-closed / G2 登记完整性 / G3 值变更时受影响测试
 #   必须**同批**改动。基线 tool/flag_contract_baseline.json。
 # 退出码：0 通过 / 1 有未同步或登记缺失 / 2 环境不可判定（rc=2 判 FAIL 不当 SKIP）。
-echo "--> 门禁 14/19: flag 变更须同步测试契约（ADR-0002 事故 7d245a75 遗留）"
+echo "--> 门禁 14/20: flag 变更须同步测试契约（ADR-0002 事故 7d245a75 遗留）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3/ python，跳过 flag 契约扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$FLAG_CONTRACT_LOG"
@@ -883,7 +887,7 @@ log_result "flag 契约同步" "$RC_FLAG_CONTRACT"
 # ⚠️ 跨仓判据：它读仓库根的 .ai/ 与 yuesheng-flutter/（本仓是 monorepo 子目录，
 #   git 仓库根是 D:/ai-teacher 而非 yuesheng-flutter/）—— 路径错配会静默零扫描，
 #   故守卫内建 G1 空扫 fail-closed。
-echo "--> 门禁 15/19: ADR 悬空引用（编号↔实体必须有实文件）"
+echo "--> 门禁 15/20: ADR 悬空引用（编号↔实体必须有实文件）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 ADR 悬空扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$ADR_DANGLING_LOG"
@@ -909,7 +913,7 @@ log_result "ADR 悬空引用" "$RC_ADR_DANGLING"
 # 一切检查都绿（源文件本身没问题）⇒ 静默失效。
 # 判据：git rev-parse --absolute-git-dir 取生效目录 → 比 md5；不一致报红并给出
 #   修复命令。副本未安装判 SKIP/0（首次 clone 常见，非漂移）。
-echo "--> 门禁 16/19: hook 副本↔源文件同步（防改了不生效）"
+echo "--> 门禁 16/20: hook 副本↔源文件同步（防改了不生效）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 hook 同步扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$HOOK_SYNC_LOG"
@@ -934,7 +938,7 @@ log_result "hook 副本同步" "$RC_HOOK_SYNC"
 #      F2 台账声明的「N 道」须与 gate.sh 实测一致；
 #      F3 近 24h 新增的 lib 文件须在 `.ai/` 有登记（防「代码做了台账没记」）。
 #   ★ 门禁 17 自身也遵守：不硬编码 17，真实道数从标签集合实测取。
-echo "--> 门禁 17/19: 台账新鲜度（防复述即漂移）"
+echo "--> 门禁 17/20: 台账新鲜度（防复述即漂移）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过台账新鲜度扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$LEDGER_FRESH_LOG"
@@ -960,7 +964,7 @@ log_result "台账新鲜度" "$RC_LEDGER_FRESH"
 #    运行时 system 消息注入通道（message_injector.dart F07 因果上下文 / 后续
 #    D2 结构画像）不经 skill dispatcher ⇒ 不在计量面内，其增量须在触该通道的
 #    批次单独实测报批，不得以「红线没超」代替。
-echo "--> 门禁 18/19: prompt 体积红线（ADR-0003 判据 9；D1 实证此前无执行点）"
+echo "--> 门禁 18/20: prompt 体积红线（ADR-0003 判据 9；D1 实证此前无执行点）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 prompt 体积检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$PROMPT_VOLUME_LOG"
@@ -978,6 +982,31 @@ else
   fi
 fi
 log_result "prompt 体积红线" "$RC_PROMPT_VOLUME"
+
+# ---------- 门禁 19: L0-b 判据条款分片外依赖静态审计（tool/check_l0b.py）----------
+# 背景（2026-11-09 B0c 前半件 → 本批接门禁）：L0-b 判据要求「判据若依赖分片外
+#   信息，在分块链上不得作为豁免」，此前只有工具、无门禁执行点（同 D1 教训）。
+# 四问准入（T-20261024-13 A 块：先裁后写，不得先写脚本再补裁定；2026-11-09 舰长
+#   「都做，按最优方案走」授权接线）：
+#   ① 量什么 = 手册 6 ID / 24 条例外条款的「分片外依赖」标志词命中集 + 条款数 + 序号连续；
+#   ② 上限 = 与 C 册 §4.E4 底表**严格相等**（容差 0，新增高危例外未登记即红）；
+#   ③ 真源 = C 册 §4.E4 底表（oracle）+ syndrome_kb_content_manual_{4,5,6}.dart；
+#   ④ 接不接 = 接，第 20 道（本道编号 19），rc≠0 即 FAIL（含 rc=2 空分母 fail-closed）。
+# 退出码：0 一致 / 1 漂移 / 2 空分母（没测到 ≠ 通过）。
+echo "--> 门禁 19/20: L0-b 分片外依赖静态审计（C 册 §4.E4 底表；B0c 前半件）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过 L0-b 审计"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$L0B_LOG"
+  RC_L0B=SKIP
+else
+  if "$PY_BIN" tool/check_l0b.py --root "$ROOT" --out "$L0B_JSON" > "$L0B_LOG" 2>&1; then
+    RC_L0B=0
+  else
+    RC_L0B=1
+    cat "$L0B_LOG"
+  fi
+fi
+log_result "L0-b 分片外依赖静态审计" "$RC_L0B"
 
 # ---------- 约定层守卫（WARN 级 · 不计道数 · 不阻断）: DB 列活性 ----------
 # 背景（2026-10-18 T-20261018-01 全链路活性审查）：确证 6 死列——既有护栏
@@ -1116,7 +1145,7 @@ else
     SELFTEST_EVID_VERDICT="PASS"          # ← 变量不动：`:1121` 汇总行读它，表达的是 rc 判定
     # ★★ 前缀是 `[INFO]` 而不是 `[PASS]`（2026-10-25 改判，主理人裁定 + 独立复核机器侧核查）：
     #   ① `[PASS]` 在全套判据里的既定含义是「**该道判据判定通过并计入 tally**」
-    #      （见本文件 `:252` 的 `emit "[PASS] $name"`）。而本层**不计入十九道、也不阻断**。
+    #      （见本文件 `:252` 的 `emit "[PASS] $name"`）。而本层**不计入二十道、也不阻断**。
     #      两个语义共用一个前缀 —— 这**就是**「措辞过度断言」的生成机制：
     #      不是这次写错，是那个前缀一直在邀请人这么写。
     #   ② 机器侧核查：全仓没有任何脚本用 `grep` 统计 `[PASS]` 行；
@@ -1168,7 +1197,7 @@ if [ "$degraded" -gt 0 ]; then
 fi
 
 cat > "$REPORT" <<EOF
-# 十九道门禁报告
+# 二十道门禁报告
 
 ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
@@ -1194,10 +1223,11 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | hook 副本同步 | $(verdict "${RC_HOOK_SYNC:-SKIP}") |
 | 台账新鲜度 | $(verdict "${RC_LEDGER_FRESH:-SKIP}") |
 | Prompt 体积红线（ADR-0003 判据 9） | $(verdict "${RC_PROMPT_VOLUME:-SKIP}") |
+| L0-b 分片外依赖静态审计（C 册 §4.E4） | $(verdict "${RC_L0B:-SKIP}") |
 
 汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP）
 
-## 约定层守卫（WARN 级 · **不计入**上方十九道 · 不阻断收尾）
+## 约定层守卫（WARN 级 · **不计入**上方二十道 · 不阻断收尾）
 
 | 守卫 | 结果 | 日志 |
 |:--|:--|:--|
@@ -1206,7 +1236,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | S4 真源→出口对账 | ${SOURCE_EXIT_VERDICT} | outputs/gate/source_exit.txt |
 | S5 证据链判据自测 | ${SELFTEST_EVID_VERDICT} | outputs/gate/selftest_gate_evidence.txt |
 
-> 这 4 项**不是**十九道之一，**不进**上方「汇总」的 pass/fail/SKIP 计数。
+> 这 4 项**不是**二十道之一，**不进**上方「汇总」的 pass/fail/SKIP 计数。
 > 「不进道数」不等于「不用看」：任一「WARN」都表示对应守卫当场要处置（补读侧 / 登记豁免 / 查判据是否退化）。
 > 「SKIP」表示**未真正执行**（缺 python 或基线），与门禁道数里的 SKIP 同义。
 >
@@ -1238,6 +1268,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - hook 副本同步: outputs/gate/hook_sync.txt
 - 台账新鲜度: outputs/gate/ledger_freshness.txt
 - Prompt 体积红线: outputs/gate/prompt_volume.txt
+- L0-b 分片外依赖静态审计: outputs/gate/l0b.txt
 - 约定层守卫·DB 列活性（WARN 级，不计道数）: outputs/gate/wiring.txt — 结果: ${WIRING_VERDICT}
 - 约定层守卫·S1 诊断链字段三级贯通（WARN 级，不计道数）: outputs/gate/surface_visibility.txt — 结果: ${SURFACE_VERDICT}
 - 约定层守卫·S4 真源→出口对账（WARN 级，不计道数）: outputs/gate/source_exit.txt — 结果: ${SOURCE_EXIT_VERDICT}
@@ -1253,5 +1284,5 @@ echo "报告: $REPORT"
 echo "=================================================="
 
 # fail-closed：任一 FAIL 或任一 SKIP（未真正执行）都使退出码非 0。
-# 「全绿」= fail==0 且 degraded==0，此时才确信十九道都真的跑过。
+# 「全绿」= fail==0 且 degraded==0，此时才确信二十道都真的跑过。
 [ "$fail" -eq 0 ] && [ "$degraded" -eq 0 ]
