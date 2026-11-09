@@ -140,7 +140,9 @@ Future<DiscoveryParseResult> runDiscoveryThenVerify({
   required bool cancelled,
 }) async {
   if (cancelled) return DiscoveryParseResult.empty;
-  if (!await _passGate(gate, content)) return DiscoveryParseResult.empty;
+  if (!await discoveryGateAllows(gate, content)) {
+    return DiscoveryParseResult.empty;
+  }
 
   String raw;
   try {
@@ -165,7 +167,8 @@ Future<DiscoveryParseResult> runDiscoveryThenVerify({
 }
 
 /// 硬约束 1+2：三键门 → 长度门。`true` = 允许出站。
-Future<bool> _passGate(VerificationGate gate, String content) async {
+/// （T-20261109-01：改公开——chat 链试点发现调用复用同款门，保证两帧门控一致。）
+Future<bool> discoveryGateAllows(VerificationGate gate, String content) async {
   try {
     final keys = await gate.keysLoader();
     if (!keys.isComplete) return false;

@@ -5,11 +5,12 @@
 //   handleAutoDiagnose / loadSyndromeHistorySection / loadActiveProblems
 //   / handleMarkComplete / handleRemoveProblem
 //
-// 原 76 行 `_handleAutoDiagnose` 超限方法拆为 handleAutoDiagnose（薄编排）
-//   + _showTooShortSnack + _runDiagnosis + _finalizeDiagnosis，满足 R-019。
+// 原 76 行超限方法拆为 handleAutoDiagnose + _showTooShortSnack + _runDiagnosis + _finalizeDiagnosis（R-019）。
 //
 // 依赖经 [ChatPageHost] 显式注入；回退发送委托 [ChatTeachingController]。
 // ─────────────────────────────────────────────────────────────
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +29,7 @@ import '../../providers/chat_store.dart';
 import '../../providers/session_providers.dart';
 import '../../services/chapter_position.dart';
 import '../../services/discovery_card_payload.dart';
+import '../../services/discovery_chat_pilot.dart';
 import '../../services/discovery_note.dart';
 import '../../services/progressive_diagnosis.dart';
 import '../../services/story_structure_profile.dart';
@@ -45,10 +47,7 @@ class ChatDiagnosisController {
 
   ChatDiagnosisController(this.host, this.teaching);
 
-  /// 批次 13 自动诊断：成长页「写作诊断」选章后进入对话页触发。对齐 RN sendDiagnosisMessage：
-  /// 读章节 → 长度校验 → 超长走分块（runProgressiveDiagnosis + commitDiagnosisFromContent），
-  /// 否则回退单次诊断 prompt（要求 [YS_DIAGNOSIS]）。上传即诊断修复：+号上传后章节行/正文
-  /// 可能尚未对当前读连接可见（导入事务刚提交），现改为短暂轮询等待正文落盘可见，就绪才发诊断。
+  /// 批次 13 自动诊断（对齐 RN sendDiagnosisMessage）：长文走分块链，短文走单次诊断 prompt。
   Future<void> handleAutoDiagnose(String chapterId) async {
     // 清空 pending，避免重复触发（对齐 RN diagnosisStartedRef）
     host.ref.read(pendingDiagnosisChapterProvider.notifier).state = null;
@@ -56,8 +55,7 @@ class ChatDiagnosisController {
     if (bootstrap == null) return;
 
     final db = host.ref.read(appDatabaseProvider);
-    // W-15-B：messenger 在首个 await 前捕获——host.context 跨 async gap 会触发
-    // use_build_context_synchronously（messenger 本体非 BuildContext，捕获后安全复用）。
+    // W-15-B：messenger 在首个 await 前捕获（host.context 跨 async gap 会触发 lint）。
     final messenger = ScaffoldMessenger.of(host.context);
     // 先上屏 loading：等待落盘期间用户看到「正在准备诊断内容…」而非无响应。
     host.ref
@@ -163,8 +161,7 @@ class ChatDiagnosisController {
     host.ref.read(chatServiceProvider).disabledSyndromeIds =
         diagPrefs?.effectiveDisabledIds ?? const {};
     final position = await _positionOf(chapter);
-    // S3 接线（R-027 已批）：configured=三键齐轮次快照；发现层产物每轮恰广播 1 次。
-    final configured = await discoveryConfigured();
+    final configured = await discoveryConfigured(); // S3（R-027 已批）：三键齐轮次快照。
     DiscoveryParseResult? discoveryResult;
     final progressive = await runProgressiveDiagnosis(
       content: chapter.content,
@@ -198,7 +195,17 @@ class ChatDiagnosisController {
         chapterFullText: chapter.content,
         chapterPosition: position,
       );
+      unawaited(_runDiscoveryPilot(chapter));
     }
+  }
+
+  /// 落点乙试点（裁点甲 · R-027 已批 · T-20261109-01）：短链发现调用入候选区。
+  Future<void> _runDiscoveryPilot(Chapter chapter) {
+    return runChatChainDiscoveryForChapter(
+      gate: productionVerificationGate(),
+      llmClient: host.ref.read(llmClientProvider),
+      chapter: chapter,
+    );
   }
 
   /// 分块链路收尾：解析合并结果 + 持久化 + 卡片插入（R-019 自 `_runDiagnosis` 拆出）。
