@@ -87,3 +87,6 @@ artifacts/
 # `vercel link` 会写 projectId/orgId 到 .vercel/，属本机环境态；不入仓，
 # 否则工作树变脏、门禁 dirty_count 直接抓，且会把个人账号坐标带进公仓。
 .vercel/
+# `vercel link` 另会写 .env.local（含 VERCEL_OIDC_TOKEN）。这里只忽略这一个
+# 文件名，不用 `.env*` 宽口径——宽口径会把 .env.example 这类该入仓的模板一并静默吃掉。
+.env.local
