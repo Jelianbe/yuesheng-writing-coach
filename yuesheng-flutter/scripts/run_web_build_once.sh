@@ -6,7 +6,10 @@
 #  1. **rc 必须真取**：`flutter build ... > log 2>&1; rc=$?` —— 绝不 `cmd | tee log; echo $?`
 #     （管道 $? 是 tee 的 rc，不是 flutter 的。本轮已踩坑三次：tail rc 冒充 / cwd 重置致 rc=2 假读数）
 #  2. **cwd 显式指定**：sandbox cwd 会在调用间重置回 D:/ai-teacher
-#  3. **命令逐字**：`flutter build web --wasm`（§4-457 授权形态）。**不加 --csp**（待裁点，主理人另行决定）
+#  3. **命令逐字**：`flutter build web --wasm`（§4-457 授权形态）。**不加 --csp**
+#     （2026-11-10 13:2x 舰长已裁「不带」—— 带 --csp 属命令形态变更，且会让序 4
+#      「A 点终值 CSP 策略串」在更受限的产物上实测；若序 4 判定需要 ⇒ 走**新的一次
+#      构建授权**，不在序 3 额度内）
 #  4. **构建次数**：这是累计第 2 次、**再无第三次**。rc=1 ⇒ 落唯一错误清单即止，不重试（§4-459 裁 3 + 附加门 ⑶）
 #  5. 产物落 `outputs/web-build/`（不与 `outputs/gate/` 混）
 #  6. **pathspec 必须相对仓根**：git 仓根 = D:/ai-teacher（`yuesheng-flutter/` 是其内目录）。
