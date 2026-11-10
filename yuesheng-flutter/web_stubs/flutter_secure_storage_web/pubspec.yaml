@@ -1,0 +1,31 @@
+name: flutter_secure_storage_web
+description: >-
+  wasm-safe web stub for flutter_secure_storage (local override).
+  原 flutter_secure_storage_web 1.2.1 是 dart2html 时代插件（dart:html / dart:js_util
+  + package:js 0.6.7），dart2wasm 目标下三库全不存在 ⇒ 序 3 残余 48 error 全数源自
+  本包（47 直接 + 1 经其 js 导入）。本替身同包名 / 同 pluginClass / 同 fileName，
+  不依赖 js，使构建生成的 web_plugin_registrant.dart 改指向本替身、js 0.6.7 退出
+  web 编译图（pubspec.lock 仍因 dev 依赖 build_runner 保留 js，但 build_runner 不进
+  web 产物）。语义降级为「不可用」（DECISIONS §4-461 裁 2：读侧 null/false/空 ·
+  写侧 UnsupportedError）。只 endorsed web ⇒ 移动端 android/ios/windows 实现不受影响。
+version: 1.2.1
+publish_to: 'none'
+
+environment:
+  sdk: ">=2.12.0 <4.0.0"
+  flutter: ">=1.20.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage_platform_interface: ^1.1.1
+  flutter_web_plugins:
+    sdk: flutter
+
+# ★ 刻意不声明 js 依赖（原包依赖 js ^0.6.3 是 js 0.6.7 的唯一来源）。
+flutter:
+  plugin:
+    platforms:
+      web:
+        pluginClass: FlutterSecureStorageWeb
+        fileName: flutter_secure_storage_web.dart

@@ -97,6 +97,16 @@ dev_dependencies:
   matcher: ^0.12.19
   mutation_test: ^1.8.1
 
+# ── web 替身覆盖（DECISIONS §4-461 裁 1=α）──
+# flutter_secure_storage_web 1.2.1 是 dart2html 时代插件（dart:html / dart:js_util
+# + package:js 0.6.7），dart2wasm 下三库全不存在 ⇒ 序 3 残余 48 error 的唯一根因。
+# 用本地同包名替身覆盖：同 pluginClass / fileName，不依赖 js，语义降级（裁 2：
+# 读侧 null/false/空 · 写侧 UnsupportedError）。该包只 endorsed web ⇒ 移动端
+# android/ios/windows 实现不受影响（移动端 4 个导入点 + 主包版本 ^9.2.2 逐字不动）。
+dependency_overrides:
+  flutter_secure_storage_web:
+    path: web_stubs/flutter_secure_storage_web
+
 flutter:
   uses-material-design: true
 
