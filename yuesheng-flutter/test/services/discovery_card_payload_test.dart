@@ -56,7 +56,9 @@ void main() {
     test('DiscoverySectionCard toJson/fromJson 往返稳定；空条目不落 key', () {
       const s = DiscoverySectionCard(
         configured: true,
-        unclassified: [DiscoveryNoteCard(reason: 'r', anchorQuotes: ['q'])],
+        unclassified: [
+          DiscoveryNoteCard(reason: 'r', anchorQuotes: ['q']),
+        ],
       );
       final back = DiscoverySectionCard.fromJson(s.toJson());
       expect(back.configured, isTrue);
@@ -91,7 +93,9 @@ void main() {
         diagnosisId: 'm1',
         discovery: DiscoverySectionCard(
           configured: true,
-          unclassified: [DiscoveryNoteCard(reason: 'r1', anchorQuotes: ['q1'])],
+          unclassified: [
+            DiscoveryNoteCard(reason: 'r1', anchorQuotes: ['q1']),
+          ],
         ),
       );
       final back = DiagnosisResultCardPayload.fromJson(payload.toJson());

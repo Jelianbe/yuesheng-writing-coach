@@ -7,17 +7,18 @@
 //   - 新库走 onCreate 直接建最终形态（v13）
 // ─────────────────────────────────────────────────────────────
 
-import 'dart:developer';
-import 'dart:io';
-
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'backup_retention.dart';
 import 'tables.dart';
+
+// T-20261031-03 §九 #1：条件导入拆分 —— 平台 io 库的落点全部移出本文件。
+//   native（移动端 / 桌面）→ `database_io.dart`；web → `database_web.dart`。
+// ★ 本文件**不得**再出现平台 io 库 / `package:drift/native.dart` /
+//   `package:path_provider` —— 否则 web 编译期直接红。
+import 'database_io.dart' if (dart.library.js_interop) 'database_web.dart';
 
 part 'database.g.dart';
 
@@ -68,7 +69,7 @@ part 'database.g.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(openDatabaseConnection());
 
   /// 用于测试的构造函数（内存数据库）
   AppDatabase.forTesting(QueryExecutor e) : super(e);
@@ -1467,15 +1468,15 @@ class AppDatabase extends _$AppDatabase {
   /// **接线**由 `test/data/database/backup_retention_test.dart` 的源码级契约用例钉住。
   Future<void> _preMigrateBackup(int from) async {
     try {
-      if (Platform.environment['FLUTTER_TEST'] == 'true') return;
-      final dbFolder = await getApplicationDocumentsDirectory();
-      final file = File(p.join(dbFolder.path, 'yuesheng.db'));
+      if (preMigrateBackupDisabled()) return;
+      final target = await preMigrateBackupTarget();
+      final file = target.dbFile;
       if (!await file.exists()) return;
-      final dir = Directory(p.join(dbFolder.path, 'backups', 'pre_migrate'));
+      final dir = target.dir;
       await dir.create(recursive: true);
       final stamp = DateTime.now().millisecondsSinceEpoch;
       for (final suffix in const ['', '-wal', '-shm']) {
-        final src = File(file.path + suffix);
+        final src = target.sidecar(suffix);
         if (await src.exists()) {
           await src.copy(
             p.join(dir.path, 'backup_${stamp}_pre_migrate_v$from$suffix'),
@@ -1499,46 +1500,14 @@ class AppDatabase extends _$AppDatabase {
 
   /// 关闭前把 WAL 内容 checkpoint 回主库（TRUNCATE 截断 WAL），
   /// 收尾持久化 + 防 WAL 文件异常增长；失败留痕不阻断关闭。
+  ///
+  /// ★ checkpoint 属 **io 侧**（wasm SQLite 无 WAL sidecar）⇒ 由条件导入选边。
   @override
   Future<void> close() async {
-    try {
-      await customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
-    } catch (e) {
-      debugPrint('[DB] wal_checkpoint 失败: $e');
-    }
+    await walCheckpointBeforeClose(this);
     await super.close();
   }
 }
 
-// ── 数据库连接 ──
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'yuesheng.db'));
-    // ABN-02 FIX：Windows release 下 NativeDatabase.createInBackground() 会在
-    // 后台 Isolate 线程中执行 DynamicLibrary.open(sqlite3.dll)，当 Windows
-    // release build 打包的 DLL 搜索路径 / 用户权限不足时，Isolate 崩溃但错误
-    // 被 LazyDatabase + runZonedGuarded 两级捕获并静默降级为"DB 未初始化"，
-    // 后续任何 INSERT（如新建作品）都会以"创建失败，请稍后再试"告终。
-    //
-    // 修复策略：
-    //   1) 默认退回到主线程同步 NativeDatabase(file)——Drift 的所有操作已经是
-    //      async query executor 包装，实际 DB IO 不阻塞 Flutter UI（只跑 microtasks）。
-    //   2) 初始化阶段显式 try-catch：如果 sqlite3.dll 无法加载 / 文件目录写不了，
-    //      把详细错误打到 debugPrint 并 rethrow（阻止静默吞错误后下游报模糊失败）。
-    //   3) 保留 createInBackground 为 future 可选开关（数据库 > 200MB / 移动端
-    //      低端机场景后续可配置化，本次 R-010 最小化不新增配置项）。
-    try {
-      return NativeDatabase(file);
-    } catch (e, s) {
-      log(
-        '[AppDatabase][FATAL] 打开数据库失败: path=${file.path}, error=$e',
-        name: 'yuesheng.db',
-        error: e,
-        stackTrace: s,
-      );
-      rethrow;
-    }
-  });
-}
+// ★ 数据库连接（`NativeDatabase` / `WasmDatabase` + ABN-02 回退语义）已移至
+//   `database_io.dart` / `database_web.dart`，由本文件的条件导入选边。

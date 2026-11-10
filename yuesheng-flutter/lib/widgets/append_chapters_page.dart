@@ -3,7 +3,7 @@
 // 真源：yuesheng-android/src/app/import-confirm.tsx
 //
 // 流程（对齐 RN handlePickFile → processContent → handleConfirm）：
-//   1. 选择文件：pickDocument → readFileContent → parseDocument
+//   1. 选择文件：pickDocument → decodeFileBytes → parseDocument
 //   2. 与已有章节标题比对（listChapters → Set(title.trim())）标记「已存在」
 //   3. 章节列表：checkbox + 标题 + 字数 + 已存在徽标（已存在禁用、默认不选中）
 //   4. 全选/取消（仅作用于新章节）
@@ -81,7 +81,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
   Future<List<AppendChapterItem>?> _defaultPickAndParse() async {
     final picked = await pickDocument();
     if (picked == null) return null;
-    final content = await readFileContent(picked.path);
+    final content = await decodeFileBytes(picked.bytes, fileName: picked.name);
     final parsed = parseDocument(content, picked.name);
     return [
       for (final ch in parsed.chapters)

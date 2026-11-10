@@ -2,7 +2,7 @@
   "dir": "lib",
   "limit": 50,
   "fileLimit": 300,
-  "fileCount": 525,
+  "fileCount": 543,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
@@ -21,9 +21,9 @@
     {
       "file": "lib/features/writing/writing_coach_panel_diagnosis_runner.dart",
       "func": "_runProgressiveOrSend",
-      "start": 121,
-      "end": 172,
-      "lines": 52
+      "start": 117,
+      "end": 174,
+      "lines": 58
     },
     {
       "file": "lib/providers/writing_providers.dart",
@@ -72,7 +72,7 @@
     },
     {
       "file": "lib/data/database/database.dart",
-      "lines": 1544
+      "lines": 1513
     },
     {
       "file": "lib/data/database/tables.dart",
@@ -216,7 +216,7 @@
     },
     {
       "file": "lib/features/chat/work_import_sheet.dart",
-      "lines": 346
+      "lines": 345
     },
     {
       "file": "lib/features/growth/diagnosis_picker_sheet.dart",
@@ -336,7 +336,7 @@
     },
     {
       "file": "lib/services/chat_service.dart",
-      "lines": 1102
+      "lines": 1101
     },
     {
       "file": "lib/services/database_backup_service.dart",
@@ -384,7 +384,7 @@
     },
     {
       "file": "lib/services/file_parser.dart",
-      "lines": 444
+      "lines": 442
     },
     {
       "file": "lib/services/focus_resolver.dart",
@@ -572,7 +572,7 @@
     },
     {
       "file": "lib/widgets/material_upload_sheet.dart",
-      "lines": 492
+      "lines": 495
     },
     {
       "file": "lib/widgets/message_bubble.dart",

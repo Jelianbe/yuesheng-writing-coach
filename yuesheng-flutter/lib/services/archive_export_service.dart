@@ -5,20 +5,23 @@
 //   保留 SQLite 但增加便携格式，隐私靠架构（本地）而非加密。
 // 分层（借鉴 export_service.dart）：
 //   1. 纯函数 buildArchiveJson —— 组装 JSON，可单测，不含 IO；
-//   2. IO 函数 shareArchiveExport —— 写临时目录后 SharePlus。
+//   2. IO 函数 shareArchiveExport —— 写临时目录后 SharePlus（**io 侧**，
+//      web 侧走 stub 抛 UnsupportedError，见文件末的条件导出）。
 // 格式约定：
 //   JSON 结构含 meta（版本/时间/app）+ profile（五维画像）+ diagnoses（历史诊断）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
-import 'dart:io';
-
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../data/database/database.dart';
 import 'decode_guard.dart';
+
+// T-20261031-03 §九 #4：编译期门控 —— `shareArchiveExport` 的两个实现。
+//   native（移动端 / 桌面）→ `archive_export_service_io.dart`；
+//   web                    → `archive_export_service_web.dart`（抛 UnsupportedError）。
+// ★ 本文件**不含平台 io 依赖**（IO 面全部下沉到 io 侧文件）。
+export 'archive_export_service_io.dart'
+    if (dart.library.js_interop) 'archive_export_service_web.dart';
 
 /// 诊断记录 DTO（导出专用，不依赖 drift 类型，便于纯函数单测）
 class DiagnosisExportEntry {
@@ -157,19 +160,5 @@ String archiveExportFileName({String? sessionLabel}) {
   return '$base-$stamp.json';
 }
 
-/// 写入临时目录并调起系统分享面板
-Future<void> shareArchiveExport({
-  required String json,
-  required String fileName,
-  String? subject,
-}) async {
-  final dir = await getTemporaryDirectory();
-  final file = File(p.join(dir.path, fileName));
-  await file.writeAsString(json, flush: true);
-  await SharePlus.instance.share(
-    ShareParams(
-      files: [XFile(file.path, mimeType: 'application/json')],
-      subject: subject,
-    ),
-  );
-}
+// ★ `shareArchiveExport`（写临时目录 + SharePlus）已下沉到 io 侧文件，
+//   由文件头的条件导出选边（native → io，web → stub 抛 UnsupportedError）。

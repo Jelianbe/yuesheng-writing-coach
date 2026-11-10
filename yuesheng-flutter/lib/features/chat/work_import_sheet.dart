@@ -3,12 +3,11 @@
 // 真源：yuesheng-android/src/components/reference/WorkImportModal.tsx
 //
 // 流程对齐 RN handlePickFile → handleCreateWork：
-//   - 选择文件：pickDocument → readFileContent → parseDocument → 事务入库
+//   - 选择文件：pickDocument → decodeFileBytes → parseDocument → 事务入库
 //   - 粘贴文本：parseDocument → 事务入库
 // 入库复用 WorkImportService（批次2），事务内建稿件+章节+主引用
 // ─────────────────────────────────────────────────────────────
 
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -71,7 +70,7 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
           return;
         }
         setState(() => _progressText = '正在读取图片...');
-        final bytes = await File(picked.path).readAsBytes();
+        final bytes = picked.bytes;
         if (!mounted) return;
         Navigator.of(context).pop();
         widget.onPickedImage!(bytes, picked.name);

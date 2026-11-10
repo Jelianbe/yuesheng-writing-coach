@@ -2,7 +2,7 @@
 // BookImportSheet — 书架「文本导入」弹层（批次 35）
 // 真源：RN WorkImportModal 的选文件分支（书架无会话上下文 → 不建引用）
 //
-// 流程：选择文件（pickDocument）→ readFileContent → parseDocument
+// 流程：选择文件（pickDocument）→ decodeFileBytes → parseDocument
 //   → importBookFromFile（事务建稿件+章节，无主引用）→ onImported
 // 测试可注入：override workImportServiceProvider 提供 fake（file_picker 不可测）
 // ─────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 //
 // 覆盖（ADR-C144 §5 DoD #1 / #2）：
 //   1. extractDocxText：ZIP→word/document.xml→纯文本（段落换行）
-//   2. readFileContent：.docx 走专用提取，parseDocument 复用 txt 切章
+//   2. decodeFileBytes：.docx 走专用提取，parseDocument 复用 txt 切章
 //   3. 损坏路径：非 ZIP / 缺 document.xml / 空文件 → 抛异常（不崩，留痕）
 //
 // fixture：用 archive.ZipEncoder 手工造最小 .docx（ZIP 容器含
@@ -17,6 +17,13 @@ import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/services/file_parser.dart';
+
+/// 等价于拆分前的 `readFileContent(path)`：从磁盘读字节再解码。
+///
+/// 生产侧已改为「picker 直接给字节」（`decodeFileBytes`），测试侧仍从磁盘
+/// 造字节喂进去 ⇒ **断言面与拆分前完全一致**。
+Future<String> decodeFileFromDisk(String path) async =>
+    decodeFileBytes(await File(path).readAsBytes(), fileName: path);
 
 /// 构造最小 .docx 字节：ZIP 容器，内含 word/document.xml。
 List<int> _buildDocxBytes(String documentXml) {
@@ -67,12 +74,12 @@ void main() {
       expect(parsed.chapters[1].content, contains('这是第二章正文。'));
     });
 
-    test('#3 readFileContent：.docx 文件走专用提取（端到端落盘读取）', () async {
+    test('#3 decodeFileBytes：.docx 文件走专用提取（端到端落盘读取）', () async {
       final dir = await Directory.systemTemp.createTemp('parser_docx');
       final f = File('${dir.path}/novel.docx');
       await f.writeAsBytes(_buildDocxBytes(_kDocXml));
       try {
-        final content = await readFileContent(f.path);
+        final content = await decodeFileFromDisk(f.path);
         expect(content, contains('第一章 开端'));
         expect(content, contains('这是第二章正文。'));
         // 入库前再切章，验证与既有章节链打通
@@ -94,7 +101,10 @@ void main() {
       // 随机字节，不是合法 ZIP 本地文件头（PK）
       await f.writeAsBytes([0x00, 0x11, 0x22, 0x33, 0x44, 0x55]);
       try {
-        await expectLater(readFileContent(f.path), throwsA(isA<Exception>()));
+        await expectLater(
+          decodeFileFromDisk(f.path),
+          throwsA(isA<Exception>()),
+        );
       } finally {
         await dir.delete(recursive: true);
       }
@@ -114,7 +124,10 @@ void main() {
       final f = File('${dir.path}/empty.docx');
       await f.writeAsBytes(const <int>[]);
       try {
-        await expectLater(readFileContent(f.path), throwsA(isA<Exception>()));
+        await expectLater(
+          decodeFileFromDisk(f.path),
+          throwsA(isA<Exception>()),
+        );
       } finally {
         await dir.delete(recursive: true);
       }

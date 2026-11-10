@@ -6,16 +6,14 @@
 // 分层（对齐 archive_export_service.dart）：
 //   1. 纯函数 buildSessionExportJson —— 组装 JSON，可单测，不含 IO；
 //   2. IO 函数 collectLatestSessionExport —— 取最新会话并收集四类数据；
-//   3. IO 函数 shareSessionExport —— 写临时目录后 SharePlus。
+//   3. IO 函数 shareSessionExport —— **内存态**交给 share_plus
+//      （T-20261031-03 §九 #6：改收内存，不落临时文件 ⇒ 本文件不含平台 io 依赖）。
 // 隐私：导出含作品原文（messages.content / trainingResults.userContent），
 //   由调用方在导出前弹确认框说明；脱敏由用户自行判断。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../data/database/database.dart';
@@ -211,18 +209,31 @@ Future<SessionExportResult?> collectLatestSessionExport(
   );
 }
 
-/// 写入临时目录并调起系统分享面板（平台通道，失败向上抛）
+/// 把导出 JSON 以**内存态**交给系统分享面板（平台通道，失败向上抛）。
+///
+/// ★ 移动端零行为变化：share_plus 在移动端会把 `XFile.fromData` 的字节
+///   **内部落临时文件**后再交给系统分享 ⇒ 与拆分前「自己写临时目录再分享」
+///   的最终产物一致（文件名取 [fileName]、mimeType 同为 `application/json`）。
 Future<void> shareSessionExport({
   required String json,
   required String fileName,
   String? subject,
 }) async {
-  final dir = await getTemporaryDirectory();
-  final file = File(p.join(dir.path, fileName));
-  await file.writeAsString(json, flush: true);
   await SharePlus.instance.share(
     ShareParams(
-      files: [XFile(file.path, mimeType: 'application/json')],
+      files: [
+        XFile.fromData(
+          utf8.encode(json),
+          name: fileName,
+          mimeType: 'application/json',
+        ),
+      ],
+      // ★ `XFile.fromData` 的 `name` 在**非 web 平台会被 cross_file 忽略**
+      //   （share_plus 12.0.2 `lib/share_plus.dart:216-219` 官方文档逐字：
+      //   "name property will be ignored by cross_file on all platforms except on web"）
+      //   ⇒ 必须显式传 `fileNameOverrides`，否则 share_plus 内部落临时文件时
+      //   文件名退化成 `<uuid>.json` ⇒ **移动端分享出去的文件名变了**（判据 2 红）。
+      fileNameOverrides: [fileName],
       subject: subject,
     ),
   );

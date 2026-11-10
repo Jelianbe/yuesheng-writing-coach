@@ -4,16 +4,15 @@
 // 依据：笔落导出教程——单章 / 单卷 / 整书三种粒度，共享系统分享面板。
 // 分层：
 //   1. 纯函数组装文本（buildXxxExportText）——可单测，不含 IO；
-//   2. 文件落盘 + 系统分享（shareTextExport）——写临时目录后 SharePlus。
+//   2. 系统分享（shareTextExport）——**内存态**交给 share_plus
+//      （T-20261031-03 §九 #5：改收内存，不落临时文件 ⇒ 本文件不含平台 io 依赖）。
 // 格式约定：
 //   TXT       ：标题行 + 「───」分隔线 + 正文；卷之间「《卷名》」分隔
 //   Markdown  ：`# 书名` / `## 卷名` / `### 章节标题` + 正文
 // ─────────────────────────────────────────────────────────────
 
-import 'dart:io';
+import 'dart:convert';
 
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../data/database/database.dart';
@@ -145,18 +144,32 @@ String exportFileName(String base, ExportFormat format) {
   return '$name.${format.extension}';
 }
 
-/// 写入临时目录并调起系统分享面板
+/// 把导出文本以**内存态**交给系统分享面板。
+///
+/// ★ 移动端零行为变化：share_plus 在移动端会把 `XFile.fromData` 的字节
+///   **内部落临时文件**后再交给系统分享 ⇒ 与拆分前「自己写临时目录再分享」
+///   的最终产物一致（文件名取 [fileName]、mimeType 同为 `text/plain`）。
+///   本函数自己不再碰平台 io 库 ⇒ web 编译期无 io 面。
 Future<void> shareTextExport({
   required String text,
   required String fileName,
   String? subject,
 }) async {
-  final dir = await getTemporaryDirectory();
-  final file = File(p.join(dir.path, fileName));
-  await file.writeAsString(text, flush: true);
   await SharePlus.instance.share(
     ShareParams(
-      files: [XFile(file.path, mimeType: 'text/plain')],
+      files: [
+        XFile.fromData(
+          utf8.encode(text),
+          name: fileName,
+          mimeType: 'text/plain',
+        ),
+      ],
+      // ★ `XFile.fromData` 的 `name` 在**非 web 平台会被 cross_file 忽略**
+      //   （share_plus 12.0.2 `lib/share_plus.dart:216-219` 官方文档逐字：
+      //   "name property will be ignored by cross_file on all platforms except on web"）
+      //   ⇒ 必须显式传 `fileNameOverrides`，否则 share_plus 内部落临时文件时
+      //   文件名退化成 `<uuid>.json` ⇒ **移动端分享出去的文件名变了**（判据 2 红）。
+      fileNameOverrides: [fileName],
       subject: subject,
     ),
   );

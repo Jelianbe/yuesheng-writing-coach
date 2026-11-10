@@ -21,6 +21,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/services/file_parser.dart';
 
+/// 等价于拆分前的 `readFileContent(path)`：从磁盘读字节再解码。
+///
+/// 生产侧已改为「picker 直接给字节」（`decodeFileBytes`），测试侧仍从磁盘
+/// 造字节喂进去 ⇒ **断言面与拆分前完全一致**。
+Future<String> decodeFileFromDisk(String path) async =>
+    decodeFileBytes(await File(path).readAsBytes(), fileName: path);
+
 void main() {
   group('parseTxtFile', () {
     test('#1 中文「第X章」切章', () {
@@ -277,12 +284,12 @@ void main() {
   });
 
   group('FIX-3 编码回退', () {
-    test('readFileContent: UTF-8 正常读取', () async {
+    test('decodeFileBytes: UTF-8 正常读取', () async {
       final dir = await Directory.systemTemp.createTemp('parser_utf8');
       final f = File('${dir.path}/utf8.txt');
       await f.writeAsBytes(utf8.encode('第一章\n正文内容'));
       try {
-        final content = await readFileContent(f.path);
+        final content = await decodeFileFromDisk(f.path);
         expect(content, contains('第一章'));
         expect(content, contains('正文内容'));
       } finally {
@@ -290,12 +297,12 @@ void main() {
       }
     });
 
-    test('readFileContent: GBK 文件回退成功', () async {
+    test('decodeFileBytes: GBK 文件回退成功', () async {
       final dir = await Directory.systemTemp.createTemp('parser_gbk');
       final f = File('${dir.path}/gbk.txt');
       await f.writeAsBytes(gbk.encode('第一章\n简体中文内容。'));
       try {
-        final content = await readFileContent(f.path);
+        final content = await decodeFileFromDisk(f.path);
         expect(content, contains('第一章'));
         expect(content, contains('简体中文内容'));
       } finally {
@@ -303,14 +310,17 @@ void main() {
       }
     });
 
-    test('readFileContent: 非 UTF-8/GBK 二进制 → 抛异常（留痕）', () async {
+    test('decodeFileBytes: 非 UTF-8/GBK 二进制 → 抛异常（留痕）', () async {
       final dir = await Directory.systemTemp.createTemp('parser_bin');
       final f = File('${dir.path}/bin.txt');
       // FF FF 不是任何已知 BOM（FF FE=LE / FE FF=BE），既过不了 UTF-8 严格解码、
       // 也过不了 GBK（0xFF 非法 lead byte）→ 抛异常留痕。
       await f.writeAsBytes([0xFF, 0xFF, 0x00, 0x81, 0xE0]);
       try {
-        await expectLater(readFileContent(f.path), throwsA(isA<Exception>()));
+        await expectLater(
+          decodeFileFromDisk(f.path),
+          throwsA(isA<Exception>()),
+        );
       } finally {
         await dir.delete(recursive: true);
       }
@@ -324,7 +334,7 @@ void main() {
       );
       try {
         await expectLater(
-          readFileContent(f.path),
+          decodeFileFromDisk(f.path),
           throwsA(
             isA<StateError>().having((e) => e.message, 'message', '文件过大已跳过'),
           ),
@@ -340,7 +350,7 @@ void main() {
       // EF BB BF + 「第一章\n正文内容」
       await f.writeAsBytes([0xEF, 0xBB, 0xBF, ...utf8.encode('第一章\n正文内容')]);
       try {
-        final content = await readFileContent(f.path);
+        final content = await decodeFileFromDisk(f.path);
         expect(content.codeUnitAt(0), isNot(0xFEFF));
         expect(content.startsWith('第一章'), isTrue);
         // 解析正确识别首章（BOM 曾导致首章标题被吞）
@@ -364,7 +374,7 @@ void main() {
       }
       await f.writeAsBytes(bytes);
       try {
-        final content = await readFileContent(f.path);
+        final content = await decodeFileFromDisk(f.path);
         expect(content, text);
         final parsed = parseDocument(content, 'le.txt');
         expect(parsed.chapters.first.title, '第一章');
@@ -385,7 +395,7 @@ void main() {
       }
       await f.writeAsBytes(bytes);
       try {
-        final content = await readFileContent(f.path);
+        final content = await decodeFileFromDisk(f.path);
         expect(content, text);
       } finally {
         await dir.delete(recursive: true);

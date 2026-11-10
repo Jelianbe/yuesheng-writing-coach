@@ -139,9 +139,14 @@ void main() {
 
   group('零行为面（静态扫描牙）', () {
     test('组件源码不含诊断/prompt/provider 引用', () {
-      final src = File(
+      // T-20261031-03 裁 2：组件拆成「门面 + core + io/web」四个文件 ⇒
+      // 扫描面**跟着实现一起搬**（否则门面化会让本护栏退化成空断言）。
+      final src = [
         'lib/services/source_plane_snapshot.dart',
-      ).readAsStringSync();
+        'lib/services/source_plane_snapshot_core.dart',
+        'lib/services/source_plane_snapshot_io.dart',
+        'lib/services/source_plane_snapshot_web.dart',
+      ].map((rel) => File(rel).readAsStringSync()).join('\n');
       for (final banned in <String>[
         'syndrome_registry',
         'buildChunkSystemPrompt',

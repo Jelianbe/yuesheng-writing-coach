@@ -3,7 +3,7 @@
 // 真源：yuesheng-android/src/components/modals/MaterialUploadSheet.tsx
 //
 // 流程对齐 RN：
-//   - 选择文件：pickDocument → readFileContent → 预填文件名 → 表单
+//   - 选择文件：pickDocument → decodeFileBytes → 预填文件名 → 表单
 //   - 粘贴文本：粘贴 → 首行预填文件名 → 表单
 //   - 保存：素材类型（常规/大纲/素材）+ 文件名 → createAttachedFile
 // ─────────────────────────────────────────────────────────────
@@ -80,7 +80,10 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
         if (mounted) setState(() => _uploading = false);
         return;
       }
-      final content = await readFileContent(picked.path);
+      final content = await decodeFileBytes(
+        picked.bytes,
+        fileName: picked.name,
+      );
       if (content.trim().isEmpty) {
         throw StateError('素材内容为空，无法保存');
       }

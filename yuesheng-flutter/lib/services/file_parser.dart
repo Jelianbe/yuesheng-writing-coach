@@ -3,8 +3,8 @@
 // 真源：yuesheng-android/src/services/file-parser.ts
 //
 // 职责：
-//   1. pickDocument：调 file_picker 选择 txt/md 文件
-//   2. readFileContent：读取本地文件文本（UTF-8 优先，GBK/GB18030 回退）
+//   1. pickDocument：调 file_picker 选择 txt/md 文件（**直接取字节**）
+//   2. decodeFileBytes：从字节解码正文（UTF-8 优先，GBK/GB18030 回退）
 //   3. parseTxtFile：按章节/卷标记切分（第X章/Chapter N/序章/卷级变体）
 //   4. parseMdFile：按 md 层级切分（# 章 / ## 卷 / ### 章 + txt 风格标题）
 //   5. parseDocument：按扩展名路由到对应解析器
@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:fast_gbk/fast_gbk.dart';
@@ -53,10 +53,12 @@ class ParsedFile {
 
 /// 选中的文件
 class PickedDocument {
-  final String path;
+  /// 本地路径（web 上为 null）；文件名；文件字节（picker `withData: true` 给出）。
+  final String? path;
   final String name;
+  final Uint8List bytes;
 
-  const PickedDocument({required this.path, required this.name});
+  const PickedDocument({this.path, required this.name, required this.bytes});
 }
 
 /// 图片扩展名（C147：图片直读并入「选择文件」入口——舰长明确图片是上传子功能，
@@ -79,14 +81,14 @@ bool isImageFile(String name) {
 
 /// 打开系统文件选择器（txt / markdown / docx / 图片），取消或失败返回 null。
 ///
-/// C147：放行图片扩展名——但图片**不走章节导入**（readFileContent 会按文本解码
+/// C147：放行图片扩展名——但图片**不走章节导入**（decodeFileBytes 会按文本解码
 /// 失败）；调用方须先 [isImageFile] 分叉：图片走 image_attachment 链直送 LLM，
 /// 其余文本走既有解析/导入。
 Future<PickedDocument?> pickDocument() async {
   try {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      // C144 W1：放行 docx（ZIP→纯文本，readFileContent 按扩展名分流）
+      // C144 W1：放行 docx（ZIP→纯文本，decodeFileBytes 按扩展名分流）
       // C147：放行图片（调用方按 isImageFile 分叉，图片走 LLM 多模态链）
       allowedExtensions: const [
         'txt',
@@ -95,39 +97,35 @@ Future<PickedDocument?> pickDocument() async {
         'docx',
         ...kImageExtensions,
       ],
+      // T-20261031-03 §九 #7：直接取字节（web 上 path 为 null，只有 bytes 可用）。
+      withData: true,
     );
     if (result == null || result.files.isEmpty) return null;
     final file = result.files.first;
-    final path = file.path;
-    if (path == null) return null;
-    return PickedDocument(path: path, name: file.name);
+    final bytes = file.bytes;
+    if (bytes == null) return null; // 拿不到字节 ⇒ 不返回半成品
+    return PickedDocument(path: file.path, name: file.name, bytes: bytes);
   } catch (e, st) {
     logDecodeFailure(field: 'fileContent', error: e, stack: st);
     return null;
   }
 }
 
-/// 读取本地文件文本（失败抛异常，由调用方处理）
+/// 从字节解码文件正文（失败抛异常，由调用方处理）。
 ///
-/// 编码探测顺序：
-///   1. BOM 嗅探：`EF BB BF`(UTF-8 BOM) / `FF FE`(UTF-16 LE) / `FE FF`(UTF-16 BE)
-///   2. 无 BOM：UTF-8 严格解码 → 失败回退 GBK/GB18030
-/// （`utf8.decode` 对非法序列抛 FormatException；GBK 解码覆盖 GB18030
-///  常用汉字区，四字节扩展字失败时经 decode_guard 留痕后抛出）。
+/// 编码探测顺序：BOM 嗅探（UTF-8 / UTF-16 LE / UTF-16 BE）→ 无 BOM 时 UTF-8
+/// 严格解码 → 失败回退 GBK/GB18030（`utf8.decode` 对非法序列抛
+/// FormatException；GBK 覆盖 GB18030 常用汉字区，扩展字失败经 decode_guard 留痕）。
 ///
-/// A7：读字节前先 stat 拿大小，超过 [FileParserLimits.maxImportBytes] 直接抛
-/// [StateError]「文件过大已跳过」，不把整文件读进内存（防 OOM）。
-Future<String> readFileContent(String path) async {
-  final file = File(path);
-  final stat = await file.stat();
-  if (stat.size > FileParserLimits.maxImportBytes) {
+/// A7：超过 [FileParserLimits.maxImportBytes] 抛 [StateError]「文件过大已跳过」。
+Future<String> decodeFileBytes(List<int> bytes, {String? fileName}) async {
+  if (bytes.length > FileParserLimits.maxImportBytes) {
     throw StateError('文件过大已跳过');
   }
-  final bytes = await file.readAsBytes();
   // C144 W1：.docx = ZIP 容器，字节不是文本，不复用编码探测，走专用提取。
   // 失败（非 ZIP / 缺 document.xml / XML 损坏）经 decode_guard 留痕后上抛，
   // 由调用方边界提示（与 txt 路径同一契约：不静默吞、不崩）。
-  if (path.toLowerCase().endsWith('.docx')) {
+  if (fileName != null && fileName.toLowerCase().endsWith('.docx')) {
     try {
       return extractDocxText(bytes);
     } catch (e, st) {

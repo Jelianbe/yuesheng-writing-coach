@@ -60,7 +60,9 @@ void main() {
         DiscoveryNoteCard(reason: '长理由', anchorQuotes: ['原文三句']),
       ],
     );
-    await tester.pumpWidget(_wrap(const DiscoveryFoldedSection(section: section)));
+    await tester.pumpWidget(
+      _wrap(const DiscoveryFoldedSection(section: section)),
+    );
 
     // 收起态：标题 + 条数摘要可见；reason 与锚点不可见（不挤占主判）。
     expect(find.text('未归类现象'), findsOneWidget);

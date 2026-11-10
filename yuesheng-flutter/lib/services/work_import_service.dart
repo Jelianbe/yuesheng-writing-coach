@@ -65,7 +65,7 @@ class WorkImportService {
     PickedDocument picked, {
     String? sessionId,
   }) async {
-    final content = await readFileContent(picked.path);
+    final content = await decodeFileBytes(picked.bytes, fileName: picked.name);
     final parsed = parseDocument(content, picked.name);
     return importWork(sessionId: sessionId, parsed: parsed);
   }
@@ -85,7 +85,7 @@ class WorkImportService {
   Future<WorkImportResult?> importBookFromFile() async {
     final picked = await pickDocument();
     if (picked == null) return null;
-    final content = await readFileContent(picked.path);
+    final content = await decodeFileBytes(picked.bytes, fileName: picked.name);
     final parsed = parseDocument(content, picked.name);
     return importWork(sessionId: null, parsed: parsed);
   }
