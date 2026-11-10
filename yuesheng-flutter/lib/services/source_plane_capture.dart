@@ -47,7 +47,13 @@ Future<SourcePlaneSnapshot?> captureDiagnosisSourcePlane({
 }) async {
   try {
     final messages = await loader().timeout(timeout);
-    final snapshot = await (store ?? SourcePlaneStore())
+    // ★ 局部变量显式标注为可空：io 侧 `save()` 返回非空、web 侧返回可空
+    //   （裁 2「web stub 一律返回 null」）⇒ 同一行代码在两个分支的静态类型不同。
+    //   不标注 ⇒ web 分支编译红（`unchecked_use_of_nullable_value`）；
+    //   不加标注直接用 `?.` ⇒ io 分支出 3 个 `invalid_null_aware_operator` warning。
+    //   标注后两侧同绿；io 侧 `save()` 恒返回非空 ⇒ `?.` 在 io 分支是恒等运算，
+    //   **移动端行为零变化**。
+    final SourcePlaneSnapshot? snapshot = await (store ?? SourcePlaneStore())
         .save(
           domain: SourcePlaneDomain.d2,
           chapterText: chapterText,
@@ -55,8 +61,8 @@ Future<SourcePlaneSnapshot?> captureDiagnosisSourcePlane({
         )
         .timeout(timeout);
     debugPrint(
-      '[source_plane] snapshot=${snapshot.snapshotId} '
-      'domain=${snapshot.domain.name} sha=${snapshot.contentSha}',
+      '[source_plane] snapshot=${snapshot?.snapshotId} '
+      'domain=${snapshot?.domain.name} sha=${snapshot?.contentSha}',
     );
     return snapshot;
   } catch (error) {

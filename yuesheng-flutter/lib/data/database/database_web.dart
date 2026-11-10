@@ -30,6 +30,16 @@ Future<void> walCheckpointBeforeClose(DatabaseConnectionUser db) async {
 /// 迁移前备份是否跳过 —— web 侧**恒跳过**（浏览器无文件系统）。
 bool preMigrateBackupDisabled() => true;
 
+/// 迁移前备份的目标（web 侧占位）：浏览器无文件系统 ⇒ 恒为空占位。
+///
+/// ★ 与 io 侧 `preMigrateBackupTarget()` **同名同形**（同名 + 同返回类型）——
+///   主文件 `database.dart` 的 `_preMigrateBackup` 是**两侧共用**的代码，
+///   若 web 侧缺这个函数，web 分支编译期直接红（`undefined_method`）。
+///   实际路径上本函数**永不被调用**：`preMigrateBackupDisabled()` 恒 true
+///   ⇒ `_preMigrateBackup` 第一行即 return。
+Future<PreMigrateBackupTarget> preMigrateBackupTarget() async =>
+    const PreMigrateBackupTarget();
+
 /// web 侧的「备份目录」占位：浏览器无文件系统 ⇒ 路径为空、创建为空操作。
 class WebBackupDir {
   const WebBackupDir();
