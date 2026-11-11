@@ -60,6 +60,10 @@ linter:
     # 异常处理
     avoid_catching_errors: true
     throw_in_finally: true
+    # ── 2026-11-11 启用（舰长批「都批」· R-028 升 A）：空 catch = 吞异常，
+    #    与 decode_guard 防的同一类问题；R-028 机制半存在（decode_guard.dart），
+    #    本 lint 补上机器执行点 ⇒ R-028 判 B → A。命中若非零须逐处处置后再合。
+    empty_catches: true
     # 类型安全
     tighten_type_of_initializing_formals: true
     unsafe_variance: true
