@@ -28,6 +28,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_palette.dart';
 import '../../data/database/database.dart';
 import '../../providers/manuscript_providers.dart';
+import '../landing/try_entry_button.dart';
 import 'bookshelf_actions_controller.dart';
 import 'bookshelf_create_controller.dart';
 import 'bookshelf_empty_state.dart';
@@ -157,6 +158,12 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
       elevation: 0,
       leading: _searchMode ? _buildSearchLeading() : null,
       actions: [
+        // web 试用入口（`§4-499`，舰长「header 加一个试用按键切界面」）：
+        // 空库/非空库都显示，搜索态收掉。**不受下面 IA-2「空库 actions 出空列表」
+        // 约束** —— 那条管的是「搜索/排序/新建」这组**库内操作**（空库无可搜可排、
+        // ＋ 与空态大按钮重复）；试用键是**库外入口**，与它们不同组，也不会重复。
+        // 非 web 端面由组件内部判定为 0×0 占位，故 Android 端零变化。
+        if (!_searchMode) const TryEntryButton(),
         if (!emptyLibrary) ...[
           // 批次93-2：搜索入口（AppBar 图标 → 变搜索框）
           if (!_searchMode) _buildSearchAction(),

@@ -1,29 +1,31 @@
 // ─────────────────────────────────────────────────────────────
-// web_landing_page.dart — web 站点门面（发版 + 试用同一个 web · `§4-498`）
+// web_landing_page.dart — 试用介绍页（`§4-498` 首访 + `§4-499` header 入口）
 //
-// 舰长 2026-11-11 21:5x：「发版和试用我期待挂到同一个 web 下」；21:59 裁「留」。
-// 本页 = 那条路径的第一段：**看见 → 试用 → 想要完整版（下载 Android）**。
+// 舰长 2026-11-11 21:5x：「发版和试用我期待挂到同一个 web 下」；21:59 裁「留」；
+// 22:24 再定形态：**试用做独立界面 · 点开先看介绍页 · header 加一个试用键切过去**。
 //
-// 【为什么是独立页而不是给 `OnboardingFlow` 加一页】
-//   1. 职责不同：`OnboardingFlow` 是**应用内**首启引导（讲功能），本页是**站点门面**
-//      （讲「现在就能试 / 完整版在哪」）。混在一串横滑里，用户要滑 3 屏才见到 CTA。
-//   2. 顺带修掉一条死路：`OnboardingFlow` 第 5 页在教用户去 DeepSeek 官网拿 Key →
-//      设置 → API 填 Key，而 **web 上那张卡是掩码的**（`settings_page.dart:419` 的
-//      `if (!kIsWeb)`，根因 `flutter_secure_storage_web` 替身读 null / 写抛
-//      `UnsupportedError`，`§4-238②`）。web 首访改走本页后，那条死路**不再可达**，
-//      因此**不需要改 `OnboardingFlow` 一个字**（零 R-027）。
+// 【一页两态（同一份代码，不给入口各写一份）】
+//   首访态：`onBack == null`，无返回键，CTA =「开始试用」→ 写标记进主壳。
+//   入口态：`onBack != null`（从书架 header 推入），有返回键，CTA =「知道了，去试试」→ 出栈。
+//   ⇒ 两态共用一个页面，避免「首访版本和入口版本各说一套」这种长期漂移；
+//     两态差异**只有**返回键与 CTA 文案两处，都由此页面内判定，不散到调用方。
 //
-// 【为什么必须明示「示例模式」】
-//   web 上没有任何真实 LLM 调用通道：不存 key（替身）、平台垫付未接
-//   （`lib/` 内 `workbuddy` / `垫付` / `publicConfig` 零命中）⇒ 未配 key 的用户
-//   落到「免费测试模式」，其固定文案是「本次未进行诊断——没有调用真实模型」。
-//   把这件事写在按钮旁边，而不是等用户点进去自己发现 —— 否则门面就是在承诺
-//   一个不存在的能力。**「不承诺」比「转化率」重要。**
+// 【为什么是独立页、而不是给 `OnboardingFlow` 加一页】
+//   1. 职责不同：`OnboardingFlow` 是**应用内**首启引导（讲功能），本页讲
+//      「现在就能试 / 怎么试 / 完整版在哪」。混在一串横滑里要滑 3 屏才见 CTA。
+//   2. 顺带修掉一条死路：`OnboardingFlow` 第 5 页教用户去 DeepSeek 官网拿 Key →
+//      设置 → API 填 Key，而 **web 上那张卡是掩码的**（`settings_page.dart:419`，
+//      根因 `flutter_secure_storage_web` 替身读 null / 写抛 `UnsupportedError`）。
+//      web 首访改走本页后那条死路不再可达 ⇒ **不需要改 `OnboardingFlow` 一个字**（零 R-027）。
+//
+// 【为什么正文写「怎么试」而不是「能看什么」】
+//   实测 `llm_client.dart:254`：未配 Key 固定回一句「本次未进行诊断——没有调用真实模型」，
+//   **试用者看不到任何诊断结果**。故正文只承诺流程走得通，不承诺有结果可看（见 `try_steps_section.dart`）。
+//   ⚠️ 本文件旧版曾写「用于查看诊断与教学的组织方式」——那句不准确，已订正（`§4-499 ②`）。
 //
 // 【下载地址为什么是编译期常量、且为空时不渲染】
-//   Android 发版件（`ROADMAP §3.4 M-ε`）目前未定稿 ⇒ 地址不存在。
-//   若渲染一个点不动的按钮，等于在门面上再造一条死路（本案正是在修死路）。
-//   故：`--dart-define=ANDROID_DOWNLOAD_URL=<url>` 传了才渲染。
+//   Android 发版件（`ROADMAP §3.4 M-ε`）未定稿 ⇒ 地址不存在。渲染一个点不动的按钮
+//   等于再造一条死路。故 `--dart-define=ANDROID_DOWNLOAD_URL=<url>` 传了才渲染。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -31,32 +33,57 @@ import 'package:flutter/material.dart';
 import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 // 条件导入：web 走 js_interop 真跳转，非 web 走空实现（不引入 url_launcher）。
+import 'try_steps_section.dart';
 import 'url_opener_stub.dart'
     if (dart.library.js_interop) 'url_opener_web.dart';
 
 /// Android 版下载地址（构建期注入；空 = 未发版，不渲染下载入口）。
 const String _downloadUrl = String.fromEnvironment('ANDROID_DOWNLOAD_URL');
 
-/// web 站点门面：一个主 CTA（试用）+ 一个可选次 CTA（下载 Android）。
+/// 试用介绍页：一页两态（首访 / header 入口），差异只有返回键与 CTA 文案。
 class WebLandingPage extends StatelessWidget {
-  const WebLandingPage({super.key, required this.onStart});
+  const WebLandingPage({super.key, required this.onStart, this.onBack});
 
-  /// 进入应用（写 onboarding 完成标记 + 进主壳）。由 `main.dart` 注入，
-  /// 与 `OnboardingFlow.onComplete` 同一个回调 —— 两条首访路径共用一套状态机。
+  /// 主 CTA 的动作。
+  /// 首访态 = 写 onboarding 完成标记并进主壳（由 `main.dart` 注入 `_completeIntro`）；
+  /// 入口态 = 出栈回书架（由 [TryEntryButton] 注入）。
   final VoidCallback onStart;
+
+  /// 非空 = 从主壳推入的「入口态」：显示返回键，CTA 改为「知道了，去试试」。
+  /// 为空 = 首访态：无返回键（此时无栈可回，给一个返回键就是假出口）。
+  final VoidCallback? onBack;
+
+  /// 入口态与否。两态差异全部由此布尔驱动，不在调用方分叉。
+  bool get _fromEntry => onBack != null;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.palette.background,
+      // 首访态也保留 AppBar（透明、无 leading）⇒ 两态页面高度一致，切换不跳动。
+      appBar: AppBar(
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
+        elevation: 0,
+        toolbarHeight: 48,
+        automaticallyImplyLeading: false,
+        leading: _fromEntry
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, size: 22),
+                onPressed: onBack,
+                tooltip: '返回',
+              )
+            : null,
+      ),
       body: SafeArea(
+        top: false,
         child: Center(
           // 小高度（如 360×560 横屏笔记本分屏）下可滚动 ⇒ 不溢出；
           // 大宽度下 `ConstrainedBox` 限宽 ⇒ 桌面端不会被拉成一条长条。
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.page,
-              vertical: AppSpacing.xxl,
+              vertical: AppSpacing.lg,
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
@@ -65,7 +92,9 @@ class WebLandingPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildBrand(context),
-                  const SizedBox(height: AppSpacing.xxl),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildStepsCard(context),
+                  const SizedBox(height: AppSpacing.xl),
                   _buildTryButton(context),
                   const SizedBox(height: AppSpacing.sm),
                   _buildTryNote(context),
@@ -125,7 +154,21 @@ class WebLandingPage extends StatelessWidget {
     );
   }
 
-  /// 主 CTA：立即试用。触控高度 52（>48 下限，门面页是首次触达点，不省这两 dp）。
+  /// 三步区：白底卡片包住，与品牌区/CTA 拉开层级。
+  Widget _buildStepsCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: context.palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: context.palette.border),
+      ),
+      child: const TryStepsSection(),
+    );
+  }
+
+  /// 主 CTA：文案随入口变（入口态用户已在主壳内，说「开始试用」会像让他再进一次）。
+  /// 触控高度 52（>48 下限，本页是首次触达点，不省这两 dp）。
   Widget _buildTryButton(BuildContext context) {
     return FilledButton(
       onPressed: onStart,
@@ -137,14 +180,17 @@ class WebLandingPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
       ),
-      child: const Text(
-        '立即试用',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      child: Text(
+        _fromEntry ? '知道了，去试试' : '开始试用',
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
     );
   }
 
-  /// 主 CTA 下的两行说明：门槛 + **示例模式明示**（不可省，见文件头）。
+  /// 主 CTA 下的说明：门槛 + **边界声明**（不可省，见文件头）。
+  ///
+  /// 措辞按实测事实写（`llm_client.dart:254`）：走到诊断那一步会**明确说没做诊断**，
+  /// 不会给假结果。**刻意不写「去设置填 Key」** —— web 上那张卡被掩码，那是一条死路。
   Widget _buildTryNote(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -171,7 +217,8 @@ class WebLandingPage extends StatelessWidget {
             const SizedBox(width: AppSpacing.xs),
             Flexible(
               child: Text(
-                '试用为示例模式：不调用真实模型，用于查看诊断与教学的组织方式',
+                '试用不调用真实模型：走到诊断那一步，它会如实告诉你「本次未进行诊断」，'
+                '不会给出假结果。完整诊断需在 Android 版配置你自己的 API Key。',
                 style: TextStyle(
                   fontSize: 12,
                   height: 1.5,
