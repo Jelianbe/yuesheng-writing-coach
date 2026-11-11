@@ -52,49 +52,55 @@ class TryStepsSection extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 序号徽记：固定 22dp 圆，与标题首行基线大致对齐。
-        Container(
-          width: 22,
-          height: 22,
-          margin: const EdgeInsets.only(top: 1),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: context.palette.primarySoft,
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            '$no',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: context.palette.primary,
-            ),
+        _buildBadge(context, no),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(child: _buildStepText(context, title, desc)),
+      ],
+    );
+  }
+
+  /// 序号徽记：固定 22dp 圆，与标题首行基线大致对齐。
+  Widget _buildBadge(BuildContext context, int no) {
+    return Container(
+      width: 22,
+      height: 22,
+      margin: const EdgeInsets.only(top: 1),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: context.palette.primarySoft,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        '$no',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: context.palette.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepText(BuildContext context, String title, String desc) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  fontWeight: FontWeight.w600,
-                  color: context.palette.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                desc,
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.55,
-                  color: context.palette.textTertiary,
-                ),
-              ),
-            ],
+        const SizedBox(height: 2),
+        Text(
+          desc,
+          style: TextStyle(
+            fontSize: 12,
+            height: 1.55,
+            color: context.palette.textTertiary,
           ),
         ),
       ],

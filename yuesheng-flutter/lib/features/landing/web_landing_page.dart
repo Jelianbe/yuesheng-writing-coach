@@ -60,50 +60,59 @@ class WebLandingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.palette.background,
-      // 首访态也保留 AppBar（透明、无 leading）⇒ 两态页面高度一致，切换不跳动。
-      appBar: AppBar(
-        backgroundColor: context.palette.background,
-        foregroundColor: context.palette.textPrimary,
-        elevation: 0,
-        toolbarHeight: 48,
-        automaticallyImplyLeading: false,
-        leading: _fromEntry
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, size: 22),
-                onPressed: onBack,
-                tooltip: '返回',
-              )
-            : null,
-      ),
-      body: SafeArea(
-        top: false,
-        child: Center(
-          // 小高度（如 360×560 横屏笔记本分屏）下可滚动 ⇒ 不溢出；
-          // 大宽度下 `ConstrainedBox` 限宽 ⇒ 桌面端不会被拉成一条长条。
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.page,
-              vertical: AppSpacing.lg,
-            ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildBrand(context),
+      appBar: _buildAppBar(context),
+      body: _buildBody(context),
+    );
+  }
+
+  /// 顶栏：两态**都保留**（首访态透明、无 leading）⇒ 页面起始高度一致，进出不跳动。
+  /// 只有入口态给返回键 —— 首访态无栈可回，给一个返回键就是假出口。
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: context.palette.background,
+      foregroundColor: context.palette.textPrimary,
+      elevation: 0,
+      toolbarHeight: 48,
+      automaticallyImplyLeading: false,
+      leading: _fromEntry
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back, size: 22),
+              onPressed: onBack,
+              tooltip: '返回',
+            )
+          : null,
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Center(
+        // 小高度（如 360×560 横屏笔记本分屏）下可滚动 ⇒ 不溢出；
+        // 大宽度下 `ConstrainedBox` 限宽 ⇒ 桌面端不会被拉成一条长条。
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.page,
+            vertical: AppSpacing.lg,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildBrand(context),
+                const SizedBox(height: AppSpacing.xl),
+                _buildStepsCard(context),
+                const SizedBox(height: AppSpacing.xl),
+                _buildTryButton(context),
+                const SizedBox(height: AppSpacing.sm),
+                _buildTryNote(context),
+                if (_downloadUrl.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
-                  _buildStepsCard(context),
-                  const SizedBox(height: AppSpacing.xl),
-                  _buildTryButton(context),
-                  const SizedBox(height: AppSpacing.sm),
-                  _buildTryNote(context),
-                  if (_downloadUrl.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildDownload(context),
-                  ],
+                  _buildDownload(context),
                 ],
-              ),
+              ],
             ),
           ),
         ),
