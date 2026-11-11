@@ -140,8 +140,10 @@ void main() {
       await tester.pumpWidget(buildBookshelfPage());
       await tester.pumpAndSettle();
 
-      // Step A: 通过 AppBar 右上角 + 按钮打开弹窗（避免与空状态 CTA 重名歧义）
-      await tester.tap(find.byIcon(Icons.add));
+      // T-20261111-01 IA-2（舰长 2026-11-11 批）：**空库时 AppBar 不再出图标**
+      // —— 首屏唯一主动作是空态里的「新建作品」大按钮（顶部再挂 + 号属同屏
+      // 重复）。故此处入口从 AppBar ＋ 改为空态 CTA。
+      await tester.tap(find.text('新建作品'));
       await tester.pumpAndSettle();
       // 通过弹窗内部独特标识"简介（可选）"确认弹窗存在
       expect(find.text('简介（可选）'), findsOneWidget, reason: '弹窗应已弹出');
@@ -359,8 +361,8 @@ void main() {
       // 初始落在书架 Tab
       expect(find.text('还没有作品'), findsOneWidget);
 
-      // 打开创建弹窗（AppBar 右上角 + 按钮）
-      await tester.tap(find.byIcon(Icons.add));
+      // 打开创建弹窗（T-20261111-01 IA-2：空库无 AppBar 图标 ⇒ 走空态 CTA）
+      await tester.tap(find.text('新建作品'));
       await tester.pumpAndSettle();
       expect(find.text('简介（可选）'), findsOneWidget, reason: '弹窗应已弹出');
 
@@ -398,8 +400,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('还没有作品'), findsOneWidget);
 
-      // 打开创建弹窗
-      await tester.tap(find.byIcon(Icons.add));
+      // 打开创建弹窗（T-20261111-01 IA-2：空库无 AppBar 图标 ⇒ 走空态 CTA）
+      await tester.tap(find.text('新建作品'));
       await tester.pumpAndSettle();
       expect(find.text('简介（可选）'), findsOneWidget, reason: '弹窗应已弹出');
 
@@ -472,7 +474,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // 打开新建弹窗 → 文本导入入口存在
-      await tester.tap(find.byIcon(Icons.add));
+      // （T-20261111-01 IA-2：空库无 AppBar 图标 ⇒ 走空态 CTA）
+      await tester.tap(find.text('新建作品'));
       await tester.pumpAndSettle();
       expect(find.text('从 TXT 文件导入书籍'), findsOneWidget);
 
@@ -491,7 +494,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // 打开新建弹窗 → 文本导入 → 导入弹层
-      await tester.tap(find.byIcon(Icons.add));
+      // （T-20261111-01 IA-2：空库无 AppBar 图标 ⇒ 走空态 CTA）
+      await tester.tap(find.text('新建作品'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('从 TXT 文件导入书籍'));
       await tester.pumpAndSettle();

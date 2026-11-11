@@ -25,6 +25,7 @@ import '../../services/attitude_advisor.dart';
 import '../../types/teaching_types.dart';
 import 'chat_attitude_controller.dart';
 import 'chat_diagnosis_controller.dart';
+import 'chat_header.dart';
 import 'chat_input.dart';
 import 'chat_messages_controller.dart';
 import 'chat_page_body.dart';
@@ -263,6 +264,21 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   void _openSessionDrawer() {
     FocusManager.instance.primaryFocus?.unfocus();
     _scaffoldKey.currentState?.openDrawer();
+  }
+
+  /// 加载期头部骨架（ST-4）。
+  ///
+  /// 会话尚未就绪 ⇒ 「新建对话 / 更多 / 主引用」都无意义（会指向空会话），
+  /// 用空实现占位保持**位置与就绪态一致**；汉堡仍可点（抽屉读的是本地会话
+  /// 列表，不依赖 bootstrap）。错误态不套骨架：那时用户要的是「重试」。
+  Widget _buildHeaderSkeleton() {
+    return ChatHeader(
+      currentAttitude: AttitudeLevel.gentle,
+      onAttitudeChange: _ignoreAttitudeChange,
+      onOpenSessionDrawer: _openSessionDrawer,
+      onOpenProfile: _ignoreTap,
+      onNewSession: _ignoreTap,
+    );
   }
 
   void _toggleTaskPanel() => setState(() => _showTaskPanel = !_showTaskPanel);
@@ -554,11 +570,30 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
         onBatchDelete: _session.handleBatchDeleteSessions,
       ),
       body: bootstrapAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => ChatBootstrapErrorView(error: error),
+        // ST-4（T-20261111-01，舰长 2026-11-11 批）：加载期保留**头部骨架**。
+        // 原来只有一个居中转圈 ⇒ 首帧→就绪帧之间有整页结构跳变（书架/成长
+        // 加载时 AppBar 常驻，只有对话连头部都没有）。骨架与就绪态同位置同高。
+        loading: () => Column(
+          children: [
+            _buildHeaderSkeleton(),
+            const Expanded(child: Center(child: CircularProgressIndicator())),
+          ],
+        ),
+        // ST-1：错误态补「下一步」—— 原为死状态（文案承诺重试却无控件）
+        error: (error, stack) => ChatBootstrapErrorView(
+          error: error,
+          onRetry: () => ref.invalidate(sessionBootstrapProvider),
+        ),
         data: (bootstrap) =>
             Stack(children: [_buildBody(chatState, scrollRequested)]),
       ),
     );
   }
 }
+
+// ── 加载期头部骨架的空实现（ST-4）────────────────────────────
+// 会话未就绪时这三个动作指向空对象，点了没有意义；用具名空函数而非
+// 内联 `() {}`，让「这是有意占位」在代码里可读、可被 grep。
+void _ignoreAttitudeChange(AttitudeLevel _) {}
+
+void _ignoreTap() {}

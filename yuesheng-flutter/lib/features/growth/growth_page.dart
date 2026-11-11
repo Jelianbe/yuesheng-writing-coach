@@ -71,36 +71,59 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
     return Scaffold(
       backgroundColor: context.palette.background,
       appBar: _buildAppBar(context),
-      body: Column(
-        children: [
-          // 快捷入口（批次 11：对齐 RN GROWTH_ENTRIES）
-          // 设置入口：全局壳无「我的」Tab，成长页 AppBar 齿轮兜底直达 /settings（P0-4a 原「收口到我的」目标已不存在，此处回补）
-          _QuickEntries(
-            onDiagnosis: () => _openDiagnosisPicker(context),
-            onProgress: _openProgressDetail,
-            onReference: () => context.push(AppRoutes.diagnosticReference),
-          ),
-          Expanded(
-            child: state.isLoading
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: context.palette.primary,
-                    ),
-                  )
-                : state.error != null
-                ? _ErrorView(
-                    error: state.error!,
-                    onRetry: () =>
-                        ref.read(growthStoreProvider.notifier).loadGrowthData(),
-                  )
-                : _GrowthContent(
-                    state: state,
-                    onOpenDetail: widget.onOpenDetail,
-                    sessionId: currentSessionId,
+      body: _buildBody(context, state, currentSessionId),
+    );
+  }
+
+  /// 主体三态骨架（T-20261111-01 IA-3 · R-019 职责提取）。
+  ///
+  /// 快捷入口的**位置随态而变**（舰长 2026-11-11 批，判据见设计稿 §IA-3）：
+  /// - **未就绪态**（加载 / 错误）留在顶部 —— 此时没有内容可让位，
+  ///   且错误态下它是仅剩的可去去处；
+  /// - **就绪态**下沉进内容列表、排在症候概览之后 —— 本 Tab 的任务是
+  ///   「看到自己的水平与问题」，三个「去别处」的行不该抢第一屏。
+  Widget _buildBody(
+    BuildContext context,
+    GrowthState state,
+    String? currentSessionId,
+  ) {
+    final pending = state.isLoading || state.error != null;
+    return Column(
+      children: [
+        if (pending) _buildQuickEntries(),
+        Expanded(
+          child: state.isLoading
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: context.palette.primary,
                   ),
-          ),
-        ],
-      ),
+                )
+              : state.error != null
+              ? _ErrorView(
+                  error: state.error!,
+                  onRetry: () =>
+                      ref.read(growthStoreProvider.notifier).loadGrowthData(),
+                )
+              : _GrowthContent(
+                  state: state,
+                  onOpenDetail: widget.onOpenDetail,
+                  sessionId: currentSessionId,
+                  // 列表内边距已由 ListView 提供 ⇒ 卡片自身横向外边距归零，
+                  // 否则会「双层缩进」（16 + 16）。
+                  quickEntries: _buildQuickEntries(margin: EdgeInsets.zero),
+                ),
+        ),
+      ],
+    );
+  }
+
+  /// 快捷入口卡（批次 11：对齐 RN GROWTH_ENTRIES）；设置入口说明见原注释。
+  Widget _buildQuickEntries({EdgeInsetsGeometry? margin}) {
+    return _QuickEntries(
+      margin: margin,
+      onDiagnosis: () => _openDiagnosisPicker(context),
+      onProgress: _openProgressDetail,
+      onReference: () => context.push(AppRoutes.diagnosticReference),
     );
   }
 
@@ -159,21 +182,28 @@ class _QuickEntries extends StatelessWidget {
   final VoidCallback onProgress;
   final VoidCallback onReference;
 
+  /// 卡片外边距。页面级（加载/错误态）用默认值；**放进 ListView 时传
+  /// `EdgeInsets.zero`** —— 列表已有 16 内边距，否则横向缩进翻倍。
+  final EdgeInsetsGeometry? margin;
+
   const _QuickEntries({
     required this.onDiagnosis,
     required this.onProgress,
     required this.onReference,
+    this.margin,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.md,
-        AppSpacing.lg,
-        0,
-      ),
+      margin:
+          margin ??
+          const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            0,
+          ),
       decoration: BoxDecoration(
         color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -201,7 +231,10 @@ class _QuickEntries extends StatelessWidget {
   ) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
+        // TC-3：命中区 ≥48dp。原为 12+20+12 = 44dp，差 4dp；这里只抬高
+        // 命中区，文字与图标视觉位置不变（Row 默认纵向居中）。
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
@@ -220,10 +253,12 @@ class _QuickEntries extends StatelessWidget {
                 ),
               ),
             ),
+            // TK-2：可用入口不该用「禁用色」。`disabledText` 语义是禁用态，
+            // 挂在这里等于告诉学员「这行点不动」；换 `textTertiary`（弱化但可读）。
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: context.palette.disabledText,
+              color: context.palette.textTertiary,
             ),
           ],
         ),
@@ -237,8 +272,13 @@ class _GrowthContent extends StatelessWidget {
   final VoidCallback? onOpenDetail;
   final String? sessionId;
 
+  /// 快捷入口卡（三个「去别处」的行）。就绪态由本组件**排在症候概览之后**
+  /// 渲染，不再占首屏第一块（T-20261111-01 IA-3）。
+  final Widget quickEntries;
+
   const _GrowthContent({
     required this.state,
+    required this.quickEntries,
     this.onOpenDetail,
     this.sessionId,
   });
@@ -265,6 +305,14 @@ class _GrowthContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
+        ..._buildLeadingSections(
+          context,
+          state,
+          counts,
+          proficiency,
+          confidence,
+          totalSessions,
+        ),
         ..._buildNarrativeSection(state),
         _buildPilotSection(),
         GrowthDiagnosisPrefsCard(
@@ -276,10 +324,6 @@ class _GrowthContent extends StatelessWidget {
           FocusCard(data: focus),
           const SizedBox(height: 12),
         ],
-        _buildProficiencyCard(context, proficiency, confidence, totalSessions),
-        const SizedBox(height: 12),
-        _buildSeverityCard(context, state, counts),
-        const SizedBox(height: 12),
         if (onOpenDetail != null) _buildDetailEntryCard(context),
         const SizedBox(height: 12),
         // B8：Editor 观察记录审计卡（对齐 RN growth.tsx#L122，折叠展开）
@@ -289,6 +333,32 @@ class _GrowthContent extends StatelessWidget {
         const ReflectionQuestionsCard(),
       ],
     );
+  }
+
+  /// 首屏最前面三块：能力画像 → 症候概览 → （下沉后的）快捷入口。
+  ///
+  /// ── IA-3（舰长 2026-11-11 批）：能力画像 + 症候概览上移到首屏第一块 ──
+  /// 判据依据：本 Tab 的任务是「看到自己的水平与问题」，不是「去别处」。
+  /// 改动前实测（360×740 探针）：能力画像卡内容顶 523 / 卡末行底部 714，
+  /// 扣掉 AppBar 48 + NavigationBar 80 后内容区仅 660 ⇒ 老用户必然在 fold 之下。
+  /// 改后实测：能力画像文字 81–101、卡末行 253–272 ⇒ 整卡在 fold 内。
+  List<Widget> _buildLeadingSections(
+    BuildContext context,
+    GrowthState state,
+    SeverityCounts counts,
+    ProficiencyLevel proficiency,
+    double confidence,
+    int totalSessions,
+  ) {
+    return [
+      _buildProficiencyCard(context, proficiency, confidence, totalSessions),
+      const SizedBox(height: 12),
+      _buildSeverityCard(context, state, counts),
+      const SizedBox(height: 12),
+      // 三个「去别处」的行（写作诊断 / 学习进度 / 教学资料）下沉到此处
+      quickEntries,
+      const SizedBox(height: 12),
+    ];
   }
 
   /// B 议题（T-20261018-03）：「与上次相比」进步叙事卡段——纯函数装配
@@ -522,6 +592,18 @@ class _GrowthContent extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(AppSpacing.xxl),
             child: _buildEmptyStateBody(context),
+          ),
+          // IA-3 的**空态对齐**：快捷入口在空态里仍然可达 —— 新用户的第一次
+          // 写作诊断正是从这里进的（若空态不给，「能力画像先行」就会误伤新人）。
+          // 位置放在空态 CTA 之后：第一眼仍应是「你还没有写作记录」。
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: quickEntries,
           ),
         ],
       ),
@@ -771,8 +853,11 @@ class _ReflectionQuestionsCardState
           TextButton(
             onPressed: () => _markReviewed(q.id),
             style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              // TC-5（舰长 2026-11-11 批 §4-490 ⑤）：命中区 ≥44dp。
+              // 不取 48：该卡一屏最多 5 条，48 会多占 ≈145dp 把「思考题回顾」
+              // 整块推下 fold；44 是 Material 允许的次优值。
+              minimumSize: const Size(0, 44),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text(

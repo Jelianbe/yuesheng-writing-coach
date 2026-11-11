@@ -200,19 +200,24 @@ class ChatHeader extends StatelessWidget {
         onOpenCoachSettings();
       },
       borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        child: Row(
-          children: [
-            Icon(Icons.tune, size: 16, color: palette.textSecondary),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              '管理教练',
-              style: TextStyle(fontSize: 14, color: palette.textSecondary),
-            ),
-            const Spacer(),
-            Icon(Icons.chevron_right, size: 18, color: palette.textTertiary),
-          ],
+      // TC-2（T-20261111-01）：整行入口命中区 ≥48dp。实测原为 36dp
+      // （padding 8 + 内容 20）；ConstrainedBox 只抬命中区，行内容纵向居中。
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              Icon(Icons.tune, size: 16, color: palette.textSecondary),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                '管理教练',
+                style: TextStyle(fontSize: 14, color: palette.textSecondary),
+              ),
+              const Spacer(),
+              Icon(Icons.chevron_right, size: 18, color: palette.textTertiary),
+            ],
+          ),
         ),
       ),
     );
@@ -270,15 +275,22 @@ class ChatHeader extends StatelessWidget {
   }
 
   /// 三个系统态度档位 chips（温柔语气/月笙如歌/sensei 快速切换）。
+  ///
+  /// ★ 2026-11-11（T-20261111-01 TC-2）：`Row` → `Wrap`。
+  /// 实测 360dp 下原 `Row` **溢出 1.5px**（3 chip 宽 305.5 + 3×8 间距 = 329.5
+  /// vs 可用 328）—— 这是「文字看不见」级缺陷，且 360dp 是本项目唯一平台宽度。
+  /// Wrap 在同宽下仍单行显示（视觉不变），窄于此才换行兜底。
   Widget _buildSystemAttitudeChips(
     BuildContext context,
     BuildContext sheetCtx,
   ) {
-    return Row(
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
       children: [
         for (final (attitude, label, color) in _attitudeOptionsFor(
           context.palette,
-        )) ...[
+        ))
           _AttitudeChip(
             label: label,
             color: color,
@@ -288,8 +300,6 @@ class ChatHeader extends StatelessWidget {
               onAttitudeChange(attitude);
             },
           ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
       ],
     );
   }
@@ -333,28 +343,32 @@ class ChatHeader extends StatelessWidget {
         onOpenProfile();
       },
       borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xs,
-          vertical: AppSpacing.md,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.person_outline,
-              size: 22,
-              color: context.palette.textPrimary,
-            ),
-            SizedBox(width: AppSpacing.md),
-            Text(
-              '画像',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+      // TC-2：命中区 ≥48dp（实测原 47dp，差 1dp；补 minHeight 后无视觉变化）
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xs,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.person_outline,
+                size: 22,
                 color: context.palette.textPrimary,
               ),
-            ),
-          ],
+              SizedBox(width: AppSpacing.md),
+              Text(
+                '画像',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: context.palette.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -504,15 +518,29 @@ class ChatHeader extends StatelessWidget {
     return GestureDetector(
       onTap: onTapPrimaryRef,
       behavior: HitTestBehavior.opaque,
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          color: context.palette.textTertiary,
+      // TC-1（T-20261111-01）：命中区原为 17dp —— 整行小字就是按钮本身。
+      // 抬到 **32dp = 头部 56 − 标题行高 24**，这是不遮住标题、不溢出头部的
+      // 几何上限。
+      //
+      // ★ 设计稿原判据「≥48dp」在 56dp 头部内**不可达**（24+48=72>56），
+      //   已按实测降级为 32 并记入卡片 §六。试过 36：Column 24+36=60 直接
+      //   RenderFlex 溢出 4px（探针实抓）。真要到 48 必须加高头部，那会撞
+      //   §2.4 已否决的「跨 Tab 标题基线 56 vs 48」决定 ⇒ 不动头部。
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 32),
+        child: Center(
+          heightFactor: 1,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: context.palette.textTertiary,
+            ),
+          ),
         ),
       ),
     );
@@ -574,37 +602,54 @@ class _AttitudeChip extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
+      // TC-2：命中区 ≥44dp，**胶囊视觉高度不变**（实测原命中区 29dp）。
+      // `Center(widthFactor/heightFactor: 1)` 让外层盒撑到 min 尺寸，
+      // 内层胶囊仍按自身内容定高并居中 ⇒ 看得见的仍是原来的胶囊。
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+        child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: _buildPill(context),
         ),
-        decoration: BoxDecoration(
-          color: active ? context.palette.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: active
-              ? Border.all(color: color)
-              : Border.all(color: context.palette.borderSoft),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
+  }
+
+  /// 胶囊本体（选中描边 + 色点 + 标签）。
+  ///
+  /// 与命中区外壳分离：外壳负责 ≥44dp，本体维持原来的 ≈29dp 视觉高度。
+  Widget _buildPill(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: active ? context.palette.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: active
+            ? Border.all(color: color)
+            : Border.all(color: context.palette.borderSoft),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: context.palette.textPrimary,
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: context.palette.textPrimary,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -628,28 +673,36 @@ class _TierChip extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: active ? context.palette.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(
-            color: active
-                ? context.palette.primary
-                : context.palette.borderSoft,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-            color: active
-                ? context.palette.primary
-                : context.palette.textPrimary,
+      // TC-2：同上 —— 命中区 ≥44dp，胶囊视觉高度不变（实测原命中区 29dp）。
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+        child: Center(
+          widthFactor: 1,
+          heightFactor: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: active ? context.palette.surface : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              border: Border.all(
+                color: active
+                    ? context.palette.primary
+                    : context.palette.borderSoft,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                color: active
+                    ? context.palette.primary
+                    : context.palette.textPrimary,
+              ),
+            ),
           ),
         ),
       ),

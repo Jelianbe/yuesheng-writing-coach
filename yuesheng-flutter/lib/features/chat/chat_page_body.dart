@@ -7,11 +7,9 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
-import '../../router/app_routes.dart';
 import '../../config/app_theme.dart';
 import '../../config/reasoning_tier.dart';
 import '../../data/repositories/diagnosis_repository.dart';
@@ -22,6 +20,7 @@ import '../../providers/practice_providers.dart';
 import '../../providers/reasoning_tier_provider.dart';
 import '../../services/attitude_advisor.dart';
 import '../../types/teaching_types.dart';
+import '../app_settings/coach_settings_page.dart';
 import 'attitude_suggestion_banner.dart';
 import 'chat_attitude_controller.dart';
 import 'chat_self_practice.dart';
@@ -245,7 +244,13 @@ class ChatHeaderSection extends StatelessWidget {
           onOpenSessionDrawer: onOpenSessionDrawer,
           onOpenProfile: messages.handleOpenProfile,
           // P0-4c：对话内快速切换保留，另供「管理教练 ›」直达设置页完整管理
-          onOpenCoachSettings: () => context.push(AppRoutes.settings),
+          // IA-4（T-20261111-01，舰长 2026-11-11 批）：原落点是**设置首页**
+          // （`context.push(AppRoutes.settings)`）⇒ 标签承诺「管理教练」，用户
+          // 落地后还要自己再找「教练」卡片点第二次。改为与成长页同路直达，
+          // **标签一个字不改**，省一跳。
+          onOpenCoachSettings: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const CoachSettingsPage()),
+          ),
           // 批次 29：头部 ⋯ 左侧新建对话快捷入口
           onNewSession: session.handleCreateSession,
           primaryRefTitle: primaryRefTitle,

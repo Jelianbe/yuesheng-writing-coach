@@ -117,13 +117,24 @@ class ChatMessageSection extends ConsumerWidget {
 }
 
 /// bootstrap 失败态（P2-7：release 构建中不向用户展示 stack trace 技术细节）
+///
+/// ST-1（T-20261111-01，舰长 2026-11-11 批）：**补「下一步」**。
+/// 此前只有「初始化失败，请重试」一句文案却**没有任何可点控件** —— 文案
+/// 承诺了一个不存在的动作，用户被卡死在死状态（仓库自己在
+/// `test/providers/session_providers_test.dart:210` 注释里写明「无重试入口」）。
+/// 按钮标签**逐字复用库内既有字符串**「重试」（`bookshelf_error_view.dart:47`
+/// 同串），不新造措辞 ⇒ 不触 R-027。
 class ChatBootstrapErrorView extends StatelessWidget {
   final Object error;
 
-  const ChatBootstrapErrorView({super.key, required this.error});
+  /// 重试回调（重新触发 `sessionBootstrapProvider`）。null ⇒ 不渲染按钮。
+  final VoidCallback? onRetry;
+
+  const ChatBootstrapErrorView({super.key, required this.error, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
+    final retry = onRetry;
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -132,6 +143,17 @@ class ChatBootstrapErrorView extends StatelessWidget {
           Icon(Icons.error_outline, size: 32, color: context.palette.danger),
           const SizedBox(height: 8),
           Text('初始化失败，请重试', style: context.text.body),
+          if (retry != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            TextButton(
+              onPressed: retry,
+              style: TextButton.styleFrom(
+                foregroundColor: context.palette.primary,
+                minimumSize: const Size(88, 48),
+              ),
+              child: const Text('重试'),
+            ),
+          ],
           const SizedBox(height: 4),
           if (kDebugMode)
             Text(

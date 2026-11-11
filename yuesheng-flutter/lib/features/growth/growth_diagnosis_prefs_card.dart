@@ -108,7 +108,10 @@ class _GrowthDiagnosisPrefsCardState
       child: InkWell(
         onTap: widget.onOpenSettings,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Padding(
+        child: Container(
+          // TC-3：命中区 ≥48dp（原 12+20+12 = 44，差 4dp）。只抬命中区，
+          // 文字与图标视觉位置不变（Row 默认纵向居中）。
+          constraints: const BoxConstraints(minHeight: 48),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.md,
@@ -129,7 +132,8 @@ class _GrowthDiagnosisPrefsCardState
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(Icons.chevron_right, size: 20, color: palette.disabledText),
+              // TK-2：可用入口不该用禁用色（disabledText → textTertiary）
+              Icon(Icons.chevron_right, size: 20, color: palette.textTertiary),
             ],
           ),
         ),

@@ -115,7 +115,10 @@ class ActionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
+        // TC-3：命中区 ≥48dp（原 12+20+12 = 44，差 4dp）。只抬命中区，
+        // 文字与箭头视觉位置不变（Row 默认纵向居中）。
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
           children: [
@@ -128,10 +131,11 @@ class ActionRow extends StatelessWidget {
                 ),
               ),
             ),
+            // TK-2：可用入口不该用禁用色（disabledText → textTertiary）
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: context.palette.disabledText,
+              color: context.palette.textTertiary,
             ),
           ],
         ),

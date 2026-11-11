@@ -21,7 +21,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_motion.dart';
-import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../features/bookshelf/bookshelf_page.dart';
 import 'package:writingcoach/features/chat/chat_page.dart';
@@ -46,7 +45,9 @@ import '../features/character/character_detail_page.dart';
 import '../features/world/world_fact_detail_page.dart';
 import '../features/world/world_fact_page.dart';
 import '../features/writing/writing_page.dart';
+import 'app_nav_bar.dart';
 import 'app_routes.dart';
+import 'nav_gate.dart';
 
 /// 根 Navigator key（main.dart 轮播结束后借它取主界面 context 弹隐私告知）
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -410,34 +411,18 @@ class _AppShell extends StatelessWidget {
             Opacity(opacity: value, child: child),
         child: navigationShell,
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
-        },
-        backgroundColor: context.palette.background,
-        indicatorColor: context.palette.primarySoft,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
-            label: '书架',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_outlined),
-            selectedIcon: Icon(Icons.chat),
-            label: '对话',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.trending_up_outlined),
-            selectedIcon: Icon(Icons.trending_up),
-            label: '成长',
-          ),
-        ],
-      ),
+      // ── NAV-1（舰长 2026-11-11 19:27 裁 · `DECISIONS §4-491 ②`）──
+      // web 首发**不渲染底部导航**：`§4-234⑤` 已裁「对话 Tab / 成长 Tab
+      // 均门后」⇒ 门外只剩「书架」一个目的地，一个 Tab 的底栏白占 80dp
+      // 且不表达任何选择（「留个空壳」比「隐藏」更差）。
+      // Android 侧行为**零变化**。判定点抽在 `nav_gate.dart` 单文件
+      // （`kIsWeb` 在 VM 测试恒 false，内联写法会造出**恒绿判据**）。
+      // ⚠️ 已知边界：web 门未开期间学员没有显式入口切到另两个 Tab ——
+      //    这是「它们本就在门后」的直接推论，有意为之。**将来 web 开门
+      //    必须同批复原底栏**，否则会出现「有 Tab 无入口」。
+      bottomNavigationBar: shouldRenderBottomNav()
+          ? AppBottomNavBar(shell: navigationShell)
+          : null,
     );
   }
 }

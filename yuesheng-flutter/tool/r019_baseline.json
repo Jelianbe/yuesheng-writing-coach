@@ -136,7 +136,7 @@
     },
     {
       "file": "lib/features/app_settings/settings_page.dart",
-      "lines": 1210
+      "lines": 1251
     },
     {
       "file": "lib/features/character/character_detail_page.dart",
@@ -160,7 +160,7 @@
     },
     {
       "file": "lib/features/chat/chat_header.dart",
-      "lines": 658
+      "lines": 711
     },
     {
       "file": "lib/features/chat/chat_input.dart",
@@ -168,11 +168,11 @@
     },
     {
       "file": "lib/features/chat/chat_page.dart",
-      "lines": 564
+      "lines": 599
     },
     {
       "file": "lib/features/chat/chat_page_body.dart",
-      "lines": 379
+      "lines": 384
     },
     {
       "file": "lib/features/chat/chat_reference_controller.dart",
@@ -228,11 +228,11 @@
     },
     {
       "file": "lib/features/growth/growth_diagnosis_prefs_card.dart",
-      "lines": 342
+      "lines": 346
     },
     {
       "file": "lib/features/growth/growth_page.dart",
-      "lines": 791
+      "lines": 876
     },
     {
       "file": "lib/features/growth/observation_audit_card.dart",
@@ -328,7 +328,7 @@
     },
     {
       "file": "lib/router/app_router.dart",
-      "lines": 443
+      "lines": 428
     },
     {
       "file": "lib/services/chat_context_builder.dart",

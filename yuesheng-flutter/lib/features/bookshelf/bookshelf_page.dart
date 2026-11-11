@@ -134,7 +134,7 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
 
     return Scaffold(
       backgroundColor: context.palette.background,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(state.manuscripts.isEmpty),
       body: _buildBody(state, visible, statsMap, searching),
       // FAB 已移除：百灵极简，仅 AppBar + 按钮入口
       bottomNavigationBar: null, // 由 _AppShell 管理
@@ -142,7 +142,13 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
   }
 
   /// AppBar：搜索态标题 / 搜索入口 / 排序菜单 / 新建入口
-  PreferredSizeWidget _buildAppBar() {
+  ///
+  /// `emptyLibrary`（T-20261111-01 IA-1 / IA-2，舰长 2026-11-11 批）：
+  /// - **搜索态**只留「排序」，收掉「新建作品」——用户在找一本书，
+  ///   新建与当前任务无关（判据见 `chat_header_capacity_test` 同批契约）。
+  /// - **空库**时 actions 出空列表：首屏唯一主动作是空态里的「新建作品」
+  ///   大按钮，顶部再挂 + 号属同屏重复；搜索/排序在空库也无可搜可排。
+  PreferredSizeWidget _buildAppBar(bool emptyLibrary) {
     return AppBar(
       title: _searchMode ? _filter.buildSearchField() : const Text('书架'),
       backgroundColor: context.palette.background,
@@ -151,15 +157,19 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
       elevation: 0,
       leading: _searchMode ? _buildSearchLeading() : null,
       actions: [
-        // 批次93-2：搜索入口（AppBar 图标 → 变搜索框）
-        if (!_searchMode) _buildSearchAction(),
-        // 批次93-2：排序菜单（笔落 v2.1.10 手机端排序切换）
-        _buildSortMenu(),
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: _create.openCreateModal,
-          tooltip: '新建作品',
-        ),
+        if (!emptyLibrary) ...[
+          // 批次93-2：搜索入口（AppBar 图标 → 变搜索框）
+          if (!_searchMode) _buildSearchAction(),
+          // 批次93-2：排序菜单（笔落 v2.1.10 手机端排序切换）
+          _buildSortMenu(),
+          // 搜索态收掉新建：用户此刻在「找」，不在「加」
+          if (!_searchMode)
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: _create.openCreateModal,
+              tooltip: '新建作品',
+            ),
+        ],
       ],
     );
   }

@@ -89,6 +89,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   List<AiAccountRow> _accounts = [];
   bool _isDeleting = false;
 
+  /// ST-2：账号/配置**读取失败**（≠「确认未配置」）。
+  /// 失败时不渲染「尚未配置」警告 —— 那会把「不知道」谎报成「没有」。
+  bool _accountsLoadFailed = false;
+
   /// 批次 38：最新会话的学习进度概览（学习进度从书架移至设置）
   ProgressSummary? _progressSummary;
 
@@ -177,6 +181,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   ///
   /// ★ 只读列表，**不填任何表单** —— 表单已下沉到 api_config_page.dart。
   /// 失败静默（不阻塞设置页其他区块）。
+  ///
+  /// ST-2（T-20261111-01，舰长 2026-11-11 批）：**三分状态**。
+  /// 此前 `catch (_)` 静默 + `finally` **无条件** 把 `_configLoaded` 置真，
+  /// 而 `_hasResolvedConfig` 维持初值 false ⇒ 读账号抛异常时渲染条件成立，
+  /// 弹出红色「尚未配置 API，当前为免费测试模式」—— **把「读失败」显示成
+  /// 「未配置」**（空态/错误态混同的反方向：前者是「显示成空」，这里是
+  /// 「显示成另一种状态」）。现在失败单独记一个内部态，不参与警告判定。
   Future<void> _loadAccounts() async {
     try {
       final accounts = await _accountRepo.listAccounts();
@@ -190,10 +201,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         setState(() {
           _accounts = accounts;
           _hasResolvedConfig = config != null;
+          _accountsLoadFailed = false;
         });
       }
     } catch (_) {
-      // 静默：列表区保持空
+      // 静默：列表区保持空。但**必须记下「这是读失败」**，
+      // 否则上层会把「不知道」当成「没有」。
+      if (mounted) setState(() => _accountsLoadFailed = true);
     } finally {
       if (mounted) {
         setState(() {
@@ -380,32 +394,50 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        children: [
-          if (_progressSummary != null) ...[
-            _ProgressSection(
-              summary: _progressSummary!,
-              onTap: _openProgressDetail,
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (!kIsWeb) ...[_buildApiSection(), const SizedBox(height: 12)],
-          _buildUsageSection(),
-          const SizedBox(height: 12),
-          _buildAppearanceSection(themeId),
-          const SizedBox(height: 12),
-          _buildModelBehaviorSection(reasoningTier),
-          const SizedBox(height: 12),
-          _buildDiagnosisStyleSection(diagTemp),
-          const SizedBox(height: 12),
-          _buildCoachEntrySection(),
-          const SizedBox(height: 12),
-          _buildMaintenanceSection(),
-          const SizedBox(height: 12),
-          _buildAboutSection(),
-          const VerificationConfigSection(),
-        ],
+        children: _buildSections(themeId, reasoningTier, diagTemp),
       ),
     );
+  }
+
+  /// 设置页区块列表（R-019 职责提取：build 只留装配，区块顺序与门控在此）。
+  List<Widget> _buildSections(
+    ThemeId themeId,
+    String reasoningTier,
+    String diagTemp,
+  ) {
+    return [
+      // ST-6（T-20261111-01）：学习进度是**学员个人教学进度**，属
+      // `§4-234⑤`「成长只读门后」同族 ⇒ web 首发不呈现。同文件下面
+      // API 区早有 `!kIsWeb`，此处此前漏了守卫 = 门后内容在门外渲染。
+      if (_progressSummary != null && !kIsWeb) ...[
+        _ProgressSection(
+          summary: _progressSummary!,
+          onTap: _openProgressDetail,
+        ),
+        const SizedBox(height: 12),
+      ],
+      if (!kIsWeb) ...[_buildApiSection(), const SizedBox(height: 12)],
+      // ST-3：读不到用量时**连同间距一起不渲染**（与上面 `_ProgressSection`
+      // 的 `if (...) ...[]` 同构）。原写法里 `_buildUsageSection()` 自己
+      // 返回 shrink、但后面那个 `SizedBox(height: 12)` 仍无条件占位 ⇒
+      // 用量缺失时前后两块之间多出 12dp 幽灵间距。
+      if (_usageReport != null) ...[
+        _buildUsageSection(),
+        const SizedBox(height: 12),
+      ],
+      _buildAppearanceSection(themeId),
+      const SizedBox(height: 12),
+      _buildModelBehaviorSection(reasoningTier),
+      const SizedBox(height: 12),
+      _buildDiagnosisStyleSection(diagTemp),
+      const SizedBox(height: 12),
+      _buildCoachEntrySection(),
+      const SizedBox(height: 12),
+      _buildMaintenanceSection(),
+      const SizedBox(height: 12),
+      _buildAboutSection(),
+      const VerificationConfigSection(),
+    ];
   }
 
   // ── API 配置 ──
@@ -452,15 +484,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           if (!account.isDefault)
             TextButton(
               style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                // TC-4：去掉 `compact`，命中区补到 48dp（原 ≈40dp）
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                 foregroundColor: context.palette.primary,
               ),
               onPressed: busy ? null : () => _handleSetDefault(account.id),
               child: const Text('设默认', style: TextStyle(fontSize: 12)),
             ),
+          // TC-4：两键间距 ≥8dp —— 删除是不可逆动作，不能与「设默认」贴太近
+          if (!account.isDefault) const SizedBox(width: AppSpacing.sm),
           IconButton(
-            visualDensity: VisualDensity.compact,
+            // TC-4：去掉 `compact`，命中区 ≥48dp（原 ≈40dp）
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
             iconSize: 18,
             tooltip: '删除账号',
             icon: Icon(Icons.delete_outline, color: context.palette.danger),
@@ -903,9 +939,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_configLoaded && !_hasResolvedConfig) _buildApiWarning(),
+          // ST-2：**读取失败 ⇒ 不渲染警告**（三分状态：加载中不渲染 /
+          // 确认未配置渲染 / 读取失败不渲染且不谎称已配置）。
+          if (_configLoaded && !_hasResolvedConfig && !_accountsLoadFailed)
+            _buildApiWarning(),
           _buildAccountList(),
-          const Divider(height: 20, color: Color(0x00000000)),
+          // TK-1：原来用 `Divider` + **全透明色**（色值 0x00000000）画 20dp
+          // 间隔 —— 拿一个颜色值当间距用。改为纯间距，裸色归零。
+          const SizedBox(height: AppSpacing.lg),
           ActionRow(label: '添加 / 编辑 API 配置', onTap: _openApiConfigPage),
         ],
       ),
