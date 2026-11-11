@@ -153,6 +153,19 @@ void main() {
       expect(syndromeRecordOf(null), isNull);
     });
 
+    test('#R9 作用维只读一致性（稿A §2.2 · 裁定单 #R4 判据）：39 条齐全 + 值域四值白名单', () {
+      expect(kSyndromeRegistry.length, 39);
+      for (final s in kSyndromeRegistry) {
+        expect(
+          kSyndromeRoleValues.contains(s.role),
+          isTrue,
+          reason: '${s.id} role 非法：${s.role}',
+        );
+        expect(roleOf(s.id), s.role);
+      }
+      expect(roleOf('P999'), isNull);
+    });
+
     test('#R8 ★ 单轨：读路径无 ID 变换，注册表即唯一真源', () {
       // ★ 2026-10-05（层 2 单轨收口批）：本用例**整体改写**。
       //

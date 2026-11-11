@@ -496,7 +496,7 @@
     },
     {
       "file": "lib/services/syndrome_registry.dart",
-      "lines": 1002
+      "lines": 1058
     },
     {
       "file": "lib/services/teacher_validator.dart",
@@ -552,7 +552,7 @@
     },
     {
       "file": "lib/widgets/diagnosis_card.dart",
-      "lines": 2361
+      "lines": 2370
     },
     {
       "file": "lib/widgets/evaluation_report_panel.dart",

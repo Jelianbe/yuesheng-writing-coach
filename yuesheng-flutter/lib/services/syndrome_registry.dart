@@ -150,6 +150,9 @@ class SyndromeRecord {
   /// v2 动作映射（coaching-actions-v2）专用名：与 shortName 不同时设置
   final String? v2ActionName;
 
+  /// 作用维（四值白名单见 [kSyndromeRoleValues]；T-20261110-12 · U4 双签 · R0 裁乙）
+  final String role;
+
   const SyndromeRecord({
     required this.id,
     required this.name,
@@ -169,6 +172,7 @@ class SyndromeRecord {
     required this.actions,
     this.v1ActionName,
     this.v2ActionName,
+    required this.role,
   });
 
   /// v1 动作映射显示名（coaching-actions）
@@ -177,6 +181,9 @@ class SyndromeRecord {
   /// v2 动作映射显示名（coaching-actions-v2）
   String get v2ActionDisplayName => v2ActionName ?? shortName;
 }
+
+/// 作用维四值白名单（T-20261110-12 · R0 裁乙 · U4 双签 39/0 · 报批稿A §2.3）
+const Set<String> kSyndromeRoleValues = {'内容', '结构', '情感', '读者'};
 
 /// 注册表（真源）：39 条（P001-P039），按 ID 升序。
 /// 增删症候时：
@@ -213,6 +220,16 @@ const List<String> kLogicChainSyndromeIds = ['P007', 'P016', 'P017', 'P036'];
 PresentationGroup? presentationGroupOf(String syndromeId) {
   for (final s in kSyndromeRegistry) {
     if (s.id == syndromeId) return s.presentationGroup;
+  }
+  return null;
+}
+
+/// 按症候 ID 反查作用维（T-20261110-12）。查不到返回 null（调用方自行兜底，
+/// 例如历史号 / 未收录号 ⇒ 04 空态口径「只显示症候名、不编造 role」）。
+/// 静态映射，模型不输出此字段。
+String? roleOf(String syndromeId) {
+  for (final s in kSyndromeRegistry) {
+    if (s.id == syndromeId) return s.role;
   }
   return null;
 }
@@ -305,6 +322,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T001', 'T002', 'T020', 'T031', 'T003'],
     actions: ['A004', 'A006', 'A016', 'A014'],
+    role: '情感',
   ),
   SyndromeRecord(
     id: 'P002',
@@ -322,6 +340,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'beginning',
     techniques: ['T010', 'T011'],
     actions: ['A002', 'A008'],
+    role: '结构',
     v1ActionName: '信息倾泻',
     v2ActionName: '信息倾泻',
   ),
@@ -340,6 +359,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T012'],
     actions: ['A002'],
+    role: '读者', // 边界：评的直接对象（U4 温）；P038 为观测方式，防互推
   ),
   SyndromeRecord(
     id: 'P004',
@@ -356,6 +376,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'middle',
     techniques: ['T008', 'T017', 'T018', 'T022'],
     actions: ['A003', 'A005', 'A009', 'A011'],
+    role: '结构',
   ),
   SyndromeRecord(
     id: 'P005',
@@ -372,6 +393,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T019', 'T023', 'T025', 'T021'],
     actions: ['A009', 'A003', 'A011'],
+    role: '结构',
     v2ActionName: '句式单一',
   ),
   SyndromeRecord(
@@ -390,6 +412,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T003', 'T002', 'T021', 'T031'],
     actions: ['A011', 'A006', 'A016'],
+    role: '内容',
   ),
   SyndromeRecord(
     id: 'P007',
@@ -407,6 +430,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T009', 'T004', 'T005'],
     actions: ['A003', 'A007'],
+    role: '内容',
     v1ActionName: '角色空心化',
   ),
   SyndromeRecord(
@@ -425,6 +449,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T006', 'T007'],
     actions: ['A003', 'A010'],
+    role: '内容',
     v2ActionName: 'OC平面化',
   ),
   SyndromeRecord(
@@ -443,6 +468,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T013', 'T014', 'T015', 'T016', 'T008'],
     actions: ['A008', 'A006', 'A009'],
+    role: '内容',
   ),
   // ── L4 情节结构 ──────────────────────────────────────────
   SyndromeRecord(
@@ -461,6 +487,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'global',
     techniques: ['T017'],
     actions: ['A003', 'A007'],
+    role: '情感',
     v2ActionName: '张力不足',
   ),
   SyndromeRecord(
@@ -479,6 +506,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     position: 'beginning',
     techniques: ['T024', 'T008', 'T017'],
     actions: ['A007', 'A001'],
+    role: '读者',
     v2ActionName: '开篇平庸',
   ),
 ];
@@ -501,6 +529,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'end',
     techniques: ['T025', 'T026', 'T017'],
     actions: ['A012', 'A007', 'A003'],
+    role: '情感', // 机械降神子形态留痕见稿B A013（U4 章）
     v2ActionName: '结尾乏力',
   ),
   SyndromeRecord(
@@ -519,6 +548,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'middle',
     techniques: ['T027', 'T018'],
     actions: ['A007', 'A009', 'A005', 'A013'],
+    role: '情感',
     v2ActionName: '高潮疲软',
   ),
   SyndromeRecord(
@@ -537,6 +567,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'global',
     techniques: ['T008', 'T009', 'T028'],
     actions: ['A013', 'A003'],
+    role: '结构',
     v2ActionName: '情节巧合过多',
   ),
   // ── L3 角色塑造 ──────────────────────────────────────────
@@ -555,6 +586,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'global',
     techniques: ['T030', 'T009'],
     actions: ['A015', 'A010'],
+    role: '结构', // 跨面标注：不改值（U4 温）
     v2ActionName: '人设崩塌',
   ),
   // ── L2 叙事节奏 ──────────────────────────────────────────
@@ -573,6 +605,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'global',
     techniques: ['T029', 'T022'],
     actions: ['A006', 'A009'],
+    role: '结构',
     v2ActionName: '过渡生硬',
   ),
   SyndromeRecord(
@@ -591,6 +624,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'global',
     techniques: ['T022', 'T008'],
     actions: ['A005', 'A009'],
+    role: '内容',
     v2ActionName: '跳跃叙事',
   ),
   SyndromeRecord(
@@ -610,6 +644,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'local',
     techniques: ['T019', 'T003'],
     actions: ['A016', 'A011'],
+    role: '内容',
   ),
   // ── 网文商业：章节钩子 / 追读 ─────────────────────────────
   SyndromeRecord(
@@ -628,6 +663,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'chapter',
     techniques: ['T017', 'T027', 'T026'],
     actions: ['A012', 'A009', 'A003'],
+    role: '读者',
   ),
   SyndromeRecord(
     id: 'P020',
@@ -645,6 +681,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'serial',
     techniques: ['T026', 'T017'],
     actions: ['A012', 'A013'],
+    role: '读者',
   ),
   SyndromeRecord(
     id: 'P021',
@@ -662,6 +699,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     position: 'chapter',
     techniques: ['T001', 'T002'],
     actions: ['A006', 'A004'],
+    role: '读者', // 划界：通用感官细节 vs 不可置换独有物象（U4 章）
   ),
 ];
 
@@ -682,6 +720,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'serial',
     techniques: ['T027', 'T025'],
     actions: ['A009', 'A013'],
+    role: '结构',
   ),
   SyndromeRecord(
     id: 'P023',
@@ -698,6 +737,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T017', 'T026'],
     actions: ['A013', 'A012'],
+    role: '结构',
   ),
   SyndromeRecord(
     id: 'P024',
@@ -714,6 +754,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'serial',
     techniques: ['T017', 'T024', 'T026', 'T027', 'T008'],
     actions: ['A013', 'A009'],
+    role: '结构', // 跨面标注：不改值（U4 温）
   ),
   SyndromeRecord(
     id: 'P025',
@@ -731,6 +772,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T006', 'T007', 'T004', 'T005'],
     actions: ['A010', 'A003'],
+    role: '内容',
   ),
   SyndromeRecord(
     id: 'P026',
@@ -748,6 +790,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'chapter',
     techniques: ['T001', 'T009', 'T020'],
     actions: ['A011', 'A004'],
+    role: '内容', // 评句收窄单问归稿B A020（U4 章）
   ),
   SyndromeRecord(
     id: 'P027',
@@ -765,6 +808,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'serial',
     techniques: ['T008', 'T017', 'T022'],
     actions: ['A013', 'A002'],
+    role: '结构',
   ),
   SyndromeRecord(
     id: 'P028',
@@ -781,6 +825,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T009', 'T005', 'T008', 'T032'],
     actions: ['A007', 'A002', 'A003'],
+    role: '内容',
   ),
   SyndromeRecord(
     id: 'P029',
@@ -797,6 +842,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T007', 'T005', 'T009'],
     actions: ['A003', 'A007'],
+    role: '内容',
   ),
   SyndromeRecord(
     id: 'P030',
@@ -813,6 +859,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T014', 'T023', 'T013'],
     actions: ['A009', 'A016'],
+    role: '情感', // 四值定义：练完【评】的可观测结果（R0 乙）
   ),
   SyndromeRecord(
     id: 'P031',
@@ -829,6 +876,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T008', 'T017', 'T009'],
     actions: ['A007', 'A003'],
+    role: '读者',
   ),
   SyndromeRecord(
     id: 'P032',
@@ -846,6 +894,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'chapter',
     techniques: ['T002', 'T003', 'T019'],
     actions: ['A006', 'A011'],
+    role: '内容',
   ),
   SyndromeRecord(
     id: 'P033',
@@ -864,6 +913,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'serial',
     techniques: ['T017', 'T008', 'T018'],
     actions: ['A003', 'A007', 'A009'],
+    role: '结构',
   ),
   SyndromeRecord(
     id: 'P034',
@@ -881,6 +931,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T012'],
     actions: ['A002'],
+    role: '读者',
   ),
   // ── ADR-0003 阶段一新增3 条（2026-10-05）──
   // ⚠️ P035/P036/P037 三号在 0.3.6 之前曾被用作**别的实体**的别名键：
@@ -918,6 +969,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     needsCrossWorkReference: true,
     techniques: ['T016', 'T020', 'T024'],
     actions: ['A004', 'A011'],
+    role: '内容',
   ),
   SyndromeRecord(
     id: 'P036',
@@ -935,6 +987,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'local',
     techniques: ['T003', 'T012', 'T027'],
     actions: ['A006', 'A002', 'A005'],
+    role: '内容',
   ),
   SyndromeRecord(
     id: 'P037',
@@ -952,6 +1005,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'global',
     techniques: ['T001', 'T017', 'T030'],
     actions: ['A013', 'A001', 'A006'],
+    role: '结构',
   ),
   // ── 需求 3 新增（2026-10-11）：描写顺序失序症 ──
   SyndromeRecord(
@@ -969,6 +1023,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'local',
     techniques: ['T027', 'T022'],
     actions: ['A009', 'A006'],
+    role: '结构', // 边界：观测方式（U4 温）；P003 为评的直接对象，防互推；跨面标注不改值
   ),
   // ── ADR-C150（E-7 拆分）：信息密度缺失症 ──
   // 自 P018 子情形 B「内容稀碎」拆出（P018 保留语言层重复/文法瑕疵）。
@@ -991,6 +1046,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     position: 'local',
     techniques: ['T003', 'T022'],
     actions: ['A011', 'A005'],
+    role: '内容',
   ),
 ];
 

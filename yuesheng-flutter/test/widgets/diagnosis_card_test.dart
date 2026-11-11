@@ -1929,7 +1929,7 @@ void main() {
     testWidgets('C5 三个新标签与既有标签两两不同（防止后续被改成同名词）', (tester) async {
       // 标签常量在私有 _CardText 内，测试侧取渲染字面量核对；
       // 任一重复都会让学员无法分辨哪句是哪个语义。
-      const labels = ['对读者：', '根因', '本轮小结', '为什么：', '证据：', '归因'];
+      const labels = ['对读者：', '根因', '本轮小结', '为什么：', '证据：', '归因', '作用：'];
       expect(
         labels.toSet().length,
         labels.length,
@@ -2049,6 +2049,7 @@ void main() {
         '形态：',
         '值得练',
         '可练',
+        '作用：',
       ];
       expect(
         labels.toSet().length,
@@ -2436,6 +2437,72 @@ void main() {
         reason:
             'fromMessageContent 漏传 nextFocus（:226）或 toJson 漏写 key ⇒ 红 —— '
             '这条是 L2 卡片 payload → L3 呈现之间的接线判据',
+      );
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────
+  // T-20261110-12 · R-L3-01：作用维徽标（稿A §2.4 判据草案落地）
+  // 形态牙：收起态（defaultExpanded: false）chip 行首屏可见 + rect 在卡容器内。
+  // 负控 A（移进展开区）/ C（四值外串）为变异验证，不落文件；负控 B 落下方空态用例。
+  // ───────────────────────────────────────────────────────────
+  group('R-L3-01 作用维徽标（T-20261110-12）', () {
+    testWidgets('正向：收起态渲染「作用：情感」且 rect 在卡容器内', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P030',
+                name: '声线漂移（role 徽标用例）',
+                severity: 'L2',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final badge = find.text('作用：情感');
+      expect(badge, findsOneWidget, reason: 'P030 role=情感（R0 裁乙）⇒ 前缀型徽标渲染');
+      final cardRect = tester.getRect(find.byType(DiagnosisCard));
+      final badgeRect = tester.getRect(badge);
+      expect(
+        badgeRect.top >= cardRect.top && badgeRect.bottom <= cardRect.bottom,
+        isTrue,
+        reason: '徽标须在卡容器内（收起态首屏可见，负控 A：移进展开区必红）',
+      );
+    });
+
+    testWidgets('负控 B：未知症候号反查返 null ⇒ 不渲染徽标（04 空态口径）', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P999',
+                name: '历史号（role 徽标空态用例）',
+                severity: 'L1',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('作用：情感'), findsNothing);
+      expect(
+        find.textContaining('作用：'),
+        findsNothing,
+        reason: '反查返 null ⇒ 不编造 role（04 空态口径）',
       );
     });
   });

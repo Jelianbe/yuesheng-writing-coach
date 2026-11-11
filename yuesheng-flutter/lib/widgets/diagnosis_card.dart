@@ -105,6 +105,7 @@ class _CardText {
 
   /// T-20261105-03：下一步重点行标签（与上述标签两两不同，C5 断言同族）。
   static const String nextFocusLabel = '下一步重点：';
+  static const String roleLabel = '作用：'; // T-20261110-12：R5 裁前缀型 · C5 同族断言
   const _CardText._();
 }
 
@@ -1203,7 +1204,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   /// [_buildChipLabel] 会超 50 行阈值，故把尾部徽标族 spread 化；
   /// 顺序口径不变）。
   ///
-  /// 顺序：教学状态 → 跨块因果缺口 → 第 N 次出现。
+  /// 顺序：教学状态 → 跨块因果缺口 → 第 N 次出现 → 作用维（T-20261110-12）。
   List<Widget> _buildChipTrailingBadges({
     required TeachingState? teachingState,
     required Color dotColor,
@@ -1217,6 +1218,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       final s => kTeachingStateLabels[s],
     };
     final occurrence = _trends[s.syndromeId]?.occurrenceCount ?? 0;
+    final role = roleOf(s.syndromeId); // T-20261110-12：返 null ⇒ 不渲染（04 空态口径）
     return [
       if (stateLabel != null) ...[
         const SizedBox(width: 4),
@@ -1226,6 +1228,13 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       if (occurrence >= 2) ...[
         const SizedBox(width: 4),
         _buildOccurrenceBadge(occurrence, severityTextColor),
+      ],
+      if (role != null) ...[
+        const SizedBox(width: 4),
+        _buildTeachingStateBadge(
+          '${_CardText.roleLabel}$role',
+          severityTextColor,
+        ),
       ],
     ];
   }
