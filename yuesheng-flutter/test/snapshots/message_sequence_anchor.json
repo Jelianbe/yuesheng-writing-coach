@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 55837,
-      "fnv": "5c9cdb65bb28f27d"
+      "len": 56836,
+      "fnv": "733fca071d0f1a31"
     },
     {
       "role": "system",
@@ -76,8 +76,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 57620,
-      "fnv": "6c53633dadd89816"
+      "len": 58619,
+      "fnv": "4febb8cc9f320272"
     },
     {
       "role": "system",
@@ -103,8 +103,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 69002,
-      "fnv": "3bed2b896670c77e"
+      "len": 70001,
+      "fnv": "6c8aa37c2554c562"
     },
     {
       "role": "system",
@@ -125,8 +125,8 @@
   "p2_yuesheng_diagnosis_fulltext": [
     {
       "role": "system",
-      "len": 57620,
-      "fnv": "6c53633dadd89816"
+      "len": 58619,
+      "fnv": "4febb8cc9f320272"
     },
     {
       "role": "system",
@@ -152,8 +152,8 @@
   "p2_yuesheng_diagnosis_nofulltext": [
     {
       "role": "system",
-      "len": 57620,
-      "fnv": "6c53633dadd89816"
+      "len": 58619,
+      "fnv": "4febb8cc9f320272"
     },
     {
       "role": "system",
@@ -179,8 +179,8 @@
   "p2_yuesheng_diagnosis_attachment": [
     {
       "role": "system",
-      "len": 57620,
-      "fnv": "6c53633dadd89816"
+      "len": 58619,
+      "fnv": "4febb8cc9f320272"
     },
     {
       "role": "system",
@@ -208,8 +208,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 48064,
-      "fnv": "5b3ec02448da0f6f"
+      "len": 49063,
+      "fnv": "5f86e1569e468d67"
     },
     {
       "role": "system",
@@ -230,8 +230,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 47932,
-      "fnv": "399f4c40e2100ed7"
+      "len": 48931,
+      "fnv": "12a0d5b24150022f"
     },
     {
       "role": "system",

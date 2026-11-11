@@ -75,8 +75,15 @@ const String kSuffixFnv = 'b4ae395807abdc6';
 //   「错别字误字（同音/形近致非词）、误插结构助词；」（+23 码元）随 L2 诊断索引进两组。
 //   ⚠️ **force 组 = 不动项，本批仍不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变
 //   （该组 `loadedSkillIds` 不含 L2 索引 ⇒ 天然负对照）。
-const String kDiagP1Fnv = '5c9cdb65bb28f27d';
-const String kDiagYueFnv = '6c53633dadd89816';
+// ★ 2026-11-11（稿 B 施工批 · R-027 舰长 2026-11-11「都批」）再重钉：
+//   diagnosis 两组各 **+999**（55837/5c9cdb65bb28f27d → **56836/733fca071d0f1a31**；
+//     57620/6c53633dadd89816 → **58619/4febb8cc9f320272**）。
+//   方向 = 稿 B 十块动作（A017–A026）+ P022 乙-2 + 12 条 P 码 actions 映射随 L2 索引进两组。
+//   实测 +999 ≠ E2 预测 +1321（偏差 −322，归因见 tool/check_prompt_volume.py 第二十六次重贴注）。
+//   ⚠️ **force 组 = 不动项，本批仍不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变
+//   （该组 loadedSkillIds 不含 coaching-actions-v2/L2 索引 ⇒ 天然负对照；本批实测守住）。
+const String kDiagP1Fnv = '733fca071d0f1a31';
+const String kDiagYueFnv = '4febb8cc9f320272';
 // force 组红线：先验 +0 只对**当时那一批**成立；本批是正文清扫 ⇒ 随组同降。
 const String kForceFnv = '37644edbf2af71a8';
 

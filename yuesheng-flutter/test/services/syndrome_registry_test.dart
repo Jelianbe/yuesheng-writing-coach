@@ -117,7 +117,7 @@ void main() {
         expect(s.actions, isNotEmpty, reason: '${s.id} 无推荐动作');
         for (final a in s.actions) {
           expect(
-            RegExp(r'^A0(0\d|1[0-6])$').hasMatch(a),
+            RegExp(r'^A0(0\d|1[0-9]|2[0-6])$').hasMatch(a),
             true,
             reason: '${s.id} 引用非法动作 $a（应为 A001-A016）',
           );

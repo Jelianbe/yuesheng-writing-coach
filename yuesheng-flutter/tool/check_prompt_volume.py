@@ -628,8 +628,15 @@ REDLINE = {
     # 改动 1 使 syndrome-diagnosis-index 指纹 6320→6343（+23）随 L2 索引进两组；
     # 改动 3 使 training-templates-index 2682→2705（+23）进 training 组（无红线上限，
     # 不在本表）。等值钉 pin==actual，余量 +0。
-    'diagnosis_yuesheng': 57620,
-    'diagnosis_p1_yuesheng': 55837,
+    # ★ 2026-11-11 第二十六次重贴实测值（diagnosis 两组各 **+999**
+    # （57620→**58619** / 55837→**56836**），force 组 **不动**（66306 实测零漂移）、
+    # BYPASS 三面 9921×3 **不动** —— 天然负对照全绿）。
+    # 方向 = T-20261110-12 批三·稿 B（10 新动作 A017-A026 + A001 v2 方法句 +
+    # A013/A016 适用行 + 映射表 11 行 · 舰长 2026-11-11「都批」）。
+    # ⚠️ 稿 B E2 预测 +1321（拟 58941/57158）与实测 +999 相差 −322 ⇒ 以实测重钉，
+    # 未照抄 E2（铁律 3）。等值钉 pin==actual，余量 +0。
+    'diagnosis_yuesheng': 58619,
+    'diagnosis_p1_yuesheng': 56836,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
@@ -1162,7 +1169,15 @@ CONST_REDLINE = {
     # test/services/prompt_const_anchor_test.dart 写模式运行时打印（len=8716 fnv=62cf4606f04c5a86）。
     # 对照组 chunkExceptionGuideBlock / kDiagnosisProtocolSuffix / chunkWindowMetaSample
     # 三项逐键实测**零变化**（2998 / 1038 / 32）。
-    'kChunkSystemPrompt': (8716, '62cf4606f04c5a86'),
+    # ★ 2026-11-11 第二十六次重钉：8716→**8702**（**−14**），
+    # fnv 62cf4606f04c5a86→**13875eeb78430a73**。
+    # 方向 = T-20261110-12 批三·稿 B 乙-2（P022 摘 kChunkDegradedCriteriaIds ·
+    # 舰长 2026-11-11「都批」）：摘 `- P022 节奏比例失衡` 一行（13 字符 + 1 join 换行）。
+    # ⚠️ 减法也必须复测重钉（act < lim 同样报脱钩）；对照 chunk 常量实测 8702 精确吻合。
+    # 值来源 = UPDATE_SNAPSHOTS=true flutter test
+    # test/services/prompt_const_anchor_test.dart 写模式重冻快照 +
+    # python tool/check_prompt_volume.py 实测打印（len=8702 fnv=13875eeb78430a73）。
+    'kChunkSystemPrompt': (8702, '13875eeb78430a73'),
     # ★ 2026-10-31 第二十二次重钉：3082→3081（−1），fnv 24ab03bbc9115ff8→582b0096adae57d5。
     # 同批同因：例外指引块内该行旧名去「症」（`chunk_prompt.dart` 内 `_kChunkExceptionGuide`，
     # 块坐标随 T-20261025-06 件2 整段搬入本文件）。值来源同上（len=3081）。

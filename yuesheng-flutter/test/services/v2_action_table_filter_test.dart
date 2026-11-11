@@ -81,11 +81,11 @@ const int _kForceLen = 66306;
 const String _kForceFnv = '37644edbf2af71a8';
 
 /// 库常量等值钉（N2④；值来源 = 重冻后的 `skill_prompt_anchor.json`）。
-const int _kV2ConstLen = 3847;
-const String _kV2ConstFnv = '46dec3e2b4b76fd';
+const int _kV2ConstLen = 4886;
+const String _kV2ConstFnv = '1e3360f061ed910e';
 
 /// 剔除后表体应剩的行数（注册表 39 条 − P031 1 条）。
-const int _kExpectedRowCount = 38;
+const int _kExpectedRowCount = 37;
 
 /// 一个渲染面（ctx → 装配后的 system prompt）。
 class _Surface {

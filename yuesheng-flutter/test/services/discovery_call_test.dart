@@ -126,9 +126,9 @@ void main() {
 
   group('J2 S-1 · 帧隔离', () {
     test('kChunkSystemPrompt 长度不变且不含发现协议独有词', () {
-      // 硬编码 8716（与锚点快照同源读数）：本批若误把协议拼进分块帧，
+      // 硬编码 8702（与锚点快照同源读数，稿 B 批第二十六次重钉）：本批若误把协议拼进分块帧，
       // 只会漂移一个键 ⇒ 这里先红，比等锚点 diff 更快定位。
-      expect(kChunkSystemPrompt.length, 8716);
+      expect(kChunkSystemPrompt.length, 8702);
       expect(kChunkSystemPrompt.contains('observations'), isFalse);
       expect(kChunkSystemPrompt.contains('anchorQuotes'), isFalse);
       // 反向对照：发现帧自己必须有这些词（防「两边都不含」时上面恒真）。

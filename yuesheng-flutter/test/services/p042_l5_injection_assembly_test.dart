@@ -41,10 +41,11 @@ const String kKbHeader = '## 活跃症候详细定义（系统注入，学员不
 /// P030 词条三级标题（syndrome_kb_content_manual_6.dart:270）。
 const String kP042EntryTitle = '### P030 声线漂移';
 
-/// P030 词条正文的**尾句**（syndrome_kb_content_manual_6.dart:310）。
+/// P030 词条正文的**尾句**（syndrome_kb_content_manual_6.dart:237）。
 /// 作为抽取边界的锚点：尾句之后第一个 `\n\n---` 即条目终止符，
 /// 词条内夹入的新增内容（如「外部佐证」段）不影响抽取。
-const String kP042TailSentence = '**推荐教学动作**：首选 A009 节奏变速，备选 A016 高频词清扫';
+/// 稿 B 批（2026-11-11）随 P030 手册行更新同步换锚（旧值：首选 A009…备选 A016…）。
+const String kP042TailSentence = '**推荐教学动作**：首选 A020 声线锚定，备选 A009 节奏变速';
 
 /// FNV-1a 64 位指纹（与 test/services/l3_entry_anchor_test.dart:39-49 同款）。
 int _fnv1a64(String s) {

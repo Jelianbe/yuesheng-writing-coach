@@ -1,5 +1,6 @@
-// B 包（T-20261028-06 · R-027 舰长批）：
-// P022 退出单章/短链诊断面，merge 侧保留。
+// B 包（T-20261028-06 · R-027 舰长批）+ T-20261110-12 乙-2 语义升级：
+// P022 现已进入 kNonDiagnosableSyndromeIds（单章/merge/跨章三侧统一不报），
+// 单章排除集职责并入不可诊集（kSingleChapterExcludedSyndromeIds 暂空）。
 //
 // 牙口六处：
 //   1) 短链诊断 prompt 的索引不再有 P022 行（真走 buildSystemPromptV2）；
@@ -150,13 +151,13 @@ void main() {
       );
     });
 
-    test('⑤ 索引行数 = 注册表条数 − 1（只少 P022 一条）', () {
-      final idx = buildSyndromeIndexContent(kSingleChapterExcludedSyndromeIds);
+    test('⑤ 索引行数 = 注册表条数 − 2（T-20261110-12 乙-2：P022+P031，用短链并集）', () {
+      final idx = buildSyndromeIndexContent(kShortChainExcludedSyndromeIds);
       final rows = RegExp(
         r'^\| P\d{3} \|',
         multiLine: true,
       ).allMatches(idx).length;
-      expect(rows, kSyndromeIds.length - 1);
+      expect(rows, kSyndromeIds.length - 2);
     });
   });
 }

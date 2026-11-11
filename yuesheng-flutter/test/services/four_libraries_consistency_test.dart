@@ -154,13 +154,13 @@ void _guard19NegativeSelfTest() {
 
   // B1 首选改值 ⇒ 必红，且点名「手册首选=X 注册表首位=Y」
   final s006 = getSyndromeContent(['P006']);
-  final b1 = s006.replaceFirst('首选 A011', '首选 A006');
+  final b1 = s006.replaceFirst('首选 A023', '首选 A006');
   expect(b1, isNot(s006), reason: 'B1 变异未生效（首选串未命中）⇒ 本例无效');
   final b1Bad = _judgeGuard19(id: 'P006', section: b1, actions: p006.actions);
   expect(b1Bad.length, 1, reason: 'B1 预判命中 1 条，实际 ${b1Bad.length}：$b1Bad');
   expect(
     b1Bad.single,
-    contains('手册首选=A006 注册表首位=A011'),
+    contains('手册首选=A006 注册表首位=A023'),
     reason: 'B1 未点名分歧双方 ⇒ 判据可能只报了别的错',
   );
 
@@ -178,7 +178,7 @@ void _guard19NegativeSelfTest() {
 
   // B4 手册备选改成不在 actions 里的编号 ⇒ 必红（缺口三的牙）
   final s013 = getSyndromeContent(['P013']);
-  final b4 = s013.replaceFirst('备选 A009', '备选 A099');
+  final b4 = s013.replaceFirst('备选 A007', '备选 A099');
   expect(b4, isNot(s013), reason: 'B4 变异未生效（备选串未命中）⇒ 本例无效');
   final b4Bad = _judgeGuard19(id: 'P013', section: b4, actions: p013.actions);
   expect(b4Bad.length, 1, reason: 'B4 预判命中 1 条，实际 ${b4Bad.length}：$b4Bad');
@@ -248,7 +248,7 @@ void _guard19NegativeSelfTest() {
   final variants = <String, String>{
     '半角冒号': s013.replaceFirst('**推荐教学动作**：', '**推荐教学动作**: '),
     '去加粗': s013.replaceFirst('**推荐教学动作**：', '推荐教学动作：'),
-    '首选动作': s013.replaceFirst('首选 A007', '首选动作 A007'),
+    '首选动作': s013.replaceFirst('首选 A021', '首选动作 A021'),
   };
   for (final v in variants.entries) {
     expect(v.value, isNot(s013), reason: '格式变体「${v.key}」未生效 ⇒ 本例无效');
@@ -550,14 +550,14 @@ void main() {
       // 同集合换序 ⇒ 集合断言恒绿，所以这里**逐条字面**钉 `actions.first`
       // （报批稿 §6.1 N6 与坑 1：判据的自述不能强于鉴别力）。
       const preferred = <String, String>{
-        'P006': 'A011',
-        'P010': 'A003',
+        'P006': 'A023',
+        'P010': 'A024',
         'P012': 'A012',
         'P016': 'A006',
         'P017': 'A005',
         'P020': 'A012',
-        'P028': 'A007',
-        'P033': 'A003',
+        'P028': 'A025',
+        'P033': 'A026',
         'P037': 'A013',
       };
       final bad = <String>[];

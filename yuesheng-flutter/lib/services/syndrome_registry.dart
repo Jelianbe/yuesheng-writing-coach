@@ -411,7 +411,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     quantityTag: QuantityTag.overwritten,
     position: 'global',
     techniques: ['T003', 'T002', 'T021', 'T031'],
-    actions: ['A011', 'A006', 'A016'],
+    actions: ['A023', 'A011', 'A006', 'A016'],
     role: '内容',
   ),
   SyndromeRecord(
@@ -486,7 +486,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     quantityTag: QuantityTag.underwritten,
     position: 'global',
     techniques: ['T017'],
-    actions: ['A003', 'A007'],
+    actions: ['A024', 'A003', 'A007'],
     role: '情感',
     v2ActionName: '张力不足',
   ),
@@ -505,7 +505,7 @@ const List<SyndromeRecord> _syndromeRegistryP1 = [
     quantityTag: QuantityTag.underwritten,
     position: 'beginning',
     techniques: ['T024', 'T008', 'T017'],
-    actions: ['A007', 'A001'],
+    actions: ['A001', 'A007'],
     role: '读者',
     v2ActionName: '开篇平庸',
   ),
@@ -528,7 +528,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     quantityTag: QuantityTag.underwritten,
     position: 'end',
     techniques: ['T025', 'T026', 'T017'],
-    actions: ['A012', 'A007', 'A003'],
+    actions: ['A012', 'A007', 'A003', 'A013'],
     role: '情感', // 机械降神子形态留痕见稿B A013（U4 章）
     v2ActionName: '结尾乏力',
   ),
@@ -547,7 +547,7 @@ const List<SyndromeRecord> _syndromeRegistryP2 = [
     quantityTag: QuantityTag.underwritten,
     position: 'middle',
     techniques: ['T027', 'T018'],
-    actions: ['A007', 'A009', 'A005', 'A013'],
+    actions: ['A021', 'A007', 'A009', 'A005', 'A013'],
     role: '情感',
     v2ActionName: '高潮疲软',
   ),
@@ -753,7 +753,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     presentationGroup: PresentationGroup.plot,
     position: 'serial',
     techniques: ['T017', 'T024', 'T026', 'T027', 'T008'],
-    actions: ['A013', 'A009'],
+    actions: ['A022', 'A013', 'A009'],
     role: '结构', // 跨面标注：不改值（U4 温）
   ),
   SyndromeRecord(
@@ -824,7 +824,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     presentationGroup: PresentationGroup.character,
     position: 'global',
     techniques: ['T009', 'T005', 'T008', 'T032'],
-    actions: ['A007', 'A002', 'A003'],
+    actions: ['A025', 'A007', 'A002', 'A003'],
     role: '内容',
   ),
   SyndromeRecord(
@@ -858,7 +858,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     presentationGroup: PresentationGroup.description,
     position: 'global',
     techniques: ['T014', 'T023', 'T013'],
-    actions: ['A009', 'A016'],
+    actions: ['A020', 'A009'],
     role: '情感', // 四值定义：练完【评】的可观测结果（R0 乙）
   ),
   SyndromeRecord(
@@ -893,7 +893,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     quantityTag: QuantityTag.wordChoice,
     position: 'chapter',
     techniques: ['T002', 'T003', 'T019'],
-    actions: ['A006', 'A011'],
+    actions: ['A019', 'A006', 'A011'],
     role: '内容',
   ),
   SyndromeRecord(
@@ -912,7 +912,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     quantityTag: QuantityTag.overwritten,
     position: 'serial',
     techniques: ['T017', 'T008', 'T018'],
-    actions: ['A003', 'A007', 'A009'],
+    actions: ['A026', 'A003', 'A007', 'A009'],
     role: '结构',
   ),
   SyndromeRecord(
@@ -930,7 +930,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     quantityTag: QuantityTag.overwritten,
     position: 'global',
     techniques: ['T012'],
-    actions: ['A002'],
+    actions: ['A017', 'A002'],
     role: '读者',
   ),
   // ── ADR-0003 阶段一新增3 条（2026-10-05）──
@@ -1022,7 +1022,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     presentationGroup: PresentationGroup.description,
     position: 'local',
     techniques: ['T027', 'T022'],
-    actions: ['A009', 'A006'],
+    actions: ['A018', 'A009', 'A006'],
     role: '结构', // 边界：观测方式（U4 温）；P003 为评的直接对象，防互推；跨面标注不改值
   ),
   // ── ADR-C150（E-7 拆分）：信息密度缺失症 ──
@@ -1055,4 +1055,4 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
 /// ⚠️ 不删库常量里的行、不删手册段（`four_libraries_consistency_test #1/行数` 护栏）。
 /// 与 [kSingleChapterExcludedSyndromeIds] 的区别：那条只出单章短链、**merge 侧保留**；
 /// 本条两链都出，合并出口同样过滤。当前成员仅 P031。
-const Set<String> kNonDiagnosableSyndromeIds = {'P031'};
+const Set<String> kNonDiagnosableSyndromeIds = {'P031', 'P022'};

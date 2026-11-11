@@ -240,9 +240,9 @@ final String kSyndromeIndexContent = buildSyndromeIndexContent();
 /// ⚠️ **不删库常量里的行**：`four_libraries_consistency_test.dart:59/98-102`
 /// 断言每个注册表 ID 都在 `kSyndromeIndexContent` 里、且行数 == 注册表条数。
 /// 排除只发生在**注入点**（`skill_dispatcher.dart`）与短链后置过滤
-/// （`diagnosis_flow_handler.dart`）。当前成员仅 P022：其判据对象是跨章篇幅比例，
-/// ≤4000 字窗口内无位置（手册 `manual_5.dart:14`）。
-const Set<String> kSingleChapterExcludedSyndromeIds = {'P022'};
+/// （`diagnosis_flow_handler.dart`）。乙-2（T-20261110-12）：P022 升入不可诊集，
+/// 本集暂空；保留常量与并集真源结构不变。
+const Set<String> kSingleChapterExcludedSyndromeIds = {};
 
 /// 短链（单章 ≤4000 字）注入面 + 后置过滤的**唯一并集真源**。
 /// 装配点与期望串**都必须用它**，不许各写一份 spread（`§4-396` 同族的「两处定义漂移」教训）。
@@ -286,7 +286,7 @@ final String kSyndromeManualContent =
 1. **首选动作**：默认填入 `suggested_actions`。一个症候对应一个动作
 2. **备选动作**：当首选动作已完成、学员表示不适应、或你判断需要换方式时，替换为备选动作
 3. **多症候时**：每个症候各选一个动作，合并后去重。例如 P001（首选 A004）+ P003（首选 A002）= `["A004", "A002"]`
-4. **动作编号**：suggested_actions 中写 A001-A016 编号，不写中文名称（系统端负责映射）
+4. **动作编号**：suggested_actions 中写 A001-A026 编号，不写中文名称（系统端负责映射）
 
 ### 写作技巧提示（技法库）
 

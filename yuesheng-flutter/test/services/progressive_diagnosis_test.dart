@@ -992,8 +992,10 @@ void main() {
         isFalse,
         reason: 'disabled 的 P011 不应出现在留痕节',
       );
-      // 未禁用的退化者仍在留痕节（只禁了 P011 一条）
-      expect(degradedTail.contains('P022'), isTrue);
+      // 未禁用的退化者仍在留痕节（只禁了 P011 一条）。
+      // 稿 B 批（乙-2）：P022 已进 kNonDiagnosableSyndromeIds、退出退化集 ⇒
+      // 样本由 P022 换为 P012（现行退化集 P011/P012/P019/P020/P033）。
+      expect(degradedTail.contains('P012'), isTrue);
     });
 
     test('#15 成本上限：乙形态 prompt 字符数在预算内（丙形态否决的量化护栏）', () {

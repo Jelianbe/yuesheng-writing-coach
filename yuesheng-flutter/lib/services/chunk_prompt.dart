@@ -52,7 +52,6 @@ const Set<String> kChunkDegradedCriteriaIds = {
   'P012',
   'P019',
   'P020',
-  'P022',
   'P033',
 };
 

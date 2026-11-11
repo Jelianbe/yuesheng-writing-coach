@@ -380,7 +380,7 @@ class DiagnosisFlowHandler {
     // S3：本轮发现层折叠条数据（null = 未走到发现层 ⇒ 卡片不落 key ⇒ S0）。
     DiscoverySectionCard? discovery,
   }) async {
-    // 合并 / 跨章唯一出口：排除前提层不可诊（P031），但**保留** P022（跨章侧仍判）。
+    // 合并 / 跨章唯一出口：排 P031+P022（乙-2：P022 入 kNonDiagnosableSyndromeIds，三侧统一不报）。
     final rawParse = _filterDisabled(
       _diagnosis.parseDiagnosis(fullContent),
       extraExcluded: kNonDiagnosableSyndromeIds,
