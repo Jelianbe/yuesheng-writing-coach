@@ -26,6 +26,8 @@ import 'router/app_router.dart';
 import 'services/error_handler.dart';
 import 'theme/theme_controller.dart';
 import 'package:writingcoach/features/onboarding/onboarding_flow.dart';
+import 'package:writingcoach/features/landing/landing_gate.dart';
+import 'package:writingcoach/features/landing/web_landing_page.dart';
 import 'widgets/privacy_notice_dialog.dart';
 import 'package:writingcoach/widgets/ui_overlay_host.dart';
 
@@ -213,13 +215,19 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
     // ⇒ 强制使用 `theme`（即所选主题），不跟随系统（系统深色在 ColorOS 上不可控）。
     final theme = themeDataFor(ref.watch(themeControllerProvider));
     if (done == false) {
-      // 批次63：首启功能引导页
+      // 批次63：首启功能引导页。
+      // web 首访改走**站点门面**（发版 + 试用挂同一个 web，`§4-498`，舰长裁「留」）：
+      // 门面替代 `OnboardingFlow` 后，其第 5 页「去 DeepSeek 官网填 Key」那条
+      // web 死路不再可达（web 上 API 配置卡被掩码，`settings_page.dart:419`）。
+      // 判定只有一处，见 `landing_gate.dart`（可注入，避免裸 `kIsWeb` 造恒绿判据）。
       return MaterialApp(
         title: '月笙写作教练',
         debugShowCheckedModeBanner: false,
         theme: theme,
         themeMode: ThemeMode.light,
-        home: OnboardingFlow(onComplete: _completeIntro),
+        home: shouldShowLanding()
+            ? WebLandingPage(onStart: _completeIntro)
+            : OnboardingFlow(onComplete: _completeIntro),
       );
     }
     if (done == null) {
