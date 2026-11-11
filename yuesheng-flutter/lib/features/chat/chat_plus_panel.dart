@@ -28,6 +28,9 @@ class ChatPlusPanel extends StatelessWidget {
   /// ADR-C122：纯新手模式项回调（取代 onboarding 问卷）；null 时不渲染。
   final VoidCallback? onNoviceMode;
 
+  /// T-20261110-13：题材定位承接项回调（发预置学员消息）；null 时不渲染。
+  final VoidCallback? onTopicCoaching;
+
   /// 思考开关当前状态（true = 档位非「关闭思考」）。
   final bool thinkingEnabled;
 
@@ -41,6 +44,7 @@ class ChatPlusPanel extends StatelessWidget {
     super.key,
     this.onUpload,
     this.onNoviceMode,
+    this.onTopicCoaching,
     this.thinkingEnabled = true,
     this.reasoningTierLabel = '标准',
     this.onThinkingToggle,
@@ -51,8 +55,11 @@ class ChatPlusPanel extends StatelessWidget {
     // ADR-C122：面板项顺序 = 上传作品 / 纯新手模式 / 思考开关；
     // 相邻项之间渲染分隔线（新增项也参与分隔判定）。
     final hasNoviceDivider = onUpload != null && onNoviceMode != null;
+    final hasTopicDivider =
+        (onUpload != null || onNoviceMode != null) && onTopicCoaching != null;
     final hasThinkingDivider =
-        (onUpload != null || onNoviceMode != null) && onThinkingToggle != null;
+        (onUpload != null || onNoviceMode != null || onTopicCoaching != null) &&
+        onThinkingToggle != null;
     return Container(
       width: width,
       decoration: BoxDecoration(
@@ -75,7 +82,11 @@ class ChatPlusPanel extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: _buildRows(hasNoviceDivider, hasThinkingDivider),
+            children: _buildRows(
+              hasNoviceDivider,
+              hasTopicDivider,
+              hasThinkingDivider,
+            ),
           ),
         ),
       ),
@@ -83,7 +94,11 @@ class ChatPlusPanel extends StatelessWidget {
   }
 
   /// 面板项列表（拆出守 R-019 函数 ≤50 行）。
-  List<Widget> _buildRows(bool hasNoviceDivider, bool hasThinkingDivider) {
+  List<Widget> _buildRows(
+    bool hasNoviceDivider,
+    bool hasTopicDivider,
+    bool hasThinkingDivider,
+  ) {
     return [
       if (onUpload != null)
         _PanelActionRow(
@@ -99,6 +114,14 @@ class ChatPlusPanel extends StatelessWidget {
           title: '纯新手模式',
           subtitle: 'AI 引导 · 从零开始',
           onTap: onNoviceMode!,
+        ),
+      if (hasTopicDivider) const _PanelDivider(),
+      if (onTopicCoaching != null)
+        _PanelActionRow(
+          icon: Icons.forum_outlined,
+          title: '聊聊题材定位',
+          subtitle: '赛道 · 读者 · 一句话冲突',
+          onTap: onTopicCoaching!,
         ),
       if (hasThinkingDivider) const _PanelDivider(),
       if (onThinkingToggle != null)

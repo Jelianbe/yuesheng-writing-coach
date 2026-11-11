@@ -112,10 +112,14 @@ void main() {
     // 2026-09-15：+ 回到胶囊左侧，点击不再直弹覆盖层，改为上方浮层面板
     // ════════════════════════════════════════════════════════
 
-    testWidgets('未传任何面板能力 → + 按钮不显示（保持 MVP 行为）', (tester) async {
+    testWidgets('未传任何面板能力 → + 仍显示（T-20261110-13：题材定位项常驻 ⇒ 面板恒有内容）', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildInput());
 
-      expect(find.byIcon(Icons.add), findsNothing);
+      // T-20261110-13：「聊聊题材定位」常驻面板 ⇒ + 恒显示（原 MVP 行为已变更，
+      // 报批稿 2026-11-11 舰长批 §二① 常驻入口项）
+      expect(find.byIcon(Icons.add), findsOneWidget);
       // 批次70：独立 @ 按钮已移除，永远不显示
       expect(find.byIcon(Icons.alternate_email), findsNothing);
     });

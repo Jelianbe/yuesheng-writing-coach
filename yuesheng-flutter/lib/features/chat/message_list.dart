@@ -34,6 +34,7 @@ import '../../types/teaching_types.dart';
 import '../../widgets/fact_batch_card.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/message_card_dispatcher.dart';
+import '../../widgets/premise_teaching_card.dart';
 import '../../widgets/practice_result_indicator.dart';
 import '../../widgets/practice_task_card.dart';
 import '../../theme/app_typography.dart';
@@ -100,9 +101,8 @@ class MessageList extends ConsumerStatefulWidget {
   /// T4 评估报告：messageId → EvaluationData（非空时渲染评估报告面板）
   final Map<String, EvaluationData> evaluationReports;
 
-  /// C78 批次3（FR-10）：messageId → 批次沉淀记录（非空时消息尾部渲染提示卡）。
-  /// 由 ChatPage watch factBatchProvider 传入——MessageList 保持 build 期
-  /// 无 ref 依赖（对齐 evaluationReports 的参数注入模式，流式测试可裸 pump）。
+  /// C78 批次3（FR-10）：messageId → 批次沉淀记录（非空时渲染提示卡）；
+  /// ChatPage 传入保持 build 期无 ref 依赖（流式测试可裸 pump）。
   final Map<String, FactBatchRecord> factBatches;
 
   /// T4 评估报告：关闭指定消息的报告
@@ -111,18 +111,15 @@ class MessageList extends ConsumerStatefulWidget {
   /// E1-b②：评估报告「查看成长记录」回调（跳成长详情页；null 时不渲染入口）
   final VoidCallback? onOpenGrowth;
 
-  /// 空态自定义组件（缺口清单第 5 项：ChatPage 传 ChatWelcome 欢迎态；
-  /// 未传时保留默认「有问题尽管问教练」引导）
+  /// 空态自定义组件（ChatPage 传 ChatWelcome；未传用默认引导文案）
   final Widget? emptyWidget;
 
   /// 「保存到文件」：透传给 MessageBubble 操作区（批次 14）
   final void Function(Message message)? onSaveToFile;
 
-  /// ADR-C122：纯新手模式注入（首条/追问/引导）后强制滚动到底。
-  /// 用户在列表中部时，B18「不劫持」会让 assistant 追加不滚——新手
-  /// 引导是用户主动触发的强意图（点「开始引导」/提交回答），必须
-  /// 让新消息立即可见，否则用户以为没反应。单帧消费（ChatPage 在读
-  /// 取后立即清 flag），不改变其他 assistant 追加行为。
+  /// ADR-C122：纯新手模式注入后强制滚底（用户主动触发的强意图，列表中部
+  /// 也必须立即可见，否则像没反应）；单帧消费（ChatPage 读后即清 flag），
+  /// 不改变其他 assistant 追加行为（B18「不劫持」）。
   final bool forceScrollToBottom;
 
   const MessageList({
@@ -166,11 +163,8 @@ class MessageList extends ConsumerStatefulWidget {
 class _MessageListState extends ConsumerState<MessageList> {
   final ScrollController _scrollController = ScrollController();
 
-  /// 批次72：点击引用徽章前反查真实性（防改名/删除后跳转落空）
-  ///  - chapter：getChapter 存在 → 跳 /writing/:chapterId（改名后按 refId 仍有效）；
-  ///    章节已删（getChapter 返回 null）→ SnackBar 提示不跳转
-  ///  - manuscript / file：作品存在且非 archived → 跳 /manuscript-detail；
-  ///    已删除/已归档 → SnackBar 提示不跳转
+  /// 批次72：点击引用徽章前反查真实性（防改名/删除后跳转落空）：
+  /// chapter 删 → SnackBar 不跳；manuscript/file 已删/归档 → SnackBar 不跳。
   Future<void> _handleMentionTap(
     String refType,
     String refId,
@@ -293,9 +287,8 @@ class _MessageListState extends ConsumerState<MessageList> {
     }
   }
 
-  /// C147：长按消息「记一下」→ 确认卡（原文整段可编辑 + 作者自选归入位置）
-  /// → proposePending 落 record_entry.pending（两级裁决：作者后续在资料库 kept/rejected）。
-  /// R-009：AI 不替作者决定哪条值得记、不替作者定性——本方法只搬运作者显式触发的摘录。
+  /// C147：长按「记一下」→ 确认卡，proposePending 落 record_entry.pending
+  /// （两级裁决：作者在资料库 kept/rejected）。R-009：只搬运作者显式触发摘录。
   Future<void> _handleRemember(Message message) async {
     final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
     if (bootstrap == null || !mounted) return;
@@ -335,8 +328,7 @@ class _MessageListState extends ConsumerState<MessageList> {
     }
   }
 
-  /// 长按消息 → 弹出删除确认对话框（E4：统一为标准 showDialog，
-  /// 与书架/作品详情的弹窗实现一致，替代自定义覆盖层）
+  /// 删除确认对话框（E4：统一标准 showDialog，替代自定义覆盖层）
   Future<void> _showDeleteConfirm(Message message) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -437,15 +429,10 @@ class _MessageListState extends ConsumerState<MessageList> {
 
   /// 强意图滚底（novice 注入 / 会话切换）。
   ///
-  /// 真机实测（2026-10-02 emulator-5554 logcat）：全新挂载的 ListView.builder
-  /// 首帧只布局了视口+缓存区的 item，[ScrollPosition.maxScrollExtent] 被严重低估
-  /// （实测 max=1370，而真实底部=3536）。若直接 animateTo(被低估的 max)，动画锁死
-  /// 旧目标 1370，滚动途中 sliver 补建尾部 item 使真实 max 涨到 3536，动画却已在
-  /// 1370 结束 → 用户停在半路（约 2 屏高），看不到末条。
-  ///
-  /// 修复：用瞬时 jumpTo(max) 强制 sliver 围绕该 offset 补建尾部 item、暴露真实
-  /// extent，下一帧复校 max——若因补建而增大则再 jumpTo，直到 max 收敛（pixels≈max）。
-  /// bounded 重试（≤6 帧）防异常不收敛死循环。
+  /// 真机实测（2026-10-02 logcat）：全新挂载的 ListView 首帧 maxScrollExtent 被
+  /// 严重低估（实测 1370 vs 真实 3536），animateTo 会锁死旧目标停在半路。修复 =
+  /// 瞬时 jumpTo(max) 强制 sliver 补建尾部 item 暴露真实 extent，下一帧复校、
+  /// 增大则再跳，直到 max 收敛；bounded ≤6 帧防不收敛死循环。
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) => _settleAtBottom(0));
   }
@@ -455,9 +442,7 @@ class _MessageListState extends ConsumerState<MessageList> {
     final pos = _scrollController.position;
     final target = pos.maxScrollExtent;
     pos.jumpTo(target);
-    // jumpTo 触发下一次 layout，sliver 补建尾部 item 后 maxScrollExtent 可能继续变化
-    // （增大=尾部补建；减小=顶部 item 被回收后重估）。下一帧复校，偏移超 1px 则再跳，
-    // 直到 max 稳定（收敛）。bounded ≤6 帧防异常不收敛。
+    // 下一帧复校 max（尾部补建增大 / 顶部回收减小），偏移超 1px 则再跳至收敛。
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       final shifted =
@@ -476,10 +461,8 @@ class _MessageListState extends ConsumerState<MessageList> {
 
   @override
   Widget build(BuildContext context) {
-    // 会话切换经 bootstrap refresh 会先进入 loading 帧（MessageList 被卸载），
-    // 待新会话消息就绪后 MessageList 是「全新挂载」——didUpdateWidget 不触发，
-    // 而 ListView 默认停在顶部。forceScrollToBottom 是单帧强意图（仅 novice 注入 /
-    // 会话切换设置），首帧挂载同样要滚到底，否则切到等长/更短会话时用户停在顶部。
+    // 会话切换 = 全新挂载（didUpdateWidget 不触发），而 ListView 默认停在顶部；
+    // forceScrollToBottom 是单帧强意图，首帧挂载同样滚到底，防切会话后停在顶部。
     if (widget.forceScrollToBottom && widget.messages.isNotEmpty) {
       _scrollToBottom();
     }
@@ -644,7 +627,24 @@ class _MessageListState extends ConsumerState<MessageList> {
     final isTruncated = widget.truncatedMessageIds.contains(msg.id);
     final cardItem = _buildCardItem(msg, isStreamingBubble, isFailed);
     if (cardItem != null) return cardItem;
-    return _buildBubbleItem(msg, isStreamingBubble, isFailed, isTruncated);
+    final bubble = _buildBubbleItem(
+      msg,
+      isStreamingBubble,
+      isFailed,
+      isTruncated,
+    );
+    // T-20261110-13：触发轮回应下方附「题材定位·教练笔记卡」（每会话首张）
+    if (msg.role == 'assistant' &&
+        PremiseTeachingCard.shouldAttachCard(renderItems, index)) {
+      return Column(
+        children: [
+          bubble,
+          const SizedBox(height: AppSpacing.sm),
+          const PremiseTeachingCard(),
+        ],
+      );
+    }
+    return bubble;
   }
 
   Widget _buildThinkingIndicatorItem() {

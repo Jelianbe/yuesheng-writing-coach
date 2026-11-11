@@ -8,24 +8,12 @@
 //   - 圆形发送按钮（竹青主题）
 //   - isStreaming 时禁用输入和发送（按钮不受影响，对齐 RN）
 //
-// 批次70：@ 功能合并进输入框
-//   - 移除独立的 @ 图标按钮，改为输入 @ 字符触发引用选择器
-//   - placeholder 提示「输入 @ 引用作品」
-//   - 对外暴露 insertMention(mentionPath) 方法，在 @ 位置替换插入
+// 批次70：@ 功能合并进输入框（@ 字符触发引用选择器，placeholder 提示；
+//   insertMention(mentionPath) 在 @ 位置替换插入）
 //
-// 2026-09-15（舰长真机反馈）：「+」左侧回归 + 思考开关入面板
-//   - 「+」从输入框**右侧**移回**左侧**；发送按钮一并**纳入胶囊内部**，
-//     三者（+ / 输入区 / 发送）同处一个圆角胶囊，不再是「胶囊 + 外挂按钮」；
-//   - 原常驻于输入框上方的「思考」开关行**删除**，改为收进「+」面板
-//     ⇒ 输入区上方不再额外占用一行垂直空间；
-//   - 「+」点击不再直接弹覆盖式 bottom sheet，而是在「+」**正上方**
-//     浮出一块小面板（上传作品 / 思考开关），点面板外任意处收起。
-//
-// 2026-09-15（真机回归修复）：浮层落点改为 LayerLink 锚定
-//   - 原实现「打开瞬间算一次绝对坐标 + Positioned(bottom)」⇒ 落点被冻结，
-//     键盘收起后面板飘到屏幕上方（实测 937 物理像素）；
-//   - 改为 CompositedTransformTarget/Follower ⇒ 渲染层每帧跟随「+」，
-//     键盘开合 / 窗口变化 / 输入框增高均自动贴合。
+// 2026-09-15（舰长真机反馈）：「+」回归左侧、发送入胶囊、思考开关收进面板
+//   （正上方浮出小面板，点外收起）；真机回归修复：浮层落点 LayerLink 锚定
+//   （渲染层每帧跟随「+」，键盘开合/窗口变化自动贴合，替代冻结绝对坐标）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -151,10 +139,9 @@ class ChatInputState extends State<ChatInput> {
   bool get _canSend =>
       _controller.text.trim().isNotEmpty && !widget.isStreaming;
 
-  /// 面板是否有内容 ⇒ 决定「+」是否出现。
-  /// 上传或思考开关任一存在就必须有入口，否则该功能不可达。
-  bool get _hasPanel =>
-      widget.onUploadFile != null || widget.onThinkingToggle != null;
+  /// 面板是否有内容 ⇒ 决定「+」是否出现。题材定位项常驻（T-20261110-13），
+  /// 上传/思考开关按回调追加 ⇒ 「+」恒显示。
+  bool get _hasPanel => true;
 
   void _handleSend() {
     if (!_canSend) return;
@@ -408,6 +395,13 @@ class ChatInputState extends State<ChatInput> {
                     _panelController.hide();
                     widget.onNoviceMode!();
                   },
+            // T-20261110-13：点「聊聊题材定位」= 以学员身份发送预置消息，
+            // 命中 premise_trigger 关键词 ⇒ 与关键词触发同链路汇入。
+            onTopicCoaching: () {
+              _panelController.hide();
+              _controller.text = '我想聊聊这本书的题材定位';
+              _handleSend();
+            },
             thinkingEnabled: widget.thinkingEnabled,
             reasoningTierLabel: widget.reasoningTierLabel,
             onThinkingToggle: widget.onThinkingToggle,

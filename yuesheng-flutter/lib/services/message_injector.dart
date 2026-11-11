@@ -8,24 +8,18 @@
 //   - 不直接调 LLM
 //
 // 字段依赖建模原则（同 DiagnosisCommitter K-1 样板）：
-//   - 必备依赖（required）：6 个仓储 + 1 个编排器 + 1 个 capability
-//   - 可选依赖（X-041c 模式）：5 个 nullable 仓储，不装配则跳过对应观察项
-//   - 内部状态：4 个按 cycle 隔离的缓存
-//   - 构造签名：`MessageInjector({required ..., nullable 5 仓储})`，
-//     与 chat_service 已有 `diagnosisCommitter` 模式对称
+//   - 必备依赖（required）：6 仓储 + 1 编排器 + 1 capability；可选（X-041c）：
+//     5 个 nullable 仓储，不装配则跳过对应观察项；内部状态：4 个按 cycle 隔离缓存
+//   - 构造签名：`MessageInjector({required ..., nullable 5 仓储})`，与 chat_service 的 diagnosisCommitter 模式对称
 //
-// 实施节奏（K-7）：
-//   K-7：迁 5 个 _inject* + 11 个跟随 helper + 1 个 _insertPhaseSummaryOnMastered
-//        + 4 个缓存字段
+// 实施节奏（K-7）：迁 5 个 _inject* + 11 个跟随 helper + 1 个 _insertPhaseSummaryOnMastered + 4 个缓存字段
 //
 // 关键不变量：
 //   - chatServiceProvider 注入本类实例；ChatService 改为委派
 //   - _FakeChatService 测试替身不触达 MessageInjector（private 委派链），
 //     @override 契约保留（X-025-ARCH 教训复盘）
-//   - K-8 合并：原 _preloadReferenceDetails 跟随 _injectReferences 迁入
-//     本类（已被 _injectReferences 内部封装），三段批量查询逻辑
-//     与原 chat_service 完全等价（chat_service_reference_preload_test.dart
-//     守护契约）
+//   - K-8 合并：原 _preloadReferenceDetails 跟随 _injectReferences 迁入本类
+//     （已被其内部封装），逻辑与原 chat_service 等价（reference_preload_test 守护）
 // ─────────────────────────────────────────────────────────────
 
 // 私有字段（_xxx）+ 公开命名参数（xxx）模式无法用 initializing formal
@@ -91,6 +85,8 @@ import 'package:writingcoach/services/llm_client.dart' show ChatMessage;
 import 'package:writingcoach/services/message_card_service.dart'
     show PhaseSummaryCardPayload, SyndromeChangeItem, insertPhaseSummaryCard;
 import 'package:writingcoach/services/outline_service.dart';
+import 'package:writingcoach/services/premise_trigger.dart'
+    show maybeInjectPremiseTeaching;
 import 'package:writingcoach/services/style_fingerprint.dart';
 import 'package:writingcoach/services/style_technique_router.dart';
 import 'package:writingcoach/services/student_profile.dart';
@@ -246,6 +242,9 @@ class MessageInjector {
       messages: messages,
     );
     _injectReplyDetailGuidance(content: content, messages: messages);
+    // T-20261110-13：P031 前提层承接（甲裁定）——题材关键词命中轮注入
+    // 教学上下文（非诊断触发，G1 诊断优先判据在 premise_trigger 内）。
+    maybeInjectPremiseTeaching(content: content, messages: messages);
     // A-1c：认知风格注文（消息级动态项）追加在历史之后——前缀保持稳定。
     final note = _cognitiveStyleNote;
     if (note != null) {
