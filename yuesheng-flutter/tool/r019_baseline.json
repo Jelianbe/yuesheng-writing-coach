@@ -2,7 +2,7 @@
   "dir": "lib",
   "limit": 50,
   "fileLimit": 300,
-  "fileCount": 553,
+  "fileCount": 559,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
@@ -336,7 +336,7 @@
     },
     {
       "file": "lib/services/chat_service.dart",
-      "lines": 1101
+      "lines": 1103
     },
     {
       "file": "lib/services/database_backup_service.dart",
@@ -400,7 +400,7 @@
     },
     {
       "file": "lib/services/llm_client.dart",
-      "lines": 1293
+      "lines": 1269
     },
     {
       "file": "lib/services/mention_parser.dart",

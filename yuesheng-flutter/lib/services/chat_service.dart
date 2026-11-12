@@ -243,6 +243,8 @@ class ChatService {
       '"keep": "最值得保持的一点", "priority": ["先改项"], "coverage": "基于已诊断 3/20 章"}}\n'
       '[/YS_DIAGNOSIS]\n'
       '块内容必须与正文结论一致，不得伪造症候。'
+      '结构化卡只向学习者显示问题名称，编号是内部键；'
+      '学习者若引用编号，按对应名称理解并自然衔接。'
       '不要使用 markdown 代码块（```）包裹诊断 JSON；'
       '必须用 [YS_DIAGNOSIS] 与 [/YS_DIAGNOSIS] 标记，不要省略。';
 
