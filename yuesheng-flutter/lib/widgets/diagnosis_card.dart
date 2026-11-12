@@ -48,6 +48,8 @@ import 'm2_recall_bar.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
 import '../config/svc_copy.dart';
+import '../services/interaction_event_service.dart'
+    show InteractionEventService;
 
 /// 严重度 → 矿物色 + 文字色
 class _SeverityConfig {
@@ -342,6 +344,16 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         chapterId: _chapterId,
         messageId: widget.messageId,
         anchorText: evidenceText,
+      );
+      // 批十六（§4-513 续）：云端埋点 anchor_ack——本地落库成功后恰 1 次；
+      // 只传结构化标识，不传稿件文本（对齐 web 隐私口径）；失败不阻断。
+      InteractionEventService.record(
+        eventType: 'anchor_ack',
+        payload: <String, Object?>{
+          'chapter_id': _chapterId,
+          'message_id': widget.messageId ?? '',
+        },
+        sessionTag: sid,
       );
     } catch (e) {
       debugPrint('[edit_diff] anchor_ack 埋点失败（不阻断）: $e');

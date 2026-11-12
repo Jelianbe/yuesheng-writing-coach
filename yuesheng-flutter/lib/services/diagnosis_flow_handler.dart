@@ -103,6 +103,8 @@ import 'package:writingcoach/services/p0_verify/anchor_probe.dart';
 import 'package:writingcoach/services/reply_receipt_guard.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart'
     show kShortChainExcludedSyndromeIds, kNonDiagnosableSyndromeIds;
+import 'package:writingcoach/services/interaction_event_service.dart'
+    show InteractionEventService;
 import 'package:writingcoach/services/teacher_service.dart'
     show TeacherDiagnosisInput, callTeacherStream;
 import 'package:writingcoach/services/teacher_validator.dart'
@@ -752,6 +754,16 @@ class DiagnosisFlowHandler {
         diagnosis: diagnosis,
       );
       await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
+      // 批十六（§4-513 续）：云端埋点 diagnosed——落库序列全成功后恰 1 次；
+      // 只传结构化标识（症候 ID），不传稿件文本；失败不阻断（服务内 catch）。
+      InteractionEventService.record(
+        eventType: 'diagnosed',
+        payload: <String, Object?>{
+          'syndromes': diagnosis.syndromes.map((s) => s.syndromeId).toList(),
+          'syndrome_count': diagnosis.syndromes.length,
+        },
+        sessionTag: sessionId,
+      );
     } catch (e, s) {
       _logSafeRun('诊断写入', e, s);
     }
