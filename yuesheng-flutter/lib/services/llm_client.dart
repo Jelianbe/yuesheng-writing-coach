@@ -20,12 +20,15 @@ import 'llm_circuit_breaker.dart';
 import 'llm_concurrency_gate.dart';
 import 'llm_config_storage.dart';
 import 'llm_error_codes.dart';
+import 'llm_error_format.dart';
 import 'llm_fallback.dart';
 import 'llm_model_profile.dart';
 import 'llm_retry.dart';
 import 'llm_usage.dart';
 import 'llm_usage_monitor.dart';
 import 'network_check.dart';
+import 'platform_quota_channel.dart';
+import 'platform_quota_dispatch.dart';
 import 'stream_guard.dart';
 
 /// 多模态内容块（OpenAI Chat Completions content blocks，C144 I1）。
@@ -162,6 +165,17 @@ class LlmClient {
   /// 写法），测试可注入独立实例隔离累计状态。
   final LlmUsageSink _usageSink;
 
+  /// 显式注入的平台通道（测试用；生产传 null ⇒ 由 [_resolvePlatform] 按平台决定）。
+  final PlatformQuotaChannel? _injectedPlatform;
+
+  /// 平台资源点通道（web 端「无 key 体验装」的唯一出口，`T-20261112-01`）。
+  ///
+  /// **延迟解析**：只有「无 key」这一条分支才需要它，而绝大多数用户配了
+  /// Key ⇒ 不在构造期创建。web 支的创建会去读 `window`，而 VM 测试里
+  /// 那个全局不存在；延迟到真正用到时再解析，测试环境就完全不受影响。
+  PlatformQuotaChannel? _platformChannel;
+  bool _platformResolved = false;
+
   /// 当前在途调用的业务上下文（TH 九批）。
   ///
   /// **为何用实例字段而非逐层传参**：[streamChat] 与 [chatCompletionWithMeta]
@@ -232,11 +246,22 @@ class LlmClient {
     LlmCircuitBreaker? circuitBreaker,
     LlmConcurrencyGate? gate,
     LlmUsageSink? usageSink,
+    PlatformQuotaChannel? platformChannel,
   ]) : _configStorage = configStorage ?? LlmConfigStorage(),
        _dio = dio ?? Dio(),
        _breaker = circuitBreaker ?? LlmCircuitBreaker(),
        _gate = gate ?? kSharedLlmGate,
-       _usageSink = usageSink ?? kSharedLlmUsageMonitor.record;
+       _usageSink = usageSink ?? kSharedLlmUsageMonitor.record,
+       _injectedPlatform = platformChannel;
+
+  /// 解析平台通道（仅「无 key」分支会调用；结果缓存，避免重复建 client）。
+  PlatformQuotaChannel? _resolvePlatform() {
+    if (!_platformResolved) {
+      _platformResolved = true;
+      _platformChannel = resolvePlatformChannel(injected: _injectedPlatform);
+    }
+    return _platformChannel;
+  }
 
   /// 当前配置源：优先自定义 loader（多账号），否则旧单键存储
   Future<LlmConfigValues?> _loadConfig() {
@@ -245,12 +270,9 @@ class LlmClient {
     return _configStorage.getLlmConfig();
   }
 
-  /// 免费测试模式教学文案（批次 E-1，2026-09-10 用户决策）：
-  /// 无次数限制、无开关——判定 = 未配置 API Key 自动启用；不伪造诊断，
-  /// 固定文案由解析类调用方走各自现有失败兜底（editor 兜底 / 诊断失败卡）。
-  static const String _kFreeTestReply =
-      '（免费测试模式）我现在处于离线示例模式，本次未进行诊断——没有调用真实模型。'
-      '配置 API Key 后，我就能为你做真实的写作诊断与编辑观察，去「设置」中填入即可。';
+  /// 免费测试模式教学文案已随「无 key」职责域迁至
+  /// `platform_quota_dispatch.dart`（`kFreeTestReply`）—— 那段文案现在
+  /// 与「平台通道不可用」共用同一个出口，留在两处必然漂移。
 
   static const _kConfigMissing = TestConnectionResult(
     success: false,
@@ -312,7 +334,7 @@ class LlmClient {
   /// 响应体非 JSON 对象时静默跳过。本路径不走闸门、_activeCallContext 恒为 null
   /// ⇒ 通过 contextOverride 显式传 purpose=connection（R-019 拆出）。
   void _reportTestUsage(Object? data) {
-    final body = _asJsonMap(data);
+    final body = asJsonMap(data);
     if (body == null) return;
     _reportUsage(
       body['usage'],
@@ -377,7 +399,7 @@ class LlmClient {
       message: llmErrorMessage(
         kind,
         status: e.response?.statusCode ?? 0,
-        preview: preview != null ? _redactAuth(preview) : null,
+        preview: preview != null ? redactAuth(preview) : null,
       ),
       latencyMs: latencyMs,
     );
@@ -434,9 +456,8 @@ class LlmClient {
     _streamContentEmitted = false;
     final cfg = await _loadConfig();
     if (cfg == null) {
-      // 批次 E-1 免费测试模式：未配置 API Key 自动启用（无开关、无次数限制），
-      // 返回固定教学文案，不伪造诊断——解析类调用方走各自现有失败兜底。
-      return ChatCompletionResult(content: _kFreeTestReply);
+      // 无 key：web 有平台通道 ⇒ 走资源点垫付（流式聚合），否则离线示例。
+      return _completeWithoutKey(messages, maxTokens, cancelToken);
     }
 
     // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
@@ -463,7 +484,7 @@ class LlmClient {
       } on DioException catch (e) {
         if (e.type == DioExceptionType.cancel) rethrow;
         if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
-        throw Exception(await _buildDioError(e));
+        throw Exception(await buildDioError(e));
       }
     } finally {
       _activeCallContext = null;
@@ -591,8 +612,8 @@ class LlmClient {
     _streamContentEmitted = false;
     final cfg = await _loadConfig();
     if (cfg == null) {
-      // 批次 E-1 免费测试模式：模拟流式回调（教学文案分块推送 + DONE）。
-      await _emitFreeTestStream(callback, cancelToken);
+      // 无 key：web 且有平台通道 ⇒ 走资源点垫付；否则离线示例（批次 E-1）。
+      await _streamWithoutKey(callCtx, messages, callback, cancelToken);
       return;
     }
 
@@ -652,7 +673,7 @@ class LlmClient {
         rethrow;
       } on DioException catch (e) {
         if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
-        throw Exception(await _buildDioError(e));
+        throw Exception(await buildDioError(e));
       }
     } finally {
       _activeCallContext = null;
@@ -682,26 +703,71 @@ class LlmClient {
     }
   }
 
-  /// 免费测试模式模拟流式（批次 E-1）：教学文案分块推送 + DONE。
-  /// 取消语义与真实流一致：cancelToken 已取消则提前抛 LlmRequestCancelledException。
-  Future<void> _emitFreeTestStream(
+  /// 无 key 的流式分流（实现全在 `platform_quota_dispatch.dart`）。
+  ///
+  /// 【为什么手机端一定走老路】非 web 支 `createPlatformQuotaChannel()` 恒
+  /// 返回 null（`platform_quota_bridge_stub.dart`）⇒ 手机端行为由「通道不存在」
+  /// 结构性保证，不需要任何 `kIsWeb` 判断（A3 / A7）。
+  ///
+  /// 【为什么只有真实通道才占闸门】离线示例是本地模拟，占闸门会改变接入前的
+  /// 并发语义（那三段 200ms 延时原本不排队）。
+  Future<void> _streamWithoutKey(
+    LlmCallContext? callCtx,
+    List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback,
     CancelToken? cancelToken,
   ) async {
-    if (cancelToken?.isCancelled ?? false) throw LlmRequestCancelledException();
-    const chunks = <String>[
-      '（免费测试模式）我现在处于离线示例模式，本次未进行诊断——',
-      '没有调用真实模型。配置 API Key 后，我就能为你做真实的写作诊断与编辑观察，',
-      '去「设置」中填入即可。',
-    ];
-    for (final chunk in chunks) {
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-      if (cancelToken?.isCancelled ?? false) {
-        throw LlmRequestCancelledException();
-      }
-      callback(LlmStreamResponse(content: chunk, isDone: false));
+    final platform = _resolvePlatform();
+    if (platform != null) {
+      _gate.enter();
+      _activeCallContext = callCtx;
     }
-    callback(const LlmStreamResponse(content: '', isDone: true));
+    try {
+      final completed = await emitNoKeyStream(
+        platform: platform,
+        messages: messages.map((m) => m.toJson()).toList(),
+        isCancelled: () => cancelToken?.isCancelled ?? false,
+        onFrame: (chunk, done) {
+          if (!done) _streamContentEmitted = true;
+          callback(LlmStreamResponse(content: chunk, isDone: done));
+        },
+      );
+      if (!completed) throw LlmRequestCancelledException();
+    } on PlatformQuotaCancelled {
+      throw LlmRequestCancelledException();
+    } finally {
+      if (platform != null) {
+        _activeCallContext = null;
+        _gate.exit();
+      }
+    }
+  }
+
+  /// 无 key 的非流式分流（平台通道只收流式 ⇒ 本地聚合，见 dispatch 文件）。
+  Future<ChatCompletionResult> _completeWithoutKey(
+    List<ChatMessage> messages,
+    int? maxTokens,
+    CancelToken? cancelToken,
+  ) async {
+    final platform = _resolvePlatform();
+    if (platform == null) {
+      return const ChatCompletionResult(content: kFreeTestReply);
+    }
+    _gate.enter();
+    try {
+      final result = await completeNoKey(
+        platform: platform,
+        messages: messages.map((m) => m.toJson()).toList(),
+        isCancelled: () => cancelToken?.isCancelled ?? false,
+        maxTokens: maxTokens,
+      );
+      return ChatCompletionResult(
+        content: result?.content ?? kFreeTestReply,
+        finishReason: result?.finishReason,
+      );
+    } finally {
+      _gate.exit();
+    }
   }
 
   /// ADR-C94 §3.3 分级降级编排（R-019 拆出）。
@@ -1199,95 +1265,5 @@ class LlmClient {
     } catch (_) {
       // 观测失败静默：绝不影响请求结果
     }
-  }
-
-  /// 把响应体归一化为 JSON 对象（供 [_reportUsage] 取 `usage`）。
-  ///
-  /// Dio 只在对端返回 `application/json` 时才自动解析；实测既有链路里
-  /// `response.data` 可能是**未解析的 String**（`_postChatCompletion` 亦
-  /// 因此保留了 `data is String` 分支）⇒ 此处统一兜住，解析不出对象
-  /// 一律返回 null（静默跳过，不影响主流程）。
-  Map<String, dynamic>? _asJsonMap(Object? data) {
-    if (data is Map<String, dynamic>) return data;
-    if (data is String) {
-      try {
-        final decoded = jsonDecode(data);
-        return decoded is Map<String, dynamic> ? decoded : null;
-      } catch (_) {
-        return null;
-      }
-    }
-    return null;
-  }
-
-  Future<String> _buildDioError(DioException e) async {
-    // 批次 3：统一走错误分类（llm_error_codes.dart）——401/403/429/超时/
-    // 连接等给用户可操作文案，替代裸 "HTTP N"。
-    final kind = classifyLlmError(e);
-    if (kind == LlmErrorKind.timeout) {
-      // 区分：流式 3 分钟兜底 vs 非流式 1 分钟兜底
-      final t =
-          e.requestOptions.receiveTimeout?.inMilliseconds ??
-          LlmConfig.chatTimeoutMs;
-      return llmErrorMessage(kind, timeoutSeconds: t ~/ 1000);
-    }
-    final status = e.response?.statusCode ?? 0;
-    final data = e.response?.data;
-    String? preview;
-    final dataStr = await _errorDataAsString(data);
-    if (dataStr.isNotEmpty) {
-      final raw = dataStr.length > LlmConfig.errorPreviewLengthLong
-          ? dataStr.substring(0, LlmConfig.errorPreviewLengthLong)
-          : dataStr;
-      // B22/R-029：防御性脱敏——OpenAI 错误响应通常不含 Authorization，
-      // 但代理/网关可能 echo 请求头到错误响应体；此层作为防御纵深。
-      preview = _redactAuth(raw);
-    }
-    return llmErrorMessage(kind, status: status, preview: preview);
-  }
-
-  /// 错误响应体 → 字符串（W-18 调试增强，2026-10-15）。
-  ///
-  /// - dio 对 application/json 非流式响应自动解析成 Map ⇒ 原判
-  ///   `data is String` 恒 false，body 丢失；Map 时 jsonEncode 回字符串。
-  /// - 流式通道错误时 data 是 ResponseBody 原始流对象（既非 String 亦非
-  ///   Map），jsonEncode 会抛异常并吞掉原始 400 ⇒ 手动汇字节再 utf8 解码
-  ///   （dio 5.x 无 asString()；utf8.decoder 作 StreamTransformer 与
-  ///   `Stream<Uint8List>` 泛型不兼容）。读失败降级为空串，不吞原错误。
-  static Future<String> _errorDataAsString(Object? data) async {
-    if (data is ResponseBody) {
-      try {
-        final buf = <int>[];
-        await data.stream.forEach(buf.addAll);
-        return utf8.decode(buf, allowMalformed: true);
-      } catch (_) {
-        return '';
-      }
-    }
-    if (data is String) return data;
-    if (data == null) return '';
-    try {
-      return jsonEncode(data);
-    } catch (_) {
-      return data.toString();
-    }
-  }
-
-  /// R-029 安全：脱敏可能泄露的 Authorization / Bearer 凭证
-  ///
-  /// 覆盖两种形式：
-  ///   1. `Bearer xxx`（OAuth 2.0 标准格式，含 JWT）
-  ///   2. `Authorization: xxx` / `"Authorization":"xxx"`（头部键值形式）
-  ///
-  /// 不影响其他无关字段；保留请求头名以方便排查，仅屏蔽值。
-  String _redactAuth(String text) {
-    final bearerRe = RegExp(r'[Bb]earer\s+[A-Za-z0-9_\-\.]+');
-    final headerRe = RegExp(
-      r'''["']?Authorization["']?\s*[:=]\s*["']?[A-Za-z0-9_\-\.]+''',
-      caseSensitive: false,
-    );
-    return text
-        .replaceAll(bearerRe, 'Bearer ***')
-        .replaceAll(headerRe, 'Authorization=***');
   }
 }

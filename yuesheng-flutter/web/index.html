@@ -34,6 +34,17 @@
 </head>
 <body>
   <!--
+    平台资源点通道（web 无 key 体验装）：两个脚本都是**同步**加载，
+    且必须早于 flutter_bootstrap.js。
+    理由：Dart 侧首次诊断随时可能发生，若 `window.WbcsBridge` 尚未定义，
+    这次诊断就会退化成离线示例文案 —— 表现为「偶发说不支持」，极难复现。
+    同步加载换来确定性；两者合计 72KB（本地文件，不涉外部域名）。
+    详见 lib/services/platform_quota_bridge_web.dart 与 web/wbcs/bridge.js。
+  -->
+  <script src="wbcs/index.global.js"></script>
+  <script src="wbcs/bridge.js"></script>
+
+  <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
     or to give the user feedback during the initialization process.
