@@ -336,7 +336,7 @@
     },
     {
       "file": "lib/services/chat_service.dart",
-      "lines": 1103
+      "lines": 1105
     },
     {
       "file": "lib/services/database_backup_service.dart",

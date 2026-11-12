@@ -1195,7 +1195,12 @@ CONST_REDLINE = {
     # 「不得伪造症候。」后追加批准文本「结构化卡只向学习者显示问题名称，编号是内部键；
     # 学习者若引用编号，按对应名称理解并自然衔接。」（+45 与批准文本逐字吻合）。
     # 值来源 = UPDATE_SNAPSHOTS=true 重冻 prompt_const_anchor.json（len=1083）。
-    'kDiagnosisProtocolSuffix': (1083, '12185ab32ee89bb0'),
+    # ★ 2026-11-12 第十九次重钉：1083→1141（+58），fnv 12185ab32ee89bb0→7c420b4f67e71c59。
+    # 方向 = 舰长批边界补条：追加「诊断材料以100字为基线：不足100字时不作诊断——
+    # 不输出诊断块，转为以引导为主：帮学习者补足材料，或直接进入教学。」（+58 逐字吻合；
+    # 首版 +52 行为实测仍出卡，修订为显式豁免诊断块后定稿）。
+    # 值来源 = UPDATE_SNAPSHOTS=true 重冻 prompt_const_anchor.json（len=1141）。
+    'kDiagnosisProtocolSuffix': (1141, '7c420b4f67e71c59'),
 }
 
 # 下限自检：读数低于此值 ⇒ 疑量到空串 / 别的对象（不是「省了字」）。
@@ -1482,11 +1487,14 @@ USER_FACE_REDLINE = {
     #   方向 = 协议后缀人格约束批 suffix +45（CONST_REDLINE 同因同步）；
     #   值来源 = UPDATE_SNAPSHOTS=true 重冻 injection_segments_anchor.json +
     #   message_sequence_anchor.json（与门禁 18 实测输出逐位互证）。
-    'p2_yuesheng_diagnosis_fulltext[3]': (1689, '561933eca7c866c'),
-    'p2_yuesheng_diagnosis_nofulltext[3]': (1627, '364a4b66429f78dc'),
+    # ★ 2026-11-12 第十九次重钉：fulltext[3] 1689→1747（+58）fnv →53c8c5a1454d7005；
+    #   nofulltext[3] / attachment[3] 1627→1685（+58）fnv →356061c8d74ec655。
+    #   方向 = 100 字基线边界句批 suffix +58（CONST_REDLINE 同因同步）；
+    'p2_yuesheng_diagnosis_fulltext[3]': (1747, '53c8c5a1454d7005'),
+    'p2_yuesheng_diagnosis_nofulltext[3]': (1685, '356061c8d74ec655'),
     #   2026-10-31 T-20261027-05 A1：附件例并入本表（与 nofulltext **逐值相同**——
     #   附件不改文本注入面；不并入则覆盖扫描判「注入已发生却无上限」）。
-    'p2_yuesheng_diagnosis_attachment[3]': (1627, '364a4b66429f78dc'),
+    'p2_yuesheng_diagnosis_attachment[3]': (1685, '356061c8d74ec655'),
 }
 
 # ── 附件面（T-20261027-05 A1）──────────────────────────────────────────
@@ -1499,10 +1507,9 @@ USER_FACE_REDLINE = {
 # blocksLen / blocksFnv 由锚点测试对 `contentBlocks` 按
 # `type \u0000 payload` + `\u0001` 拼接后取值（不是图片字节数，是拼接串长度）。
 USER_FACE_BLOCKS_REDLINE = {
-    # ★ 2026-11-12 第十八次重钉：401621→401666（+45）blocksFnv →1ca2dc462863a6b3。
-    #   同因（协议后缀批 suffix +45，随文本注入面同步）；值来源 = 门禁 18 实测输出
-    #   与 injection_segments_anchor.json 重冻值互证。
-    'p2_yuesheng_diagnosis_attachment[3]': (401666, '1ca2dc462863a6b3'),
+    # ★ 2026-11-12 第十九次重钉：401666→401724（+58）blocksFnv →50efb7c791725b82。
+    #   同因（100 字基线边界句批 suffix +58，随文本注入面同步）；值来源 = 检查器实测输出。
+    'p2_yuesheng_diagnosis_attachment[3]': (401724, '50efb7c791725b82'),
 }
 
 # ── 分块链 user 消息（T-20261027-05 A2）────────────────────────────────
@@ -1558,14 +1565,14 @@ USER_FACE_SEGMENTS = {
     'p2_yuesheng_diagnosis_fulltext': {
         'studentBody': (8, '2b56b05e131f4426'),
         'fullTextBlock': (62, 'f1d182190e275c1'),
-        'protocolSuffix': (1083, '12185ab32ee89bb0'),
+        'protocolSuffix': (1141, '7c420b4f67e71c59'),
         'directExplain': (349, '5d479de78f67ea3c'),
         'fadingBlock': (185, '10523563b3b11eaf'),
     },
     'p2_yuesheng_diagnosis_nofulltext': {
         'studentBody': (8, '2b56b05e131f4426'),
         'fullTextBlock': (0, '4bf29ce484222325'),
-        'protocolSuffix': (1083, '12185ab32ee89bb0'),
+        'protocolSuffix': (1141, '7c420b4f67e71c59'),
         'directExplain': (349, '5d479de78f67ea3c'),
         'fadingBlock': (185, '10523563b3b11eaf'),
     },
@@ -1574,7 +1581,7 @@ USER_FACE_SEGMENTS = {
     'p2_yuesheng_diagnosis_attachment': {
         'studentBody': (8, '2b56b05e131f4426'),
         'fullTextBlock': (0, '4bf29ce484222325'),
-        'protocolSuffix': (1083, '12185ab32ee89bb0'),
+        'protocolSuffix': (1141, '7c420b4f67e71c59'),
         'directExplain': (349, '5d479de78f67ea3c'),
         'fadingBlock': (185, '10523563b3b11eaf'),
     },

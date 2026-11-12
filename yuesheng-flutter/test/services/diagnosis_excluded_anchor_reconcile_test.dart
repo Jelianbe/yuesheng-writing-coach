@@ -34,19 +34,23 @@ const String kControlUserFnv = 'e44e287a4ac8d8f';
 
 // 诊断两 case user 消息新基线（重冻后钉死；未来任何漂移即红）。
 // 诊断三 case user 消息基线沿革：1644/1582（excluded 行 +61，设计批）→
-// 1689/1627 = +45（2026-11-12 协议后缀人格约束批，suffix +45 同因同步）。
+// 1689/1627 = +45（2026-11-12 协议后缀人格约束批，suffix +45 同因同步）→
+// 1747/1685 = +58（2026-11-12 批十一：100 字基线边界句定稿，suffix +58 同因同步）。
 // 值来源 = UPDATE_SNAPSHOTS=true 重冻 message_sequence_anchor.json（与门禁 18 实测互证）。
-const String kFulltextUserFnv = '561933eca7c866c';
-const int kFulltextUserLen = 1689;
-const String kNoFulltextUserFnv = '364a4b66429f78dc';
-const int kNoFulltextUserLen = 1627;
+const String kFulltextUserFnv = '53c8c5a1454d7005';
+const int kFulltextUserLen = 1747;
+const String kNoFulltextUserFnv = '356061c8d74ec655';
+const int kNoFulltextUserLen = 1685;
 
 // kDiagnosisProtocolSuffix 基线沿革：977→1038 = +61（excluded 行，设计批）；
 // 1038→1083 = +45（2026-11-12 协议后缀人格约束报批落地单：追加「结构化卡只向
-// 学习者显示问题名称」边界句，舰长已批）。值来源 = UPDATE_SNAPSHOTS=true
-// flutter test test/services/prompt_const_anchor_test.dart 写模式打印（len=1083）。
-const int kSuffixLen = 1083;
-const String kSuffixFnv = '12185ab32ee89bb0';
+// 学习者显示问题名称」边界句，舰长已批）；
+// 1083→1135 = +52（2026-11-12 批十一首版 100 字边界句，行为实测仍出卡，即行修订）；
+// 1135→1141 = +58（定稿：显式豁免「不输出诊断块」，舰长批语义内收严）。
+// 值来源 = UPDATE_SNAPSHOTS=true
+// flutter test test/services/prompt_const_anchor_test.dart 写模式打印（len=1141）。
+const int kSuffixLen = 1141;
+const String kSuffixFnv = '7c420b4f67e71c59';
 
 // skill_prompt 受控组新基线（index 模板 +107 落 diagnosis 两组）。
 // ★ 2026-10-31 随 `T-20261024-17` 去症清扫重冻**同步下移**（删字符方向，非提额）：
@@ -212,7 +216,7 @@ void main() {
       expect(
         suffix['len'],
         kSuffixLen,
-        reason: 'suffix len 钉死 $kSuffixLen（1038→1083 = +45，协议后缀人格约束批）',
+        reason: 'suffix len 钉死 $kSuffixLen（1083→1141 = +58，100 字基线边界句定稿）',
       );
       expect(suffix['fnv'], kSuffixFnv, reason: 'suffix fnv 钉死 $kSuffixFnv');
     });
