@@ -43,7 +43,9 @@ void main() {
 
   testWidgets('#1 未确认 → 弹出 + 三段文案可见', (tester) async {
     await tester.pumpWidget(
-      buildHost((ctx) => maybeShowPrivacyNoticeOnce(ctx, appState)),
+      buildHost(
+        (ctx) => maybeShowPrivacyNoticeOnce(ctx, appState, isWeb: false),
+      ),
     );
     await tester.tap(find.text('trigger'));
     await tester.pumpAndSettle();
@@ -56,7 +58,9 @@ void main() {
 
   testWidgets('#2 点「我知道了」→ 关闭 + flag 落库', (tester) async {
     await tester.pumpWidget(
-      buildHost((ctx) => maybeShowPrivacyNoticeOnce(ctx, appState)),
+      buildHost(
+        (ctx) => maybeShowPrivacyNoticeOnce(ctx, appState, isWeb: false),
+      ),
     );
     await tester.tap(find.text('trigger'));
     await tester.pumpAndSettle();
@@ -72,7 +76,9 @@ void main() {
     await appState.setValue(kPrivacyNoticeAckKey, '1');
 
     await tester.pumpWidget(
-      buildHost((ctx) => maybeShowPrivacyNoticeOnce(ctx, appState)),
+      buildHost(
+        (ctx) => maybeShowPrivacyNoticeOnce(ctx, appState, isWeb: false),
+      ),
     );
     await tester.tap(find.text('trigger'));
     await tester.pumpAndSettle();
@@ -81,7 +87,9 @@ void main() {
   });
 
   testWidgets('#4 设置页直开语义 → 关闭后不写 flag', (tester) async {
-    await tester.pumpWidget(buildHost(showPrivacyNoticeDialog));
+    await tester.pumpWidget(
+      buildHost((ctx) => showPrivacyNoticeDialog(ctx, isWeb: false)),
+    );
     await tester.tap(find.text('trigger'));
     await tester.pumpAndSettle();
 
@@ -101,5 +109,49 @@ void main() {
       identical(appRouter.configuration.navigatorKey, rootNavigatorKey),
       isTrue,
     );
+  });
+
+  // ── 2026-11-11 按平台分支（`§4-500`）──────────────────────────────
+  // 判据设计：web 与非 web **互为负对照**。
+  //   只断言 web 三句 → 分不清「分支写对了」与「整串被换掉了」；
+  //   只断言非 web 三句 → 同上。
+  //   故两侧各一条，且 web 侧额外断言「**不得**出现服务商措辞」
+  //   （若哪天有人把两分支合并回一套话，这条会红）。
+
+  test('#6 web 分支：示例模式三句 + 不得出现「你所选的 AI 服务商」', () {
+    final lines = privacyNoticeLines(isWeb: true);
+    expect(lines.length, 3);
+    expect(lines[0], contains('示例模式'));
+    expect(lines[0], contains('不会被发送出去'));
+    expect(lines[1], contains('浏览器本地'));
+    expect(lines[1], contains('无任何遥测与数据上报'));
+    expect(lines[2], contains('无需填写 API Key'));
+    expect(lines[2], contains('不产生任何 API 费用'));
+    // 负向：web 用户没有服务商 ⇒ 出现这句就是虚假告知
+    final joined = lines.join('\n');
+    expect(joined, isNot(contains('你所选的 AI 服务商')));
+    expect(joined, isNot(contains('服务商账户')));
+  });
+
+  test('#7 非 web 正对照：原三句逐字不变（Android 已分发文案零变化）', () {
+    expect(privacyNoticeLines(isWeb: false), const [
+      '· 你的作品文本会发送至你所选的 AI 服务商 API，用于生成诊断与教学反馈。',
+      '· 全部数据仅存储在你的设备本地，本应用无任何遥测与数据上报。',
+      '· API 费用由你对应的服务商账户按用量承担，本应用不代收任何费用。',
+    ]);
+  });
+
+  testWidgets('#8 web 弹窗实际渲染：出现示例模式、不出现服务商账户', (tester) async {
+    await tester.pumpWidget(
+      buildHost((ctx) => showPrivacyNoticeDialog(ctx, isWeb: true)),
+    );
+    await tester.tap(find.text('trigger'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('开始之前，请了解'), findsOneWidget);
+    expect(find.textContaining('示例模式'), findsOneWidget);
+    expect(find.textContaining('浏览器本地'), findsOneWidget);
+    expect(find.textContaining('服务商账户'), findsNothing);
+    expect(find.textContaining('发送至你所选的'), findsNothing);
   });
 }

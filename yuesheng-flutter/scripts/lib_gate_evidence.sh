@@ -27,7 +27,14 @@
 #   ⚠️ 匹配用「任意行」而非「末行」：bash 的 fd 写失败诊断会落在汇总行**之后**
 #      （`<脚本>: line N: <命令>: write error: ...`）⇒ 末行口径在**真出故障那一轮**假红，
 #      正好与 P3 要抓的场景冲突。实测见 T-20261025-04 校准记录（H 段）。
-EV_RE_P1='^[0-9]{2}:[0-9]{2} \+[0-9]+( ~[0-9]+)?: All tests passed!$'
+#   ⚠️ 分钟位**必须允许变长**（`[0-9]+`，不能写 `[0-9]{2}`）：`MM:SS` 只在跑完
+#      < 100 分钟时成立。2026-11-12 实测：系统新型待机把一轮全量拖到 416 分钟，
+#      汇总行变成 `416:19 +5700 ~3: All tests passed!` ⇒ 两位口径**静默不匹配**，
+#      P1 报「未找到 All tests passed! 汇总行」而测试其实全绿（门禁 3 假红），
+#      连带 P2 因解析不出 `+N` 退成 N/A ⇒ `UPDATE_TEST_BASELINE=1` 分支根本没走到
+#      （基线没刷新，还以为是「重钉失败」）。失败方向是 fail-closed 不假绿，
+#      但会把「环境挂起」误报成「测试红」，归因直接跑偏。秒位仍固定两位。
+EV_RE_P1='^[0-9]+:[0-9]{2} \+[0-9]+( ~[0-9]+)?: All tests passed!$'
 
 # P3 的日志可信性正则。**必须带 bash 诊断锚**：
 #   bash 的写失败格式固定为 `<脚本>: line N: <命令>: <errno 文案>`，
@@ -89,8 +96,8 @@ _ev_facts() { # $1=log ; 副作用：设 EV_F_SRC / EV_F_SUMMARY / EV_F_P3_HITS 
 _ev_field() { # $1=行 $2=passed|skipped
   local line="${1:-}"
   case "$2" in
-    passed)  printf '%s' "$line" | sed -nE 's/^[0-9]{2}:[0-9]{2} \+([0-9]+)( ~[0-9]+)?: All tests passed!$/\1/p' ;;
-    skipped) printf '%s' "$line" | sed -nE 's/^[0-9]{2}:[0-9]{2} \+[0-9]+ ~([0-9]+): All tests passed!$/\1/p' ;;
+    passed)  printf '%s' "$line" | sed -nE 's/^[0-9]+:[0-9]{2} \+([0-9]+)( ~[0-9]+)?: All tests passed!$/\1/p' ;;
+    skipped) printf '%s' "$line" | sed -nE 's/^[0-9]+:[0-9]{2} \+[0-9]+ ~([0-9]+): All tests passed!$/\1/p' ;;
   esac
 }
 

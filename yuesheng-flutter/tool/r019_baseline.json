@@ -2,7 +2,7 @@
   "dir": "lib",
   "limit": 50,
   "fileLimit": 300,
-  "fileCount": 543,
+  "fileCount": 553,
   "violations": [
     {
       "file": "lib/config/app_palette.dart",
@@ -136,7 +136,7 @@
     },
     {
       "file": "lib/features/app_settings/settings_page.dart",
-      "lines": 1251
+      "lines": 1253
     },
     {
       "file": "lib/features/character/character_detail_page.dart",
@@ -164,7 +164,7 @@
     },
     {
       "file": "lib/features/chat/chat_input.dart",
-      "lines": 419
+      "lines": 413
     },
     {
       "file": "lib/features/chat/chat_page.dart",
@@ -416,7 +416,7 @@
     },
     {
       "file": "lib/services/message_injector.dart",
-      "lines": 2532
+      "lines": 2531
     },
     {
       "file": "lib/services/phase_mapper_resolver.dart",

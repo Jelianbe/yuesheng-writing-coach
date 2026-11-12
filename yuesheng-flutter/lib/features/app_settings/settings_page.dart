@@ -45,6 +45,7 @@ import '../../services/llm_usage_report.dart';
 import '../../services/progress_service.dart';
 import '../../services/session_export_service.dart';
 import '../../widgets/privacy_notice_dialog.dart';
+import '../landing/landing_gate.dart';
 import '../../theme/app_typography.dart';
 import 'coach_settings_page.dart';
 import 'verification_config_section.dart';
@@ -1006,7 +1007,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Divider(height: 1, color: context.palette.borderSoft),
           ActionRow(
             label: '隐私与费用说明',
-            onTap: () => showPrivacyNoticeDialog(context),
+            onTap: () =>
+                showPrivacyNoticeDialog(context, isWeb: isWebSurface()),
           ),
           ActionRow(label: '重看新手引导', onTap: _replayOnboarding),
         ],

@@ -26,6 +26,7 @@ import 'chat_teaching_controller.dart';
 import 'partial_agreement_card.dart';
 import '../writing/writing_coach_panel_interactions.dart';
 import '../../widgets/privacy_notice_dialog.dart';
+import '../landing/landing_gate.dart';
 import '../../config/svc_copy.dart';
 
 /// 聊天页消息与画像相关动作
@@ -147,6 +148,10 @@ class ChatMessagesController {
   Future<void> maybeShowPrivacyNotice() async {
     if (!host.mounted) return;
     final appState = AppStateRepository(host.ref.read(appDatabaseProvider));
-    await maybeShowPrivacyNoticeOnce(host.context, appState);
+    await maybeShowPrivacyNoticeOnce(
+      host.context,
+      appState,
+      isWeb: isWebSurface(),
+    );
   }
 }

@@ -39,7 +39,7 @@ class BookshelfEmptyState extends StatelessWidget {
                   Text('还没有作品', style: context.text.titleLg),
                   const SizedBox(height: 8),
                   Text(
-                    '点击「新建」创建你的第一部作品',
+                    '点击「新建作品」创建你的第一部作品',
                     textAlign: TextAlign.center,
                     style: context.text.body,
                   ),

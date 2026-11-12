@@ -205,7 +205,7 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
     final ctx = rootNavigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
     final appState = AppStateRepository(ref.read(appDatabaseProvider));
-    await maybeShowPrivacyNoticeOnce(ctx, appState);
+    await maybeShowPrivacyNoticeOnce(ctx, appState, isWeb: isWebSurface());
   }
 
   @override

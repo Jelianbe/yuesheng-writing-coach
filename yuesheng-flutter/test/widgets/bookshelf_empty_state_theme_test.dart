@@ -38,14 +38,14 @@ void main() {
       // titleLg → textPrimary
       expect(_colorOf(tester, '还没有作品'), AppColors.textPrimary);
       // body → textSecondary
-      expect(_colorOf(tester, '点击「新建」创建你的第一部作品'), AppColors.textSecondary);
+      expect(_colorOf(tester, '点击「新建作品」创建你的第一部作品'), AppColors.textSecondary);
     });
 
     testWidgets('暗色：titleLg/body == AppPalette.dark（非亮色焊死）', (tester) async {
       await pumpWith(tester, buildDarkTheme());
       expect(_colorOf(tester, '还没有作品'), AppPalette.dark.textPrimary);
       expect(
-        _colorOf(tester, '点击「新建」创建你的第一部作品'),
+        _colorOf(tester, '点击「新建作品」创建你的第一部作品'),
         AppPalette.dark.textSecondary,
       );
       // 关键反向断言：暗色下必须 != 亮色值（否则等于没翻）
