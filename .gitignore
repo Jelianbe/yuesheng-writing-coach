@@ -143,8 +143,15 @@ historical-archive/
 #   再逐条排除不要的东西。同形写法见下方 `!.vscode/`。
 !/yuesheng-landing/
 # 发布产物与临时脚本 —— 绝不能进 git：downloads/ 121M APK、site/ 78M 构建产物。
+# 发布产物与临时脚本 —— 绝不能进 git：downloads/ 121M APK。
+# ★ 2026-11-13 舰长「放行」：`site/` 源码整目录纳入版本库。此前只写 `/yuesheng-landing/site/`
+#   一条整目录排除，代价是 2026-11-13 的三处下载链路修复（og:image / href / JS 透传）
+#   只存在磁盘上、**零版本记录**，覆盖即丢。现改为按子目录排除：只挡 APK 二进制。
+#   ⚠️ site/assets/ 与 yuesheng-landing/assets/ 有 5 个文件字节相同（历史副本），约 1.55 MB 重复；
+#   明知重复仍全量纳入 —— 理由：让 `site/` 成为**可独立部署的自包含目录**，
+#   否则新克隆出来的目录缺图，部署即残缺。
 /yuesheng-landing/downloads/
-/yuesheng-landing/site/
+/yuesheng-landing/site/downloads/
 /yuesheng-landing/_shots/
 /yuesheng-landing/_tmp_*.py
 /yuesheng-landing/*.log
