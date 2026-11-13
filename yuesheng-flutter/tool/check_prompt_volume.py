@@ -1177,7 +1177,25 @@ CONST_REDLINE = {
     # 值来源 = UPDATE_SNAPSHOTS=true flutter test
     # test/services/prompt_const_anchor_test.dart 写模式重冻快照 +
     # python tool/check_prompt_volume.py 实测打印（len=8702 fnv=13875eeb78430a73）。
-    'kChunkSystemPrompt': (8702, '13875eeb78430a73'),
+    # ★ 2026-11-13 第二十七次重钉：8702→**8793**（**+91**），
+    # fnv 13875eeb78430a73→**270cdbc9089d27e2**。
+    # 方向 = T-20261113-04「P035 例外可见化试点」（**乙口径：只验豁免①通用件**，
+    # 舰长 2026-11-13「乙」）：`syndrome_registry.dart` 增**可选**字段
+    # `chunkEvidenceClause`（仅 P035 填值，其余 38 条 null ⇒ 拼装逐字不变），
+    # `chunk_prompt.dart:171` 判定要点行改
+    # `${s.oneLine}` → `${s.oneLine}${s.chunkEvidenceClause ?? ''}`
+    # ⇒ kChunkSystemPrompt **+91，与 add 文本字符数逐字相等**（非估算：
+    # python 预计算 8702+91=8793，flutter 实测 8793，两处独立读数吻合）。
+    # ⚠️ 对照组 chunkExceptionGuideBlock / kDiagnosisProtocolSuffix /
+    # chunkWindowMetaSample 三项逐键实测**零变化**（2998 / 1141 / 32）
+    # ⇒ 本次提额只落在分块 system 面一处，未触例外指引块与协议后缀。
+    # ⚠️ 与原「全 5 项豁免」方案（+172 → 8874）相比**少移 81 字符**：补语料筛选实测
+    # 「五项豁免逐项对表只有①有真实对象」（`.ai/reports/2026-11-13-P035补语料筛选结论.md` §三），
+    # 其余四项无验收对象 ⇒ 不写进注入面（写了也验不了，等于空提额）。
+    # 值来源 = UPDATE_SNAPSHOTS=true flutter test
+    # test/services/prompt_const_anchor_test.dart 写模式运行时打印
+    # （len=8793 fnv=270cdbc9089d27e2）。
+    'kChunkSystemPrompt': (8793, '270cdbc9089d27e2'),
     # ★ 2026-10-31 第二十二次重钉：3082→3081（−1），fnv 24ab03bbc9115ff8→582b0096adae57d5。
     # 同批同因：例外指引块内该行旧名去「症」（`chunk_prompt.dart` 内 `_kChunkExceptionGuide`，
     # 块坐标随 T-20261025-06 件2 整段搬入本文件）。值来源同上（len=3081）。

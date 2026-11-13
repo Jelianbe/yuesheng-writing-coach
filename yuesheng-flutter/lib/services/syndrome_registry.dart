@@ -153,6 +153,26 @@ class SyndromeRecord {
   /// 作用维（四值白名单见 [kSyndromeRoleValues]；T-20261110-12 · U4 双签 · R0 裁乙）
   final String role;
 
+  /// 分块链专属举证条款（可选；null ⇒ 不追加，拼装结果与改动前**逐字相同**）。
+  ///
+  /// 试点 `T-20261113-04`：仅 P035 填值。手册里 P035 有 5 项「原例外内化」的豁免
+  /// （`syndrome_kb_content_manual_6.dart:433`），但分块链注入面**一个字都看不到**
+  /// （`b1_two_chain_contract_audit.py` 现测：例外表 30 条无 P035）。
+  ///
+  /// 本字段把这个缺口转成**举证门槛**，不是豁免清单 —— ADR-C153 否决的是清单形态
+  /// （「任何文本都能套用 ⇒ 每个分片发一张免责模板」，`chunk_prompt.dart:92-118`）：
+  /// 先要求「指认可无损移植之处」，指不出即不报；豁免只放**最保守的一项**
+  /// （①通用件），且命中必须在 `excluded` 记名。
+  ///
+  /// ⚠️ 措辞为**否定式**（「仅因结构通用、可被替换，不判本条」）。这是盲判证据逼出来的：
+  /// 手册原文「类型通用件**本身即辨识来源**」被独立判读者读成**报因**（两段武动乾坤
+  /// 都判「报」且理由正是「通用件」），照抄则加了也翻不动。见
+  /// `.ai/reports/2026-11-13-P035盲判结果与三道核查.md` §七。
+  ///
+  /// ⚠️ 短链**不读**本字段（`oneLine` 的消费面 `syndrome_knowledge_base.dart:149`
+  /// 不受影响）⇒ 单侧改动，回滚 = 置 null。
+  final String? chunkEvidenceClause;
+
   const SyndromeRecord({
     required this.id,
     required this.name,
@@ -173,6 +193,7 @@ class SyndromeRecord {
     this.v1ActionName,
     this.v2ActionName,
     required this.role,
+    this.chunkEvidenceClause,
   });
 
   /// v1 动作映射显示名（coaching-actions）
@@ -959,6 +980,7 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     shortName: '撞文同质',
     keyword: '模板化撞文/陌生感缺失',
     oneLine: '遮掉地名与人名后，读者认不出写的是哪部作品——场景可与同题材任意一部互换，缺少只属于这一处的具体性',
+    chunkEvidenceClause: '。报本条须先指认可无损移植之处（逐字摘引）；但仅因结构通用、可被替换（通用件承担递进辨识）不判本条，须遮名后找不到任何只属于这一处的具体性才报。命中记 excluded「①通用件」。',
     typeLine: '细节可任意置换说明文本只消费了类型标签，未落到具体对象的独有属性上',
     trainingLine: '做「遮名测试」：遮掉人名地名与专有名词，若段落能原样搬到另一部同类作品里，说明撞文',
     type: SyndromeType.commercialAppeal,
