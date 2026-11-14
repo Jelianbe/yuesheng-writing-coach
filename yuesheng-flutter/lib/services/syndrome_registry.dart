@@ -980,7 +980,8 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     shortName: '撞文同质',
     keyword: '模板化撞文/陌生感缺失',
     oneLine: '遮掉地名与人名后，读者认不出写的是哪部作品——场景可与同题材任意一部互换，缺少只属于这一处的具体性',
-    chunkEvidenceClause: '。报本条须先指认可无损移植之处（逐字摘引）；但仅因结构通用、可被替换（通用件承担递进辨识）不判本条，须遮名后找不到任何只属于这一处的具体性才报。命中记 excluded「①通用件」。',
+    chunkEvidenceClause:
+        '。报本条须先指认可无损移植之处（逐字摘引）；但仅因结构通用、可被替换（通用件承担递进辨识）不判本条，须遮名后找不到任何只属于这一处的具体性才报。命中记 excluded「①通用件」。',
     typeLine: '细节可任意置换说明文本只消费了类型标签，未落到具体对象的独有属性上',
     trainingLine: '做「遮名测试」：遮掉人名地名与专有名词，若段落能原样搬到另一部同类作品里，说明撞文',
     type: SyndromeType.commercialAppeal,

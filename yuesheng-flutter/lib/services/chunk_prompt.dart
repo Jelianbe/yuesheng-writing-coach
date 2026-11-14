@@ -168,7 +168,10 @@ List<String> _activeSyndromeCriteriaLines([
           .where((s) => !kChunkDegradedCriteriaIds.contains(s.id))
           .where((s) => !kNonDiagnosableSyndromeIds.contains(s.id))
           .where((s) => allowed.contains(s.position))
-          .map((s) => '- ${s.id} ${s.name}（${s.keyword}）：${s.oneLine}${s.chunkEvidenceClause ?? ''}')
+          .map(
+            (s) =>
+                '- ${s.id} ${s.name}（${s.keyword}）：${s.oneLine}${s.chunkEvidenceClause ?? ''}',
+          )
           .toList()
         ..sort();
   return rows;
