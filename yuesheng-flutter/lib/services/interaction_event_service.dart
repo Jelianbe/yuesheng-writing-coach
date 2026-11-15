@@ -103,6 +103,10 @@ class InteractionEventService {
   @visibleForTesting
   static String? debugKeyOverride;
 
+  /// §4-516：匿名设备标识（设备内持久、可重置、非硬件/非账号）。
+  /// 由启动期注入（见 2.3.4）；为 null 或空串时不发 `anon_id` ⇒ 该行不可归因。
+  static String? anonId;
+
   /// 配置齐全才启用；裸构建恒 false ⇒ record 为 no-op。
   static bool get isConfigured =>
       debugConfiguredOverride ?? PlatformQuotaConfig.isConfigured;
@@ -138,9 +142,12 @@ class InteractionEventService {
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal',
       };
+      final aid = anonId;
       final row = buildInteractionEventRow(
         eventType: eventType,
-        payload: payload,
+        payload: (aid == null || aid.isEmpty)
+            ? payload
+            : <String, Object?>{...payload, 'anon_id': aid},
         sessionTag: sessionTag,
       );
       final sender = debugSenderOverride ?? _postViaHttpClient;

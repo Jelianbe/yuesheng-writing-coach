@@ -482,13 +482,41 @@
   // ── 匿名统计埋点（事件词汇贴 App edit_diff_events / 诊断卡动作）────────
   // 只传结构化标识，不传稿件文本；失败不阻断（对齐 App anchor_ack 埋点先例）。
   // selftest 跑假流式也会渲染诊断卡 ⇒ 自测下关闭埋点，避免污染统计。
+  // ── 匿名设备标识（§4-516：设备内持久 · 可重置 · 非硬件/非账号 · 服务端不建映射）──
+  var ANON_KEY = 'yuesheng_anon_id_v1';
+  function newAnonId() {
+    try {
+      var b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40;          // version 4
+      b[8] = (b[8] & 0x3f) | 0x80;          // variant 10
+      var h = [];
+      for (var i = 0; i < 16; i++) { h.push(('0' + b[i].toString(16)).slice(-2)); }
+      var s = h.join('');
+      return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' +
+             s.slice(16, 20) + '-' + s.slice(20);
+    } catch (_) { return ''; }
+  }
+  function getAnonId() {
+    try {
+      var v = localStorage.getItem(ANON_KEY);
+      if (v && v.length === 36) return v;
+      v = newAnonId();
+      if (v) localStorage.setItem(ANON_KEY, v);
+      return v;
+    } catch (_) { return ''; }   // 隐私模式等 ⇒ 空串 ⇒ 该行不可归因
+  }
+
   function sendEvent(eventType, payload) {
     if (SELFTEST) return;
     try {
       if (!(window.WbcsBridge && window.WbcsBridge.insertEvent)) return;
+      var p = payload || {};
+      var aid = getAnonId();
+      if (aid) { p.anon_id = aid; }
       var row = {
         event_type: eventType,
-        payload: payload || {},
+        payload: p,
         source: 'web',
         session_tag: curId || '',
         client_created_at: new Date().toISOString()

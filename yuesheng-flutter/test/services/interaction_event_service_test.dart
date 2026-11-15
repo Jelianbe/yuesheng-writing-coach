@@ -17,6 +17,8 @@ void main() {
     InteractionEventService.debugSenderOverride = null;
     InteractionEventService.debugEndpointOverride = null;
     InteractionEventService.debugKeyOverride = null;
+    // §4-516：全局静态字段，不重置会跨用例泄漏（C 的 payload 严格等判据会红）。
+    InteractionEventService.anonId = null;
   });
 
   group('buildInteractionEventRow', () {
@@ -117,6 +119,65 @@ void main() {
       );
       // 若异常逃逸出服务内部 catch，测试区会以未处理异步错误判红。
       await Future<void>.delayed(const Duration(milliseconds: 30));
+    });
+
+    test('E：§4-516 anon_id 注入 ⇒ payload 多一键，session_tag 零变化', () async {
+      InteractionEventService.debugConfiguredOverride = true;
+      InteractionEventService.debugEndpointOverride = 'https://e.example.host';
+      InteractionEventService.debugKeyOverride = 'k';
+      InteractionEventService.anonId = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+      final bodies = <List<int>>[];
+      InteractionEventService.debugSenderOverride = (uri, headers, body) async {
+        bodies.add(body);
+        return 201;
+      };
+      InteractionEventService.record(
+        eventType: 'diagnosed',
+        payload: const {
+          'syndromes': ['P001'],
+          'syndrome_count': 1,
+        },
+        sessionTag: 'sess-9',
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final row =
+          (jsonDecode(utf8.decode(bodies.single)) as List).single
+              as Map<String, dynamic>;
+      final payload = row['payload'] as Map<String, dynamic>;
+      expect(payload['anon_id'], 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
+      expect(payload['syndrome_count'], 1);
+      expect(payload['syndromes'], ['P001']);
+      // 反向判据（报批稿 §六 ④）：业务键不受 anon_id 影响。
+      expect(row['session_tag'], 'sess-9');
+    });
+
+    test('F：anonId 为 null 或空串 ⇒ 不发键（该行不可归因）', () async {
+      InteractionEventService.debugConfiguredOverride = true;
+      InteractionEventService.debugEndpointOverride = 'https://e.example.host';
+      InteractionEventService.debugKeyOverride = 'k';
+      for (final v in <String?>[null, '']) {
+        InteractionEventService.anonId = v;
+        final bodies = <List<int>>[];
+        InteractionEventService.debugSenderOverride =
+            (uri, headers, body) async {
+              bodies.add(body);
+              return 201;
+            };
+        InteractionEventService.record(
+          eventType: 'anchor_ack',
+          payload: const {'syndrome_id': 'P001'},
+          sessionTag: 's',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        final row =
+            (jsonDecode(utf8.decode(bodies.single)) as List).single
+                as Map<String, dynamic>;
+        expect(
+          (row['payload'] as Map<String, dynamic>).containsKey('anon_id'),
+          isFalse,
+          reason: 'anonId=$v 时不应发键（报批稿 §七 F2 设计如此）',
+        );
+      }
     });
   });
 }

@@ -23,7 +23,9 @@ import 'data/repositories/volume_repository.dart';
 import 'providers/app_error_observer.dart';
 import 'providers/app_providers.dart';
 import 'router/app_router.dart';
+import 'services/anon_id_store.dart';
 import 'services/error_handler.dart';
+import 'services/interaction_event_service.dart';
 import 'theme/theme_controller.dart';
 import 'package:writingcoach/features/onboarding/onboarding_flow.dart';
 import 'package:writingcoach/features/landing/landing_gate.dart';
@@ -55,6 +57,12 @@ void main() {
         coldStartWatch.stop();
         debugPrint(
           '[批次55 冷启动] main→首帧 ${coldStartWatch.elapsedMilliseconds}ms（仅观测）',
+        );
+        // §4-516：匿名设备标识注入（首帧后 ⇒ 不阻塞冷启动；失败 ⇒ 不发键）
+        unawaited(
+          AnonIdStore.loadOrCreate().then((v) {
+            InteractionEventService.anonId = v;
+          }),
         );
       });
     },
