@@ -1093,7 +1093,7 @@ class _CustomPersonaDialogState extends ConsumerState<_CustomPersonaDialog> {
         ),
       ),
       const SizedBox(height: 8),
-      _characterPresetRow(),
+      if (kCharacterPresetTemplates.isNotEmpty) _characterPresetRow(),
       const SizedBox(height: 6),
       Row(
         children: [

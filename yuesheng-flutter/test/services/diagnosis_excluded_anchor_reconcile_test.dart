@@ -92,10 +92,14 @@ const String kSuffixFnv = '7c420b4f67e71c59';
 //   实测 +999 ≠ E2 预测 +1321（偏差 −322，归因见 tool/check_prompt_volume.py 第二十六次重贴注）。
 //   ⚠️ **force 组 = 不动项，本批仍不重钉**：`37644edbf2af71a8` 与 66306 逐字节不变
 //   （该组 loadedSkillIds 不含 coaching-actions-v2/L2 索引 ⇒ 天然负对照；本批实测守住）。
-const String kDiagP1Fnv = '733fca071d0f1a31';
-const String kDiagYueFnv = '4febb8cc9f320272';
+// ★ 2026-11-15 第二十七次重钉（三组同 −16）：`T-20261115-05` 注入面释放批
+//   （示范句原则化 +3 / 删 confidence 门槛 −19）。⚠️ 上一批的「force 组不动」
+//   已随本批失效 —— 本次改动**逐字落在 L1 常驻面**，force 组同样 −16，保留旧注释作沿革。
+//   值来源 = 重冻后 test/snapshots/skill_prompt_anchor.json 实测。
+const String kDiagP1Fnv = '1a984b57e552cbc8';
+const String kDiagYueFnv = '25d6846731b12cd5';
 // force 组红线：先验 +0 只对**当时那一批**成立；本批是正文清扫 ⇒ 随组同降。
-const String kForceFnv = '37644edbf2af71a8';
+const String kForceFnv = '44c4d94fad3de839';
 
 const String kFulltextCase = 'p2_yuesheng_diagnosis_fulltext';
 const String kNoFulltextCase = 'p2_yuesheng_diagnosis_nofulltext';

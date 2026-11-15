@@ -635,8 +635,16 @@ REDLINE = {
     # A013/A016 适用行 + 映射表 11 行 · 舰长 2026-11-11「都批」）。
     # ⚠️ 稿 B E2 预测 +1321（拟 58941/57158）与实测 +999 相差 −322 ⇒ 以实测重钉，
     # 未照抄 E2（铁律 3）。等值钉 pin==actual，余量 +0。
-    'diagnosis_yuesheng': 58619,
-    'diagnosis_p1_yuesheng': 56836,
+    # ★ 2026-11-15 第二十七次重贴（三组同 **−16**）：`T-20261115-05` 注入面释放批。
+    # 方向 = 舰长 2026-11-15「别再让套话占据输出内容和回复内容」+ `§4-196` 变更登记。
+    # 两处改动：① `skills_reply_voice.dart:28` 可照抄示范句 → 原则型指令（+3）；
+    # ② `skills_l1_core_p2.dart:125` 删已废除的 `confidence ≥ 0.6` 门槛（−19）。
+    # 净 −16，受控组三键实测同幅 −16（逐键对账，非整表刷值）。
+    # ⚠️ **删除字符，非额度回收**；等值钉 pin==actual，余量 +0。
+    # 值来源 = UPDATE_SNAPSHOTS=true flutter test test/services/skill_prompt_anchor_test.dart
+    # 写模式重建 `test/snapshots/skill_prompt_anchor.json` 后本脚本读取。
+    'diagnosis_yuesheng': 58603,
+    'diagnosis_p1_yuesheng': 56820,
     # ★ A2 批新增：force=true 用例。609 = _kDiagnosisSceneFirst 全块长度
     # （66,237 − 65,628），是 A2 批实测的「该块在非 diagnosis 组里的真实体积」。
     # 2026-10-06 随甲-1 上移 +111（66,237 → 66,348）。
@@ -647,7 +655,10 @@ REDLINE = {
     # ★ 2026-10-31 第十八次重贴 66306（−23）：T-20261024-17 去症清扫随 L1 常驻面
     #   同降（本表序列第十八次 = 头注全局第二十二次）。⚠️ 第十五次注释里的
     #   「66329 不动」已随本行失效，保留作沿革。
-    'beginner_p3_yuesheng_forceSceneFirst': 66306,
+    # ★ 2026-11-15 第二十七次重贴 **66290**（−16）：随 `T-20261115-05` 注入面释放
+    #   （L1 常驻面同降；本表序列第二十七次）。⚠️ 第十八次的「66306 不动」已失效，
+    #   保留作沿革。**删除字符，非额度回收**。
+    'beginner_p3_yuesheng_forceSceneFirst': 66290,
 }
 # 对照组：这些组本批不应增长（beginner 组不涉及新症候）
 MUST_NOT_GROW = [

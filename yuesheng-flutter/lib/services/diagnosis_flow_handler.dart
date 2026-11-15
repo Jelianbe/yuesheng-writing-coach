@@ -657,7 +657,7 @@ class DiagnosisFlowHandler {
       ErrorHandler.instance.captureError(
         level: 'error',
         category: 'diagnosis',
-        message: '[FIX-1] 诊断输出为空，已兜底「诊断完成」| sessionId=$sessionId',
+        message: '[FIX-1] 诊断输出为空，已兜底告知未拿到结论 | sessionId=$sessionId',
       );
     }
     final messageId = await _sessionRepo.addMessage(

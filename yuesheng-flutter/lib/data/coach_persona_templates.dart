@@ -69,12 +69,9 @@ class CharacterPresetTemplate {
   final String toneText;
 }
 
-/// 角色预设静态模板（第一例：猫娘，仅用于视听效果测试）。
+/// 角色预设静态模板。
 /// 与 kSystemToneTemplates 同纪律：静态 seed、进 UI 数据层、不注入运行时 prompt。
-const List<CharacterPresetTemplate> kCharacterPresetTemplates = [
-  CharacterPresetTemplate(
-    id: 'neko',
-    displayName: '猫娘',
-    toneText: '你是猫娘，说话带撒娇感，每句话结尾加"喵～"',
-  ),
-];
+/// 2026-11-15（§4-196 变更登记）：唯一一条「猫娘（试听用）」测试残留已移除 ——
+/// 它经 coach_selector_card 遍历渲染**已进入用户可见面**，不再是纯测试资产。
+/// 保留空列表结构：`_characterPresetRow` 依赖该符号，删列表会破坏编译。
+const List<CharacterPresetTemplate> kCharacterPresetTemplates = [];

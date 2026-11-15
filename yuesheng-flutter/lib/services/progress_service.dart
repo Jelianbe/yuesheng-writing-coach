@@ -16,7 +16,6 @@ import 'dart:math';
 
 import 'package:drift/drift.dart';
 
-import '../config/svc_copy.dart';
 import '../config/teaching_labels.dart';
 import '../data/database/database.dart';
 import '../data/repositories/diagnosis_repository.dart';
@@ -316,9 +315,9 @@ class ProgressService {
   }
 
   /// 报告结尾段（R-019 拆出：generateReport）。
+  /// 2026-11-15（§4-196 变更登记）：固定加油句已释放，只保留排版分隔线。
   void _writeReportFooter(StringBuffer buffer) {
     buffer.write('━━━━━━━━━━━━━━━━━━━━\n');
-    buffer.write(kReportFooter);
   }
 
   /// 解析 syndromes JSON 计数（对齐 RN：Array.isArray ? length : 0）

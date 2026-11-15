@@ -66,9 +66,73 @@ void main() {
         '大纲实体已保存（2 条），但这次教练没有附上文字点评——通常是网络或模型临时故障。',
       );
     });
+  });
 
-    test('报告尾逐字不变', () {
-      expect(kReportFooter, '✨ 继续加油，坚持写作！');
+  // ── 空输出 / 失败路径回归（T-20261115-06 U3 · 2026-11-15）──────────────
+  //
+  // 判据目标：四类路径渲染结果**不得为空白**，且**不得回退成已释放的固定串**
+  // （`kReportFooter` 与旧 `kDiagnosisEmptyFallback='诊断完成'`）。
+  //
+  // ⚠️ 口径诚实：本组验证的是**文案层**（四类路径产出的字符串），不是
+  // widget 渲染层。但链路可推理：`diagnosis_flow_handler._writeAssistantMessage`
+  // 的唯一兜底是 `content.trim().isEmpty ? kDiagnosisEmptyFallback : content`
+  // ⇒ 只要该常量非空且非空白，该路径的 assistant 消息就必然非空。
+  // 真正的 widget 渲染回归不在本组视野，如实登记（见卡 §未验）。
+  group('空输出/失败路径 · 不得空白、不得回退已释放固定串', () {
+    const releasedOld = '诊断完成';
+
+    test('① 模型返回空文字 → 兜底非空、非空白、非旧四字', () {
+      final text = kDiagnosisEmptyFallback;
+      expect(text.trim().isNotEmpty, isTrue, reason: '空白回复 = 直接判红');
+      expect(
+        text.contains(releasedOld),
+        isFalse,
+        reason: '不得回退成已释放的「$releasedOld」（失败路径上它会谎称已完成）',
+      );
+      expect(
+        text.length,
+        greaterThanOrEqualTo(15),
+        reason: '短于此不足以说明「没拿到结论」这件事（旧串仅 4 字即反例）',
+      );
+    });
+
+    test('①b 兜底给出可操作下一步（不是一个死胡同）', () {
+      final text = kDiagnosisEmptyFallback;
+      final hasAction =
+          text.contains('再') || text.contains('重试') || text.contains('换');
+      expect(hasAction, isTrue, reason: '只报错不给下一步 = 学员卡死');
+    });
+
+    test('② 网络失败 → 非空且可操作', () {
+      expect(kLlmNetworkMessage.trim().isNotEmpty, isTrue);
+      expect(kLlmNetworkMessage.contains('重试'), isTrue);
+    });
+
+    test('③ 熔断 → 非空且带恢复时间（可操作）', () {
+      final text = kCircuitOpenMessage(30);
+      expect(text.trim().isNotEmpty, isTrue);
+      expect(text.contains('30'), isTrue, reason: '恢复秒数必须出现在文案里，否则学员不知道等多久');
+    });
+
+    test('④ 流中断 → 非空且说明内容可能不完整', () {
+      expect(kStreamTruncatedMessage.trim().isNotEmpty, isTrue);
+      expect(
+        kStreamTruncatedMessage.contains('不完整'),
+        isTrue,
+        reason: '断开却不说明，学员会把残段当完整回复',
+      );
+      expect(kStreamIdleInterruptMessage(15).trim().isNotEmpty, isTrue);
+    });
+
+    test('⑤ 已释放固定串在全库不再作为用户文案出现', () {
+      // 形态断言：新文案不得与已释放旧串重合，否则等于没释放。
+      for (final text in [
+        kDiagnosisEmptyFallback,
+        kEmptyContentSavedNotice(syndromeCount: 1),
+      ]) {
+        expect(text.contains('✨'), isFalse, reason: '不得残留报告尾加油的装饰符');
+        expect(text.contains(releasedOld), isFalse);
+      }
     });
   });
 

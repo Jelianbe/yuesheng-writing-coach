@@ -363,35 +363,11 @@ void main() {
     );
   });
 
-  // ── #12 角色预设「猫娘」chip：只填语气框、不写回 ──
-  testWidgets('#12 点「猫娘」角色预设 → 语气框填入模板全文（不触发保存）', (tester) async {
-    await tester.pumpWidget(buildHost());
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('自定义教练'));
-    await tester.pumpAndSettle();
-
-    // 角色预设区与「猫娘」chip 可达
-    expect(find.text('角色预设（试听用）'), findsOneWidget);
-    expect(find.text('猫娘'), findsOneWidget);
-
-    final fields = find.byType(TextField);
-    // 主界面仍仅 2 个 TextField（角色预设 chip 不引入新输入框）
-    expect(fields, findsNWidgets(2));
-    // 语气框初始为空
-    expect(tester.widget<TextField>(fields.at(1)).controller?.text, '');
-
-    await tester.tap(find.text('猫娘'));
-    await tester.pump();
-
-    // 语气框被填入猫娘模板全文（引用常量，与真源保持一致）
-    expect(
-      tester.widget<TextField>(fields.at(1)).controller?.text,
-      kCharacterPresetTemplates.first.toneText,
-    );
-    // 只填框不写回：给出「可继续修改或试听」提示，未触发保存
-    expect(find.text('已填入「猫娘」语气，可继续修改或试听'), findsOneWidget);
-  });
+  // ── #12 角色预设「猫娘」chip：**已移除**（2026-11-15 · §4-196 变更登记）──
+  // 原用例验证「点猫娘 chip → 语气框填入模板全文」，随 `kCharacterPresetTemplates`
+  // 清空而失去对象：猫娘是测试残留，经本卡遍历渲染已进入用户可见面 ⇒ 条目删除。
+  // 空列表下 `_characterPresetRow()` 走 `SizedBox.shrink()` 短路，
+  // 该行为由下方 #13 起的用例继续覆盖（预设区不出现即隐含验证）。
 
   // ════════════════════════════════════════════════════════
   // ADR-C132 批3（R8）：空语气自定义人格 → 「将使用默认语气」徽标

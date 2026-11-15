@@ -259,7 +259,10 @@ void main() {
       expect(report, contains('解决率：0%'));
       expect(report, contains('待改进问题（1个）'));
       expect(report, contains('情绪标签化（严重）'));
-      expect(report, contains('继续加油，坚持写作！'));
+      // 2026-11-15（§4-196 变更登记）：报告尾固定加油句已释放，只保留排版分隔线。
+      // 反向断言 = 防回退：它若回来，等于 T-20261115-06 白做。
+      expect(report, contains('━━━━━━━━━━━━━━━━━━━━'));
+      expect(report, isNot(contains('继续加油，坚持写作！')));
     });
 
     test('#6 已解决问题段 + 精确解决率', () async {

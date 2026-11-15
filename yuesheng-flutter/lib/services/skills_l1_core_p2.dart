@@ -122,7 +122,7 @@ const String _teachingStrategyBody2 = '''
   
   **与 next_focus 字段的关系**：next_focus 是当前协议的教学焦点字段；teaching_plan 保留向后兼容。两者都有且不一致时，以 next_focus 为准（与代码侧解析口径一致，见 diagnosis_parser.dart 兼容性策略）。
   
-  **何时应该输出 teaching_plan**：当本轮诊断识别出症候且 confidence ≥ 0.6 时建议输出。零基础早期阶段（P0/P1）或纯闲聊不输出。
+  **何时应该输出 teaching_plan**：当本轮诊断识别出症候时建议输出。零基础早期阶段（P0/P1）或纯闲聊不输出。
 - style_profile (object|null): **可选**。写作风格画像（批次53）——正向识别学员的天然写作本能（"哪里特别对"，与症候诊断互补）。当你从学员文本中识别出明显的风格倾向时输出。字段结构：
   - sensory (string): 感官偏好 visual / auditory / kinesthetic / balanced
   - rhythm (string): 节奏偏好 long / short / alternating / repetitive

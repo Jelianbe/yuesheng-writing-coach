@@ -86,9 +86,7 @@ String kEmptyContentSavedNotice({int? syndromeCount, int? entityCount}) {
 }
 
 /// 诊断空输出硬兜底（FIX-1 留痕路径；优先走 [kEmptyContentSavedNotice]）。
-const String kDiagnosisEmptyFallback = '诊断完成';
-
-// ── 学习报告（progress_service.dart 消费）──
-
-/// 学习报告结尾。
-const String kReportFooter = '✨ 继续加油，坚持写作！';
+/// 2026-11-15（§4-196 变更登记 · `T-20261115-06`）：原文案「诊断完成」在失败路径上
+/// 会把「没诊断成」说成「已完成」（FIX-1 真机证据：诊断结果无落库，用户只见四字），
+/// 改为诚实告知未拿到结论 + 两个可操作下一步，与 [kEmptyContentSavedNotice] 同范式。
+const String kDiagnosisEmptyFallback = '这次没拿到可读的诊断结论，可以再说一句，或者换个说法再试一次';
