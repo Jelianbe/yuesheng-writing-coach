@@ -8,6 +8,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'syndrome_registry.dart';
+import 'chunk_exception_guide_data.dart'; // buildChunkExceptionGuide（B1 零复制注入口）
 import 'technique_knowledge_base.dart'; // techniqueNameOf
 // 治理续批第二批（2026-10-20 · 路 α · R-027 批准）：S3 三判据 + 形态字段段的**唯一定义源**
 // （与 merge 链同一常量 ⇒ 跨链判据逐字同一、零复制漂移）。
@@ -139,7 +140,24 @@ String buildFirstRoundCriteriaBlock({
   final exemptions = disabledSyndromeIds.contains('P034')
       ? ''
       : '\n\n$_kFirstRoundP034Exemptions';
-  return '$header\n\n${getSyndromeCriteriaSections(ids)}$exemptions';
+  return '$header\n\n${getSyndromeCriteriaSections(ids)}$exemptions'
+      '${_firstRoundExceptionGuide(disabledSyndromeIds)}';
+}
+
+/// 首轮面的例外注入口（B1 · `T-20261113-02`）：把分块链例外表**按同一真源**
+/// 注进短链首轮面，消除「能报不能撤」的链差（报域 37 条中 26 条不可撤）。
+///
+/// ★ 零复制：直接读 `kChunkExceptionGuideLines`（`chunk_exception_guide_data.dart`
+///   头注声明的唯一逐字真源）并通过 `buildChunkExceptionGuide` 装配 ⇒ 两链分叉
+///   只能来自真源本身，**不可能来自副本漂移**（这是本批否决「手抄 25 行子表」的理由）。
+/// ★ R-009 门控：用户永久关闭的症候，其例外行一并剔除（不提示一个被关的症候）。
+String _firstRoundExceptionGuide(Set<String> disabled) {
+  final lines = kChunkExceptionGuideLines.where((l) {
+    final m = RegExp(r'^- (P\d{3})').firstMatch(l);
+    return m == null || !disabled.contains(m.group(1));
+  }).toList();
+  final hasAny = lines.any((l) => l.startsWith('- P'));
+  return hasAny ? '\n\n${buildChunkExceptionGuide(lines)}' : '';
 }
 
 // ── b9 批次28：症候库表格行渲染（输出与手写逐字一致）──────────

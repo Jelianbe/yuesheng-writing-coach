@@ -885,10 +885,20 @@ CHUNK_MSG = os.path.join(ROOT, 'test', 'snapshots', 'chunk_message_anchor.json')
 #   + 例外 bullet 行装配换行 1）流入首轮判据块旁路 system 注入面。
 #   值来源 = UPDATE_SNAPSHOTS=true 重冻 message_sequence_anchor 后实测（fnv
 #   4d3657e6dac2756b，五诊断 case 同值互证）；本表只钉 len，pin==actual。
+# ★ 2026-11-15 第二十七次重贴实测值（`T-20261113-02` B1 · R-027 舰长 20:5x「都批」）：
+#   9,921 → **12,921**（三例同 Δ **+3,000**）。来源 = 分块链例外表**整表 33 行**
+#   经 `_firstRoundExceptionGuide` 注入首轮判据块末尾（2,998 码元 + 2 字符空行接缝）。
+#   ★ 与前二十六次不同：这次是「**跨链搬入**」，不是手册正文或本块自身改字 ——
+#   注入口 `buildChunkExceptionGuide()` **零复制**读 `kChunkExceptionGuideLines`
+#   （分块链同一真源）⇒ 改真源时两链同变、本值必须同批重钉（报批稿 §9 失效条件 3）。
+#   值来源 = 探针实拼（`buildFirstRoundCriteriaBlock()` 实调，len 12,921）+ 重冻后
+#   五例互证（fnv 37928bbcd0babc9a，`[1]` 全部同值）。
+#   ⚠️ 快照里承载该块的 case 是 **5 个**（p1/p2 各两条 + fulltext），本表只钉 3 个 ——
+#   与历次一致的不完整覆盖（另两 case 无明确变化来源，见上方「只登记读数不钉值」口径）。
 BYPASS_REDLINE = {
-    'p1_yuesheng_diagnosis[1]': 9921,
-    'p2_yuesheng_diagnosis[1]': 9921,
-    'p2_yuesheng_diagnosis_fulltext[1]': 9921,
+    'p1_yuesheng_diagnosis[1]': 12921,
+    'p2_yuesheng_diagnosis[1]': 12921,
+    'p2_yuesheng_diagnosis_fulltext[1]': 12921,
 }
 
 
