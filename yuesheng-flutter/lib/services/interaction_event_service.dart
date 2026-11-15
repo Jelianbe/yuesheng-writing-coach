@@ -126,6 +126,23 @@ class InteractionEventService {
     );
   }
 
+  /// diagnosed 事件封装（§4-513 续）：只传结构化标识，**不传稿件文本**。
+  ///
+  /// 上移到服务层的**动机是行数**：`diagnosis_flow_handler` 的编排函数恰踩 R-019
+  /// 50 行边界，而 `text_fp` / `text_len` 落地还须给它加参数行 ⇒ 任何一行都会推过线；
+  /// 且该函数**不在** R-019 基线的 `violations` 里（属 `§4-96` 第二形态高危区）。
+  /// 上移后本方法是埋点载荷的**单一落点**：日后加键只改这里，不动编排函数。
+  static void recordDiagnosed(String sessionId, List<String> syndromeIds) {
+    record(
+      eventType: 'diagnosed',
+      payload: <String, Object?>{
+        'syndromes': syndromeIds,
+        'syndrome_count': syndromeIds.length,
+      },
+      sessionTag: sessionId,
+    );
+  }
+
   static Future<void> _send({
     required String eventType,
     required Map<String, Object?> payload,

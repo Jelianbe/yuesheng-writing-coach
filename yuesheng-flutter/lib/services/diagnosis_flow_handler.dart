@@ -756,13 +756,9 @@ class DiagnosisFlowHandler {
       await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
       // 批十六（§4-513 续）：云端埋点 diagnosed——落库序列全成功后恰 1 次；
       // 只传结构化标识（症候 ID），不传稿件文本；失败不阻断（服务内 catch）。
-      InteractionEventService.record(
-        eventType: 'diagnosed',
-        payload: <String, Object?>{
-          'syndromes': diagnosis.syndromes.map((s) => s.syndromeId).toList(),
-          'syndrome_count': diagnosis.syndromes.length,
-        },
-        sessionTag: sessionId,
+      InteractionEventService.recordDiagnosed(
+        sessionId,
+        diagnosis.syndromes.map((s) => s.syndromeId).toList(),
       );
     } catch (e, s) {
       _logSafeRun('诊断写入', e, s);

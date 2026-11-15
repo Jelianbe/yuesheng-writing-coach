@@ -718,6 +718,13 @@
             renderDiagnosisCard(parsed.diagnosis);
             var d = parsed.diagnosis;
             state.activeSyndromes = (d.syndromes || []).map(function (s) { return s.syndrome_id; }).filter(Boolean);
+            // §4-516 续 · A 路前置（第二份报批稿施工用）：把「诊断输入材料」留成
+            // 一等变量 materialText。**当前不发送** —— text_fp / text_len 属未批范围。
+            // 口径 = 按序拼接全部 user 消息（含本轮触发消息，它已在上方 push 进 history）。
+            // 刻意**不含** system 层与协议后缀：system 层随 activeSyndromes 变化，
+            // 纳入会让同一段材料算出不同指纹 ⇒ 把「材料没换」误判成「换了片段」(F1 假阳性)。
+            var materialText = state.history.filter(function (m) { return m.role === 'user'; })
+              .map(function (m) { return m.content; }).join('\n');
             sendEvent('diagnosed', { syndromes: state.activeSyndromes });
             var sug = d.suggested_phase;
             if (sug) {
