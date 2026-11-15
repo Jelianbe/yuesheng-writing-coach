@@ -77,8 +77,12 @@ const String _kP031Row = '| P031 题材边界感缺失 | A007 一句话冲突 | 
 const String _kP031Name = '题材边界感缺失';
 
 /// force 组红线（负对照：该组 `loadedSkillIds` 不含 `coaching-actions-v2`）。
-const int _kForceLen = 66306;
-const String _kForceFnv = '37644edbf2af71a8';
+/// ★ 2026-11-15 重钉 66306→**66290**（fnv 同批更新）：`T-20261115-05` 注入面释放批
+///   （示范句 +3 / 删 confidence 门槛 −19 = 净 −16）。⚠️ 本次位移**不是 v2 过滤造成的** ——
+///   是 L1 常驻面本身变了，force 组作为「含 L1 但不含 v2」的组随之同降，
+///   本用例「过滤不打到 force 组」的**语义未变**（它仍靠下列等差断言证明过滤边界）。
+const int _kForceLen = 66290;
+const String _kForceFnv = '44c4d94fad3de839';
 
 /// 库常量等值钉（N2④；值来源 = 重冻后的 `skill_prompt_anchor.json`）。
 const int _kV2ConstLen = 4886;
