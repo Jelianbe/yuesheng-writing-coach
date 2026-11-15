@@ -41,4 +41,6 @@
 - 技术栈统一为 Dart（状态管理 Riverpod + 本地持久化 drift/SQLite）
 - 工程纪律升级：六道质量门禁、函数行数硬上限等规范
 
-> **注意**：本目录中代码涉及的症候编号体系（P001–P007）与当前真源（P001–P041）已不一致，一切以 `yuesheng-flutter/` 为准。
+> **注意**：本目录中代码涉及的症候编号体系是 `P001–P007` 时代快照，与当前真源**已不一致** ——
+> 现行条数与编号范围以 `yuesheng-flutter/lib/services/syndrome_registry.dart` 实测为准，
+> 本文件按 `CONTRIBUTING.md` 纪律**不复述会漂移的数字**。一切以 `yuesheng-flutter/` 为准。
