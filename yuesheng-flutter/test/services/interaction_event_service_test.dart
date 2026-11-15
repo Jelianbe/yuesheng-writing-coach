@@ -179,5 +179,66 @@ void main() {
         );
       }
     });
+
+    /// 采集一次 `recordDiagnosed` 实际发出的 payload。
+    Future<Map<String, dynamic>> capturePayload({String? materialText}) async {
+      InteractionEventService.debugConfiguredOverride = true;
+      InteractionEventService.debugEndpointOverride = 'https://e.example.host';
+      InteractionEventService.debugKeyOverride = 'k';
+      final bodies = <List<int>>[];
+      InteractionEventService.debugSenderOverride = (uri, headers, body) async {
+        bodies.add(body);
+        return 201;
+      };
+      InteractionEventService.recordDiagnosed('sess-9', const [
+        'P001',
+      ], materialText: materialText);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final row =
+          (jsonDecode(utf8.decode(bodies.single)) as List).single
+              as Map<String, dynamic>;
+      return row['payload'] as Map<String, dynamic>;
+    }
+
+    // 判据 ③（报批稿 §六 · **反向判据**）：短材料只有 text_len、**无** text_fp。
+    // 防「一律发 fp」被偷偷实施 —— 短文本 16 位 hex 可被字典反推（裁点 3）。
+    test('G：materialText 199 字符 ⇒ 有 text_len、无 text_fp', () async {
+      final payload = await capturePayload(materialText: 'a' * 199);
+      expect(payload['text_len'], 199);
+      expect(
+        payload.containsKey('text_fp'),
+        isFalse,
+        reason: '<200 字符按裁定不发 fp；发空串同样违规（缺键 = 不可判）',
+      );
+    });
+
+    // 判据 ⑥：指纹**恰 16 位** hex —— 对齐 progressive_diagnosis.dart:997-998，不造第二种长度。
+    test('H：materialText 200 字符 ⇒ text_fp 恰 16 位小写 hex', () async {
+      final payload = await capturePayload(materialText: 'a' * 200);
+      expect(payload['text_len'], 200);
+      final fp = payload['text_fp'] as String?;
+      expect(fp, isNotNull);
+      expect(fp!.length, 16, reason: 'P039 前车之鉴：全仓只允许一种指纹长度');
+      expect(RegExp(r'^[0-9a-f]{16}$').hasMatch(fp), isTrue);
+    });
+
+    // 判据 ④⑤（同端内）：同材料 ⇒ 同 fp；换材料 ⇒ fp 变（F1 可判的正向证据）。
+    test('I：同材料 fp 相同 · 换材料 fp 变', () async {
+      final a1 = await capturePayload(materialText: 'm' * 300);
+      final a2 = await capturePayload(materialText: 'm' * 300);
+      final b = await capturePayload(materialText: 'n' * 300);
+      expect(a1['text_fp'], a2['text_fp']);
+      expect(a1['text_fp'], isNot(b['text_fp']));
+      // 反向判据：同长度换内容 ⇒ text_len 相同而 fp 不同（长度不是内容代理）。
+      expect(a1['text_len'], b['text_len']);
+    });
+
+    test('J：materialText 为 null ⇒ 两个键都不发（该行不可判）', () async {
+      final payload = await capturePayload();
+      expect(payload.containsKey('text_len'), isFalse);
+      expect(payload.containsKey('text_fp'), isFalse);
+      expect(payload['syndromes'], ['P001']);
+      expect(payload['syndrome_count'], 1);
+    });
   });
 }

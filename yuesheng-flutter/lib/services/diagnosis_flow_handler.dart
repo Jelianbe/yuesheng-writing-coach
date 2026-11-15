@@ -503,6 +503,7 @@ class DiagnosisFlowHandler {
       refType: ref.refType,
       refId: ref.refId,
       discovery: discovery,
+      materialText: chapterContent,
     );
     if (chapterContent != null) {
       await _triggerTeacherForLongPath(
@@ -726,6 +727,7 @@ class DiagnosisFlowHandler {
     required String? refId,
     bool isTeachingRound = false,
     DiscoverySectionCard? discovery,
+    String? materialText,
   }) async {
     try {
       await _diagnosisService.commitDiagnosisWithHistory(
@@ -754,11 +756,12 @@ class DiagnosisFlowHandler {
         diagnosis: diagnosis,
       );
       await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
-      // 批十六（§4-513 续）：云端埋点 diagnosed——落库序列全成功后恰 1 次；
-      // 只传结构化标识（症候 ID），不传稿件文本；失败不阻断（服务内 catch）。
+      // 批十六（§4-513 续）：落库序列全成功后恰 1 次；只传结构化标识（症候 ID），不传稿件原文。
+      // §4-516 续：text_len 恒发；text_fp 仅 ≥200 字符且算得出时发（缺键 = 不可判）；失败不阻断。
       InteractionEventService.recordDiagnosed(
         sessionId,
         diagnosis.syndromes.map((s) => s.syndromeId).toList(),
+        materialText: materialText,
       );
     } catch (e, s) {
       _logSafeRun('诊断写入', e, s);
@@ -1264,14 +1267,14 @@ class DiagnosisFlowHandler {
     required bool rapidFire,
     required bool flowBypassed,
     required List<GenUiComponent>? genuiComponents,
+    String? materialText,
   }) async {
     // B-1：GenUI 卡片插入
     await _insertGenuiCardIfAny(sessionId, genuiComponents);
 
     // 11：诊断提交 + 阶段迁移 + 诊断结果卡 + 风格画像
     if (diagnosis != null) {
-      // C126：teacherResult != null 即 Teacher 二次流（反问学员）教学轮 →
-      // 落库 status='pending'（全量 syndromes，不做 NO_OP）；否则正常 confirmed。
+      // C126：teacherResult != null（Teacher 二次流）⇒ status='pending'（全量，不做 NO_OP），否则 confirmed。
       await _runDiagnosisCommitSequence(
         sessionId: sessionId,
         diagnosis: diagnosis,
@@ -1279,6 +1282,7 @@ class DiagnosisFlowHandler {
         refType: primaryRef?.refType,
         refId: primaryRef?.refId,
         isTeachingRound: teacherResult != null,
+        materialText: materialText,
       );
     }
 

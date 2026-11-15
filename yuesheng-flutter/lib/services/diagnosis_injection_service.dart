@@ -411,10 +411,8 @@ class DiagnosisInjectionService {
   Future<void> _commitDiagnosisAndSuggestions({
     required String sessionId,
     required String content,
-    // 由 dynamic 收窄为具体类型：严格模式下 4 处字段访问（parsed.diagnosis /
-    // messageId / teacherResult / genuiComponents）报 argument_type_not_assignable。
-    // 实参本就是 ParseAndPersistResult（_parseAndPersistDiagnosis 返回类型），
-    // 属纯类型层修正、零行为变更。
+    // 由 dynamic 收窄为 ParseAndPersistResult：严格模式下 4 处字段访问会报
+    // argument_type_not_assignable。实参本就是该类型 ⇒ 纯类型层修正、零行为变更。
     required ParseAndPersistResult parsed,
     required ReferenceItem? primaryRef,
     required bool rapidFire,
@@ -432,6 +430,7 @@ class DiagnosisInjectionService {
       rapidFire: rapidFire,
       flowBypassed: flowBypassed,
       genuiComponents: parsed.genuiComponents,
+      materialText: content,
     );
     // 批次 50 临时测量：回复长度观测（仅 debug 留痕不干预）
     _replyObserver.observeReplyLength(

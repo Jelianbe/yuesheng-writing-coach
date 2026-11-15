@@ -507,6 +507,20 @@
     } catch (_) { return ''; }   // 隐私模式等 ⇒ 空串 ⇒ 该行不可归因
   }
 
+  // ── 材料指纹（§4-516 续 A 路：sha256 前 16 位 hex，对齐 App 既有实现）──
+  // 只在 secure context 下可用（crypto.subtle 需 https / localhost）；否则返空串
+  // ⇒ 调用方不发 text_fp 键 ⇒ 该行「不可判」。UTF-8 编码，与 Dart utf8.encode 同口径。
+  async function sha256Hex16(s) {
+    try {
+      if (!(window.crypto && window.crypto.subtle)) return '';
+      var buf = new TextEncoder().encode(s);
+      var h = await window.crypto.subtle.digest('SHA-256', buf);
+      var a = new Uint8Array(h), out = '';
+      for (var i = 0; i < 8; i++) { out += ('0' + a[i].toString(16)).slice(-2); }
+      return out;
+    } catch (_) { return ''; }
+  }
+
   function sendEvent(eventType, payload) {
     if (SELFTEST) return;
     try {
@@ -718,14 +732,16 @@
             renderDiagnosisCard(parsed.diagnosis);
             var d = parsed.diagnosis;
             state.activeSyndromes = (d.syndromes || []).map(function (s) { return s.syndrome_id; }).filter(Boolean);
-            // §4-516 续 · A 路前置（第二份报批稿施工用）：把「诊断输入材料」留成
-            // 一等变量 materialText。**当前不发送** —— text_fp / text_len 属未批范围。
-            // 口径 = 按序拼接全部 user 消息（含本轮触发消息，它已在上方 push 进 history）。
-            // 刻意**不含** system 层与协议后缀：system 层随 activeSyndromes 变化，
-            // 纳入会让同一段材料算出不同指纹 ⇒ 把「材料没换」误判成「换了片段」(F1 假阳性)。
+            // §4-516 续 A 路：text_len 恒发；text_fp 仅在 ≥200 字符且算得出时发
+            // （短文本指纹可被字典反推，按裁定不发；缺键即「不可判」，不发空串）。
             var materialText = state.history.filter(function (m) { return m.role === 'user'; })
               .map(function (m) { return m.content; }).join('\n');
-            sendEvent('diagnosed', { syndromes: state.activeSyndromes });
+            var ev = { syndromes: state.activeSyndromes, text_len: materialText.length };
+            if (materialText.length >= 200) {
+              var fp16 = await sha256Hex16(materialText);
+              if (fp16) { ev.text_fp = fp16; }
+            }
+            sendEvent('diagnosed', ev);
             var sug = d.suggested_phase;
             if (sug) {
               sug = String(sug).trim().toUpperCase().replace('P2_PRACTICE_LOOP', 'P2');

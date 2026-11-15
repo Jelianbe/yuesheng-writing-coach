@@ -26,6 +26,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:crypto/crypto.dart' as crypto;
 import 'platform_quota_channel.dart';
 
 /// 数据面 REST 路径（§4-513 实测口径；无代理前缀，App 直连）。
@@ -126,18 +127,32 @@ class InteractionEventService {
     );
   }
 
-  /// diagnosed 事件封装（§4-513 续）：只传结构化标识，**不传稿件文本**。
+  /// 材料指纹（§4-516 续 A 路）：sha256 前 16 位 hex —— **对齐既有实现**
+  /// `progressive_diagnosis.dart:997-998`（`crypto.sha256` → `sha.substring(0, 16)`），不造第二种长度。
+  /// 不足 200 字符返 null：短文本的指纹可被字典反推，按裁定不发。
+  static String? _fp16(String? s) {
+    if (s == null || s.length < 200) return null;
+    return crypto.sha256.convert(utf8.encode(s)).toString().substring(0, 16);
+  }
+
+  /// diagnosed 事件封装（§4-513 续 / §4-516 续）：只传结构化标识与材料指纹，
+  /// **不传稿件原文**（`text_fp` 为单向哈希，且 <200 字符时根本不发）。
   ///
-  /// 上移到服务层的**动机是行数**：`diagnosis_flow_handler` 的编排函数恰踩 R-019
-  /// 50 行边界，而 `text_fp` / `text_len` 落地还须给它加参数行 ⇒ 任何一行都会推过线；
-  /// 且该函数**不在** R-019 基线的 `violations` 里（属 `§4-96` 第二形态高危区）。
-  /// 上移后本方法是埋点载荷的**单一落点**：日后加键只改这里，不动编排函数。
-  static void recordDiagnosed(String sessionId, List<String> syndromeIds) {
+  /// 本方法是 diagnosed 载荷的**单一落点**：加键只改这里，不动调用方的行数。
+  /// `text_fp` / `text_len` 即按此设计落在这里（第一份稿 §四 已预告）。
+  static void recordDiagnosed(
+    String sessionId,
+    List<String> syndromeIds, {
+    String? materialText,
+  }) {
+    final fp = _fp16(materialText);
     record(
       eventType: 'diagnosed',
       payload: <String, Object?>{
         'syndromes': syndromeIds,
         'syndrome_count': syndromeIds.length,
+        if (materialText != null) 'text_len': materialText.length,
+        if (fp != null) 'text_fp': fp,
       },
       sessionTag: sessionId,
     );
