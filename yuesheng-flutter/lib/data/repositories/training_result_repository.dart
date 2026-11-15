@@ -31,6 +31,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
+import 'package:writingcoach/services/interaction_event_service.dart';
 import 'repository_write_guard.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -120,6 +121,20 @@ class TrainingResultRepository {
                 createdAt: Value(now),
               ),
             );
+
+        // 0.6.2 外部测量面（T-20261115-02 §closes①）：六步「练」节点。
+        // 只传结构化标识（症候 ID / 任务类型 / 是否由建议触发）；
+        // **不发 result / score / user_content / feedback** —— §4-120 ④「不替学员打分」
+        // 与 §4-513 续「不传正文」双重约束。⇒ 本事件只答「练没练」，不答「练得怎样」。
+        InteractionEventService.record(
+          eventType: 'training_completed',
+          payload: <String, Object?>{
+            'syndrome_id': params.syndromeId,
+            'task_type': params.taskType,
+            'armed_by_suggestion': params.suggestionId != null,
+          },
+          sessionTag: params.sessionId,
+        );
 
         return id;
       });

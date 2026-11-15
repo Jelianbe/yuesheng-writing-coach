@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../database/database.dart';
+import '../../services/interaction_event_service.dart';
 
 /// 对话思考题仓储（E-8）
 ///
@@ -59,6 +60,13 @@ class ReflectionQuestionRepository {
         reviewCount: Value(nextCount),
         nextReviewAt: Value(nextAt),
       ),
+    );
+    // 0.6.2 外部测量面（T-20261115-02 §closes①）：六步「评 / 复盘」节点。
+    // 只发回顾次数，**不发 question 文本**（学员对话衍生内容不出网，§4-513 续）。
+    InteractionEventService.record(
+      eventType: 'reflection_reviewed',
+      payload: <String, Object?>{'review_count': nextCount},
+      sessionTag: q.sessionId,
     );
   }
 

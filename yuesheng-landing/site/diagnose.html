@@ -841,6 +841,10 @@
       renderHistory();
     }
     selfreport({ where: 'boot', selftest: SELFTEST, convos: listConvos().length, active: curId, historyLen: state.history.length });
+    // 0.6.2 外部测量面（T-20261115-02 §closes①）：会话打开 = 漏斗最上游分母。
+    // 现状 M1「还有没有人在用」只能数「有 diagnosed 的会话」⇒ 把「来了但没诊断」算成「没来」。
+    // 本事件 payload 为空：不带任何业务信息，只由 sendEvent 注入 anon_id。
+    sendEvent('session_opened', {});
     // ── selftest 门控：页内走查对话列表操作（真实触发同一批 onclick）──
     if (SELFTEST) setTimeout(runSelfTest, 100);
     async function runSelfTest() {

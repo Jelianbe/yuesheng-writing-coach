@@ -8,7 +8,8 @@
 //   POST {endpoint}/.cloud/database/rest/interaction_events
 //   头: x-wb-webapp-access-key: {publishableKey} + Prefer: return=minimal
 //   体: JSON 数组（PostgREST 语义，supabase-js .insert() 等效）
-//   云端 CHECK：event_type ∈ {diagnosed, anchor_ack, exclusion}；
+//   云端 CHECK：event_type ∈ {diagnosed, anchor_ack, exclusion,
+//                             session_opened, training_completed, reflection_reviewed}；
 //   source ∈ {web, app}（本服务恒 'app'）。
 //
 // 【配置源】复用 PlatformQuotaConfig（构建期 dart-define 注入）。
@@ -35,7 +36,8 @@ const String kInteractionEventsPath =
 
 /// 一行云端埋点事件（行形状与 web `sendEvent` 逐字段同构，便于统一分析）。
 class InteractionEventRow {
-  /// 事件类型（云端 CHECK 白名单：diagnosed / anchor_ack / exclusion）。
+  /// 事件类型（云端 CHECK 白名单：diagnosed / anchor_ack / exclusion /
+  /// session_opened / training_completed / reflection_reviewed）。
   final String eventType;
 
   /// 结构化标识载荷（不传稿件文本）。
@@ -114,8 +116,8 @@ class InteractionEventService {
 
   /// 记录一条埋点（同步返回，内部 fire-and-forget）。
   ///
-  /// [eventType] 必须是云端 CHECK 白名单值（diagnosed / anchor_ack /
-  /// exclusion）；未配置时静默跳过；失败仅 debugPrint（不阻断）。
+  /// [eventType] 必须是云端 CHECK 白名单值（6 值，见 MEASUREMENT.md §2.1）；
+  /// 未配置时静默跳过；失败仅 debugPrint（不阻断）。
   static void record({
     required String eventType,
     required Map<String, Object?> payload,
