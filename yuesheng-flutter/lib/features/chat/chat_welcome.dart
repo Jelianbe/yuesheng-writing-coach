@@ -1,12 +1,12 @@
 // ─────────────────────────────────────────────────────────────
 // ChatWelcome — 欢迎态（缺口清单第 5 项）
-// 真源：yuesheng-android/src/components/chat/ChatWelcome.tsx
-//
-// 结构（对齐 RN，头像已于精简批次移除）：
+// 现行真源：本文件（AGENTS.md §2 代际纪律：yuesheng-flutter/ 为唯一真源）
+// 代际溯源：复刻自 RN 一代 yuesheng-android/src/components/chat/ChatWelcome.tsx
+// 结构（头像已于精简批次移除）：
 //   - 标题「你好，我是月笙」
 //   - 副标题「你的专属写作教练，随时帮你诊断和提升写作」
-//
-// 显示条件（对齐 RN chat.tsx L403）：messages.length === 0 时
+// 显示条件：messages.length === 0 时显示
+// 代际注释仅作历史档案，不构成现行规格；行为以此文件为准
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
