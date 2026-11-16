@@ -151,6 +151,24 @@ List<String> validateNextFocusWarnings(
   return const ['next_focus_without_syndromes'];
 }
 
+/// B1(c) · R-027（方案 i）：诊断 name 由注册表按 syndrome_id 精确回填。
+///
+/// - 未知 ID（syndromeNameOf=null）⇒ 保留模型原值，不猜名（见其 doc：
+///   legacy 回退已删除，越界号应由 syndrome_id_format 观测暴露）；
+/// - 一致 ⇒ 原值返回（等价替换，零行为变化）；
+/// - 不一致 ⇒ 返回注册表值并追加 note（只记不用，不改行为/拦截）。
+///
+/// 纯函数、不改注册表与 ID。[notes] 可空：parser 链传 notes 记账，
+/// validator 链传 null 只回填（避免同一 mismatch 被记两次）。
+String canonicalSyndromeName(Map<String, dynamic> s, List<String>? notes) {
+  final id = s['syndrome_id'] as String;
+  final modelName = s['name'] as String;
+  final canonical = syndromeNameOf(id);
+  if (canonical == null || canonical == modelName) return modelName;
+  notes?.add('syndrome_name_mismatch:$id');
+  return canonical;
+}
+
 /// T-20261024-05 批2：轮次候选集 C（纯推导，不入协议/模型/库）。
 ///
 /// C = ⋃（与 syndromes 命中症候 type 同组 且 techniques 交集非空的注册表症候）
@@ -559,7 +577,7 @@ List<Syndrome> _parseSyndromes(Map<String, dynamic> data) {
   final syndromesRaw = data['syndromes'] as List;
   return syndromesRaw.map((s) {
     final m = s as Map<String, dynamic>;
-    return Syndrome.fromJson(m);
+    return Syndrome.fromJson({...m, 'name': canonicalSyndromeName(m, null)});
   }).toList();
 }
 

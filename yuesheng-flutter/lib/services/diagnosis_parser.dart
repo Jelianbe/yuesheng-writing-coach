@@ -383,7 +383,7 @@ String? _validateSyndromes(
 Syndrome _syndromeFromValidated(Map<String, dynamic> s, List<String> notes) {
   return Syndrome(
     syndromeId: s['syndrome_id'] as String,
-    name: s['name'] as String,
+    name: canonicalSyndromeName(s, notes),
     severity: Severity.fromString(s['severity'] as String)!,
     evidence: (s['evidence'] as List).cast<String>(),
     explanation: s['explanation'] as String,

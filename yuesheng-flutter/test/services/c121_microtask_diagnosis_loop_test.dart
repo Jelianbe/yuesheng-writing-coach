@@ -255,7 +255,9 @@ void main() {
       (s) => s['syndrome_id'] == 'P002',
       orElse: () => fail('diagnosis_results.syndromes 应含 P002'),
     );
-    expect(p002['name'], '情绪标签化');
+    // B1(c) 回填后：name 恒等于注册表真名（P002=信息倾泻），
+    // 夹具里模型自报的「情绪标签化」被纠正——不再是模型自由值。
+    expect(p002['name'], '信息倾泻');
     expect(p002['severity'], 'L1', reason: '严重度应落库为 L1');
 
     // 训练动作（suggested_actions）非空 —— 这是「训练动作」字段的落库证据

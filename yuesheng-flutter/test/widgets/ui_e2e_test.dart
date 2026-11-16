@@ -331,7 +331,9 @@ void main() {
       // 对话流渲染诊断结果卡（症候名同时出现在诊断卡与活跃问题面板 → findsWidgets）
       expect(find.text('本次诊断'), findsOneWidget);
       expect(find.text('1 个问题'), findsOneWidget);
-      expect(find.text('情绪标签化'), findsWidgets);
+      // B1(c) 回填后：夹具模型自报「情绪标签化」被纠正为注册表真名 P002=信息倾泻，
+      // 诊断卡渲染的是回填值——保留夹具自由名，正好验证回填生效。
+      expect(find.text('信息倾泻'), findsWidgets);
 
       // 数据真实落库（非 seed，走 ChatService.sendMessage 链路）
       final diagRepo = DiagnosisRepository(db);
