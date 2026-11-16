@@ -12,6 +12,7 @@ import '../config/shared_constants.dart';
 import '../types/teaching_types.dart';
 import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'decode_guard.dart';
+import 'diagnosis_ghost_guard.dart';
 import 'skill_registry.dart';
 import 'syndrome_id_pattern.dart';
 import 'syndrome_registry.dart';
@@ -40,7 +41,6 @@ final RegExp kActionCodeRe = RegExp(r'A0\d{2}');
 /// 技法编号时会**原样到达学员眼前**（prompt 自己声明「不暴露编号」）。
 final RegExp kTechniqueCodeRe = RegExp(r'T0\d{2}');
 
-const int _kRewriteThreshold = 80;
 const List<String> _kSugaryWords = [
   '加油',
   '真棒',
@@ -59,16 +59,6 @@ const List<String> _kSugaryWords = [
 //  V-01：整段 >80 字、无引号、且无教练元话语 = 替学员成文（ghostwrite）。
 //  V-02：句首裸指令（你应该/你务必…）或 同句「全局量词+全局贬判」= 替下结论。
 
-/// V-01 教练元话语标记：段落命中即说明在「点评学员文本」而非「替学员成文」→ 不拦。
-///
-/// 指示词用明确复合形式（这句/这段/这里…），**不裸匹配「这一」**——否则
-/// 叙述里的「这一次/这一刻」会被误判成点评（C123 实测 P1 误伤）。
-final RegExp _kCoachMetaMarkers = RegExp(
-  r'这里|这[一]?句|这[一]?段|这[一]?章|上文|原文|你的|你写的|'
-  r'问题(?:在于|是)|因为|所以|对比|建议|可以(?:再|试着|多|少)|'
-  r'为什么|节奏|动机|镜头感|比喻|铺垫|转折',
-);
-
 /// V-02b 全局量词：整篇/通篇/整体而言等「覆盖全篇」的措辞。
 final RegExp _kGlobalQuantifier = RegExp(r'整篇|全文|通篇|全篇|整个(?:故事|章节|小说)?|整体而言');
 
@@ -79,9 +69,6 @@ final RegExp _kGlobalVerdict = RegExp(
   r'很差|太烂|平庸|失败|拖沓|空洞|毫无(?:亮点|逻辑|意义)|'
   r'完全(?:失败|不行|垮掉)|一无是处|不知所云|没救了',
 );
-
-/// V-01 降级文案（R-009 合规）：不替学员落笔、不贴标签，改为邀请其自己写。
-const String _kV01Downgrade = '（这段我不替你落笔：这一段请你自己先写一稿，写完我们一起逐句回看。）';
 
 /// V-02 降级文案（R-009 合规）：不替学员下结论，改为邀请一起逐段定位。
 const String _kV02Downgrade = '（这个判断我先不下：我们把这一段拆开，一起看它具体卡在哪里。）';
@@ -306,7 +293,7 @@ NlValidationResult validateNaturalLanguage(
     );
   }
   // V-01 R-009：代写段整段降级（照 V-03 真改写 cleaned）
-  final v01 = _applyGhostRewriteGuard(cleaned);
+  final v01 = applyGhostRewriteGuard(cleaned);
   cleaned = v01.text;
   fixes.addAll(v01.fixes);
   fixes.addAll(_detectSugaryWords(cleaned, attitude));
@@ -354,39 +341,6 @@ NlValidationResult validateNaturalLanguage(
     return name == null ? '【技法】' : '「$name」';
   });
   return (text: out, codes: codes);
-}
-
-/// V-01 R-009 代写段守卫（真降级：改写 cleaned）。
-///
-/// 判据（同时满足才拦，宁漏勿伤）：
-///   1. 段落 >80 字（沿用 _kRewriteThreshold）；
-///   2. 无引号（"「『）—— 引用学员原文/例句不算代写；
-///   3. 无教练元话语（[_kCoachMetaMarkers]）—— 长段点评学员文本不算代写。
-/// 命中即把整段替换为 [_kV01Downgrade]，并产出 V-01 fix 供观测。
-({String text, List<NlFix> fixes}) _applyGhostRewriteGuard(String cleaned) {
-  final fixes = <NlFix>[];
-  final out = cleaned
-      .split('\n')
-      .map((line) {
-        final para = line.trim();
-        if (para.length <= _kRewriteThreshold) return line;
-        if (para.contains('"') || para.contains('「') || para.contains('『')) {
-          return line;
-        }
-        if (_kCoachMetaMarkers.hasMatch(para)) return line;
-        fixes.add(
-          NlFix(
-            type: 'V-01',
-            original: para.length > DiagnosisLimits.rewritePreviewLength
-                ? '${para.substring(0, DiagnosisLimits.rewritePreviewLength)}...'
-                : para,
-            replacement: _kV01Downgrade,
-          ),
-        );
-        return _kV01Downgrade;
-      })
-      .join('\n');
-  return (text: out, fixes: fixes);
 }
 
 /// V-04 sensei 档禁止糖水词（真拦截，R-019 拆出）。
