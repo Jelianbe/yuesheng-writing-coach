@@ -48,7 +48,6 @@
 import 'chat_service_diagnosis_focus.dart';
 import 'dart:async';
 
-import 'package:dio/dio.dart' show DioException;
 import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/l2_route_hysteresis.dart';
 import 'package:flutter/foundation.dart';
@@ -69,6 +68,7 @@ import 'package:writingcoach/services/chat_training_parser.dart'
 import 'package:writingcoach/services/outline_parser.dart';
 import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/genui_parser.dart';
+import 'package:writingcoach/services/diagnosis_failure_reason.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/discovery_card_payload.dart';
@@ -998,19 +998,13 @@ extension ChatServiceSend on ChatService {
     }
   }
 
-  /// ADR-C84 后续：发送失败落库留痕（取消是预期行为不记录）。
-  /// captureError 内部自动脱敏（A12：防 API Key 泄漏），
-  /// 使「发送/输出失败」可度量、可归类。
+  /// 发送失败落库留痕（ADR-C84 / A2）——实现已迁至 `diagnosis_failure_reason.dart`。
+  /// 搬迁原因：该文件是发送侧与解析侧 event 键的唯一真源，且本块需回落行数。
   void _logSendFailure(Object e, SendMessageOptions options) {
-    final msg = e is Exception ? e.toString() : '发送失败';
-    ErrorHandler.instance.captureError(
-      level: 'error',
-      category: e is DioException ? 'network' : 'api',
-      message: 'sendMessage 失败: $msg',
-      context: {
-        'phase': options.phase.value,
-        'attitude': options.attitude.value,
-      },
+    recordSendFailureLog(
+      error: e,
+      phase: options.phase.value,
+      attitude: options.attitude.value,
     );
   }
 

@@ -19,11 +19,12 @@
 //   - 必备依赖（required）：10 个仓储 / 服务 / 编排器
 //   - 可选依赖（X-041c 模式）：1 个 nullable 仓储，不装配则跳过对应落库
 //   - 能力（capability 注入）：1 个 DiagnosisCapability
-//   - 内部状态：1 个按 session 隔离的连续失败计数（来自 ChatService K-1 迁出）
+//   - 内部状态：0（连续失败计数已迁至 DiagnosisFailureTracker，A2 真分解）
 //
-// 实施节奏（K-9）：
-//   K-9：迁 4 个诊断链方法 + _recordDiagnosisOutcome helper + _diagnosisDropLog
-//        + _readOutlineEntityCount helper
+// 实施节奏（K-9 / A2）：
+//   K-9：迁 4 个诊断链方法 + _readOutlineEntityCount helper
+//   A2 ：失败计数 + 原因留痕 + 失败卡 → diagnosis_failure_tracker.dart
+//        日志片段拼装 → diagnosis_drop_log.dart
 //
 // 关键不变量：
 //   - chatServiceProvider 注入本类实例；ChatService 改为委派
@@ -64,6 +65,8 @@ import 'package:writingcoach/services/chat_message_types.dart'
 import 'package:writingcoach/services/chat_training_parser.dart'
     show parseTrainingProtocol, stripTrainingBlock;
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/diagnosis_drop_log.dart';
+import 'package:writingcoach/services/diagnosis_failure_tracker.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
 // S3（T-20261108-02 · R-027 已批）：出口三折叠条 payload 随诊断卡落库
@@ -90,7 +93,6 @@ import 'package:writingcoach/services/message_card_service.dart'
         FocusCandidateCard,
         GenuiCardPayload,
         TeacherSuggestionCardPayload,
-        insertDiagnosisFailedCard,
         insertDiagnosisResultCard,
         insertGenuiCard,
         insertTeacherSuggestionCard,
@@ -221,10 +223,11 @@ class DiagnosisFlowHandler {
   })?
   _onFactBatch;
 
-  /// B1：诊断连续失败计数（来自 ChatService K-1 迁出，按 session 隔离；普通聊天不计入）。
-  /// **每次**失败都插卡（首次也不例外）：否则用户只看到流式正文结束，分不清「还在写」与「已失败」。
-  /// 卡内「额外提示」阈值仍由 `UILimits.failureWarningThreshold` 在 widget 侧判（`diagnosis_failed_card.dart:83`）。
-  final Map<String, int> _consecutiveDiagnosisFails = {};
+  /// B1 + A2：诊断连续失败计数 / 原因留痕 / 失败卡插入，整体委托本协作者。
+  /// 状态从 handler 私有 Map 迁出（基线 `plannedMigrations` 登记的 U7 真分解方向）。
+  late final DiagnosisFailureTracker _failureTracker = DiagnosisFailureTracker(
+    sessionRepo: _sessionRepo,
+  );
 
   DiagnosisFlowHandler({
     required SessionRepository sessionRepo,
@@ -311,42 +314,27 @@ class DiagnosisFlowHandler {
     return _outlineService;
   }
 
-  /// 诊断块被拒 / 字段静默丢弃的日志片段（ADR-C63，N1 / N26）。
-  String _diagnosisDropLog(ParseResult r) {
-    if (r.rejectReason == null && r.notes.isEmpty) return '';
-    final parts = <String>[];
-    if (r.rejectReason != null) {
-      parts.add('被拒原因=${r.rejectReason}');
-    }
-    if (r.notes.isNotEmpty) {
-      parts.add('静默丢弃=${r.notes.join(",")}');
-    }
-    return ' | ${parts.join(" | ")}';
-  }
-
-  /// B1：诊断失败卡阈值门控（B1，从 ChatService._recordDiagnosisOutcome 迁出）。
+  /// A2：把「出块埋点 + 成败记录 + 原因留痕」收口为一处。
   ///
-  /// [attempted] 表示该轮是否确实发起了诊断（AI 输出含 [YS_DIAGNOSIS] 块，
-  /// 或走显式诊断链路 commitDiagnosisFromContent）。仅当 attempted && !success
-  /// 才计为一次失败，普通聊天（解析为 null）不会误触发。
-  Future<void> _recordDiagnosisOutcome(
+  /// 两条链路（`commitDiagnosisFromContent` 长文入口 / `_parseAndValidate` 短链路）
+  /// 原本各写同样形状的调用 ⇒ 内联两份必然漂移。本方法只摊平参数，
+  /// **不改任何判定口径**：`success` 仍是 `diagnosis != null`，埋点仍先于记录。
+  /// 计数 / 留痕 / 插卡三件事本身在 `diagnosis_failure_tracker.dart`。
+  Future<void> _recordOutcomeFromParse(
     String sessionId, {
+    required ParseResult rawParse,
+    required ParsedDiagnosis? diagnosis,
     required bool attempted,
-    required bool success,
   }) async {
-    if (!attempted) return; // 非诊断轮次：不动计数
-    if (success) {
-      _consecutiveDiagnosisFails[sessionId] = 0;
-      return;
-    }
-    final count = (_consecutiveDiagnosisFails[sessionId] ?? 0) + 1;
-    _consecutiveDiagnosisFails[sessionId] = count;
-    // 每次失败都插卡（阈值只管卡片内额外提示，见 diagnosis_failed_card.dart:83）。
-    try {
-      await insertDiagnosisFailedCard(_sessionRepo, sessionId, count);
-    } catch (e, s) {
-      _logSafeRun('诊断失败卡插入失败不阻断主流程', e, s);
-    }
+    _recordBlockEmittedSignal(diagnosis, inDiagnosisBlock: attempted);
+    await _failureTracker.record(
+      sessionId: sessionId,
+      attempted: attempted,
+      success: diagnosis != null,
+      rejectReason: rawParse.rejectReason,
+      syndromeCount: diagnosis?.syndromes.length,
+      onInsertFailed: _logSafeRun,
+    );
   }
 
   /// 批次74：快速读取某章节对应手稿下的实体数（从 extension ChatServiceDiagnosis
@@ -414,14 +402,14 @@ class DiagnosisFlowHandler {
       chapterContent: chapterContent,
       discovery: discovery,
     );
-    // V3 埋点（ADR-0005）：长文链路同样出块 ⇒ 分母必须含此路径，
-    // 否则写作面板诊断的确认/质疑（分子全）会**虚高**质疑率（分母缺）。
-    // 本路径 attempted 恒 true（章节诊断入口），故 inDiagnosisBlock 传 true。
-    _recordBlockEmittedSignal(diagnosis, inDiagnosisBlock: true);
-    await _recordDiagnosisOutcome(
+    // V3 埋点（ADR-0005）：长文链路同样出块 ⇒ 分母必须含此路径，否则写作面板
+    // 诊断的确认/质疑（分子全）会虚高质疑率。本路径 attempted 恒 true（章节诊断入口）。
+    // A2：出块埋点与成败记录同处收口，原因随之落日志。
+    await _recordOutcomeFromParse(
       sessionId,
+      rawParse: rawParse,
+      diagnosis: diagnosis,
       attempted: true,
-      success: diagnosis != null,
     );
     return messageId;
   }
@@ -574,7 +562,7 @@ class DiagnosisFlowHandler {
     required ParseResult rawParse,
   }) async {
     // ADR-C63：仅在有异常时输出，正常路径不增加噪声
-    final dropLog = _diagnosisDropLog(rawParse);
+    final dropLog = diagnosisDropLog(rawParse);
     if (dropLog.isNotEmpty) {
       debugPrint('[ChatService] commitDiagnosisFromContent 解析诊断$dropLog');
     }
@@ -868,17 +856,16 @@ class DiagnosisFlowHandler {
     displayContent = validated.displayContent;
     diagnosis = validated.diagnosis;
 
-    _recordBlockEmittedSignal(diagnosis, inDiagnosisBlock: inDiagnosisBlock);
-
     // ADR-C105 A1 / N6：协议层三项（剥离 / GenUI / 训练判定）聚合为一处。
     final protocol = _resolveProtocolLayer(fullContent, displayContent);
     displayContent = protocol.displayContent;
 
-    // B1：诊断成败记录
-    await _recordDiagnosisOutcome(
+    // B1：诊断成败记录 · A2：解析侧原因随计数落日志。
+    await _recordOutcomeFromParse(
       sessionId,
+      rawParse: rawParse,
+      diagnosis: diagnosis,
       attempted: inDiagnosisBlock,
-      success: diagnosis != null,
     );
 
     return (
@@ -895,7 +882,7 @@ class DiagnosisFlowHandler {
   void _logDiagnoseParse(ParseResult rawParse) {
     debugPrint(
       '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}'
-      '${_diagnosisDropLog(rawParse)}',
+      '${diagnosisDropLog(rawParse)}',
     );
   }
 
