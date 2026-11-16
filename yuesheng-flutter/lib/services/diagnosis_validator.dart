@@ -138,6 +138,19 @@ List<String> validateExcludedWarnings(
   return notes;
 }
 
+/// C1 只观测：零症候（syndromes 为空）却自报 `next_focus` 的共现（ADR-C63 同型）。
+///
+/// 依据：`09aeb4a2` 等 `syndromeCount: 0` 轮次仍带模型自报焦点（4 条中 1 条）。
+/// 与 [validateExcludedWarnings] 同纪律——只返回 note 码，不改取值、不拦截落库；
+/// 出口 = parser 的 `ParseResult.notes` → `diagnosisDropLog` → debugPrint。
+List<String> validateNextFocusWarnings(
+  List<Syndrome> syndromes,
+  String? nextFocus,
+) {
+  if (syndromes.isNotEmpty || nextFocus == null) return const [];
+  return const ['next_focus_without_syndromes'];
+}
+
 /// T-20261024-05 批2：轮次候选集 C（纯推导，不入协议/模型/库）。
 ///
 /// C = ⋃（与 syndromes 命中症候 type 同组 且 techniques 交集非空的注册表症候）

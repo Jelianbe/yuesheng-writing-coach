@@ -441,8 +441,8 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   final overall = _parseOverall(obj, notes); // ADR-0006：H-3 判据在 helper 内落地
   // T-20261024-05 批2：轮次级排除列表（R-019 拆出 _parseExcludedList，同型三件套）
   final excluded = _parseExcludedList(obj);
-  // 兼容性策略（§4-260④ 2026-10-25）：next_focus 优先，null 回退 teaching_plan.next_step —— 与 validator 链（diagnosis_validator.dart:458-460）口径一致；生产链本就落 validator
   final finalNextFocus = texts.nextFocus ?? plan.teachingPlanNextStep;
+  notes.addAll(validateNextFocusWarnings(syndromes, texts.nextFocus));
   return _DiagnosisValidation.ok(
     _buildParsedDiagnosis(
       syndromes,
