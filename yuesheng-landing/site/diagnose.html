@@ -38,9 +38,15 @@
     --brand-deep: var(--bamboo-deep);
     --brand-soft: var(--bamboo-soft);
     --ink-soft: var(--ink-2);
+    /* 输入框自增高度上限（唯一真源：CSS 与 JS 同读这一个变量） */
+    --input-max-h: 180px;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; height: 100%; }
+  /* ★ 2026-11-19 移动端视口修复：原 `html, body { height: 100% }` 在移动浏览器
+     地址栏收起/展开时会按**固定 initial viewport** 取高 ⇒ footer（含输入框）
+     被顶出可视区或被地址栏压住，用户要滚动才看得到输入框。
+     `100dvh` 是**动态视口**，随地址栏变化实时重算；旧浏览器回退 `100%`。 */
+  html, body { margin: 0; padding: 0; height: 100%; height: 100dvh; }
   body {
     font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     background: var(--bg);
@@ -88,11 +94,12 @@
   .convo-item .del:hover { background: #f3e3e0; color: var(--danger); }
   .list-empty { font-size: 12.5px; color: var(--ink-soft); padding: 8px 10px; }
   /* ── 右侧主区 ── */
-  #rightCol { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; }
+  #rightCol { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; height: 100dvh; min-height: 0; }
   header {
     background: var(--paper); border-bottom: 1px solid var(--line);
     padding: 10px 16px; display: flex; align-items: center; gap: 12px;
     position: sticky; top: 0; z-index: 5;
+    flex: none;
   }
   #menuBtn {
     display: none; font: inherit; font-size: 17px; line-height: 1;
@@ -121,7 +128,7 @@
     text-decoration: none; text-align: center; letter-spacing: 1px;
     background: var(--bamboo); color: #fff; border-radius: 10px; padding: 12px;
   }
-  main { flex: 1; overflow-y: auto; padding: 18px 14px 8px; }
+  main { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 14px 8px; }
   .wrap { max-width: 760px; margin: 0 auto; }
   .msg { margin: 0 0 14px; display: flex; gap: 10px; }
   .msg .avatar {
@@ -195,12 +202,17 @@
   footer {
     border-top: 1px solid var(--line); background: var(--paper);
     padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    /* ★ 2026-11-19：footer 不参与收缩。`main` 已给 `min-height: 0` 可与
+       footer 抢空间，若 footer 也允许收缩，hint 展开时会先被压扁而非把
+       main 让出来 —— 表现为「输入框被顶出可视区」。 */
+    flex: none;
   }
   .composer { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; }
   textarea {
     flex: 1; font: inherit; font-size: 16px; line-height: 1.6;
     border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px;
-    background: var(--paper); color: var(--ink); resize: none; min-height: 46px; max-height: 180px;
+    background: var(--paper); color: var(--ink); resize: none; min-height: 46px;
+    max-height: var(--input-max-h);
     outline: none;
   }
   textarea:focus { border-color: var(--brand); }
@@ -210,7 +222,47 @@
     padding: 11px 20px; letter-spacing: 2px;
   }
   #send:disabled { opacity: .5; cursor: default; }
-  .hint { max-width: 760px; margin: 6px auto 0; font-size: 12px; color: var(--ink-soft); }
+  .hint-wrap { max-width: 760px; margin: 6px auto 0; display: flex; align-items: flex-start; gap: 4px; }
+  .hint { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; min-width: 0; }
+  /* 「隐私与数据」等短链不得在词内断行（上一版出现「隐 / 私与数据」竖排裂字）。
+     `word-break: keep-all` 保证中文短语整体换行，不断在词中间。 */
+  .hint a { word-break: keep-all; white-space: nowrap; }
+  /* ★ 2026-11-19 移动端通知栏占位修复：这条 hint 是 4 句连排的合规说明，
+     在 390px 宽屏上折成 4–5 行、固定占掉约 80px，把输入框挤到键盘上方一半
+     的位置。小屏改为 **2 行截断 + 展开**（不是删句）：
+     - 桌面端（>640px）：不截断，**全文照旧显示**，隐私链接与「发送给模型服务
+       处理」的说明一字不少 —— 合规信息不因屏幕变宽而变少。
+     - 移动端：`-webkit-line-clamp: 2` 视觉截断；「更多」按钮放在**被截断
+       元素之外**（上次放在内部被 clamp 一起裁掉了，点不到）。
+     判据：无论截断与否，DOM 里四个合规要素必须始终存在 —— 由
+     `hintCompliance()` 自检，不靠肉眼。 */
+  .hint-more {
+    font: inherit; font-size: 12px; cursor: pointer; color: var(--brand);
+    background: none; border: 0; padding: 0; text-decoration: underline;
+    flex: none; display: none;
+  }
+  @media (max-width: 640px) {
+    :root { --input-max-h: 96px; }
+    /* hint 收到 11.5px / 2 行 ≈ 33px；展开时取消 clamp 显示全文。 */
+    .hint { font-size: 11.5px; line-height: 1.5; }
+    .hint:not(.hint-expanded) {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hint-more { display: block; font-size: 11.5px; line-height: 1.5; }
+    /* ★ 上一版把这段误删了（只留了 --input-max-h 变量、忘了配套规则），
+       导致「输入框 + ［诊断］」在窄屏挤压、main 边距过大。此处补回。 */
+    .composer { gap: 8px; }
+    textarea { padding: 10px 12px; }
+    /* ★ 2026-11-19 placeholder 溢出修复：原 placeholder 是 33 个汉字
+       （「把要诊断的片段粘贴进来（一段场景、一个开场、一章正文都可以）…」），
+       在 390px 下折 2 行，而 `rows=1` 的 46px 只够 1.5 行 ⇒ **下半行被裁掉**，
+       显示成半个字。小屏改为短句，并给足两行高度（不再靠 46px 硬撑）。 */
+    textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #send { padding: 11px 14px; letter-spacing: 1px; }
+    main { padding: 14px 12px 6px; }
+    footer { padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); }
+  }
   .typing { display: inline-block; animation: blink 1s infinite; }
   @keyframes blink { 50% { opacity: .2; } }
   /* 移动端：侧栏抽屉 */
@@ -261,10 +313,10 @@
   <main><div class="wrap" id="chat"></div></main>
   <footer>
     <div class="composer">
-      <textarea id="input" rows="1" autofocus placeholder="把要诊断的片段粘贴进来（一段场景、一个开场、一章正文都可以）…"></textarea>
+      <textarea id="input" rows="1" autofocus></textarea>
       <button id="send">诊断</button>
     </div>
-    <div class="hint">诊断走平台免费额度垫付 · 稿件仅用于本次对话：会发送给模型服务处理，不保存到云端 · 条目点按会匿名回传统计（不含稿件内容） · <a href="./index.html#privacy">隐私与数据</a></div>
+    <div class="hint-wrap"><div class="hint" id="hint">诊断走平台免费额度垫付 · 稿件仅用于本次对话：会发送给模型服务处理，不保存到云端 · 条目点按会匿名回传统计（不含稿件内容） · <a href="./index.html#privacy">隐私与数据</a></div><button type="button" class="hint-more" id="hintMore" aria-expanded="false">更多</button></div>
   </footer>
 </div>
 
@@ -284,10 +336,57 @@
   var listEl = document.getElementById('convoList');
   var sending = false;
   var SELFTEST = location.search.indexOf('selftest') !== -1;
+  // ── 2026-11-19：占位文案按屏宽设置 ──────────────────────
+  // 原 placeholder 33 汉字在 390px 折 2 行，而 rows=1 的 46px 只够 1.5 行
+  // ⇒ 下半行被裁掉。改为两套文案：窄屏短句一行放得下，宽屏保留完整引导。
+  // 放在 JS 而非 HTML 属性，是为避免写两份 textarea 或在 CSS 里做内容替换。
+  (function initPlaceholder() {
+    var el = document.getElementById('input');
+    if (!el) return;
+    var isNarrow = window.matchMedia('(max-width: 640px)').matches;
+    el.setAttribute('placeholder', isNarrow
+      ? '粘贴要诊断的片段…'
+      : '把要诊断的片段粘贴进来（一段场景、一个开场、一章正文都可以）…');
+  })();
   function selfreport(data) {
     if (!SELFTEST) return;
     try { fetch('/engine_result?d=' + encodeURIComponent(JSON.stringify(data))); } catch (_) {}
   }
+
+  // ── 2026-11-19：移动端通知栏「2 行截断 + 展开」─────────────
+  // 合规说明在 390px 屏上折 4–5 行、固定吃掉约 80px，把输入框挤走。
+  // 小屏用 CSS line-clamp 视觉截断，点「更多」加 .hint-expanded 展开全文。
+  // ★ 截断只影响**视觉**，DOM 里四个合规要素始终存在（不靠删句省空间）。
+  (function initHintToggle() {
+    var moreBtn = document.getElementById('hintMore');
+    var hintEl = document.getElementById('hint');
+    if (!moreBtn || !hintEl) return;
+    moreBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      hintEl.classList.add('hint-expanded');
+      moreBtn.setAttribute('aria-expanded', 'true');
+      moreBtn.style.display = 'none';
+    });
+  })();
+
+  // 合规要素存在性自检（selftest 与人工核对共用）。
+  // 判据：四条要素任一缺失即返回 false —— 防止「为了塞进小屏把合规信息
+  // 悄悄删掉」这类回退。此函数无副作用，可在控制台直接调用。
+  window.hintCompliance = function () {
+    var el = document.getElementById('hint');
+    if (!el) return { ok: false, missing: ['hint 元素不存在'] };
+    var t = el.textContent || '';
+    var need = [
+      '平台免费额度垫付',
+      '会发送给模型服务处理',
+      '不保存到云端',
+      '匿名回传统计',
+    ];
+    var missing = need.filter(function (s) { return t.indexOf(s) === -1; });
+    var hasPrivacyLink = !!(el.querySelector('a[href*="privacy"]'));
+    if (!hasPrivacyLink) missing.push('隐私与数据链接');
+    return { ok: missing.length === 0, missing: missing };
+  };
 
   // ── 多会话存储（全部本地 localStorage）──────────────────
   var CONVOS_KEY = 'yuesheng_web_convos_v1';        // 索引：[{id,title,createdAt,updatedAt}]
@@ -802,8 +901,21 @@
   });
   inputEl.addEventListener('input', function () {
     inputEl.style.height = 'auto';
-    inputEl.style.height = Math.min(inputEl.scrollHeight, 180) + 'px';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, maxInputHeight()) + 'px';
   });
+
+  // 输入框自增高度上限（2026-11-19）。
+  //
+  // 原实现把 `180` 写死在 JS 里，与 CSS 的 `max-height: 180px` 是**两个
+  // 各自独立的真源** ⇒ 想在移动端收窄必须同时改两处，漏一处就出现
+  // 「JS 撑到 180、CSS 只给 96 ⇒ 内联高度赢 ⇒ 溢出照旧」。
+  // 现改为读 CSS 自定义属性 `--input-max-h`，移动端媒体查询改一个变量即生效。
+  function maxInputHeight() {
+    var raw = getComputedStyle(document.documentElement)
+      .getPropertyValue('--input-max-h').trim();
+    var n = parseInt(raw, 10);
+    return isNaN(n) ? 180 : n;
+  }
 
   // ── 启动 ────────────────────────────────────────────────
   (function boot() {

@@ -84,39 +84,59 @@ class YueSheetScaffold extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.sm,
-              ),
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: context.palette.textPrimary,
-                ),
-              ),
-            ),
+            _buildTitle(context),
             const Divider(height: 1),
-            Flexible(child: SingleChildScrollView(child: child)),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.lg,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: actions,
-              ),
-            ),
+            _buildBody(),
+            _buildActions(),
           ],
         ),
       ),
     );
   }
+
+  /// 标题行（R-019 真分解：build 原 49 行 → 三块各归各位）。
+  Widget _buildTitle(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.lg,
+      AppSpacing.lg,
+      AppSpacing.sm,
+    ),
+    child: Text(
+      title,
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: context.palette.textPrimary,
+      ),
+    ),
+  );
+
+  /// 正文区（可滚动兜底）。
+  ///
+  /// ★ 2026-11-19 修「弹层正文贴边」：标题行与操作行都有 `AppSpacing.lg`
+  /// 左右内边距，唯独正文区此前**裸挂在 SingleChildScrollView 下** ⇒
+  /// 输入框 / 卡片横向顶到屏幕边缘（教练人设编辑面板实测）。
+  /// 本组件是全仓 7 个表单弹层的公共骨架（教练人设 / 新建角色 / 断言 /
+  /// 设定主题 / 追加设定 / 新建编辑设定），改这一处即全部收敛；
+  /// 由 `test/widgets/yue_sheet_test.dart` #4/#5/#6 三点守护。
+  Widget _buildBody() => Flexible(
+    child: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: child,
+      ),
+    ),
+  );
+
+  /// 操作行。
+  Widget _buildActions() => Padding(
+    padding: const EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      0,
+      AppSpacing.lg,
+      AppSpacing.lg,
+    ),
+    child: Row(mainAxisAlignment: MainAxisAlignment.end, children: actions),
+  );
 }
