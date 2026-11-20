@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>使用情况看板 · 月笙写作教练</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#1f2430; --muted:#6b7280;
+    --line:#e7e9ee; --accent:#2f6fed; --accent-soft:#eaf1ff;
+    --ok:#12855a; --ok-soft:#e7f6ee; --warn:#a15c00; --warn-soft:#fff4e0;
+    --na:#8a90a0; --na-soft:#f0f1f4;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    line-height:1.6; padding:20px 16px 48px; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto}
+  header{margin-bottom:20px}
+  .eyebrow{font-size:12px;letter-spacing:.08em;color:var(--accent);font-weight:600}
+  h1{font-size:24px;font-weight:700;margin:4px 0 6px}
+  .sub{font-size:13px;color:var(--muted)}
+  .stamp{font-size:12px;color:var(--muted);margin-top:8px}
+  .stamp b{color:var(--ink);font-weight:600}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;margin-bottom:14px;
+  }
+  .card h2{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .card h2 .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .kpi .n{font-size:30px;font-weight:700;line-height:1.1}
+  .kpi .l{font-size:12px;color:var(--muted);margin-top:6px}
+  .kpi .d{font-size:11px;color:var(--na);margin-top:2px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mini{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline}
+  .mini .l{font-size:13px;color:var(--muted)}
+  .mini .n{font-size:18px;font-weight:700}
+  .rows{display:flex;flex-direction:column;gap:10px}
+  .row{display:grid;grid-template-columns:64px 1fr 34px;gap:10px;align-items:center;font-size:13px}
+  .row .lab{color:var(--muted);font-variant-numeric:tabular-nums}
+  .bar{height:10px;background:var(--na-soft);border-radius:6px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:var(--accent);border-radius:6px}
+  .row .val{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+  .day{display:flex;align-items:flex-end;gap:6px;height:120px;margin-top:4px}
+  .day .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .day .col .b{width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px}
+  .day .col .v{font-size:11px;color:var(--ink);margin-bottom:3px;font-variant-numeric:tabular-nums}
+  .day .col .d{font-size:10px;color:var(--muted);margin-top:5px;white-space:nowrap}
+  .note{font-size:12px;color:var(--muted);margin-top:10px}
+  .state{display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:12px 14px;font-size:13px;margin-bottom:8px}
+  .state .ic{flex:0 0 auto;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .state.ok{background:var(--ok-soft);color:var(--ok)}
+  .state.ok .ic{background:var(--ok);color:#fff}
+  .state.warn{background:var(--warn-soft);color:var(--warn)}
+  .state.warn .ic{background:var(--warn);color:#fff}
+  .state.na{background:var(--na-soft);color:#555b6b}
+  .state.na .ic{background:var(--na);color:#fff}
+  .state b{font-weight:700}
+  .quota{background:var(--na-soft);border:1px dashed #c9cdd6;border-radius:10px;padding:16px;text-align:center}
+  .quota .t{font-size:15px;font-weight:700;color:#555b6b}
+  .quota .m{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.7}
+  footer{font-size:11px;color:var(--na);line-height:1.8;margin-top:20px;border-top:1px solid var(--line);padding-top:14px}
+  footer b{color:var(--muted)}
+  @media (min-width:560px){.kpis{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">YUESHENG · USAGE SNAPSHOT</div>
+    <h1>使用情况看板</h1>
+    <div class="sub">月笙写作教练 · 云端匿名事件统计</div>
+    <div class="stamp">数据快照生成于 <b>2026-11-20 21:5x (+08)</b> · 非实时 · 读数取自管理面只读 SQL</div>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n">93</div><div class="l">事件总量</div><div class="d">全表行数</div></div>
+    <div class="kpi"><div class="n">69</div><div class="l">诊断返回</div><div class="d">含探针 6 条</div></div>
+    <div class="kpi"><div class="n">63</div><div class="l">真实诊断</div><div class="d">排除探针后</div></div>
+    <div class="kpi"><div class="n">58</div><div class="l">返回非空症候</div><div class="d">真实诊断中</div></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <h2>按端分布 <span class="tag">全表 93 行</span></h2>
+    <div class="split">
+      <div class="mini"><span class="l">Web 端</span><span class="n">74</span></div>
+      <div class="mini"><span class="l">App 端</span><span class="n">19</span></div>
+    </div>
+    <div class="note">两端字段完整可分端（source 无空值）。11-20 的 1 条为 11-16 以来首条 App 端诊断。</div>
+  </div>
+
+  <div class="card">
+    <h2>按自然日事件量</h2>
+    <div class="day">
+      <div class="col"><div class="v">10</div><div class="b" style="height:37%"></div><div class="d">11-12</div></div>
+      <div class="col"><div class="v">16</div><div class="b" style="height:59%"></div><div class="d">11-13</div></div>
+      <div class="col"><div class="v">8</div><div class="b" style="height:30%"></div><div class="d">11-14</div></div>
+      <div class="col"><div class="v">15</div><div class="b" style="height:56%"></div><div class="d">11-15</div></div>
+      <div class="col"><div class="v">1</div><div class="b" style="height:4%"></div><div class="d">11-16</div></div>
+      <div class="col"><div class="v">0</div><div class="b" style="height:1%"></div><div class="d">11-17</div></div>
+      <div class="col"><div class="v">15</div><div class="b" style="height:56%"></div><div class="d">11-18</div></div>
+      <div class="col"><div class="v">27</div><div class="b" style="height:100%"></div><div class="d">11-19</div></div>
+      <div class="col"><div class="v">1</div><div class="b" style="height:4%"></div><div class="d">11-20</div></div>
+    </div>
+    <div class="note">按 created_at（Asia/Shanghai）分组。峰值 11-19 共 27 条，全部来自 Web 端。</div>
+  </div>
+
+  <div class="card">
+    <h2>症候 Top 10 <span class="tag">排除探针</span></h2>
+    <div class="rows">
+      <div class="row"><span class="lab">P001</span><div class="bar"><i style="width:100%"></i></div><span class="val">38</span></div>
+      <div class="row"><span class="lab">P018</span><div class="bar"><i style="width:26%"></i></div><span class="val">10</span></div>
+      <div class="row"><span class="lab">P021</span><div class="bar"><i style="width:26%"></i></div><span class="val">10</span></div>
+      <div class="row"><span class="lab">P017</span><div class="bar"><i style="width:24%"></i></div><span class="val">9</span></div>
+      <div class="row"><span class="lab">P028</span><div class="bar"><i style="width:24%"></i></div><span class="val">9</span></div>
+      <div class="row"><span class="lab">P005</span><div class="bar"><i style="width:21%"></i></div><span class="val">8</span></div>
+      <div class="row"><span class="lab">P034</span><div class="bar"><i style="width:18%"></i></div><span class="val">7</span></div>
+      <div class="row"><span class="lab">P003</span><div class="bar"><i style="width:16%"></i></div><span class="val">6</span></div>
+      <div class="row"><span class="lab">P037</span><div class="bar"><i style="width:16%"></i></div><span class="val">6</span></div>
+      <div class="row"><span class="lab">P002</span><div class="bar"><i style="width:11%"></i></div><span class="val">4</span></div>
+    </div>
+    <div class="note">按 diagnosed 事件 payload.syndromes 累计计数，已排除 6 条探针补登样本；同一会话可含多症候，故总和大于诊断次数。</div>
+  </div>
+
+  <div class="card">
+    <h2>教学闭环 <span class="tag">缺口</span></h2>
+    <div class="state ok"><span class="ic">✓</span><div><b>诊断能跑通</b>：69 条 diagnosed 事件，58 条返回非空症候集（排除探针后），证明诊断真返回、非提交占位。</div></div>
+    <div class="state warn"><span class="ic">!</span><div><b>指认/排除极少</b>：anchor_ack=2、exclusion=2，均为旧事件，与本轮诊断无闭环衔接。</div></div>
+    <div class="state warn"><span class="ic">!</span><div><b>训练与复习为零</b>：training_completed=0、reflection_reviewed=0 —— 埋点就绪但没有真实触发。与"训练台零入口"判断一致。</div></div>
+  </div>
+
+  <div class="card">
+    <h2>额度消耗 <span class="tag" style="background:var(--na-soft);color:#555b6b">无数据源</span></h2>
+    <div class="quota">
+      <div class="t">这一栏暂不展示数字</div>
+      <div class="m">App 的 token 统计在本机 SQLite、不出网；平台额度消耗在平台侧，本仓无查询入口；<br>云端事件表无 token / 额度字段。<br>没有真实来源，就不画数 —— 宁可空着，不编。</div>
+    </div>
+  </div>
+
+  <footer>
+    <b>口径与边界：</b>① 数据为生成那一刻的静态快照，不是实时直连；刷新需重新导出生成。<br>
+    ② 来源为云端 interaction_events 匿名事件表（93 行），只含事件类型、症候 ID、匿名会话标识，无稿件原文、无个人信息（R-029）。<br>
+    ③ 该表写入侧 RLS 仅开放 INSERT、无 SELECT，读数走管理面而非网页直连；此看板是导出后的静态页，不含任何数据库凭证。<br>
+    ④ 全表含 6 条探针补登样本（probe=true），症候分布与"真实诊断"口径已排除；`id` 不等于行数（历史有空洞）。<br>
+    ⑤ 空症候集属合法输出（诊断可返回"无症候"），不计为失败，也不计为有诊断价值。<br>
+    <b>出具</b>：月笙交付团主理人 · 只读实测 E1 · 零建账号 / 零 RLS 改动 / 零报批。
+  </footer>
+</div>
+</body>
+</html>
