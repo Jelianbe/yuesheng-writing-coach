@@ -42,6 +42,7 @@ import '../services/syndrome_tracker.dart';
 import '../services/teaching_state_cache.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
+import 'diagnosis_card_parts.dart';
 import 'excluded_folded_section.dart';
 import 'discovery_folded_section.dart';
 import 'm2_recall_bar.dart';
@@ -1367,7 +1368,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       final items = groups[order[i]]!;
       if (items.isEmpty) continue;
       if (children.isNotEmpty) {
-        children.add(_buildSectionDivider(order[i].label));
+        children.add(SyndromeSectionDivider(label: order[i].label));
       }
       _appendBlocks(children, items);
     }
@@ -1408,41 +1409,14 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           messageId: widget.messageId,
         ),
       ],
+      // T-20261119-01：学员主动「就这条开练」入口（对齐 web syn-practice）。
+      // 与教练主动推荐的 TeacherSuggestionCard 并行；不走 chat_gates 四道闸。
+      // 无 sessionId 时不渲染（训练结果须挂会话，无会话则无处落库）。
+      if (widget.sessionId != null) ...[
+        SynPracticeBar(syndromeId: s.syndromeId, syndromeName: s.name),
+      ],
     ],
   );
-
-  Widget _buildSectionDivider(String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: Divider(height: 1, color: context.palette.border),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.palette.textTertiary,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Divider(height: 1, color: context.palette.border),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-      ],
-    );
-  }
 
   void _appendBlocks(List<Widget> out, List<DiagnosisSyndromeCard> items) {
     for (var i = 0; i < items.length; i++) {
