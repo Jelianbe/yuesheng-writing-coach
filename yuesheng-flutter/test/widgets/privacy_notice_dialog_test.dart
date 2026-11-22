@@ -52,7 +52,7 @@ void main() {
 
     expect(find.text('开始之前，请了解'), findsOneWidget);
     expect(find.textContaining('发送至你所选的 AI 服务商 API'), findsOneWidget);
-    expect(find.textContaining('无任何遥测与数据上报'), findsOneWidget);
+    expect(find.textContaining('匿名上报诊断涉及的症候类别与次数'), findsOneWidget);
     expect(find.textContaining('服务商账户按用量承担'), findsOneWidget);
   });
 
@@ -124,7 +124,8 @@ void main() {
     expect(lines[0], contains('示例模式'));
     expect(lines[0], contains('不会被发送出去'));
     expect(lines[1], contains('浏览器本地'));
-    expect(lines[1], contains('无任何遥测与数据上报'));
+    expect(lines[1], contains('匿名上报少量使用统计'));
+    expect(lines[1], contains('文本指纹'));
     expect(lines[2], contains('无需填写 API Key'));
     expect(lines[2], contains('不产生任何 API 费用'));
     // 负向：web 用户没有服务商 ⇒ 出现这句就是虚假告知
@@ -134,11 +135,26 @@ void main() {
   });
 
   test('#7 非 web 正对照：原三句逐字不变（Android 已分发文案零变化）', () {
+    // R-027 2026-11-22 订正：第 2 句已按已批诚实化稿更新，第 1/3 句逐字不变。
     expect(privacyNoticeLines(isWeb: false), const [
       '· 你的作品文本会发送至你所选的 AI 服务商 API，用于生成诊断与教学反馈。',
-      '· 全部数据仅存储在你的设备本地，本应用无任何遥测与数据上报。',
+      '· 为改进教学功能，应用会匿名上报诊断涉及的症候类别与次数（不含稿件原文、文本长度或任何可识别你身份的信息）。',
       '· API 费用由你对应的服务商账户按用量承担，本应用不代收任何费用。',
     ]);
+  });
+
+  test('#9 R-027 隐私诚实化：两分支都不得含「无任何遥测」虚假陈述', () {
+    // 成对负对照：只测一侧会漏另一分支旧句残留。
+    for (final isWeb in [true, false]) {
+      final joined = privacyNoticeLines(isWeb: isWeb).join('\n');
+      expect(
+        joined,
+        isNot(contains('无任何遥测')),
+        reason: 'isWeb=$isWeb 分支仍含与出网埋点冲突的虚假陈述',
+      );
+      expect(joined, contains('匿名上报'));
+      expect(joined, contains('不含稿件原文'));
+    }
   });
 
   testWidgets('#8 web 弹窗实际渲染：出现示例模式、不出现服务商账户', (tester) async {
