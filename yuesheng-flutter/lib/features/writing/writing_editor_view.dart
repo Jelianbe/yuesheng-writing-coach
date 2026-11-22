@@ -19,7 +19,7 @@ import '../../widgets/punctuation_bar.dart';
 import 'blocked_text/block_editable_view.dart';
 import 'blocked_text/block_readonly_view.dart';
 import 'smart_punctuation_formatter.dart';
-import 'writing_page_chrome.dart';
+import 'writing_selection_context_menu.dart';
 import 'writing_status_views.dart';
 
 /// 写作页编辑器主体（标题独立大块 + 正文独立大块 + 底部标点栏）
@@ -243,6 +243,13 @@ class WritingEditorView extends StatelessWidget {
 
   /// ────────── 正文独立大块 ──────────
   Widget _buildContentArea(Color titleColor, Color hintColor) {
+    // 2026-11-22：选择菜单统一走 TextField.contextMenuBuilder（系统 toolbar
+    // 自动锚定 + 键盘避让）。旧的 WritingSelectionMenu overlay 已移除，避免与
+    // 系统菜单并存（多选弹窗）与被键盘遮挡。editorStackKey 保留供其他定位用途。
+    final selectionMenu = buildWritingContextMenu(
+      onDiagnose: onDiagnoseSelection,
+      onSaveToLibrary: onSaveToLibrary,
+    );
     return Padding(
       // X-039-Batch1：20→section / 16→lg
       padding: const EdgeInsets.fromLTRB(
@@ -252,32 +259,33 @@ class WritingEditorView extends StatelessWidget {
         AppSpacing.lg,
       ),
       child: Stack(
-        key: editorStackKey, // 批次95-1：划词菜单位置反查用
+        key: editorStackKey,
         children: [
           // 编辑器性能-1（2026-09-21）：RepaintBoundary 隔离重绘——正文光标闪烁
           // （每 500ms）与内部滚动重绘只落在编辑器层，不再连带面包屑/保存状态条/
           // 标点栏整页重绘。
-          RepaintBoundary(child: _buildContentField(titleColor, hintColor)),
-          // B3 划词诊断：浮动菜单跟随选区（批次95-1：RenderEditable 定位 + 屏幕外翻转）
-          if (showSelectionMenu && selectionMenuPos != null)
-            WritingSelectionMenu(
-              position: selectionMenuPos!,
-              onDiagnose: onDiagnoseSelection,
-              onSaveToLibrary: onSaveToLibrary,
-            ),
+          RepaintBoundary(
+            child: _buildContentField(titleColor, hintColor, selectionMenu),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildContentField(Color titleColor, Color hintColor) {
+  Widget _buildContentField(
+    Color titleColor,
+    Color hintColor,
+    EditableTextContextMenuBuilder selectionMenu,
+  ) {
     // ADR-0002 §8 阶段2：flag 开 → 分块可编辑渲染；flag 关（默认）→ 现网单 TextField。
     if (kBlockEditorEnabled) {
-      return _buildBlockEditorContent(titleColor, hintColor);
+      return _buildBlockEditorContent(titleColor, hintColor, selectionMenu);
     }
     return TextField(
       key: const Key('chapterContentField'),
       controller: contentController,
+      // 2026-11-22：统一选择菜单（复制/粘贴/引用诊断），系统 toolbar 自动避让键盘
+      contextMenuBuilder: selectionMenu,
       focusNode: focusNode,
       maxLines: null,
       // 批次85-6：智能标点（左配对符自动补右符 + 右符前输入自动跳过）
@@ -316,10 +324,15 @@ class WritingEditorView extends StatelessWidget {
   /// ADR-0002 阶段2：分块可编辑渲染（flag 开）。
   /// 块级 controller/focusNode + 逐块智能标点（定制1）+ palette 配色（定制6），
   /// 只构建视口块；块内编辑经 join() 回流原 onContentChanged 通路。
-  Widget _buildBlockEditorContent(Color titleColor, Color hintColor) {
+  Widget _buildBlockEditorContent(
+    Color titleColor,
+    Color hintColor,
+    EditableTextContextMenuBuilder selectionMenu,
+  ) {
     return BlockEditableView(
       key: blockEditorKey,
       initialText: contentController.text,
+      contextMenuBuilder: selectionMenu,
       style: TextStyle(
         fontSize: state.fontSize,
         height: state.lineSpacing,

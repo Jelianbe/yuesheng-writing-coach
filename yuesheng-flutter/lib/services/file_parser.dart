@@ -227,13 +227,16 @@ String _decodeUtf16(List<int> bytes, {required bool littleEndian}) {
 /// 标题数字部分：阿拉伯 / 全角 / 中文大小写数字（上限 12 位，对齐 Reader Copilot）
 final RegExp _titleNum = RegExp(r'[0-9０-９一二三四五六七八九十百千万壹贰叁肆伍陆柒捌玖拾]{1,12}');
 
-/// 卷级标题前缀：第X卷/第X部/序卷/序部/卷一/Part 1（可带括号、空格）
+/// 卷级标题前缀：第X卷/第X部/第X届/序卷/序部/卷一/Part 1（可带括号、空格）
 /// 「序」分支要求后接空白或行尾（防正文「序言…」误伤）
+/// 2026-11-22：加「届」（第X届）——用户素材「第一届·斗樱大陆」「第二届·死灭洄游」
+///   是真实卷名，原正则不认 ⇒ 导入不建卷 ⇒ 3 级 @引用解析失败 → 正文空。
+///   仅加「届」不加「篇」：章节正则已含「篇」，加「篇」会与章级冲突。
 final RegExp _volumePattern = RegExp(
   r'^\s*[【\[（(]?\s*(?:'
           r'第\s*' +
       _titleNum.pattern +
-      r'\s*[卷部]'
+      r'\s*[卷部届]'
           r'|序\s*[卷部](?=[\s　]|$)'
           r'|卷\s*' +
       _titleNum.pattern +

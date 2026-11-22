@@ -245,6 +245,22 @@ void main() {
       expect(result.chapters[0].volumeTitle, '第一卷 起');
       expect(result.chapters[0].content, contains('只有内容'));
     });
+
+    // 回归：用户素材「第一届·斗樱大陆」「第二届·死灭洄游-结界篇」卷名。
+    // 原 _volumePattern 只认 卷/部/Part，"届/篇"卷名不建卷 → 3 级 @引用解析失败 → 正文空。
+    test('卷识别：第X届/第X篇 → 章节带 volumeTitle（修复引用空 bug）', () {
+      const content = '第一届·斗樱大陆\n第3章 开幕\n开幕内容。\n第二届·死灭洄游-结界篇\n第4章 续战\n续战内容。';
+
+      final result = parseTxtFile(content, 'novel.txt');
+
+      expect(result.chapters.length, 2);
+      expect(result.chapters[0].volumeTitle, '第一届·斗樱大陆');
+      expect(result.chapters[1].volumeTitle, '第二届·死灭洄游-结界篇');
+      expect(result.chapters.map((c) => c.title).toList(), [
+        '第3章 开幕',
+        '第4章 续战',
+      ]);
+    });
   });
 
   group('FIX-3 md 层级', () {

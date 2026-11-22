@@ -296,7 +296,7 @@
     },
     {
       "file": "lib/features/writing/writing_editor_view.dart",
-      "lines": 389
+      "lines": 402
     },
     {
       "file": "lib/features/writing/writing_menu_sheet.dart",
@@ -308,11 +308,11 @@
     },
     {
       "file": "lib/features/writing/writing_page_scaffold.dart",
-      "lines": 362
+      "lines": 380
     },
     {
       "file": "lib/features/writing/blocked_text/block_editable_view.dart",
-      "lines": 419
+      "lines": 425
     },
     {
       "file": "lib/providers/chapter_providers.dart",
@@ -384,7 +384,7 @@
     },
     {
       "file": "lib/services/file_parser.dart",
-      "lines": 442
+      "lines": 445
     },
     {
       "file": "lib/services/focus_resolver.dart",

@@ -8,6 +8,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
@@ -262,6 +263,22 @@ class WritingPageScaffold extends ConsumerWidget {
     );
   }
 
+  /// 复制全文：整章扁平串（唯一真源 editorController.text）→ 系统剪贴板。
+  /// 2026-11-22 新增，AppBar「复制全文」按钮回调。纯 UI 动作，不触发 autosave。
+  void _copyAllToClipboard(BuildContext context) {
+    final text = host.editorController.text;
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('正文为空，无内容可复制')));
+      return;
+    }
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('已复制全文（${text.length} 字）')));
+  }
+
   /// AppBar（视图层独立类：返回 / 面包屑 / 字数指示 / 一键排版 / ⋮ 菜单）
   ///
   /// ★ R4 裁定（`.ai/DECISIONS.md` 2026-09-21）：写作页 AppBar 前景**刻意不随
@@ -315,6 +332,7 @@ class WritingPageScaffold extends ConsumerWidget {
         onTap: controllers.status.showGoalDialog,
       ),
       onBack: () => handleWritingBack(host),
+      onCopyAll: () => _copyAllToClipboard(context),
       onFormatChapter: controllers.document.handleFormatChapter,
       onOpenMenu: () => showWritingMenu(host, ref, controllers, state),
     );

@@ -42,6 +42,7 @@ class BlockEditableView extends StatefulWidget {
     this.onValue,
     this.onActiveBlockChanged,
     this.onBlockBuild,
+    this.contextMenuBuilder,
   });
 
   final String initialText;
@@ -69,6 +70,10 @@ class BlockEditableView extends StatefulWidget {
 
   /// 每构建一个块回调一次（widget 测试计数）。
   final VoidCallback? onBlockBuild;
+
+  /// 文本选择菜单 builder（2026-11-22：统一「复制/粘贴/引用诊断」工具栏）。
+  /// 透传给每个块的 TextField；null 时用 Flutter 默认菜单。
+  final EditableTextContextMenuBuilder? contextMenuBuilder;
 
   @override
   State<BlockEditableView> createState() => BlockEditableViewState();
@@ -394,6 +399,7 @@ class BlockEditableViewState extends State<BlockEditableView> {
       controller: _controllers[index],
       focusNode: _focusNodes[index],
       maxLines: null,
+      contextMenuBuilder: widget.contextMenuBuilder,
       style: _blockStyle(index),
       inputFormatters: [
         if (widget.smartPunctOn) const SmartPunctuationFormatter(),

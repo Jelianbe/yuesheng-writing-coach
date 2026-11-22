@@ -24,6 +24,7 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.progressBar,
     required this.wordCount,
     required this.onBack,
+    required this.onCopyAll,
     required this.onFormatChapter,
     required this.onOpenMenu,
   });
@@ -49,6 +50,9 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   final PreferredSizeWidget progressBar;
   final Widget wordCount;
   final VoidCallback onBack;
+
+  /// 复制全文（整章扁平串 → 剪贴板）。放在「一键排版」左侧。
+  final VoidCallback onCopyAll;
   final VoidCallback onFormatChapter;
   final VoidCallback onOpenMenu;
 
@@ -75,6 +79,12 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
         // 批次96-10：撤销/重做入口收敛——AppBar 不再放撤销/重做
         // 批次82：字数显示 + 写作目标（点击设置目标）
         wordCount,
+        // 2026-11-22：复制全文（整章 → 剪贴板），置于「一键排版」左侧。
+        IconButton(
+          icon: Icon(Icons.copy_all, size: 20, color: foregroundColor),
+          tooltip: '复制全文',
+          onPressed: onCopyAll,
+        ),
         // 批次96-8：一键排版（原「记灵感」位置；按排版开关批量应用段落格式）
         IconButton(
           icon: Icon(Icons.format_align_left, size: 20, color: foregroundColor),

@@ -64,7 +64,6 @@ import 'package:writingcoach/features/writing/writing_page.dart';
 import 'package:writingcoach/features/writing/writing_page_breadcrumb.dart';
 import 'package:writingcoach/features/writing/focus_aware_editing_controller.dart';
 import 'package:writingcoach/features/writing/writing_page_host.dart';
-import 'package:writingcoach/features/writing/writing_page_selection_ai_controller.dart';
 
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
@@ -140,198 +139,6 @@ class _FailingSaveStore extends WritingStore {
     // 与真实 saveNow 失败语义一致：标记 saveError，不切换整页错误视图
     state = state.copyWith(isSaving: false, saveError: '模拟保存失败');
   }
-}
-
-// ─────────────────────────────────────────────────────────────
-// 批次95-1 判别力夹具（守住「取聚焦 editable + 用它自身的 controller 偏移」）
-//
-// ⚠️ 2026-10-07 订正：本段「动因」写于 `kBlockEditorEnabled = false` 时代
-// （该常量自 commit `7d245a75` 起已为 **true**，flag-on 走分块可编辑渲染）。
-// 夹具**保留**：flag-on 下 `editorStackKey` 子树内**并存多个** EditableText，
-// 「取子树首个」与「取聚焦」必然不同解 ⇒ 该判别力夹具比 flag-off 时代**更有价值**。
-// 时，`editorStackKey`（writing_editor_view.dart:255）子树里**只有一个** TextField
-// ⇒「取子树首个」与「取聚焦」在真实写作页上必然同解，批次95-1 原有 2 个用例零鉴别力
-// （实测：把实现退回「取首个 + 全局 controller 偏移」，那 2 个用例仍全绿）。
-//
-// 本夹具绕开页面结构、直接给控制器喂一棵**双 EditableText** 的 Stack：
-// 上方诱饵（永不聚焦）+ 下方目标（唯一聚焦），并让宿主 controller 与目标自身
-// controller 的选区**落在不同行** ⇒「取谁」与「用谁的偏移」两处改动都体现在 dy 上。
-// ─────────────────────────────────────────────────────────────
-
-/// 最小宿主：只实现划词菜单定位链路真正触碰的成员，其余经 noSuchMethod 显式炸出
-/// （免得夹具缺成员时静默走 no-op，测出假绿）。
-class _SelectionMenuHostFake implements WritingPageHost {
-  _SelectionMenuHostFake({
-    required this.editorStackKey,
-    required this.editorController,
-  });
-
-  @override
-  final GlobalKey editorStackKey;
-  @override
-  final FocusAwareEditingController editorController;
-
-  @override
-  bool suppressSelectionMenu = false;
-  @override
-  String selectedText = '';
-  @override
-  bool showSelectionMenu = false;
-  @override
-  Offset? selectionMenuPos;
-
-  @override
-  void hostSetState(VoidCallback fn) => fn();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
-    '未使用的 WritingPageHost 成员被调用：${invocation.memberName}',
-  );
-}
-
-/// 双 EditableText 的 `editorStackKey` 子树：诱饵在上（top 0）、目标在下（top 300）。
-Widget buildDualEditableStack({
-  required GlobalKey stackKey,
-  required TextEditingController decoyCtrl,
-  required FocusNode decoyFocus,
-  required TextEditingController targetCtrl,
-  required FocusNode targetFocus,
-}) {
-  return MaterialApp(
-    home: Scaffold(
-      body: SizedBox(
-        width: 400,
-        height: 600,
-        child: Stack(
-          key: stackKey,
-          children: [
-            Positioned(
-              left: 0,
-              top: 0,
-              width: 360,
-              child: TextField(
-                key: const Key('decoyField'),
-                controller: decoyCtrl,
-                focusNode: decoyFocus,
-                maxLines: null,
-              ),
-            ),
-            Positioned(
-              left: 0,
-              top: 300,
-              width: 360,
-              child: TextField(
-                key: const Key('targetField'),
-                controller: targetCtrl,
-                focusNode: targetFocus,
-                maxLines: null,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-/// oracle：某 editable 在指定偏移处的 caret 矩形，映射回 stack 局部坐标后的 dy。
-double caretStackDy(EditableTextState state, int offset, RenderBox stackBox) {
-  final rect = state.renderEditable.getLocalRectForCaret(
-    TextPosition(offset: offset),
-  );
-  return stackBox
-      .globalToLocal(state.renderEditable.localToGlobal(rect.topLeft))
-      .dy;
-}
-
-/// 泵入双 EditableText 夹具、只聚焦目标字段，并返回就绪的宿主。
-Future<_SelectionMenuHostFake> _pumpDualEditable(
-  WidgetTester tester, {
-  required GlobalKey stackKey,
-  required TextEditingController decoyCtrl,
-  required FocusNode decoyFocus,
-  required TextEditingController targetCtrl,
-  required FocusNode targetFocus,
-  required FocusAwareEditingController hostCtrl,
-}) async {
-  await tester.pumpWidget(
-    buildDualEditableStack(
-      stackKey: stackKey,
-      decoyCtrl: decoyCtrl,
-      decoyFocus: decoyFocus,
-      targetCtrl: targetCtrl,
-      targetFocus: targetFocus,
-    ),
-  );
-  await tester.pumpAndSettle();
-  // 夹具前提：子树内确有两个 EditableText，且只有目标聚焦
-  expect(find.byType(EditableText), findsNWidgets(2));
-  targetFocus.requestFocus();
-  await tester.pumpAndSettle();
-  expect(targetFocus.hasFocus, isTrue);
-  expect(decoyFocus.hasFocus, isFalse);
-  return _SelectionMenuHostFake(
-    editorStackKey: stackKey,
-    editorController: hostCtrl,
-  );
-}
-
-/// 批次95-1 判别力夹具的搭建结果（夹具一次成型，测试体只留断言）。
-class _DualEditableFixture {
-  _DualEditableFixture({
-    required this.stackKey,
-    required this.decoyCtrl,
-    required this.decoyFocus,
-    required this.targetCtrl,
-    required this.targetFocus,
-    required this.hostCtrl,
-  });
-
-  final GlobalKey stackKey;
-  final TextEditingController decoyCtrl;
-  final FocusNode decoyFocus;
-  final TextEditingController targetCtrl;
-  final FocusNode targetFocus;
-  final FocusAwareEditingController hostCtrl;
-}
-
-/// 搭建双 EditableText 夹具并把两处选区**刻意错开到不同行**。
-///
-/// · 诱饵 decoy：短文本、永不聚焦、位于 stack 顶部（top 0）
-/// · 目标 target：多行文本、唯一聚焦、位于下方（top 300），选区在第 2 行
-/// · 宿主 hostCtrl：选区在第 1 行（⇒ 「用谁的偏移」两实现结果不同）
-///
-/// 于是：取「聚焦的 target」+ 其自身偏移 ⇒ dy 落下方；
-/// 取「首个 decoy」+ 全局偏移 ⇒ dy 落顶部。两候选相距 >300px。
-Future<_DualEditableFixture> _setUpDualEditable(WidgetTester tester) async {
-  final stackKey = GlobalKey();
-  final decoyCtrl = TextEditingController(text: '甲甲甲');
-  final decoyFocus = FocusNode();
-  final body = List.filled(6, '霜叶红于二月花。').join('\n');
-  final targetCtrl = TextEditingController(text: body);
-  final targetFocus = FocusNode();
-  final hostCtrl = FocusAwareEditingController(text: body);
-  addTearDown(decoyCtrl.dispose);
-  addTearDown(targetCtrl.dispose);
-  addTearDown(hostCtrl.dispose);
-  addTearDown(decoyFocus.dispose);
-  addTearDown(targetFocus.dispose);
-
-  final firstLineEnd = hostCtrl.text.indexOf('\n');
-  final secondLineStart = firstLineEnd + 1;
-  hostCtrl.selection = TextSelection(baseOffset: 0, extentOffset: firstLineEnd);
-  targetCtrl.selection = TextSelection(
-    baseOffset: secondLineStart,
-    extentOffset: secondLineStart + 1,
-  );
-  return _DualEditableFixture(
-    stackKey: stackKey,
-    decoyCtrl: decoyCtrl,
-    decoyFocus: decoyFocus,
-    targetCtrl: targetCtrl,
-    targetFocus: targetFocus,
-    hostCtrl: hostCtrl,
-  );
 }
 
 /// 正文编辑器（key `chapterContentField`）的 **TextField** finder。
@@ -598,66 +405,43 @@ void main() {
 
     // ── B3: 划词诊断（选中 → 浮动菜单 → 校验 → 注入面板） ──
 
-    testWidgets('#9 B3 选中文本 → 浮动菜单「诊断这段文字」出现', (tester) async {
+    testWidgets('#9 B3 长按正文 → 系统选择菜单「引用诊断」出现', (tester) async {
+      // 2026-11-22：旧「选中即弹 overlay」已改为系统 contextMenuBuilder 统一菜单。
+      // 长按正文 → Flutter 系统 toolbar 弹出（含复制/粘贴/引用诊断）。
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      // 选中章节内容（12 字）→ 浮动菜单出现
-      // 批次90：页面有标题+正文两个 TextField → 正文用 key 定位
-      final editable = tester.state<EditableTextState>(
-        find.descendant(
-          of: find.byKey(const Key('chapterContentField')),
-          matching: find.byType(EditableText),
-        ),
-      );
-      editable.updateEditingValue(
-        TextEditingValue(
-          text: editable.textEditingValue.text,
-          selection: const TextSelection(baseOffset: 0, extentOffset: 12),
-        ),
-      );
-      await tester.pump();
+      await tester.longPress(find.byKey(const Key('chapterContentField')));
+      await tester.pumpAndSettle();
 
-      expect(find.text('诊断这段文字'), findsOneWidget);
+      expect(find.text('引用诊断'), findsOneWidget);
+      expect(find.text('存入设定库'), findsOneWidget);
     });
 
-    testWidgets('#10 B3 取消选中（光标）→ 浮动菜单消失', (tester) async {
+    testWidgets('#10 B3 长按弹出系统菜单 → 点空白关闭', (tester) async {
+      // 2026-11-22：系统 toolbar 由长按触发、点外部关闭（框架行为）。
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      // 先选中 → 菜单出现
-      final editable = tester.state<EditableTextState>(
-        find.descendant(
-          of: find.byKey(const Key('chapterContentField')),
-          matching: find.byType(EditableText),
-        ),
-      );
-      editable.updateEditingValue(
-        TextEditingValue(
-          text: editable.textEditingValue.text,
-          selection: const TextSelection(baseOffset: 0, extentOffset: 12),
-        ),
-      );
-      await tester.pump();
-      expect(find.text('诊断这段文字'), findsOneWidget);
+      await tester.longPress(find.byKey(const Key('chapterContentField')));
+      await tester.pumpAndSettle();
+      expect(find.text('引用诊断'), findsOneWidget);
 
-      // 取消选中（collapsed）→ 菜单消失
-      editable.updateEditingValue(
-        TextEditingValue(
-          text: editable.textEditingValue.text,
-          selection: const TextSelection.collapsed(offset: 0),
-        ),
-      );
-      await tester.pump();
+      // 点击页面空白（AppBar 区域）→ 菜单关闭
+      await tester.tap(find.byType(AppBar), warnIfMissed: false);
+      await tester.pumpAndSettle();
 
-      expect(find.text('诊断这段文字'), findsNothing);
+      expect(find.text('引用诊断'), findsNothing);
     });
 
-    testWidgets('#11 B3 选中 <20 字 → 点击菜单 → SnackBar 拦截', (tester) async {
+    testWidgets('#11 B3 选中 <20 字 → 点「引用诊断」→ SnackBar 拦截', (tester) async {
+      // 2026-11-22：菜单改为系统 toolbar，长按照文本（默认章节 12 字 <20）→ 点引用诊断。
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      // 选中章节内容（12 字 <20）
+      await tester.longPress(find.byKey(const Key('chapterContentField')));
+      await tester.pumpAndSettle();
+      // 长按会把选区重置为选词；显式设 5 字选区（<20）确保宿主 selectedText 同步。
       final editable = tester.state<EditableTextState>(
         find.descendant(
           of: find.byKey(const Key('chapterContentField')),
@@ -667,12 +451,11 @@ void main() {
       editable.updateEditingValue(
         TextEditingValue(
           text: editable.textEditingValue.text,
-          selection: const TextSelection(baseOffset: 0, extentOffset: 12),
+          selection: const TextSelection(baseOffset: 0, extentOffset: 5),
         ),
       );
       await tester.pump();
-
-      await tester.tap(find.text('诊断这段文字'));
+      await tester.tap(find.text('引用诊断'));
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -949,7 +732,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 选中 ≥20 字 → 点「诊断这段文字」→ 面板打开 + 选段诊断触发
+      // 2026-11-22：菜单改为系统 toolbar。长按弹出 → 重设选区 20 字（长按会
+      // 重置为选词）→ 点「引用诊断」→ 面板打开 + 选段诊断触发。
+      // 实测时序：长按后菜单保持，重设选区后点击回调读到 20 字（E1 探针）。
+      await tester.longPress(find.byKey(const Key('chapterContentField')));
+      await tester.pumpAndSettle();
       final editable = tester.state<EditableTextState>(
         find.descendant(
           of: find.byKey(const Key('chapterContentField')),
@@ -963,7 +750,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await tester.tap(find.text('诊断这段文字'));
+      await tester.tap(find.text('引用诊断'));
       await tester.pumpAndSettle();
 
       expect(find.byType(WritingCoachPanel), findsOneWidget);
@@ -1382,27 +1169,16 @@ void main() {
       expect(find.byType(PunctuationBar), findsOneWidget);
     });
 
-    testWidgets('#82-13 选中文本 → 浮动菜单扩展为 诊断/改写/续写 三动作', (tester) async {
+    testWidgets('#82-13 长按系统菜单 → 仅引用诊断，无代写动作（R-009 护栏）', (tester) async {
+      // 2026-11-22：菜单改为系统 toolbar，长按弹出后验 R-009 护栏。
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      // 选中章节内容（12 字）
-      final editable = tester.state<EditableTextState>(
-        find.descendant(
-          of: find.byKey(const Key('chapterContentField')),
-          matching: find.byType(EditableText),
-        ),
-      );
-      editable.updateEditingValue(
-        TextEditingValue(
-          text: editable.textEditingValue.text,
-          selection: const TextSelection(baseOffset: 0, extentOffset: 12),
-        ),
-      );
-      await tester.pump();
+      await tester.longPress(find.byKey(const Key('chapterContentField')));
+      await tester.pumpAndSettle();
 
-      // R-009 护栏：划词菜单仅诊断，不出现代写动作（改写/续写/扩写）
-      expect(find.text('诊断这段文字'), findsOneWidget);
+      // R-009 护栏：选择菜单仅诊断，不出现代写动作（改写/续写/扩写）
+      expect(find.text('引用诊断'), findsOneWidget);
       expect(find.text('改写这段'), findsNothing);
       expect(find.text('续写这段'), findsNothing);
       expect(find.text('扩写这段'), findsNothing);
@@ -4173,131 +3949,47 @@ void main() {
     });
   });
 
-  group('批次95-1：划词菜单跟随选区', () {
+  group('2026-11-22：系统选择菜单统一（复制/粘贴/引用诊断）', () {
+    // 旧「批次95-1 划词菜单跟随选区」组测的是已移除的 WritingSelectionMenu
+    // overlay 手写定位逻辑（_computeSelectionMenuPos）。2026-11-22 改为
+    // TextField.contextMenuBuilder + AdaptiveTextSelectionToolbar——位置由
+    // Flutter 框架用 contextMenuAnchors 自动计算并避让键盘，不再有手写位置可测。
+    // 新判据落在：writing_selection_context_menu_test.dart（菜单项纯函数）
+    // + 本组（长按弹出 / 项完整 / 长文本不溢出屏幕）。
+
     Finder contentEditable() => find.descendant(
       of: find.byKey(const Key('chapterContentField')),
       matching: find.byType(EditableText),
     );
 
-    void selectRange(
-      WidgetTester tester, {
-      required int start,
-      required int end,
-    }) {
-      final editable = tester.state<EditableTextState>(contentEditable());
-      editable.updateEditingValue(
-        TextEditingValue(
-          text: editable.textEditingValue.text,
-          selection: TextSelection(baseOffset: start, extentOffset: end),
-        ),
-      );
-    }
-
-    testWidgets('#95-1 菜单跟随选区：不再固定在右上角 + 位置随选区移动', (tester) async {
+    testWidgets('长按正文 → 系统菜单弹出且项完整', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      // 选中开头 12 字
-      selectRange(tester, start: 0, end: 12);
-      await tester.pump();
-      expect(find.text('诊断这段文字'), findsOneWidget);
-      final pos1 = tester.getTopLeft(find.text('诊断这段文字'));
-      // 菜单在选区下方（不再固定 top:4 右上角）
-      expect(pos1.dy, greaterThan(4));
+      await tester.longPress(find.byKey(const Key('chapterContentField')));
+      await tester.pumpAndSettle();
 
-      // 选区后移到文本中部
-      selectRange(tester, start: 5, end: 12);
-      await tester.pump();
-      expect(find.text('诊断这段文字'), findsOneWidget);
-      final pos2 = tester.getTopLeft(find.text('诊断这段文字'));
-      // 选区右移 → 菜单左边界右移（跟随）
-      expect(pos2.dx, greaterThan(pos1.dx));
+      expect(find.text('引用诊断'), findsOneWidget);
+      expect(find.text('存入设定库'), findsOneWidget);
     });
 
-    testWidgets('#95-1 文本底部选区 → 菜单翻转到选区上方（屏幕外翻转）', (tester) async {
+    testWidgets('长文本下长按 → 菜单仍弹出（分块编辑器多块场景）', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      // 用长文本（≈40 行）让选区落在编辑器底部，触发下方放不下 → 翻转
+      // 灌入长文本（触发分块编辑器多块渲染），长按仍应弹出统一菜单。
+      // 菜单的屏幕避让由 AdaptiveTextSelectionToolbar 框架层保证（contextMenuAnchors），
+      // 不在本仓测试范围；这里守的是「多块下 contextMenuBuilder 每块都生效」。
       final editable = tester.state<EditableTextState>(contentEditable());
       final longText = List.filled(40, '霜叶红于二月花，秋风起时满林金。').join();
-      editable.updateEditingValue(
-        TextEditingValue(
-          text: longText,
-          selection: TextSelection(
-            baseOffset: longText.length - 6,
-            extentOffset: longText.length,
-          ),
-        ),
-      );
-      await tester.pump();
-      expect(find.text('诊断这段文字'), findsOneWidget);
-
-      // 选区 caret 的全局 y（文本末尾、多行底部）
-      final caretRect = editable.renderEditable.getLocalRectForCaret(
-        TextPosition(offset: longText.length),
-      );
-      final caretTop = editable.renderEditable
-          .localToGlobal(caretRect.topLeft)
-          .dy;
-      final menuTop = tester.getTopLeft(find.text('诊断这段文字')).dy;
-      // 菜单翻到选区上方（纯纯/笔落跟随）
-      expect(menuTop, lessThan(caretTop));
-    });
-
-    // 判别力用例：现网 flag 关时 editorStackKey 子树只有一个 EditableText，
-    // 「取首个」与「取聚焦」同解 ⇒ 上面 2 例守不住本批改动（实测变异仍全绿）。
-    // 本例改喂双 EditableText 子树（上方诱饵不聚焦 / 下方目标聚焦），并让宿主
-    // controller 与目标自身 controller 的选区落在**不同行**：
-    //   · 正确实现 → 取目标(target) + 目标自身偏移 ⇒ dy 落在下方；
-    //   · 退回旧实现 → 取首个(decoy) + 全局 controller 偏移 ⇒ dy 落在上方。
-    // 断言只锚「菜单位置相对光标的 dy」这一两实现必然不同的量。
-    testWidgets('#95-1 判别力：双 EditableText 下定位「聚焦那个」而非「首个」', (tester) async {
-      final f = await _setUpDualEditable(tester);
-      final host = await _pumpDualEditable(
-        tester,
-        stackKey: f.stackKey,
-        decoyCtrl: f.decoyCtrl,
-        decoyFocus: f.decoyFocus,
-        targetCtrl: f.targetCtrl,
-        targetFocus: f.targetFocus,
-        hostCtrl: f.hostCtrl,
-      );
-
-      // 驱动真实生产逻辑（划词控制器 → _computeSelectionMenuPos）
-      WritingPageSelectionAiController(host).onSelectionChanged();
+      editable.updateEditingValue(TextEditingValue(text: longText));
       await tester.pump();
 
-      expect(host.showSelectionMenu, isTrue);
-      final pos = host.selectionMenuPos;
-      expect(pos, isNotNull, reason: '两实现都应算出位置（区别在位置，不在有无）');
+      // 长按首块（chapterContentField key 挂在首块）
+      await tester.longPress(find.byKey(const Key('chapterContentField')));
+      await tester.pumpAndSettle();
 
-      final stackBox =
-          f.stackKey.currentContext!.findRenderObject()! as RenderBox;
-      // Key 挂在 TextField 上（其 state 是 _TextFieldState）⇒ 需下钻到 EditableText
-      Finder editableOf(String fieldKey) => find.descendant(
-        of: find.byKey(Key(fieldKey)),
-        matching: find.byType(EditableText),
-      );
-      final decoy = tester.state<EditableTextState>(editableOf('decoyField'));
-      final target = tester.state<EditableTextState>(editableOf('targetField'));
-
-      // 正确实现的期望值：取「聚焦的 target」+ target 自身 controller 的偏移（第 2 行）
-      final expectedDy =
-          caretStackDy(target, f.targetCtrl.selection.baseOffset, stackBox) +
-          24; // belowGap
-      // 旧实现的期望值：取「首个 decoy」+ 全局 controller 偏移（第 1 行）
-      final mutatedDy =
-          caretStackDy(decoy, f.hostCtrl.selection.baseOffset, stackBox) + 24;
-
-      // 前置自检：两个候选值必须真的不同，否则本例无鉴别力
-      expect(
-        expectedDy - mutatedDy,
-        greaterThan(50),
-        reason: '夹具失效：两实现的候选位置已重合，断言无鉴别力',
-      );
-      // 核心断言：菜单位置跟「聚焦 editable 的光标」，而非「子树首个的光标」
-      expect(pos!.dy, closeTo(expectedDy, 1.0));
+      expect(find.text('引用诊断'), findsWidgets);
     });
   });
 
