@@ -114,6 +114,18 @@ function runBoot(scriptSrc, searchStr, mut) {
     const alerts = s.__alerts || [];
     rec('B7 兑换失败 → 显示原因', alerts.length > 0 && /登录没有完成/.test(alerts[0] || ''), (alerts[0] || '').slice(0, 60));
   }
+  // B8 ★ 带 code 却换不出会话（SDK 返回空 ⇒ dispatchCallback 报 no-callback）
+  //    必须提示，不能静默。这是 2026-11-24 线上实测假 code 时踩到的形态：
+  //    地址栏挂着 code、页面毫无反应、用户完全不知道发生了什么。
+  {
+    const s = runBoot(boot, '?code=c&state=s&provider=workbuddy', { cbResult: 'no-callback' });
+    await new Promise(r => setTimeout(r, 120));
+    const alerts = s.__alerts || [];
+    rec('B8 带 code 但无会话 → 必须提示（不静默）',
+        alerts.length > 0, (alerts[0] || '(无提示)').slice(0, 60));
+    rec('B8b 提示文案说清是授权码问题',
+        /授权码/.test(alerts[0] || ''), (alerts[0] || '').slice(0, 60));
+  }
 
   // ── C. 负向变异：证明上面的断言有牙齿 ──
   // 把注入列表改成空数组 —— 等价于"上一版"（根页面不加载 SDK）。
