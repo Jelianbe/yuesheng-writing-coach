@@ -1214,7 +1214,12 @@
       } catch (e) {
         btn.disabled = false;
         btn.innerHTML = old;
-        showLoginError('登录没能发起：' + (e && e.message ? e.message : String(e)) + '。可以先下载 Android 版；或刷新本页重试。');
+        var why = e && e.message ? e.message : String(e);
+        // 把 SDK 的底层原因也带上（排查时这是唯一线索，不能只给一句"失败"）
+        var detail = (window.YueshengAuth && window.YueshengAuth.lastError)
+          ? window.YueshengAuth.lastError() : '';
+        showLoginError('登录没能发起：' + why + (detail ? '｜' + detail : '') +
+          '。可以先下载 Android 版；或刷新本页重试。');
       }
     });
   }
@@ -1254,6 +1259,11 @@
       cb = await withTimeout(window.YueshengAuth.dispatchCallback(), SESSION_TIMEOUT_MS, 'callback-failed');
       if (cb === 'callback-failed') {
         showLoginError('登录没有完成，请再点一次登录。若反复失败，可以先下载 Android 版。');
+      } else if (cb === 'callback-error') {
+        // 官方三分支之一：带 error 的回调必须停在登录视图并显示原因，
+        // 不能当作"普通访问"继续往下跑（那会让用户以为登录成功了）。
+        var e1 = (window.YueshengAuth.lastError && window.YueshengAuth.lastError()) || '授权未通过';
+        showLoginError('登录未完成：' + e1 + '。可以再点一次，或先下载 Android 版。');
       }
     }
 
@@ -1295,6 +1305,12 @@
     // ★ 刚完成登录回调：历史里可能存着上一轮的「未登录」问候语（那句现在已失实）。
     //   在渲染完后替换，而不是渲染前 —— 因为判定「是否只有那条问候语」要先有 state。
     if (cb === 'callback-ok' && signedIn) onSignedIn();
+    // ★ 本页自己完成了兑换 ⇒ 用户的意图已经达成（他就是要来诊断页），
+    //   必须把「回跳目标」这个一次性记录清掉。否则：
+    //   先在本页登录成功 → 记录残留 → 之后某次从别处登录，会被上一个陈旧目标劫持。
+    if (cb === 'callback-ok' || cb === 'callback-error') {
+      try { sessionStorage.removeItem('ys_login_next'); } catch (_) {}
+    }
 
     selfreport({ where: 'boot', selftest: SELFTEST, convos: listConvos().length, active: curId, historyLen: state.history.length });
     // 0.6.2 外部测量面（T-20261115-02 §closes①）：会话打开 = 漏斗最上游分母。

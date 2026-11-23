@@ -514,6 +514,105 @@
   }
 </script>
 <script>
+  /* ★★ 登录回调兑换（2026-11-24 · §4-554）—— 本页是**站点根**，必须承担这一步。
+   *
+   * 【为什么必须在这里，而不能在 diagnose.html】
+   * 官方文档 references/auth/code-generation.md 规定 redirectTo **只能是站点根**：
+   *   `:259` "The redirect target must be the site root"
+   *   `:968` "A sub-path 404s before any JavaScript runs."
+   * 站点根解析到的就是这个文件。上一版把兑换逻辑全放在 diagnose.html，
+   * 而授权回跳永远落在本页 ⇒ code 无人兑换、过期作废（single-use）
+   * ⇒ 用户登录成功却始终显示「登录后使用」。这是**每次必现**，不是偶发。
+   *
+   * 【为什么按需加载】
+   * SDK 71K + auth.js 4.4K。官网访客绝大多数不登录，为登录把 76K 压到首屏
+   * 不合理。故只在「URL 带 code / error」时才注入脚本 —— 普通访问零成本。
+   *
+   * 【为什么兑换完要跳走】
+   * 用户点的是「登录后在线诊断」，登录成功就该回到诊断页，而不是停在官网首页。
+   * 目标页由 auth.js 在发起登录时用 sessionStorage 记下（跨站往返仍保留）。
+   */
+  (function () {
+    var sp = new URLSearchParams(location.search);
+    // 无回调参数 ⇒ 什么都不做（普通访客走这里，零开销）
+    if (!sp.has('code') && !sp.has('error')) return;
+
+    // 回调失败（带 error 无 code）：把原因显示出来，不静默留在官网首页
+    if (sp.has('error') && !sp.has('code')) {
+      var msg = sp.get('error_description') || sp.get('error') || '登录未完成';
+      var paintErr = function () {
+        var d = document.createElement('div');
+        d.setAttribute('role', 'alert');
+        d.style.cssText = 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:9999;' +
+          'max-width:92vw;background:#FBF6EC;border:1px solid #E8D9BC;border-left:3px solid #C08A2E;' +
+          'border-radius:10px;padding:12px 16px;font:14px/1.6 "Noto Sans SC",sans-serif;color:#6B4A12;' +
+          'box-shadow:0 8px 24px rgba(34,48,44,.12)';
+        d.textContent = '登录未完成：' + msg + '（可回到诊断页重试）';
+        document.body.appendChild(d);
+        // 清掉 error 参数，避免刷新时重复提示
+        var u = new URL(location.href);
+        u.searchParams.delete('error'); u.searchParams.delete('error_description');
+        history.replaceState(null, '', u.pathname + u.search + u.hash);
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', paintErr);
+      } else {
+        paintErr();
+      }
+      return;
+    }
+
+    // 有序注入：config → SDK → auth，再兑换
+    var base = './js/';
+    var files = ['config.js', 'vendor/wbcs-sdk.global.js', 'auth.js'];
+    var i = 0;
+    function next() {
+      if (i >= files.length) { exchange(); return; }
+      var s = document.createElement('script');
+      s.src = base + files[i++];
+      s.onload = next;
+      s.onerror = function () { showFail('脚本加载失败：' + s.src); };
+      document.head.appendChild(s);
+    }
+
+    function showFail(why) {
+      // DOMContentLoaded 可能已经过了（exchange 是异步的），必须两种情形都覆盖，
+      // 否则失败提示**永远不会出现** —— 用户只看到"登录没反应"，比报错更糟。
+      function paint() {
+        var d = document.createElement('div');
+        d.setAttribute('role', 'alert');
+        d.style.cssText = 'position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:9999;' +
+          'max-width:92vw;background:#FDF1EF;border:1px solid #E8C5BE;border-left:3px solid #8A3C34;' +
+          'border-radius:10px;padding:12px 16px;font:14px/1.6 "Noto Sans SC",sans-serif;color:#8A3C34;';
+        d.textContent = '登录没有完成（' + why + '）。请回到诊断页重新点一次登录。';
+        document.body.appendChild(d);
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', paint);
+      } else {
+        paint();
+      }
+    }
+
+    async function exchange() {
+      if (!window.YueshengAuth) { showFail('登录模块未就绪'); return; }
+      var r = await window.YueshengAuth.dispatchCallback();
+      if (r === 'callback-ok') {
+        // 兑换成功 → 回用户本来要去的页面（默认诊断页）
+        // 变量名不用 next：外层有个同名加载函数，同名会让后来读代码的人误判作用域。
+        var target = window.YueshengAuth.nextLocation();
+        location.replace('./' + target);
+        return;
+      }
+      // 失败：把 SDK 的真实原因显示出来（这是排查的唯一线索，不能吞）
+      var why = (window.YueshengAuth.lastError && window.YueshengAuth.lastError()) || r;
+      showFail(why);
+    }
+
+    next();
+  })();
+</script>
+<script>
   /* ★ sharecode 透传（2026-11-13 · APK 分发故障根因修复）
    *
    * 背景：本站在网关层由 ?sharecode= 门禁放行。裸相对链接（不带 sharecode、
