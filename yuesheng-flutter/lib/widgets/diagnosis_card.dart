@@ -325,7 +325,20 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         db.sessions,
       )..where((t) => t.id.equals(sid))).getSingleOrNull();
       if (!mounted) return;
-      _chapterId = row?.chapterId ?? '';
+      final resolved = row?.chapterId ?? '';
+      // ★ 2026-11-23（§4-551）：写回必须自触发重建。
+      //   本方法是**异步反查**，而依赖 `_chapterId` 的「确认指认」入口在
+      //   `_buildSyndromeBlock`（判 `_chapterId.isNotEmpty`）。原先只赋值不
+      //   setState ⇒ 该入口只能靠**其它**异步任务（`_loadTeachingStates` /
+      //   `_loadTrends` / `_loadHistoryExcluded`）的 setState 顺带刷出来。
+      //   ⇒ 这是**隐式依赖**：当前三条任务正常路径都会 setState，故现象不显
+      //   （2026-11-23 实测：首次展开即 `确认指认可见=true`）；但任一条提前
+      //   return（`sessionId == null`）或被 catch 吞错时，入口就退化为不出现，
+      //   且**无任何日志**——排查成本远高于这 4 行。
+      //   注意：本条**不是**「用户必然看不到」的缺陷修复，是拆掉隐式时序耦合。
+      if (resolved == _chapterId) return;
+      if (resolved == _chapterId) return;
+      setState(() => _chapterId = resolved);
     } catch (_) {
       // 反查失败不阻断卡片渲染（埋点降级为不可用）。
     }

@@ -24,6 +24,8 @@ import 'package:matcher/matcher.dart' as matcher;
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
+import 'package:writingcoach/data/repositories/chapter_repository.dart';
+import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/error_log_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
@@ -93,6 +95,94 @@ class _RecordingDiagnosisService extends DiagnosisService {
     disputeCallCount++;
     disputeReasons.add(reason);
   }
+}
+
+/// 测试专用：**只放行 sessions 表查询、其余 SELECT 一律抛错**的 QueryExecutor。
+///
+/// 用途仅一个（§4-551 判据）：造出「**反查是唯一存活的重建来源**」这一条件。
+///
+/// 依据（已逐条核源码）：卡片 `initState` 里四个异步任务，
+///   `_loadTeachingStates` / `_loadTrends` / `_loadHistoryExcluded`
+///   三者的失败路径都是 `catch (_) {}` **静默**，且 catch 内**没有 setState**；
+///   只有 `_resolveChapterId` 查的是 `sessions` 表。
+/// ⇒ 让非 sessions 的 SELECT 抛错，上述三个任务就全部静默退出、**不产生重建**；
+///   而反查成功 ⇒ 界面若要更新，**只可能**来自它自己的 setState。
+///
+/// ★ 这条路是对前三次失败的收束（过程如实登记，防后人重走）：
+///   ① 「点展开后断言」：修复前也绿 —— 点击的 setState 顺带刷出了 `_chapterId`；
+///   ② 「零交互 pump 几帧」：修复前仍绿 —— 内存库下四个任务同批次完成，
+///      探针实测无 setState 时 `frame=0 false / frame=1 true`；
+///   ③ 「`Future.delayed` 延迟反查」：**测试永久挂起**（9 分钟无返回）——
+///      `testWidgets` 的 fake async 区里 dt 真实定时器不被 pump 推进；
+///   ④ 「Completer 门控反查」：变异态确实红了，但红法是
+///      `did not complete`（3 分 16 秒超时）——**环境判死，不是断言判红**，
+///      两者外观都是 `Some tests failed` 但含义完全不同，不可采信。
+///   ⇒ 本版（V5）不依赖任何时序控制，只依赖「谁被允许活着」，最稳。
+///
+/// **仅测试侧使用**，不进 lib/，产品代码零改动。
+class _OnlySessionsExecutor extends QueryExecutor {
+  _OnlySessionsExecutor(this._inner);
+
+  final QueryExecutor _inner;
+
+  /// 被拒的非 sessions SELECT 条数（用于断言「兄弟任务确实被掐断了」）。
+  int blockedSelects = 0;
+
+  static bool _isSessionsSelect(String statement) {
+    final lower = statement.toLowerCase();
+    return lower.contains('from "sessions"') ||
+        lower.contains("from 'sessions'");
+  }
+
+  @override
+  SqlDialect get dialect => _inner.dialect;
+
+  @override
+  Future<bool> ensureOpen(QueryExecutorUser user) => _inner.ensureOpen(user);
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    String statement,
+    List<Object?> args,
+  ) {
+    if (!_isSessionsSelect(statement)) {
+      blockedSelects++;
+      // 抛错（而非返回空）：三次兄弟任务的 catch 是**静默且无 setState**，
+      // 返回空列表反而会让它们正常走到 setState，把重建来源又搅浑。
+      throw StateError('_OnlySessionsExecutor: 非 sessions SELECT 被拒绝');
+    }
+    return _inner.runSelect(statement, args);
+  }
+
+  // 写操作全部放行：本用例需要在 setUp 阶段建稿件/章节/会话。
+  @override
+  Future<int> runInsert(String statement, List<Object?> args) =>
+      _inner.runInsert(statement, args);
+
+  @override
+  Future<int> runUpdate(String statement, List<Object?> args) =>
+      _inner.runUpdate(statement, args);
+
+  @override
+  Future<int> runDelete(String statement, List<Object?> args) =>
+      _inner.runDelete(statement, args);
+
+  @override
+  Future<void> runCustom(String statement, [List<Object?>? args]) =>
+      _inner.runCustom(statement, args);
+
+  @override
+  Future<void> runBatched(BatchedStatements statements) =>
+      _inner.runBatched(statements);
+
+  @override
+  TransactionExecutor beginTransaction() => _inner.beginTransaction();
+
+  @override
+  QueryExecutor beginExclusive() => _inner.beginExclusive();
+
+  @override
+  Future<void> close() => _inner.close();
 }
 
 void main() {
@@ -2504,6 +2594,108 @@ void main() {
         findsNothing,
         reason: '反查返 null ⇒ 不编造 role（04 空态口径）',
       );
+    });
+  });
+
+  // ── §4-551：`_resolveChapterId` 写回须自触发重建 ──
+  //
+  // 为什么单独立组：该缺陷的真实形态是「**隐式依赖**」——`_resolveChapterId`
+  // 只赋值不 setState，「确认指认」与 `M2RecallBar` 因此只能靠**其它**异步任务
+  // （`_loadTeachingStates` / `_loadTrends` / `_loadHistoryExcluded`）的 setState
+  // 顺带刷出来。当前三条任务正常路径都会 setState，所以现象**不显**
+  // （2026-11-23 实测：首次展开即「确认指认」可见）；但只要任一条提前 return
+  // 或被 catch 吞错，入口就静默消失且**零日志**。
+  //
+  // ⇒ 判据不能写成「有点击入口」——那在修复前就是绿的（被别的任务带出来），
+  //   属于**恒真断言**。本组用「**三条任务全部提前退出**」把顺带路径全部掐断，
+  //   只留 `_resolveChapterId` 一条活路，此时入口是否出现**只可能**由它决定。
+  //
+  //   掐断手法（均无需改产品代码）：
+  //     · `_loadTeachingStates` / `_loadTrends` / `_loadHistoryExcluded`
+  //       三者在 `sessionId == null` 时**直接 return**（已核源码）——
+  //       但本组必须有 sessionId 才能反查章节，故改用下面的「让它们抛错被吞」：
+  //       `_loadTrends` 走 `SyndromeTracker.loadSyndromeTrends`、
+  //       `_loadHistoryExcluded` 走 `getAllDiagnosisRows`，
+  //       二者都 .catch 后静默 ⇒ 无法从外部稳定注入失败。
+  //
+  //   ⇒ 结论：靠「掐断兄弟任务」也不可行（它们的失败路径都 .catch 静默，
+  //     无法从外部稳定注入）。唯一可靠的路子是**反过来的**：不掐断兄弟任务，
+  //     而是**让反查更慢**，制造「兄弟任务已 settle、反查刚回」的窗口，
+  //     此时界面若还要更新，就**只能**来自 `_resolveChapterId` 自己的 setState。
+  //     §4-551-a 用 `_SlowExecutor` 实现（只延迟 sessions 表的 SELECT）。
+  group('§4-551 章节反查写回自触发重建', () {
+    testWidgets('§4-551-a 反查是唯一存活重建来源时，入口仍须自行出现', (tester) async {
+      // 条件：把非 sessions 的 SELECT 全部拒掉 ⇒ 三条兄弟任务
+      //      （`_loadTeachingStates` / `_loadTrends` / `_loadHistoryExcluded`）
+      //      进入 catch 后**静默退出且不 setState**（已逐条核源码）；
+      //      只有 `_resolveChapterId`（查 sessions）能成功。
+      // ⇒ 界面若要因为 `_chapterId` 写回而更新，**只可能**来自它自己的 setState。
+      //   修复前（只赋值不 setState）⇒ 入口永远不出现 ⇒ 红。
+      final gated = _OnlySessionsExecutor(NativeDatabase.memory());
+      final slowDb = AppDatabase.forTesting(gated);
+      try {
+        final msId = await ManuscriptRepository(
+          slowDb,
+        ).createManuscript(title: '唯一来源用稿');
+        final chId = await ChapterRepository(
+          slowDb,
+        ).createChapter(msId, title: '第一章', content: '正文');
+        final sid = await SessionRepository(
+          slowDb,
+        ).getOrCreateSessionForManuscript(msId, chapterId: chId);
+        // teaching_state 缓存若已存在，`_loadTeachingStates` 会走**同步**
+        // setState 分支（不查库）⇒ 又多一个重建来源。显式清掉。
+        invalidateTeachingStates(sid);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [appDatabaseProvider.overrideWithValue(slowDb)],
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: DiagnosisCard(
+                    syndromeCount: 1,
+                    syndromes: const [
+                      DiagnosisSyndromeCard(
+                        syndromeId: 'P001',
+                        name: '情绪标签化',
+                        severity: 'L2',
+                        evidenceCount: 1,
+                        explanation: '情绪被直接说出，而非通过动作与场景呈现。',
+                      ),
+                    ],
+                    suggestedActions: const [],
+                    confidence: 0.8,
+                    sessionId: sid,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          gated.blockedSelects,
+          greaterThan(0),
+          reason:
+              '兄弟任务的 SELECT 必须真的被拒过（`blockedSelects > 0`）；'
+              '若为 0，说明它们走了缓存同步分支或根本没查询，'
+              '「唯一重建来源」这个前提不成立，判据无意义',
+        );
+
+        expect(
+          find.text('用自己的话复述根因'),
+          findsOneWidget,
+          reason:
+              '★ §4-551 判据：`_chapterId` 反查成功后必须**自触发重建**。'
+              '本条件下三条兄弟任务全被拒、不产生任何重建 ⇒ '
+              '入口出现只能源于 `_resolveChapterId` 的 setState。'
+              '修复前（只赋值不 setState）此处必红。',
+        );
+      } finally {
+        await slowDb.close();
+      }
     });
   });
 }
