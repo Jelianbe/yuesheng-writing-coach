@@ -76,6 +76,15 @@
     transition: background .18s, color .18s;
   }
   .nav-try:hover { background: var(--bamboo); color: #F7F8F6; }
+  /* 维护徽标（2026-11-23）：嵌在胶囊内，字号最小、用暖色区分。
+     `white-space: nowrap` 防止窄屏被折成两行撑高胶囊。 */
+  .nav-try-badge {
+    display: inline-block; margin-left: 6px; padding: 1px 6px;
+    font-size: .68rem; font-weight: 600; border-radius: 999px;
+    background: #FBF6EC; color: #A15C00; white-space: nowrap;
+    vertical-align: 1px;
+  }
+  .nav-try:hover .nav-try-badge { background: #fff; }
   .nav-toggle { display: none; background: none; border: 1px solid var(--line); border-radius: 8px; width: 44px; height: 44px; cursor: pointer; color: var(--ink); }
   .nav-toggle svg { width: 20px; height: 20px; }
 
@@ -116,6 +125,9 @@
   }
   .btn-ghost:hover { border-color: var(--bamboo); }
   .hero-note { margin-top: 18px; font-size: .8rem; color: var(--ink-2); }
+  /* 维护提示：与 hero-note 同排但需可辨识（2026-11-23）。
+     用暖色 + 加粗，不抢主 CTA 视觉权重，但一眼能被读到。 */
+  .note-maint { color: #A15C00; font-weight: 600; }
   .hero-fig { position: relative; }
   .hero-fig img { width: 100%; border-radius: 18px; box-shadow: var(--shadow); }
   .hero-badge {
@@ -268,7 +280,7 @@
       <a href="#loop">怎么帮写</a>
       <a href="#screens">界面</a>
       <a href="#privacy">隐私与数据</a>
-      <a class="nav-try" href="diagnose.html">在线体验</a>
+      <a class="nav-try" href="diagnose.html">在线体验<span class="nav-try-badge">维护中</span></a>
       <a class="nav-dl" href="#download">下载 v0.6.1</a>
     </nav>
     <button class="nav-toggle" id="navToggle" aria-label="打开菜单">
@@ -287,13 +299,17 @@
       <h1>写作教练，<em>不是</em>写作助手</h1>
       <p class="lead">月笙不替你写句子，也不替你做决定。它读取你的一段文字，指出问题出在哪里、读者为什么会困惑，然后给你一次可以完成的练习——并记住你改进了多少。</p>
       <div class="hero-cta">
-        <a class="btn-primary" href="diagnose.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-          在线试用诊断
+        <!-- ★ 2026-11-23 舰长指令「宣布在线诊断进入维护」。
+             主按钮从「在线试用诊断」改为「下载 Android 版」并把下载提到主位：
+             诊断页现在不可用，把主 CTA 指向它等于把用户送进一个只能看公告的页面。
+             diagnose.html 仍保留（横幅如实说明维护中），次级入口降为 ghost 并标注状态。 -->
+        <a class="btn-primary" href="#download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          下载 Android 版
         </a>
-        <a class="btn-ghost" href="#download">下载 Android 版</a>
+        <a class="btn-ghost" href="diagnose.html">在线诊断（维护中）</a>
       </div>
-      <p class="hero-note">在线诊断走平台免费额度 · 无需注册 · Android 版自带密钥（BYOK） · 源码公开可验证</p>
+      <p class="hero-note">Android 版自带密钥（BYOK）· 无需注册 · 源码公开可验证 · <span class="note-maint">在线诊断暂停服务，维护中</span></p>
     </div>
     <figure class="hero-fig">
       <img src="assets/hero.jpg" alt="月夜竹林书案插画——月笙的写作氛围">
@@ -418,7 +434,7 @@
   <div class="sec-head">
     <div class="sec-kicker">隐私与数据</div>
     <h2>你的稿件和密钥，都留在你的手机上</h2>
-    <p>月笙是本地优先的写作教练——没有云端账号，也不经过任何中转服务器。</p>
+    <p>月笙是本地优先的写作教练——没有云端账号，稿件不落在我们的服务器上。</p>
   </div>
   <div class="privacy-grid">
     <div class="privacy-card">

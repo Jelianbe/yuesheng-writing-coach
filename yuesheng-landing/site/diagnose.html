@@ -130,6 +130,49 @@
   }
   main { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 14px 8px; }
   .wrap { max-width: 760px; margin: 0 auto; }
+
+  /* ===== 维护公告（2026-11-23 · 舰长指令）=====
+     为什么做成**常驻横幅 + 禁用输入区**，而不是只弹一句提示：
+     平台已对 LLM 能力返回 401 login_required（详见 DECISIONS §4-552 三）。
+     若只提示而输入框仍可用，用户会照常粘贴、点「诊断」，再拿到报错 ——
+     那是把「我们已知不可用」变成「用户替你踩一遍坑」。故输入区同时禁用。
+     ⚠️ 输入区**不删除**：保留可见，让用户知道这里曾经/将来会有这个功能，
+        并明确指向替代路径（下载 Android 版，自带密钥）。 */
+  .maint-banner {
+    max-width: 760px; margin: 0 auto 14px;
+    background: var(--status-warn-bg);
+    border: 1px solid #E8D9BC; border-left: 3px solid #C08A2E;
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .maint-banner .mi { flex: none; color: #C08A2E; margin-top: 1px; }
+  .maint-banner .mi svg { width: 20px; height: 20px; }
+  .maint-banner h2 {
+    font-size: 14.5px; font-weight: 600; color: #6B4A12;
+    margin: 0 0 6px; line-height: 1.5;
+  }
+  .maint-banner p {
+    font-size: 13px; color: #7A5C24; line-height: 1.65; margin: 0;
+  }
+  .maint-banner p + p { margin-top: 6px; }
+  .maint-banner a {
+    color: #6B4A12; text-decoration: underline; text-underline-offset: 2px;
+    font-weight: 600;
+  }
+  /* 失效态输入区：视觉上明确"不可用"，但保留位置与说明 */
+  .composer.is-disabled textarea {
+    background: #F1F2F0; color: #9AA39F; cursor: not-allowed;
+  }
+  .composer.is-disabled #send {
+    background: #C3C9C6; cursor: not-allowed;
+  }
+  /* ===== 维护态单一真源（2026-11-23）=====
+     问题：横幅写死在 HTML、禁用属性写死在 HTML、而 MAINTENANCE 是 JS 常量
+     ⇒ **三处真源**。实测把常量改 false 后，JS 侧（问候语/placeholder）恢复了，
+        横幅与灰态却仍留着 —— 半恢复状态，比全不恢复更迷惑。
+     解法：用 `html[data-maint="1"]` 作为**唯一开关**，由 JS 在启动时按常量设置。
+     恢复服务时只需改 `var MAINTENANCE = false`，横幅与禁用态自动一起消失。 */
+  html:not([data-maint="1"]) .maint-banner { display: none; }
   .msg { margin: 0 0 14px; display: flex; gap: 10px; }
   .msg .avatar {
     width: 34px; height: 34px; border-radius: 50%; flex: none;
@@ -310,13 +353,32 @@
       <a class="nav-dl-ghost" href="./index.html#download">下载</a>
     </div>
   </header>
-  <main><div class="wrap" id="chat"></div></main>
-  <footer>
-    <div class="composer">
-      <textarea id="input" rows="1" autofocus></textarea>
-      <button id="send">诊断</button>
+  <main>
+    <!-- 维护公告：2026-11-23 舰长指令，随 §4-552 三 一并登记。
+         移动版维护说明的「更多」折叠见下方 CSS（窄屏 2 行截断不套用于本横幅，
+         避免用户错过「当前不可用」这一最高优先级信息）。 -->
+    <div class="maint-banner" role="status" aria-live="polite">
+      <span class="mi" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4"/><path d="M12 17h.01"/>
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+      </span>
+      <div>
+        <h2>在线诊断暂停服务（维护中）</h2>
+        <p>平台侧的模型调用能力已改为需要登录后使用，网页版的免费诊断体验暂时无法提供。我们正在重新设计访问方式，完成后会在此页恢复。</p>
+        <p>现在想用完整功能，请<a href="./index.html#download">下载 Android 版</a>——它自带密钥，不依赖本页的在线通道。</p>
+      </div>
     </div>
-    <div class="hint-wrap"><div class="hint" id="hint">诊断走平台免费额度垫付 · 稿件仅用于本次对话：会发送给模型服务处理，不保存到云端 · 条目点按会匿名回传统计（不含稿件内容） · <a href="./index.html#privacy">隐私与数据</a></div><button type="button" class="hint-more" id="hintMore" aria-expanded="false">更多</button></div>
+    <div class="wrap" id="chat"></div>
+  </main>
+  <footer>
+    <div class="composer is-disabled">
+      <textarea id="input" rows="1" placeholder="在线诊断维护中，暂不可用" disabled></textarea>
+      <button id="send" disabled>诊断</button>
+    </div>
+    <div class="hint-wrap"><div class="hint" id="hint">本页在线诊断能力维护中 · <a href="./index.html#download">改用 Android 版</a> · <a href="./index.html#privacy">隐私与数据</a></div><button type="button" class="hint-more" id="hintMore" aria-expanded="false">更多</button></div>
   </footer>
 </div>
 
@@ -336,6 +398,54 @@
   var listEl = document.getElementById('convoList');
   var sending = false;
   var SELFTEST = location.search.indexOf('selftest') !== -1;
+
+  // ★ 在线诊断维护开关（2026-11-23 · 舰长指令「宣布进入维护」）
+  // 【为什么是常量而不是运行时探测】探测平台 401 意味着「先让用户踩一次坑」才知道不可用，
+  //   而我们已经用 E1 确认 LLM 能力恒返回 401（§4-552 三）⇒ 直接关，不消耗用户。
+  // 【恢复方式】平台侧恢复后，把此常量改回 false 即可；HTML 里的横幅与 disabled
+  //   属性**同时**要撤（两处都在本文件，grep MAINTENANCE 可全部找到）。
+  // 【为什么不绑 SELFTEST】自测要验的是「维护态渲染与交互」，不能被维护态卡死；
+  //   故 SELFTEST 下仍允许 sendCore 走 fake bridge（见 :1080 附近的 fake 分支）。
+  var MAINTENANCE = true;
+
+  // ★ 维护态单一真源落地（2026-11-23）。
+  //   上面那个常量是**唯一**开关；此处把它投影到 DOM，让三处表现一致：
+  //     ① html[data-maint="1"] → CSS 显示/隐藏横幅
+  //     ② input.disabled / send.disabled → 交互失效
+  //     ③ composer.is-disabled → 灰态样式
+  //   为什么必须这样做：实测把常量改 false 后，JS 侧（问候语、placeholder）
+  //   恢复了，但写死在 HTML 的横幅与 disabled 仍留着 ⇒ 半恢复状态。
+  //   现在改常量一处，三处全跟着走。
+  (function applyMaintenance() {
+    var root = document.documentElement;
+    var input = document.getElementById('input');
+    var send = document.getElementById('send');
+    var composer = document.querySelector('.composer');
+    var hint = document.getElementById('hint');
+    // 两套 hint 文案：维护态只讲「不可用 + 去哪用」；正常态是原有的合规披露。
+    // 维护态**不保留**「免费额度垫付」那句 —— 该承诺正是当前失效的东西。
+    var HINT_MAINT = '本页在线诊断能力维护中 · <a href="./index.html#download">改用 Android 版</a> · <a href="./index.html#privacy">隐私与数据</a>';
+    var HINT_NORMAL = '诊断走平台免费额度垫付 · 稿件仅用于本次对话：会发送给模型服务处理，不保存到云端 · 条目点按会匿名回传统计（不含稿件内容） · <a href="./index.html#privacy">隐私与数据</a>';
+    if (MAINTENANCE) {
+      root.setAttribute('data-maint', '1');
+      if (input) { input.disabled = true; input.setAttribute('placeholder', '在线诊断维护中，暂不可用'); }
+      if (send) send.disabled = true;
+      if (composer) composer.classList.add('is-disabled');
+      if (hint) hint.innerHTML = HINT_MAINT;
+      return;
+    }
+    // 非维护态：撤掉一切维护痕迹，恢复可交互
+    root.removeAttribute('data-maint');
+    if (input) {
+      input.disabled = false;
+      input.removeAttribute('placeholder'); // 交给 initPlaceholder 按屏宽重设
+    }
+    if (send) send.disabled = false;
+    if (composer) composer.classList.remove('is-disabled');
+    if (hint) hint.innerHTML = HINT_NORMAL;
+    // 恢复自动聚焦（维护态下 HTML 里的 autofocus 已被移除，此处补回）
+    if (input) { try { input.focus(); } catch (_) {} }
+  })();
   // ── 2026-11-19：占位文案按屏宽设置 ──────────────────────
   // 原 placeholder 33 汉字在 390px 折 2 行，而 rows=1 的 46px 只够 1.5 行
   // ⇒ 下半行被裁掉。改为两套文案：窄屏短句一行放得下，宽屏保留完整引导。
@@ -343,6 +453,11 @@
   (function initPlaceholder() {
     var el = document.getElementById('input');
     if (!el) return;
+    // ★ 维护态守卫（2026-11-23）：本 IIFE 会**无条件覆盖** HTML 里写的
+    //   placeholder。若不提前返回，维护态下输入框会重新显示
+    //   「粘贴要诊断的片段…」——一句**邀请用户输入的失效文案**，
+    //   与「不可用」自相矛盾。实测踩到（390px 视口截图），故加此闸。
+    if (MAINTENANCE) return;
     var isNarrow = window.matchMedia('(max-width: 640px)').matches;
     el.setAttribute('placeholder', isNarrow
       ? '粘贴要诊断的片段…'
@@ -751,6 +866,12 @@
   // opts.skipUserBubble：重试时不重复画用户气泡
   async function sendCore(text, opts) {
     opts = opts || {};
+    // ★ 维护态总闸（2026-11-23）。send() 只挡了「输入框发送」这一条路，
+    //   但 sendCore 另有直接调用点：startPractice(:805，症候卡的「就这条开始练」)
+    //   与自测(:1178/:1214/:1219)。前者是真用户可达路径 —— 若不在此拦截，
+    //   用户仍能从旧会话卡片点「开始练习」再拿到 401。
+    //   ⇒ 在**汇聚点**拦，而不是逐个调用点加判断（漏一处就是一个洞）。
+    if (MAINTENANCE && !SELFTEST) return;
     if (sending) return;
     if (!opts.practiceTurn && !text) return;
     sending = true; sendEl.disabled = true;
@@ -863,7 +984,12 @@
       thinkBubble.className = 'bubble err';
       thinkBubble.textContent = '调用失败：' + (e && e.message ? e.message : String(e));
     }
-    sending = false; sendEl.disabled = false;
+    // ★ 维护态下**不得**把按钮重新放开（2026-11-23）。
+    //   `sendCore` 的每条结束路径都会跑这一行；若在此无条件置 false，
+    //   就与 HTML 的 disabled 属性互相打架 —— 用户点一次「重试」后按钮又活了，
+    //   然后拿到 401，形成「能点但必然失败」的最差形态。
+    sending = false;
+    if (!MAINTENANCE) sendEl.disabled = false;
   }
 
   function friendlyError(r) {
@@ -874,6 +1000,16 @@
   }
 
   function greet() {
+    // ★ 2026-11-23 维护态话术（舰长指令「宣布进入维护」）。
+    //   原文案是「（无需注册，不用配 API Key；对话内容只存在你自己的浏览器里…）」
+    //   —— 该陈述在维护态下**已失实**：现在根本无法发起调用，不存在「无需注册也能用」。
+    //   此处只做**事实性更正**（删除失效承诺 + 指向可用替代路径），
+    //   不新增教练话术、不改人格设定；月笙的自我介绍原句保留。
+    if (MAINTENANCE) {
+      addBubble('assistant',
+        '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（在线诊断正在维护，暂时没法在这里接你的稿子。想现在就用，请下载 Android 版——它自带密钥，不依赖这里的在线通道。）');
+      return;
+    }
     addBubble('assistant',
       '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（无需注册，不用配 API Key；对话内容只存在你自己的浏览器里，不保存到云端，但会发送给模型服务处理。）');
   }
@@ -888,6 +1024,11 @@
 
   sendEl.onclick = send;
   function send() {
+    // ★ 维护态守卫（2026-11-23）。`disabled` 属性只挡「鼠标/触摸点击」，
+    //   **不挡回车键** —— 下面 :984 的 keydown 监听器会直接调 send()。
+    //   且 disabled 的 textarea 在某些浏览器仍可被 JS 聚焦后收到回车。
+    //   ⇒ 必须在函数入口显式拦截，不能只依赖属性。
+    if (MAINTENANCE) return;
     var text = inputEl.value.trim();
     if (!text) return;
     inputEl.value = '';
