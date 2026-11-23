@@ -31,19 +31,35 @@ ALLOWED_ORIGINS = {SELF_ORIGIN, 'http://127.0.0.1:8795', 'http://localhost:8795'
 # 本服务收到 /wbproxy/.cloud/... 后剥前缀转发到数据面 /.cloud/...。
 PROXY_PREFIX = '/wbproxy/'
 # 逐跳头不转发（RFC 7230）＋ 网关注入头不转发：
-# ★ 2026-11-23 变更（登录接入，§4-553）：`authorization` **从剥离名单移出**。
-#   【原设计】Authorization/Cookie 都剥——依据是平台网关会给入站请求注入它自己的
-#   会话头，透传到数据面 ⇒ 401 invalid_grant「issued for another client」（§4-511）。
-#   【现在为什么改】接入 WorkBuddy 账号登录后，浏览器带来的 `Authorization: Bearer <用户 token>`
-#   是**用户真实身份**，必须原样送达数据面；剥掉就等于用户永远登录不上。
-#   【怎么避免重犯原问题】实测确认网关注入的是 **Cookie `__wb_rsc`（HttpOnly）**，
-#   **不注入 Authorization**（响应头实测：只有 Set-Cookie: __wb_rsc）⇒
-#   把两者拆开处理即可：**Cookie 继续剥**（挡网关注入），**Authorization 放行**（送用户 token）。
-#   ⚠️ 若将来又出现 invalid_grant，先查是不是网关开注入了 Authorization，而不是直接回退本行。
+# Cookie 一律剥（挡平台网关注入的 `__wb_rsc`，§4-511）。
 HOP_HEADERS = {'host', 'connection', 'keep-alive', 'transfer-encoding',
                'upgrade', 'proxy-authorization', 'proxy-authenticate',
                'te', 'trailers', 'cookie'}
 STRIP_PREFIXES = ('x-wb-webapp-access-key',)
+
+# ★★ 2026-11-24（§4-555）：**认证类端点一律剥 Authorization**，其余端点放行。
+#
+#   【为什么必须分路径，不能一刀切】
+#     · 放行（§4-553 的写法）⇒ 兑换必然失败：实测 `POST /auth/v1/login-workbuddy`
+#       只要带 Authorization（任何值：`Bearer faketok123` / 随机串 / 伪 JWT 三种都试过），
+#       数据面返回 401 `invalid_grant: the session is invalid, expired or issued for
+#       another client`；**不带**则正常推进到 code/state 校验
+#       （400 `invalid_request: the state parameter is invalid...`）。
+#       舰长真机截图上的报错与「带 Authorization」这一组**一字不差**。
+#     · 全剥（§4-511 的写法）⇒ 登录后 LLM 调用拿不到用户身份。
+#
+#   【为什么「认证类端点剥」是安全的，这不是妥协而是依据】
+#     SDK 源码实证：`postForSession` 只发 `{code,state,code_verifier}` /
+#     `{username,password}` / `{refresh_token}` 这类**凭据本体**，
+#     这些端点靠**请求体里的凭据**认证，**设计上不接受也不需要 Bearer**
+#     （`exchangeWorkBuddyCode` → `postForSession(b.loginWorkBuddy, {...})`，无 token 参数）。
+#     ⇒ 该路径上的 Authorization 只会污染兑换，**没有任何正向作用**。
+#
+#   【LLM 等业务端点仍放行】因为那里恰恰是用户 token 的用武之地。
+#   ⚠️ 若登录后 LLM 仍报 `invalid_grant`，则说明**平台网关会覆盖/注入**入站
+#     Authorization（而非浏览器原值），此时须改走「服务端会话换取」而非透传，
+#     不要简单回退成本文件早先的「全剥」。
+AUTH_STRIP_PREFIXES = ('/.cloud/auth/',)
 
 # publishableKey 从同目录 config.js 读入（该 key 设计上随客户端公开，
 # 已在站点静态文件里；服务端读入仅为强制注入，不新增泄露面、不进日志）。
@@ -101,15 +117,20 @@ class Handler(SimpleHTTPRequestHandler):
             return
         length = int(self.headers.get('Content-Length') or 0)
         body = self.rfile.read(length) if length else None
+        upstream_path = self.path[len('/wbproxy'):]
+        # 认证类端点额外剥 Authorization（依据见文件头 AUTH_STRIP_PREFIXES 注释）
+        strip_auth = any(upstream_path.startswith(p) for p in AUTH_STRIP_PREFIXES)
         headers = {}
         for k, v in self.headers.items():
             kl = k.lower()
             if kl in HOP_HEADERS or kl in STRIP_PREFIXES or kl == 'origin':
                 continue
+            if strip_auth and kl == 'authorization':
+                continue
             headers[k] = v
         headers['Origin'] = UPSTREAM  # ★ 重写为数据面自身域 ⇒ 后端按同源放行
         headers['X-Wb-Webapp-Access-Key'] = _access_key()  # ★ 强制注入（防网关剥/换客户端头）
-        req = urllib.request.Request(UPSTREAM + self.path[len('/wbproxy'):],
+        req = urllib.request.Request(UPSTREAM + upstream_path,
                                      data=body, method=self.command, headers=headers)
         try:
             up = urllib.request.urlopen(req, timeout=120)
