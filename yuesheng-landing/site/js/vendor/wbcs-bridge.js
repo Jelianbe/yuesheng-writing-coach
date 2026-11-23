@@ -36,16 +36,34 @@
   var _client = null;
   var _clientSig = null;
 
-  function getClient(endpoint, publishableKey) {
-    var sig = endpoint + '\u0000' + publishableKey;
+  function getClient(endpoint, publishableKey, oauthRelayBaseUrl) {
+    // ★ 2026-11-23：签名把 oauthRelayBaseUrl 也算进缓存键。
+    //   否则「先建了不带 relay 的 client」之后即使补传 relay 也会命中旧缓存，
+    //   表现成「参数明明传了却仍报 requires oauthRelayBaseUrl」。
+    var sig = endpoint + '\u0000' + publishableKey + '\u0000' + (oauthRelayBaseUrl || '');
     if (_client && _clientSig === sig) return _client;
-    _client = window.WorkBuddyCloud.createWorkBuddyCloud({
+    var opts = {
       endpoint: endpoint,
       publishableKey: publishableKey,
-    });
+    };
+    // 只在真有值时才传：SDK 类型上它是 optional，传空串会覆盖平台默认推导。
+    if (oauthRelayBaseUrl) opts.oauthRelayBaseUrl = oauthRelayBaseUrl;
+    _client = window.WorkBuddyCloud.createWorkBuddyCloud(opts);
     _clientSig = sig;
     return _client;
   }
+
+  // 对外暴露：登录模块要拿到**同一个** client（同一会话、同一缓存）。
+  // 若登录另建一个 client，就会出现「登录态在 A 实例、LLM 走 B 实例」的割裂。
+  function getSharedClient() {
+    if (!window.WB_CONFIG) return null;
+    return getClient(
+      window.WB_CONFIG.endpoint,
+      window.WB_CONFIG.publishableKey,
+      window.WB_CONFIG.oauthRelayBaseUrl
+    );
+  }
+  window.WbcsBridgeGetClient = getSharedClient;
 
   function toErrorPayload(e) {
     var inner = (e && e.error) || {};
@@ -82,7 +100,8 @@
         });
       }
 
-      var cloud = getClient(endpoint, publishableKey);
+      var cloud = getClient(endpoint, publishableKey,
+        (window.WB_CONFIG && window.WB_CONFIG.oauthRelayBaseUrl) || undefined);
       if (!cloud || !cloud.llm || !cloud.llm.chat) {
         return JSON.stringify({
           ok: false,
@@ -148,7 +167,8 @@
       if (typeof window.WorkBuddyCloud === 'undefined') {
         return JSON.stringify({ ok: false, code: 'bridge_sdk_missing', message: 'sdk not loaded' });
       }
-      var cloud = getClient(p.endpoint, p.publishableKey);
+      var cloud = getClient(p.endpoint, p.publishableKey,
+        (window.WB_CONFIG && window.WB_CONFIG.oauthRelayBaseUrl) || undefined);
       if (!cloud || !cloud.database || !cloud.database.from) {
         return JSON.stringify({ ok: false, code: 'bridge_database_missing', message: 'database namespace not mounted' });
       }

@@ -1,5 +1,12 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-gate="needlogin">
+  <!-- ★ data-gate 在**标签上**预置初值（2026-11-24），不是等 JS 来设。
+       理由：CSS 的显隐规则是 `html:not([data-gate="maint"]) .maint-banner{display:none}`，
+       若属性根本不存在，则 maint 规则**不匹配**（不显示，正确）、登录门规则也**不匹配**
+       （也不显示，错误）⇒ 页面在两处都没有提示的空白里等 JS。
+       预置成最保守的 needlogin 后：JS 还没跑时可读、跑完后由 applyGate 覆盖为真值。
+       选 needlogin 而非 maint 作初值：绝大多数情况是新用户未登录，
+       且即使平台真的整体故障（maint），用户看到的也是「登录」而非空白，仍可自救（下载 Android 版）。 -->
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -166,13 +173,57 @@
   .composer.is-disabled #send {
     background: #C3C9C6; cursor: not-allowed;
   }
-  /* ===== 维护态单一真源（2026-11-23）=====
-     问题：横幅写死在 HTML、禁用属性写死在 HTML、而 MAINTENANCE 是 JS 常量
+  /* ===== 服务状态单一真源（2026-11-23 立，2026-11-24 扩为三态）=====
+     问题：横幅写死在 HTML、禁用属性写死在 HTML、而状态是 JS 常量
      ⇒ **三处真源**。实测把常量改 false 后，JS 侧（问候语/placeholder）恢复了，
         横幅与灰态却仍留着 —— 半恢复状态，比全不恢复更迷惑。
-     解法：用 `html[data-maint="1"]` 作为**唯一开关**，由 JS 在启动时按常量设置。
-     恢复服务时只需改 `var MAINTENANCE = false`，横幅与禁用态自动一起消失。 */
-  html:not([data-maint="1"]) .maint-banner { display: none; }
+     解法：用 `html[data-gate="..."]` 作为**唯一开关**，由 JS 在启动时按实测状态设置
+        （computeGate()，见脚本区）。三种状态互斥，CSS 与 JS 永不各说各话：
+          maint     = 平台能力整体不可用（当前不用，留作紧急闸）
+          needlogin = 能力可用但需登录（**当前态**）
+          ready     = 已登录且能力可用
+     ⚠️ 判据不是「常量写没写对」，而是「三态互斥且各自表现完整」——
+        之前正是靠这条抓出半恢复。恢复服务时只需改一处，横幅与禁用态自动跟着走。 */
+  html:not([data-gate="maint"]) .maint-banner { display: none; }
+  html:not([data-gate="needlogin"]) .login-gate { display: none; }
+
+  /* ===== 登录门（2026-11-24）=====
+     为什么不是一个「去登录」小链接：未登录时页面**没有任何可用能力**，
+     用户来这一页只有一个目的 —— 诊断。故把登录做成**唯一主动作**（主按钮，
+     44px 触控高度），而不是让用户在灰掉的输入框旁边自己找出口。 */
+  .login-gate {
+    max-width: 760px; margin: 0 auto 14px;
+    background: var(--paper);
+    border: 1px solid var(--line); border-left: 3px solid var(--brand);
+    border-radius: 12px; padding: 16px;
+  }
+  .login-gate h2 {
+    font-size: 15px; font-weight: 600; color: var(--ink);
+    margin: 0 0 6px; line-height: 1.5;
+  }
+  .login-gate p {
+    font-size: 13px; color: var(--ink-soft); line-height: 1.65; margin: 0;
+  }
+  .login-gate p + p { margin-top: 6px; }
+  .login-gate .lg-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .login-gate button.lg-btn {
+    appearance: none; border: none; cursor: pointer;
+    background: var(--brand); color: #fff;
+    font-family: inherit; font-size: 14.5px; font-weight: 600;
+    padding: 11px 22px; min-height: 44px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity .15s ease;
+  }
+  .login-gate button.lg-btn:active { opacity: .82; }
+  .login-gate button.lg-btn[disabled] { background: #C3C9C6; cursor: not-allowed; }
+  .login-gate .lg-alt {
+    font-size: 13px; color: var(--ink-soft); text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .login-gate .lg-err {
+    margin-top: 10px; font-size: 13px; color: #A23B2A; line-height: 1.6;
+  }
+  .login-gate .lg-err:empty { display: none; }
   .msg { margin: 0 0 14px; display: flex; gap: 10px; }
   .msg .avatar {
     width: 34px; height: 34px; border-radius: 50%; flex: none;
@@ -354,9 +405,29 @@
     </div>
   </header>
   <main>
+    <!-- ★ 登录门（2026-11-24）：当前态。平台 LLM 能力要求登录，故未登录时
+         本页**没有任何可用能力** —— 登录是唯一主动作，不做成角落小链接。
+         显隐由 html[data-gate] 统一投影，不在 HTML 里写 style/disabled（防三处真源复发）。 -->
+    <div class="login-gate" role="region" aria-labelledby="lgTitle">
+      <h2 id="lgTitle">登录后即可在线诊断</h2>
+      <p>平台侧的模型调用能力现在要求登录。用 WorkBuddy 账号登录一次，之后回到本页直接可用，不用再登录。</p>
+      <p>我们只读取账号标识用于额度统计，<strong>不读取你的稿件用于其他用途</strong>；稿件不落在我们的服务器上。</p>
+      <div class="lg-actions">
+        <button type="button" class="lg-btn" id="lgSignIn">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>
+          </svg>
+          使用 WorkBuddy 登录
+        </button>
+        <a class="lg-alt" href="./index.html#download">或下载 Android 版（自带密钥，无需登录）</a>
+      </div>
+      <div class="lg-err" id="lgErr" role="alert"></div>
+    </div>
     <!-- 维护公告：2026-11-23 舰长指令，随 §4-552 三 一并登记。
          移动版维护说明的「更多」折叠见下方 CSS（窄屏 2 行截断不套用于本横幅，
-         避免用户错过「当前不可用」这一最高优先级信息）。 -->
+         避免用户错过「当前不可用」这一最高优先级信息）。
+         2026-11-24 起本横幅**默认不显示**（data-gate 不是 maint），仅作紧急闸保留。 -->
     <div class="maint-banner" role="status" aria-live="polite">
       <span class="mi" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -367,7 +438,7 @@
       </span>
       <div>
         <h2>在线诊断暂停服务（维护中）</h2>
-        <p>平台侧的模型调用能力已改为需要登录后使用，网页版的免费诊断体验暂时无法提供。我们正在重新设计访问方式，完成后会在此页恢复。</p>
+        <p>平台侧的模型调用能力暂时不可用，网页版的在线诊断无法提供。恢复后会在此页直接可用。</p>
         <p>现在想用完整功能，请<a href="./index.html#download">下载 Android 版</a>——它自带密钥，不依赖本页的在线通道。</p>
       </div>
     </div>
@@ -375,10 +446,10 @@
   </main>
   <footer>
     <div class="composer is-disabled">
-      <textarea id="input" rows="1" placeholder="在线诊断维护中，暂不可用" disabled></textarea>
+      <textarea id="input" rows="1" placeholder="登录后在此粘贴要诊断的片段" disabled></textarea>
       <button id="send" disabled>诊断</button>
     </div>
-    <div class="hint-wrap"><div class="hint" id="hint">本页在线诊断能力维护中 · <a href="./index.html#download">改用 Android 版</a> · <a href="./index.html#privacy">隐私与数据</a></div><button type="button" class="hint-more" id="hintMore" aria-expanded="false">更多</button></div>
+    <div class="hint-wrap"><div class="hint" id="hint">需登录后使用 · 登录免费用，无需付费 · 稿件仅用于本次对话，不保存到云端 · <a href="./index.html#privacy">隐私与数据</a></div><button type="button" class="hint-more" id="hintMore" aria-expanded="false">更多</button></div>
   </footer>
 </div>
 
@@ -387,6 +458,7 @@
 <script src="./js/vendor/marked.min.js"></script>
 <script src="./js/vendor/purify.min.js"></script>
 <script src="./js/config.js?v=511proxy"></script>
+<script src="./js/auth.js?v=login1"></script>
 <script src="./js/corpus.js?v=511proxy"></script>
 <script src="./js/engine.js?v=511proxy"></script>
 <script>
@@ -399,70 +471,83 @@
   var sending = false;
   var SELFTEST = location.search.indexOf('selftest') !== -1;
 
-  // ★ 在线诊断维护开关（2026-11-23 · 舰长指令「宣布进入维护」）
-  // 【为什么是常量而不是运行时探测】探测平台 401 意味着「先让用户踩一次坑」才知道不可用，
-  //   而我们已经用 E1 确认 LLM 能力恒返回 401（§4-552 三）⇒ 直接关，不消耗用户。
-  // 【恢复方式】平台侧恢复后，把此常量改回 false 即可；HTML 里的横幅与 disabled
-  //   属性**同时**要撤（两处都在本文件，grep MAINTENANCE 可全部找到）。
-  // 【为什么不绑 SELFTEST】自测要验的是「维护态渲染与交互」，不能被维护态卡死；
-  //   故 SELFTEST 下仍允许 sendCore 走 fake bridge（见 :1080 附近的 fake 分支）。
-  var MAINTENANCE = true;
+  // ★ 服务状态：三态互斥（2026-11-24 由「维护常量」升级而来）
+  // 【为什么不再用常量】常量只能表达「开/关」两态。现在有第三种真实状态：
+  //   **平台能力可用、但要求登录**。它不是维护（能力没坏），也不是就绪（未登录不能用）。
+  //   若硬塞进布尔量，必然二选一失真：写成 true 会把「可登录恢复」误报成「坏掉了」；
+  //   写成 false 会让用户照常输入再吃 401。
+  //   故改为**由实测状态推导**的三态：maint / needlogin / ready。
+  // 【maint 态仍需保留为常量闸门】平台若整体故障（不是登录问题），登录也救不了，
+  //   那时要能一键全关而不用改结构 ⇒ 保留 FORCE_MAINT 作为最高优先级的紧急闸。
+  var FORCE_MAINT = false;                   // 紧急闸：平台整体不可用时置 true
+  var SESSION_TIMEOUT_MS = 6000;             // getSession 上限：宁可误判未登录，不可卡死页面
+  var gate = FORCE_MAINT ? 'maint' : 'needlogin';   // 先用最保守值渲染，避免闪一下可交互
+  var signedIn = false;
 
-  // ★ 维护态单一真源落地（2026-11-23）。
-  //   上面那个常量是**唯一**开关；此处把它投影到 DOM，让三处表现一致：
-  //     ① html[data-maint="1"] → CSS 显示/隐藏横幅
-  //     ② input.disabled / send.disabled → 交互失效
-  //     ③ composer.is-disabled → 灰态样式
-  //   为什么必须这样做：实测把常量改 false 后，JS 侧（问候语、placeholder）
-  //   恢复了，但写死在 HTML 的横幅与 disabled 仍留着 ⇒ 半恢复状态。
-  //   现在改常量一处，三处全跟着走。
-  (function applyMaintenance() {
+  function computeGate() {
+    if (FORCE_MAINT) return 'maint';
+    return signedIn ? 'ready' : 'needlogin';
+  }
+
+  // ★ 状态投影：唯一开关 `html[data-gate]`，一次把四处表现一起推齐
+  //   ① CSS 显隐横幅/登录门 ② input.disabled ③ send.disabled ④ composer 灰态 + hint 文案
+  //   之前半恢复事故的根因就是「一部分写在 HTML、一部分写在 JS」，此后一律走这里。
+  function applyGate() {
     var root = document.documentElement;
     var input = document.getElementById('input');
     var send = document.getElementById('send');
     var composer = document.querySelector('.composer');
     var hint = document.getElementById('hint');
-    // 两套 hint 文案：维护态只讲「不可用 + 去哪用」；正常态是原有的合规披露。
-    // 维护态**不保留**「免费额度垫付」那句 —— 该承诺正是当前失效的东西。
-    var HINT_MAINT = '本页在线诊断能力维护中 · <a href="./index.html#download">改用 Android 版</a> · <a href="./index.html#privacy">隐私与数据</a>';
-    var HINT_NORMAL = '诊断走平台免费额度垫付 · 稿件仅用于本次对话：会发送给模型服务处理，不保存到云端 · 条目点按会匿名回传统计（不含稿件内容） · <a href="./index.html#privacy">隐私与数据</a>';
-    if (MAINTENANCE) {
-      root.setAttribute('data-maint', '1');
-      if (input) { input.disabled = true; input.setAttribute('placeholder', '在线诊断维护中，暂不可用'); }
-      if (send) send.disabled = true;
-      if (composer) composer.classList.add('is-disabled');
-      if (hint) hint.innerHTML = HINT_MAINT;
+    // 三套 hint 文案，各自只讲**当前为真**的事。
+    // ⚠️ 原「诊断走平台免费额度垫付」的措辞随手改过：额度垫付仍在，但有了登录这件事，
+    //    不提会让人以为「登录 = 付费」。这里只作事实性补充，不改承诺。
+    var HINT = {
+      maint: '本页在线诊断能力维护中 · <a href="./index.html#download">改用 Android 版</a> · <a href="./index.html#privacy">隐私与数据</a>',
+      needlogin: '需登录后使用 · 登录免费用，无需付费 · 稿件仅用于本次对话，不保存到云端 · <a href="./index.html#privacy">隐私与数据</a>',
+      ready: '诊断走平台免费额度垫付 · 稿件仅用于本次对话：会发送给模型服务处理，不保存到云端 · 条目点按会匿名回传统计（不含稿件内容） · <a href="./index.html#privacy">隐私与数据</a>'
+    };
+    gate = computeGate();
+    root.setAttribute('data-gate', gate);
+
+    if (gate === 'ready') {
+      if (input) { input.disabled = false; input.removeAttribute('placeholder'); }
+      if (send) send.disabled = false;
+      if (composer) composer.classList.remove('is-disabled');
+      if (hint) hint.innerHTML = HINT.ready;
+      // 由 needlogin/maint 翻到 ready 时，placeholder 还是旧的禁止语 ⇒ 必须重设。
+      // 函数声明在下方（hoisted），此处可安全调用。
+      initPlaceholder();
       return;
     }
-    // 非维护态：撤掉一切维护痕迹，恢复可交互
-    root.removeAttribute('data-maint');
-    if (input) {
-      input.disabled = false;
-      input.removeAttribute('placeholder'); // 交给 initPlaceholder 按屏宽重设
-    }
-    if (send) send.disabled = false;
-    if (composer) composer.classList.remove('is-disabled');
-    if (hint) hint.innerHTML = HINT_NORMAL;
-    // 恢复自动聚焦（维护态下 HTML 里的 autofocus 已被移除，此处补回）
-    if (input) { try { input.focus(); } catch (_) {} }
-  })();
+    // maint / needlogin 都是「不可输入」，差别只在文案与横幅（由 CSS 按 data-gate 分流）。
+    // placeholder 必须写实：ready 之外不能出现「粘贴要诊断的片段…」这种邀请语。
+    var ph = gate === 'maint' ? '在线诊断维护中，暂不可用' : '登录后在此粘贴要诊断的片段';
+    if (input) { input.disabled = true; input.setAttribute('placeholder', ph); }
+    if (send) send.disabled = true;
+    if (composer) composer.classList.add('is-disabled');
+    if (hint) hint.innerHTML = HINT[gate];
+  }
   // ── 2026-11-19：占位文案按屏宽设置 ──────────────────────
   // 原 placeholder 33 汉字在 390px 折 2 行，而 rows=1 的 46px 只够 1.5 行
   // ⇒ 下半行被裁掉。改为两套文案：窄屏短句一行放得下，宽屏保留完整引导。
   // 放在 JS 而非 HTML 属性，是为避免写两份 textarea 或在 CSS 里做内容替换。
-  (function initPlaceholder() {
+  // ★ 2026-11-24 改成具名函数：登录成功后 gate 会由 needlogin 翻到 ready，
+  //   那时必须**再跑一次**才能把邀请语写上。挂成 IIFE 就只能跑一次，登录后
+  //   placeholder 仍是「登录后在此粘贴…」，与已经可输入的框自相矛盾。
+  function initPlaceholder() {
     var el = document.getElementById('input');
     if (!el) return;
-    // ★ 维护态守卫（2026-11-23）：本 IIFE 会**无条件覆盖** HTML 里写的
-    //   placeholder。若不提前返回，维护态下输入框会重新显示
-    //   「粘贴要诊断的片段…」——一句**邀请用户输入的失效文案**，
-    //   与「不可用」自相矛盾。实测踩到（390px 视口截图），故加此闸。
-    if (MAINTENANCE) return;
+    // 非 ready 态守卫（2026-11-23 立，2026-11-24 随三态扩写）：本函数会**无条件覆盖**
+    //   HTML 里写的 placeholder。若不提前返回，失效态下输入框会重新显示
+    //   「粘贴要诊断的片段…」——一句**邀请用户输入的失效文案**，与「不可用」自相矛盾。
+    //   实测踩到（390px 视口截图），故加此闸。gate 由 applyGate 算好，此处只读。
+    if (gate !== 'ready') return;
     var isNarrow = window.matchMedia('(max-width: 640px)').matches;
     el.setAttribute('placeholder', isNarrow
       ? '粘贴要诊断的片段…'
       : '把要诊断的片段粘贴进来（一段场景、一个开场、一章正文都可以）…');
-  })();
+  }
+  initPlaceholder();   // 首帧按「初始 gate（needlogin）」跑一次；ready 时什么也不做
   function selfreport(data) {
     if (!SELFTEST) return;
     try { fetch('/engine_result?d=' + encodeURIComponent(JSON.stringify(data))); } catch (_) {}
@@ -487,20 +572,29 @@
   // 合规要素存在性自检（selftest 与人工核对共用）。
   // 判据：四条要素任一缺失即返回 false —— 防止「为了塞进小屏把合规信息
   // 悄悄删掉」这类回退。此函数无副作用，可在控制台直接调用。
+  // ★ 2026-11-24 按 gate 分档（此前只按 ready 态写，needlogin 下会假红）：
+  //   合规披露的是「**实际发生的事**」。未登录时根本没有调用、也没有匿名回传，
+  //   此时仍要求「会发送给模型服务处理 / 匿名回传统计」等于逼我们写不实内容。
+  //   ⇒ 分档后每档各自要求「当前为真的那几条」，缺一条即红。
+  //   注意：ready 档的四条**一字未减**（与原来完全一致），本改动只放宽未登录档。
   window.hintCompliance = function () {
     var el = document.getElementById('hint');
     if (!el) return { ok: false, missing: ['hint 元素不存在'] };
     var t = el.textContent || '';
-    var need = [
-      '平台免费额度垫付',
-      '会发送给模型服务处理',
-      '不保存到云端',
-      '匿名回传统计',
-    ];
+    var need;
+    if (gate === 'ready') {
+      need = ['平台免费额度垫付', '会发送给模型服务处理', '不保存到云端', '匿名回传统计'];
+    } else if (gate === 'needlogin') {
+      // 尚未登录：可承诺的是「免费」与「稿件不落云端」；不得声称已回传统计。
+      need = ['需登录后使用', '无需付费', '不保存到云端'];
+    } else {
+      // maint：只剩「不可用 + 去哪用」。
+      need = ['维护中'];
+    }
     var missing = need.filter(function (s) { return t.indexOf(s) === -1; });
     var hasPrivacyLink = !!(el.querySelector('a[href*="privacy"]'));
     if (!hasPrivacyLink) missing.push('隐私与数据链接');
-    return { ok: missing.length === 0, missing: missing };
+    return { ok: missing.length === 0, missing: missing, gate: gate };
   };
 
   // ── 多会话存储（全部本地 localStorage）──────────────────
@@ -866,12 +960,14 @@
   // opts.skipUserBubble：重试时不重复画用户气泡
   async function sendCore(text, opts) {
     opts = opts || {};
-    // ★ 维护态总闸（2026-11-23）。send() 只挡了「输入框发送」这一条路，
-    //   但 sendCore 另有直接调用点：startPractice(:805，症候卡的「就这条开始练」)
-    //   与自测(:1178/:1214/:1219)。前者是真用户可达路径 —— 若不在此拦截，
+    // ★ 状态总闸（2026-11-23 立为维护闸，2026-11-24 随三态扩写）。send() 只挡了
+    //   「输入框发送」这一条路，但 sendCore 另有直接调用点：startPractice(:805，症候卡的
+    //   「就这条开始练」) 与自测。前者是真用户可达路径 —— 若不在此拦截，
     //   用户仍能从旧会话卡片点「开始练习」再拿到 401。
     //   ⇒ 在**汇聚点**拦，而不是逐个调用点加判断（漏一处就是一个洞）。
-    if (MAINTENANCE && !SELFTEST) return;
+    //   gate 为 'ready' 之外的任何态都不许发请求：maint（能力坏了）与 needlogin（没登录）
+    //   都不该让用户走一遍必失败的流程。
+    if (gate !== 'ready' && !SELFTEST) return;
     if (sending) return;
     if (!opts.practiceTurn && !text) return;
     sending = true; sendEl.disabled = true;
@@ -984,12 +1080,13 @@
       thinkBubble.className = 'bubble err';
       thinkBubble.textContent = '调用失败：' + (e && e.message ? e.message : String(e));
     }
-    // ★ 维护态下**不得**把按钮重新放开（2026-11-23）。
+    // ★ 收尾时**按状态**决定要不要放开按钮（2026-11-23）。
     //   `sendCore` 的每条结束路径都会跑这一行；若在此无条件置 false，
     //   就与 HTML 的 disabled 属性互相打架 —— 用户点一次「重试」后按钮又活了，
     //   然后拿到 401，形成「能点但必然失败」的最差形态。
+    //   2026-11-24 扩写：未登录时同样不能放开（needlogin ≠ ready）。
     sending = false;
-    if (!MAINTENANCE) sendEl.disabled = false;
+    if (gate === 'ready') sendEl.disabled = false;
   }
 
   function friendlyError(r) {
@@ -1000,18 +1097,25 @@
   }
 
   function greet() {
-    // ★ 2026-11-23 维护态话术（舰长指令「宣布进入维护」）。
-    //   原文案是「（无需注册，不用配 API Key；对话内容只存在你自己的浏览器里…）」
-    //   —— 该陈述在维护态下**已失实**：现在根本无法发起调用，不存在「无需注册也能用」。
-    //   此处只做**事实性更正**（删除失效承诺 + 指向可用替代路径），
-    //   不新增教练话术、不改人格设定；月笙的自我介绍原句保留。
-    if (MAINTENANCE) {
+    // ★ 2026-11-23 立、2026-11-24 随三态改写的开场话术。
+    //   原句「（无需注册，不用配 API Key；对话内容只存在你自己的浏览器里…）」
+    //   在**未登录**态下已失实 —— 现在必须先登录才能发起调用。
+    //   ⇒ 只做**事实性更正**（删除失效承诺），不新增教练话术、不改人格设定；
+    //     月笙的自我介绍原句原样保留。
+    //   maint 与 needlogin 分开写：前者是「坏了」，后者是「登录即可」——
+    //   用同一句话会把「登录就能用」误导成「功能不可用」。
+    if (gate === 'maint') {
       addBubble('assistant',
         '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（在线诊断正在维护，暂时没法在这里接你的稿子。想现在就用，请下载 Android 版——它自带密钥，不依赖这里的在线通道。）');
       return;
     }
+    if (gate === 'needlogin') {
+      addBubble('assistant',
+        '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（平台侧现在要求登录后使用在线诊断。登录一次即可，不用配 API Key、不用付费；稿件不保存到云端，但会发送给模型服务处理。）');
+      return;
+    }
     addBubble('assistant',
-      '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（无需注册，不用配 API Key；对话内容只存在你自己的浏览器里，不保存到云端，但会发送给模型服务处理。）');
+      '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（已登录；不用配 API Key，不用付费。对话内容只存在你自己的浏览器里，不保存到云端，但会发送给模型服务处理。）');
   }
 
   // ── 侧栏交互 ────────────────────────────────────────────
@@ -1024,11 +1128,11 @@
 
   sendEl.onclick = send;
   function send() {
-    // ★ 维护态守卫（2026-11-23）。`disabled` 属性只挡「鼠标/触摸点击」，
-    //   **不挡回车键** —— 下面 :984 的 keydown 监听器会直接调 send()。
+    // ★ 状态守卫（2026-11-23 立，2026-11-24 随三态扩写）。`disabled` 属性只挡
+    //   「鼠标/触摸点击」，**不挡回车键** —— 下面的 keydown 监听器会直接调 send()。
     //   且 disabled 的 textarea 在某些浏览器仍可被 JS 聚焦后收到回车。
     //   ⇒ 必须在函数入口显式拦截，不能只依赖属性。
-    if (MAINTENANCE) return;
+    if (gate !== 'ready') return;
     var text = inputEl.value.trim();
     if (!text) return;
     inputEl.value = '';
@@ -1058,12 +1162,107 @@
     return isNaN(n) ? 180 : n;
   }
 
+  // ── 登录门（2026-11-24 · §4-553）────────────────────────
+  // 【why】平台对 LLM 能力返回 401 login_required（E1，§4-552 三）。登录是**唯一**
+  //   能恢复本页能力的途径 ⇒ 它决定 gate 态，必须先于 boot 里的任何 UI 判断。
+  //
+  // 【三处易错点，全部按官方 auth 文档处理，理由写在 auth.js】
+  //   ① 回调参数清理只删 code/state/provider —— 本站靠 ?sharecode= 才能访问，
+  //      用 location.pathname 一把清掉会把用户丢到 403 页。
+  //   ② dispatchCallback 必须先跑，且**先于 renderHistory**：否则旧会话渲染完
+  //      才发现要重新登录，页面会闪一下可交互态。
+  //   ③ 登录跳转必须同标签页（PKCE proof 存在 sessionStorage，跨标签拿不到）。
+  //
+  // 【失败关闭】SDK 不存在 / getSession 抛错 / 超时 ⇒ 一律按「未登录」处理并显式告知，
+  //   不静默当成已登录（那会让用户输入后吃 401）。
+  function withTimeout(promise, ms, fallback) {
+    return new Promise(function (resolve) {
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; resolve(fallback); } }, ms);
+      promise.then(function (v) { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+                   function () { if (!done) { done = true; clearTimeout(t); resolve(fallback); } });
+    });
+  }
+
+  function showLoginError(msg) {
+    var el = document.getElementById('lgErr');
+    if (el) el.textContent = msg || '';
+  }
+
+  // 判定当前是否已登录。**只认 accessToken 真值**，不认「对象存在」——
+  //   SDK 的 getSession() 在无会话时可能回 { data: null }，也可能回空对象，
+  //   用`!!data` 判断在某些路径上是假绿。这里直接看 accessToken。
+  async function resolveSignedIn() {
+    if (typeof window.YueshengAuth !== 'object' || !window.YueshengAuth) return false;
+    var s = await withTimeout(window.YueshengAuth.getSession(), SESSION_TIMEOUT_MS, null);
+    return !!(s && s.accessToken);
+  }
+
+  // 登录按钮：同一标签页跳转，失败时把原因写到门内（不 alert，不静默）
+  function bindLoginButton() {
+    var btn = document.getElementById('lgSignIn');
+    if (!btn || btn.__bound) return;
+    btn.__bound = true;
+    btn.addEventListener('click', async function () {
+      showLoginError('');
+      btn.disabled = true;
+      var old = btn.innerHTML;
+      btn.textContent = '正在跳转…';
+      try {
+        await window.YueshengAuth.signIn();
+        // 成功即已 location.assign 离开本页；此处只兜底「平台没给地址」的异常路径
+      } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = old;
+        showLoginError('登录没能发起：' + (e && e.message ? e.message : String(e)) + '。可以先下载 Android 版；或刷新本页重试。');
+      }
+    });
+  }
+
+  // 登录态就绪后的收尾：放开输入区 + 换掉问候语（未登录时那句已过时）
+  function onSignedIn() {
+    signedIn = true;
+    applyGate();
+    // 只有当历史里只有那条「未登录」问候语时才替换，避免冲掉用户已有对话。
+    var h = (state && state.history) || [];
+    var onlyGreeting = h.length === 1 && h[0].role === 'assistant' &&
+                       typeof h[0].content === 'string' &&
+                       h[0].content.indexOf('平台侧现在要求登录后使用在线诊断') !== -1;
+    if (onlyGreeting) {
+      h.length = 0;
+      saveConvoState(curId, state);
+      chatEl.innerHTML = '';
+      greet();
+    }
+    if (inputEl) { try { inputEl.focus(); } catch (_) {} }
+  }
+
   // ── 启动 ────────────────────────────────────────────────
-  (function boot() {
+  (async function boot() {
     // selftest 清场参数：全新存储环境跑走查
     if (SELFTEST && location.search.indexOf('clean=1') !== -1) {
       try { localStorage.clear(); } catch (_) {}
     }
+
+    // ★★ 第一步必须是回调分发，且**早于任何 UI 判断**（官方要求）。
+    //   顺序理由：handleWorkBuddyCallback 会把 code 换成会话并落盘；
+    //   若先算 gate 再分发，页面会先渲染成「未登录」再突然跳成「已登录」，
+    //   用户看到一次可疑的闪烁，且若此时用户手快点了按钮就是白点。
+    //   失败不抛：把原因留给登录门上的错误行，页面照常渲染（不能让登录失败=白屏）。
+    var cb = 'no-callback';
+    if (window.YueshengAuth) {
+      cb = await withTimeout(window.YueshengAuth.dispatchCallback(), SESSION_TIMEOUT_MS, 'callback-failed');
+      if (cb === 'callback-failed') {
+        showLoginError('登录没有完成，请再点一次登录。若反复失败，可以先下载 Android 版。');
+      }
+    }
+
+    // ★★ 第二步：确定登录态（只读，不改状态），然后投影到 DOM。
+    //   放在渲染本地会话之前 —— 否则旧会话先画出来，用户会以为能直接接着写。
+    signedIn = await resolveSignedIn();
+    applyGate();
+    bindLoginButton();
+
     // 旧版单会话迁移（一次性）：有旧状态则转成一条对话
     var legacy = null;
     try {
@@ -1093,6 +1292,10 @@
       renderList();
       renderHistory();
     }
+    // ★ 刚完成登录回调：历史里可能存着上一轮的「未登录」问候语（那句现在已失实）。
+    //   在渲染完后替换，而不是渲染前 —— 因为判定「是否只有那条问候语」要先有 state。
+    if (cb === 'callback-ok' && signedIn) onSignedIn();
+
     selfreport({ where: 'boot', selftest: SELFTEST, convos: listConvos().length, active: curId, historyLen: state.history.length });
     // 0.6.2 外部测量面（T-20261115-02 §closes①）：会话打开 = 漏斗最上游分母。
     // 现状 M1「还有没有人在用」只能数「有 diagnosed 的会话」⇒ 把「来了但没诊断」算成「没来」。

@@ -31,13 +31,18 @@ ALLOWED_ORIGINS = {SELF_ORIGIN, 'http://127.0.0.1:8795', 'http://localhost:8795'
 # 本服务收到 /wbproxy/.cloud/... 后剥前缀转发到数据面 /.cloud/...。
 PROXY_PREFIX = '/wbproxy/'
 # 逐跳头不转发（RFC 7230）＋ 网关注入头不转发：
-# ★ Authorization/Cookie 必剥——平台网关（CloudStudio Gateway）会给入站请求注入
-#   它自己的会话头，透传到数据面 ⇒ 401 invalid_grant「issued for another client」
-#   （实测对照：本地代理同参 400 进业务层，线上 401）。数据面鉴权只认
-#   X-Wb-Webapp-Access-Key（publishableKey，下方由本服务强制注入）。
+# ★ 2026-11-23 变更（登录接入，§4-553）：`authorization` **从剥离名单移出**。
+#   【原设计】Authorization/Cookie 都剥——依据是平台网关会给入站请求注入它自己的
+#   会话头，透传到数据面 ⇒ 401 invalid_grant「issued for another client」（§4-511）。
+#   【现在为什么改】接入 WorkBuddy 账号登录后，浏览器带来的 `Authorization: Bearer <用户 token>`
+#   是**用户真实身份**，必须原样送达数据面；剥掉就等于用户永远登录不上。
+#   【怎么避免重犯原问题】实测确认网关注入的是 **Cookie `__wb_rsc`（HttpOnly）**，
+#   **不注入 Authorization**（响应头实测：只有 Set-Cookie: __wb_rsc）⇒
+#   把两者拆开处理即可：**Cookie 继续剥**（挡网关注入），**Authorization 放行**（送用户 token）。
+#   ⚠️ 若将来又出现 invalid_grant，先查是不是网关开注入了 Authorization，而不是直接回退本行。
 HOP_HEADERS = {'host', 'connection', 'keep-alive', 'transfer-encoding',
                'upgrade', 'proxy-authorization', 'proxy-authenticate',
-               'te', 'trailers', 'authorization', 'cookie'}
+               'te', 'trailers', 'cookie'}
 STRIP_PREFIXES = ('x-wb-webapp-access-key',)
 
 # publishableKey 从同目录 config.js 读入（该 key 设计上随客户端公开，
