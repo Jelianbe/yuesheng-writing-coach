@@ -784,6 +784,14 @@
 
   function scrollBottom() {
     var m = document.querySelector('main');
+    // ★ 2026-11-24 实测修掉（§4-554）：未登录/维护态**不得**滚到底。
+    //   根因：登录门在 main 的**顶部**，而渲染历史里的旧诊断卡会调本函数把
+    //   main 滚到最底 ⇒ 登录门被顶出视口。线上实测（498×522 视口截图）：
+    //   用户看到一个旧诊断卡 + 灰掉的输入框 + 「登录后使用」，
+    //   **完全看不到「使用 WorkBuddy 登录」按钮**，于是以为"没有登录入口"。
+    //   这不是样式问题，是"把唯一的行动按钮滚没了"。
+    //   ⇒ 非 ready 态把滚动位置复位到顶部，让登录门始终第一眼可见。
+    if (gate !== 'ready') { m.scrollTop = 0; return; }
     m.scrollTop = m.scrollHeight;
   }
 
@@ -1310,6 +1318,15 @@
     //   先在本页登录成功 → 记录残留 → 之后某次从别处登录，会被上一个陈旧目标劫持。
     if (cb === 'callback-ok' || cb === 'callback-error') {
       try { sessionStorage.removeItem('ys_login_next'); } catch (_) {}
+    }
+
+    // ★ 渲染收尾再复位一次滚动（2026-11-24）。renderHistory() 里的 addBubble/addMdBubble
+    //   会逐个调 scrollBottom()；虽然 scrollBottom 已在非 ready 态改成滚到顶，
+    //   但这里显式再确认一次，防将来有人把 scrollBottom 改回去而悄悄丢掉这个保证。
+    //   判据：非 ready 态下用户第一眼必须能看到登录按钮。
+    if (gate !== 'ready') {
+      var mEl = document.querySelector('main');
+      if (mEl) mEl.scrollTop = 0;
     }
 
     selfreport({ where: 'boot', selftest: SELFTEST, convos: listConvos().length, active: curId, historyLen: state.history.length });
