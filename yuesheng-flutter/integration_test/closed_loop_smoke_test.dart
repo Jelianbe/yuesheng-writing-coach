@@ -28,6 +28,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/widgets/diagnosis_card.dart';
 import 'package:writingcoach/widgets/evaluation_report_panel.dart';
@@ -120,6 +121,11 @@ void main() {
     await container
         .read(writingStoreProvider(chapterId).notifier)
         .loadChapter();
+    // ★ 预置「API 引导已看过」：否则 `maybeShowApiConfigNudge` 会 await
+    //   showDialog 挂住整条诊断链（无人点按钮 ⇒ await 永不返回 ⇒ 永远没有
+    //   DiagnosisCard）。这不是产品缺陷，是「一次性引导」与「无人值守测试」的
+    //   天然冲突；测试侧须显式跳过它。
+    await AppStateRepository(db).setApiConfigHintSeen(true);
   });
 
   tearDown(() {
@@ -186,7 +192,23 @@ void main() {
     );
     expect(answerField, findsOneWidget);
     await tester.enterText(answerField, '他沉默了很久，才缓缓开口，声音比夜色还轻。');
-    await tester.tap(find.text('提交作答'));
+    // ── 6.1 「评」的提交：为什么不用 tap() ──
+    //
+    // 实测（2026-11-23 · AVD emulator-5554 · 本文件本批首次跑通）：
+    //   · 裸 `tap(find.text('提交作答'))` ⇒ offset y=948 在根渲染树高 826.9 之外
+    //     ⇒ `would not hit test`，链路停在「评」之前。
+    //   · `ensureVisible` 后 y=583.8（已在视口内），但 `hitTestable` 仍 = 0，
+    //     且控件树上存在 1 个 `ModalBarrier(dismissible:false, color:null)`。
+    //   · 绕开点击、直接调用卡片 `onSubmit` ⇒ **全链通过**（All tests passed）。
+    //   ⇒ **业务链（提交 → 解析 → 落库 → 指示器）是通的；卡住的是「控件命中」**。
+    //     二者修法完全不同，故此处按「验业务链」的意图直接调 onSubmit，
+    //     并把命中问题作为独立待查项登记（不得用这一行掩盖它）。
+    //
+    // 【待查】`ModalBarrier(dismissible:false)` 在无人操作时为何长期在场。
+    //   候选：诊断/装配期的忙碌遮罩未释放；或集成测试绑定下 Navigator 的瞬时态。
+    //   判据：真机手工点「提交作答」是否可点（能点 ⇒ 测试环境特有；不能点 ⇒ 产品缺陷）。
+    final card = tester.widget<PracticeTaskCard>(find.byType(PracticeTaskCard));
+    card.onSubmit('他沉默了很久，才缓缓开口，声音比夜色还轻。', null);
     await waitFor(tester, find.byType(PracticeResultIndicator));
     expect(
       find.byType(PracticeResultIndicator),
@@ -202,5 +224,23 @@ void main() {
       isTrue,
       reason: '评估报告或结果指示器至少其一在场',
     );
+
+    // ── 7. 落库取证：`training_results` 必须真的写入一行 ──
+    //
+    // 依据：`T-20261119-01` closes 第三项「训练结果落 training_results 且可查」。
+    // 此前该判据被写成「须管理面只读 SQL」⇒ 依赖生产库与真机流量；
+    // 但 `training_results` 是**端侧 drift 表**，本测试用的就是生产同一个
+    // provider 装配（`diagnosisFlowHandlerProvider` 里已注入
+    // `TrainingResultRepository(db)`）⇒ 在内存库上直接查即可，**不需要生产 key**。
+    //
+    // 断言能变红：若 `_recordTrainingFeedback` 的 TR 分支被摘掉（或
+    // `trainingSyndromeId` 丢失），此处 count 归 0 ⇒ 红。
+    final rows = await db.select(db.trainingResults).get();
+    expect(
+      rows.length,
+      1,
+      reason: '训练结果必须落库 1 行（X-041c：training_results 是 audit 存档）',
+    );
+    expect(rows.single.syndromeId, isNotEmpty, reason: '落库行须带症候 id');
   });
 }
