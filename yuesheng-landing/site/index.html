@@ -230,7 +230,19 @@
       background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 24px 20px;
     }
     .nav-links.open a { padding: 8px 0; width: 100%; min-height: 44px; display: inline-flex; align-items: center; }
-    .nav-links.open .nav-try, .nav-links.open .nav-dl { width: auto; }
+    /* ★ 2026-11-23 移动端胶囊按钮塌陷修复（舰长真机截图实证）。
+       病根 = CSS 特异性冲突：`.nav-links.open a { padding: 8px 0 }` 特异性 (0,2,1)
+       高于 `.nav-try { padding: 6px 16px }` 的 (0,1,0) ⇒ 菜单展开后左右内边距被压成 0。
+       此时 `width:auto` + `min-height:44px` + `border-radius:999px` 三者相乘，
+       胶囊被渲染成近圆形，而圆角又吃掉了文字左右空间 ⇒「在线体验」「下载 v0.6.1」
+       在真机上显示为被裁切的圆块（截图 1000113437.jpg）。
+       修法：用同等特异性显式恢复胶囊形态（满宽 + 居中 + 左右内边距），
+       不去降低通用规则的特异性——通用规则的 44px 触控高度对纯文字导航项仍是必需的。 */
+    .nav-links.open .nav-try, .nav-links.open .nav-dl {
+      width: 100%; padding: 11px 20px; min-height: 44px;
+      justify-content: center; border-radius: 999px;
+    }
+    .nav-links.open .nav-try { margin-bottom: 2px; }
     /* M4：移动菜单转化路径优先——体验、下载排最前 */
     .nav-links.open .nav-try { order: -2; }
     .nav-links.open .nav-dl { order: -1; margin-top: 0; }

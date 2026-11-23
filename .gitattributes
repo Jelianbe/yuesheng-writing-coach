@@ -6,6 +6,22 @@
 
 * text=auto eol=lf
 
+# ---- 编辑器注入的页面节点 ID：入库前剥除（舰长 2026-11-23 批「做」）----
+# 背景：舰长侧 HTML 编辑器打开并保存 site/*.html 时，会给几乎每个标签注入
+#   `data-page-node-id="<22 位 base62>"`（实测 index.html 203 处）。
+#   这些 ID 是编辑器内部句柄，对产品零意义；但会让工作区常年显脏，
+#   并使某次 `git add -A` 把噪声**永久写进历史**（不可逆）。
+#
+# 为什么不是 gitignore：`yuesheng-landing/site/` 是舰长 2026-11-13 批准入库的
+#   （commit 07741c59，理由「让 site/ 可独立部署的自包含目录」，明确接受
+#   1.55MB 重复这一代价）。gitignore 等于反转那次批准；clean filter 让
+#   「入库可独立部署」与「工作区不被污染」两件事同时成立。
+#
+# ⚠️ 本行只声明 pattern → filter；filter 的**实现**在 .git/config，不随仓走。
+#   ⇒ 新克隆 / 新机器必须先跑一次：bash tool/setup_editor_id_filter.sh
+#   否则 `required=true` 未写入时会退化为「静默放行原内容」（噪声照进库且不报错）。
+*.html filter=stripEditorIds
+
 # ---- 二进制白名单（text=auto 本可自动检测，显式声明为兜底防误判）----
 *.png binary
 *.jpg binary
