@@ -66,22 +66,43 @@ ok('E3 退出会清掉回跳目标（防陈旧目标劫持下次登录）',
 
 // ── F. 失败必须清 URL（auth.js）：三个分支全覆盖 ──
 const cbBody = auth.slice(auth.indexOf('async dispatchCallback()'));
+// ★ 2026-11-24 §4-559 订正：原判据是「cleanCallbackParams(); 之后 60 字符内
+//   必须出现 return '<branch>'」。加 §4-559 的清理后中间多了 clearVerifierBoth()
+//   ⇒ 4 条一起变红。**这不是产品坏了，是判据把"两行紧邻"当成了"清理发生过"**。
+//   语义真相是「该分支 return 之前清理已执行」，行距无关。
+//
+//   ⇒ 改为按 `return '` 切段：每段就是**导向该 return 的语句块**。
+//     同一分支可能有多处 return（如 callback-error 既有 provider 校验提前返回、
+//     又有兑换失败返回），故判「该分支**至少有一处** return 的语句块里做过清理」，
+//     与原判据的"至少一处匹配"意图一致，但不再依赖字符距离。
+function segsBeforeReturns(body) {
+  const parts = body.split("return '");
+  // parts[0] 是首个 return 之前的语句；parts[k] 是第 k 个 return 之前的语句
+  return parts.slice(0, -1).map(function (s, i) {
+    return { seg: s, ret: (parts[i + 1] || '').split("'")[0] };
+  });
+}
+const SEGS = segsBeforeReturns(cbBody);
 ['callback-error', 'callback-ok', 'no-callback'].forEach(function (branch) {
-  // 该分支 return 之前必须出现过 cleanCallbackParams()
-  const re = new RegExp('[\\s\\S]{0,200}cleanCallbackParams\\(\\);[\\s\\S]{0,60}return\\s+\'' + branch + '\'');
-  ok('F ' + branch + ' 分支前已清 URL', re.test(cbBody));
+  const hits = SEGS.filter(function (x) { return x.ret === branch; });
+  const cleaned = hits.some(function (x) { return x.seg.indexOf('cleanCallbackParams()') >= 0; });
+  ok('F ' + branch + ' 分支前已清 URL', hits.length > 0 && cleaned,
+     'returns=' + hits.length + ' cleaned=' + cleaned);
 });
 ok('F4 异常路径也清 URL（catch 内）',
    /exchange_failed[\s\S]{0,200}cleanCallbackParams\(\)/.test(cbBody));
 
 // 负向变异：把 callback-error 分支的清理去掉，断言必须变红
-const mutated = cbBody.replace(
-  /cleanCallbackParams\(\);\s*return 'callback-error'/,
-  "return 'callback-error'"
-);
-const mutatedStillPasses = /[\s\S]{0,200}cleanCallbackParams\(\);[\s\S]{0,60}return\s+'callback-error'/.test(mutated);
+const errHits = SEGS.filter(function (x) { return x.ret === 'callback-error'; });
+const errAllClean = errHits.map(function (x) { return x.seg; }).join('');
+const cleanedHitsBefore = errHits.filter(function (x) {
+  return x.seg.indexOf('cleanCallbackParams()') >= 0;
+}).length;
+const mutatedSeg = errAllClean.replace(/cleanCallbackParams\(\);/g, '');
 ok('F5 变异体（去掉 callback-error 的清理）后断言会变红',
-   !mutatedStillPasses && mutated !== cbBody);
+   errHits.length > 0 && cleanedHitsBefore > 0 &&
+   mutatedSeg.indexOf('cleanCallbackParams()') < 0,
+   'hits=' + errHits.length + ' cleanedHits=' + cleanedHitsBefore);
 
 // ── G. index.html 失败分支清 URL ──
 ok('G1 index 失败分支删除回调键',
@@ -123,6 +144,38 @@ ok('J4 resetLocal 清三类键（会话 / 证明 / 已消费标记）',
    /workbuddy-cloud\.pkce-done\.workbuddy\./.test(authJs));
 ok('J5 重置入口存在于面板（不只写在 auth.js）',
    diag.indexOf('acctReset') !== -1 && /id="acctReset"/.test(diag));
+
+// ── K. 失败提示必须按读数分流（§4-559）────────────────────────────────
+// 【为什么单列一组】
+//   上一版无论什么原因都写「请再点一次登录」。在「发起页与回调页不在同一
+//   顶层窗口」这个真实成因下，这句话是**做不到的承诺**：点多少次，
+//   都在同一个作用域写、在另一个作用域读。
+//   ⇒ 判据要能分辨「有条件分流」和「无条件重试」——只查"含'再点一次'"是
+//     分辨不出来的（分流的兜底分支里也含这句）。
+ok('K1 diagnose 有按 PKCE 读数分流的失败提示函数',
+   /function loginFailHint\(\)/.test(diag) && /function retryAdvice\(\)/.test(diag));
+ok('K2 分流覆盖 restored / none / stale 三态',
+   /pkceSource === 'restored'/.test(diag) &&
+   /pkceSource === 'none'/.test(diag) &&
+   /pkceSource === 'stale'/.test(diag));
+// 关键：restored 分支必须给「换独立标签页」这种**能绕开作用域**的动作，
+// 而不是只说"再点一次"
+ok('K3 restored 分支给出绕开作用域的动作（独立标签页）',
+   /restored[\s\S]{0,400}独立标签页/.test(diag));
+ok('K4 boot 的失败分支已改为调用分流函数（不再写死一句话）',
+   /showLoginError\(loginFailHint\(\)\)/.test(diag) &&
+   !/showLoginError\('登录没有完成，请再点一次登录/.test(diag));
+
+// K5 负向变异：把 boot 里的分流调用换回写死文案 ⇒ K4 必须变红
+{
+  const mut = diag.replace(
+    "showLoginError(loginFailHint());",
+    "showLoginError('登录没有完成，请再点一次登录。若反复失败，可以先下载 Android 版。');"
+  );
+  const k4 = /showLoginError\(loginFailHint\(\)\)/.test(mut) &&
+             !/showLoginError\('登录没有完成，请再点一次登录/.test(mut);
+  ok('K5 变异体（换回写死文案）后 K4 会变红', mut !== diag && !k4);
+}
 
 // J6 负向变异：把所有 verifier 键名改错 ⇒ J3 的字符串断言必然落空
 // ★ 必须 replaceAll（2026-11-24 踩到）：该键名在 auth.js 出现 2 次

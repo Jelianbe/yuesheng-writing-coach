@@ -569,7 +569,11 @@
     // ★ 必须带版本号（2026-11-24 · §4-557）。不带的话浏览器可能继续用**缓存里的
     //   旧 config.js** —— 那里面还是另一个应用（2mqh）的 key，于是"改了没生效"，
     //   表现和没改一模一样。这类"改了但没生效"最容易被误判成"改错了"。
-    var files = ['config.js?v=557j1iRP', 'vendor/wbcs-sdk.global.js', 'auth.js'];
+    // ★ 每个文件都必须带版本号（2026-11-24 · §4-559 补）：
+    //   `auth.js` 上一版**没有版本号**，浏览器会用缓存里的旧副本 ⇒
+    //   「代码改了、线上部署也一致，但行为没变」—— 这种"改了没生效"最难查，
+    //   因为它看起来像"改错了"。凡改动 js/ 下任一文件，必须同步提升它的 v=。
+    var files = ['config.js?v=557j1iRP', 'vendor/wbcs-sdk.global.js', 'auth.js?v=559pkce'];
     var i = 0;
     function next() {
       if (i >= files.length) { exchange(); return; }

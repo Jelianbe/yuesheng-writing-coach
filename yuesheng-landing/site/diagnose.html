@@ -571,7 +571,7 @@
 <script src="./js/vendor/marked.min.js"></script>
 <script src="./js/vendor/purify.min.js"></script>
 <script src="./js/config.js?v=557j1iRP"></script>
-<script src="./js/auth.js?v=login1"></script>
+<script src="./js/auth.js?v=559pkce"></script>
 <script src="./js/corpus.js?v=557j1iRP"></script>
 <script src="./js/engine.js?v=557j1iRP"></script>
 <script>
@@ -1334,6 +1334,47 @@
     if (el) el.textContent = msg || '';
   }
 
+  // 失败时的建议语：**按 PKCE 读数分流**（§4-559）。
+  // ★ 上一版无论什么原因都说「请再点一次登录」。这句话在跨上下文丢 proof 的
+  //   场景里是**做不到的承诺**：每次点，都在同一个作用域写、在另一个作用域读，
+  //   点多少次都一样。⇒ 现在按读数给不同的、能真正走通的动作。
+  function pkceReading() {
+    try {
+      var p = window.YueshengAuth && window.YueshengAuth.probe
+        ? window.YueshengAuth.probe() : null;
+      return p || null;
+    } catch (_) { return null; }
+  }
+
+  function loginFailHint() {
+    var p = pkceReading();
+    var base = '登录没有完成。';
+    if (!p) return base + '可以再点一次，或先下载 Android 版。';
+    if (p.pkceSource === 'restored') {
+      return base + '登录证明原本读不到，已用本地副本补偿，但兑换仍没过。' +
+             '若反复如此，请在**独立标签页**打开本站再登录（预览面板里的登录页与回调页不是同一窗口）。';
+    }
+    if (p.pkceSource === 'none') {
+      return base + '登录证明在发起那一侧就没写进去（两边都空）。' +
+             '请点账号面板里的「清空登录状态并重试」再试一次。';
+    }
+    if (p.pkceSource === 'stale') {
+      return base + '本地副本已过期（超过 10 分钟），已作废。请重新点一次登录。';
+    }
+    return base + '可以再点一次，或先下载 Android 版。';
+  }
+
+  function retryAdvice() {
+    var p = pkceReading();
+    if (p && p.pkceSource === 'restored') {
+      return '已用本地副本补偿过登录证明，建议在独立标签页重新登录。';
+    }
+    if (p && p.pkceSource === 'none') {
+      return '请先「清空登录状态并重试」。';
+    }
+    return '可以再点一次，或先下载 Android 版。';
+  }
+
   // 判定当前是否已登录。**只认 accessToken 真值**，不认「对象存在」——
   //   SDK 的 getSession() 在无会话时可能回 { data: null }，也可能回空对象，
   //   用`!!data` 判断在某些路径上是假绿。这里直接看 accessToken。
@@ -1451,13 +1492,60 @@
       row('本地会话', p.session) +
       '</ul>' +
       '<p class="acct-hint">' +
-      '「登录证明」缺失 = 这次回调不是在本标签页发起的（换了标签或存储被清），' +
-      '重试即可；若证明在、本地会话空，说明兑换这一步没过。' +
+      diagHint(p) +
       (p.error ? '<br>最近错误：<b>' + escHtml(p.error) + '</b>' : '') +
       '</p>' +
+      // ★ 上下文对照（§4-559）：这是"跨窗口丢登录证明"的**直接证据行**。
+      //   只在有对照数据时显示，避免平时给用户一堆看不懂的字段。
+      '<p class="acct-hint">' + contextLine(p) + '</p>' +
       '<button type="button" class="acct-reset" id="acctReset">清空登录状态并重试</button>' +
       '</details>';
     return html;
+  }
+
+  // 上下文对照行：把"写入侧 vs 读取侧是否同一窗口"讲成一句人话
+  function contextLine(p) {
+    if (p.contextSwitched === true) {
+      return '窗口对照：<b>发起登录与回调落地不在同一窗口</b>' +
+        '（' + (p.mirror && p.mirror.inIframe ? '发起时在嵌入页内' : '发起时在独立页') +
+        ' → ' + (p.inIframe ? '回跳在嵌入页内' : '回跳在独立页') +
+        '）。这就是登录证明读不到的成因，本次已自动补偿。';
+    }
+    if (p.contextSwitched === false) {
+      return '窗口对照：发起与回跳在同一窗口，未发生跨窗口丢失。';
+    }
+    return '窗口对照：暂无数据（要在一次登录回跳之后才有对照）。';
+  }
+
+  // 人话解释：**按 pkceSource 分流**（§4-559）。
+  // ★ 上一版这里写的是「登录证明缺失 = 换了标签或存储被清，重试即可」——
+  //   那句话把跨上下文丢 proof 说成"重试就能好"，而实测重试**仍然丢**：
+  //   每次登录都在同一个作用域里写、在另一个作用域里读。
+  //   ⇒ 现在按读数给不同结论，不再一句"重试即可"敷衍。
+  function diagHint(p) {
+    var src = p.pkceSource;
+    if (src === 'restored') {
+      return '这次回调原本读不到登录证明，已用本地副本救回 ⇒ ' +
+        '**发起登录的页面和回调落地的页面不在同一个顶层窗口**（例如在预览面板里登录）。' +
+        '本次已自动补偿；若想彻底避免，请在独立标签页打开本站再登录。';
+    }
+    if (src === 'stale') {
+      return '本地副本已超过 10 分钟，不再使用（防旧凭证复活）。请重新点一次登录。';
+    }
+    if (src === 'none') {
+      return '登录证明两边都没有 ⇒ 是**发起那一侧**就没写进去，或已被清空。' +
+        '请点下面的「清空登录状态并重试」。';
+    }
+    if (src === 'session') {
+      return '登录证明与发起页在同一上下文，属正常路径。' +
+        '若仍失败，问题在兑换这一步（见上方最近错误）。';
+    }
+    // 无回调：单纯看当前状态
+    if (!p.verifier) {
+      return '当前没有进行中的登录（登录证明只在"点了登录、还没回跳"这段时间存在）。' +
+        '已登录时它可以为空，属正常。';
+    }
+    return '登录证明存在但会话未建立 ⇒ 兑换这一步没过，见上方最近错误。';
   }
 
   function bindDiag() {
@@ -1574,12 +1662,12 @@
     if (window.YueshengAuth) {
       cb = await withTimeout(window.YueshengAuth.dispatchCallback(), SESSION_TIMEOUT_MS, 'callback-failed');
       if (cb === 'callback-failed') {
-        showLoginError('登录没有完成，请再点一次登录。若反复失败，可以先下载 Android 版。');
+        showLoginError(loginFailHint());
       } else if (cb === 'callback-error') {
         // 官方三分支之一：带 error 的回调必须停在登录视图并显示原因，
         // 不能当作"普通访问"继续往下跑（那会让用户以为登录成功了）。
         var e1 = (window.YueshengAuth.lastError && window.YueshengAuth.lastError()) || '授权未通过';
-        showLoginError('登录未完成：' + e1 + '。可以再点一次，或先下载 Android 版。');
+        showLoginError('登录未完成：' + e1 + '。' + retryAdvice());
       }
     }
 

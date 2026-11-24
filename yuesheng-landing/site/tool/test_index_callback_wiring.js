@@ -39,6 +39,27 @@ rec('A5 注入列表含 auth.js', /files\s*=\s*\[[^\]]*auth\.js/.test(boot));
 //   的 key，于是"改了没生效"，表现与没改完全相同。这类问题极易被误判成"改错了"。
 rec('A5b config.js 带缓存版本号（防读到旧 key）',
   /config\.js\?v=/.test(boot), (boot.match(/config\.js\?v=[\w.]+/) || ['无'])[0]);
+
+// ★ 新增 A5c：**凡是注入的 .js 都必须带 ?v=**（§4-559 补）。
+//   缘由：`auth.js` 上一版**没有版本号**，而这一版恰恰改了 auth.js 的 PKCE 逻辑。
+//   ⇒ 代码对、部署也一致，但浏览器用缓存里的旧 auth.js ⇒ 行为一点没变。
+//   这类"改了没生效"与"改错了"外观相同，必须由判据拦住，不能靠记得。
+//   注意排除 vendor/（第三方库由各自版本控制，且它们不随本次改动变化）。
+//   【自证】把 auth.js?v=xxx 改回裸 auth.js，本判据必须变红。
+rec('A5c 注入的 auth.js 带缓存版本号（防用旧逻辑兑换）',
+  /auth\.js\?v=/.test(boot), (boot.match(/auth\.js\?v=[\w.]+/) || ['无'])[0]);
+rec('A5d 注入列表中每个非 vendor 脚本都带 ?v=',
+  (function () {
+    const arr = boot.match(/files\s*=\s*\[([^\]]*)\]/);
+    if (!arr) return false;
+    const items = arr[1].match(/'[^']+'/g) || [];
+    return items
+      .map(function (x) { return x.replace(/'/g, ''); })
+      .filter(function (x) { return /\.js$/.test(x); })
+      .filter(function (x) { return x.indexOf('vendor/') !== 0; })  // 排除第三方
+      .every(function (x) { return x.indexOf('?v=') !== -1; });
+  })(),
+  (boot.match(/files\s*=\s*\[([^\]]*)\]/) || ['', ''])[1].slice(0, 90));
 rec('A6 顺序：config 在 SDK 之前',
   boot.indexOf('config.js') < boot.indexOf('wbcs-sdk.global.js'));
 rec('A7 顺序：SDK 在 auth 之前',
