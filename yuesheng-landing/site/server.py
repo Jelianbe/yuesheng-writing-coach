@@ -22,6 +22,12 @@ import urllib.error
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 PORT = int(os.environ.get('PORT', '8795'))
+# ⚠️ 2026-11-24（§4-557）：**本代理已不再被前端使用**，保留仅为兼容旧缓存页面。
+#   原因：登录失败的根因是「配置指向了另一个应用」——
+#   endpoint 曾套 `/wbproxy` 把请求代理到 yuesheng-coach（应用 2mqh），
+#   而本站域属于应用 j1iRP，Relay 按本站域签发 state，2mqh 从没见过 ⇒ 必失败。
+#   现在 config.js 的 endpoint 已改为站点自身域（j1iRP 直连，平台网关 tcbgw
+#   在静态服务之前接管 /.cloud/，实测 200）。**不要再把前端指回这里。**
 UPSTREAM = 'https://yuesheng-coach.app.workbuddy.host'
 SELF_ORIGIN = 'https://yuesheng-apk-test.app.workbuddy.host'
 ALLOWED_ORIGINS = {SELF_ORIGIN, 'http://127.0.0.1:8795', 'http://localhost:8795'}

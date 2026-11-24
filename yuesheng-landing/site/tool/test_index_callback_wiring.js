@@ -15,7 +15,11 @@ const vm = require('vm');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-const boot = inline.find(s => s.indexOf("files = ['config.js'") !== -1) || '';
+// ★ 锚点不能写死 `files = ['config.js'`（2026-11-24 · §4-557 踩到）：
+//   给 config.js 加了缓存版本号后变成 `files = ['config.js?v=557j1iRP'`，
+//   锚点失配 ⇒ boot 抽成空串 ⇒ A 组全红，看起来像"产品坏了"，其实是**测试装置
+//   跟改动脱节**。⇒ 锚点改为匹配"赋值给 files 的那个数组"，与数组内容解耦。
+const boot = inline.find(s => /files\s*=\s*\[[^\]]*config\.js/.test(s)) || '';
 
 let pass = 0, fail = 0;
 const rows = [];
@@ -27,13 +31,28 @@ function rec(n, ok, d) {
 // ── A. 源码级断言：这段逻辑必须存在且形状正确 ──
 rec('A1 index.html 含回调处理脚本块', boot.length > 0, boot.length + ' chars');
 rec('A2 按 code/error 判定回调', /sp\.has\('code'\)[\s\S]{0,60}sp\.has\('error'\)/.test(boot));
-rec('A3 注入列表含 config.js', /files\s*=\s*\[[^\]]*'config\.js'/.test(boot));
+rec('A3 注入列表含 config.js', /files\s*=\s*\[[^\]]*config\.js/.test(boot));
 rec('A4 注入列表含 SDK', /files\s*=\s*\[[^\]]*wbcs-sdk\.global\.js[^\]]*\]/.test(boot));
-rec('A5 注入列表含 auth.js', /files\s*=\s*\[[^\]]*'auth\.js'/.test(boot));
+rec('A5 注入列表含 auth.js', /files\s*=\s*\[[^\]]*auth\.js/.test(boot));
+// ★ 新增 A5b：config.js 必须带缓存版本号（§4-557）。
+//   不带的话浏览器可能继续用**缓存里的旧 config.js** —— 那里面还是另一个应用
+//   的 key，于是"改了没生效"，表现与没改完全相同。这类问题极易被误判成"改错了"。
+rec('A5b config.js 带缓存版本号（防读到旧 key）',
+  /config\.js\?v=/.test(boot), (boot.match(/config\.js\?v=[\w.]+/) || ['无'])[0]);
 rec('A6 顺序：config 在 SDK 之前',
-  boot.indexOf("'config.js'") < boot.indexOf('wbcs-sdk.global.js'));
+  boot.indexOf('config.js') < boot.indexOf('wbcs-sdk.global.js'));
 rec('A7 顺序：SDK 在 auth 之前',
-  boot.indexOf('wbcs-sdk.global.js') < boot.indexOf("'auth.js'"));
+  // ★ 不能用裸 indexOf('auth.js')（§4-557）：config.js 带版本号后，
+  //   `auth.js` 可能先出现在别的地方；且 config 段含 `?v=` 会干扰定位。
+  //   改为在"注入数组"那一段里比位置。
+  (function () {
+    const arr = boot.match(/files\s*=\s*\[([^\]]*)\]/);
+    if (!arr) return false;
+    const s = arr[1];
+    return s.indexOf('wbcs-sdk.global.js') !== -1 &&
+           s.indexOf('auth.js') !== -1 &&
+           s.indexOf('wbcs-sdk.global.js') < s.indexOf('auth.js');
+  })());
 rec('A8 成功后 location.replace 回跳', /r === 'callback-ok'/.test(boot) && /location\.replace/.test(boot));
 rec('A9 失败时显示原因（不静默）', /showFail/.test(boot));
 
@@ -92,7 +111,10 @@ function runBoot(scriptSrc, searchStr, mut) {
   {
     const s = runBoot(boot, '?code=c&state=s&provider=workbuddy&sharecode=SC');
     await new Promise(r => setTimeout(r, 120));
-    const names = s.__injected.map(x => x.split('/').pop());
+    // ★ 先剥查询串再取文件名（§4-557）：config.js 带了 `?v=` 缓存版本号，
+    //   直接 split('/') 会得到 `config.js?v=557j1iRP` ⇒ 精确比较必然失败。
+    //   ⇒ 判据比较的是"哪个脚本"，不应被缓存参数影响；版本号另有 A5b 单独守。
+    const names = s.__injected.map(x => x.split('/').pop().split('?')[0]);
     rec('B2 有回调 → 注入 3 个脚本', s.__injected.length === 3, names.join(' → '));
     rec('B3 注入顺序 config → sdk → auth',
       names[0] === 'config.js' && names[1] === 'wbcs-sdk.global.js' && names[2] === 'auth.js',

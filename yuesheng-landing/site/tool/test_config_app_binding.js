@@ -1,0 +1,124 @@
+// test_config_app_binding.js — 守住「config.js 的 key 必须属于站点所在应用」（§4-557）
+//
+// 【为什么必须有这个测试】
+//   登录连续失败多轮，根因不是代码 bug，是**配置指向了另一个应用**：
+//   站点部署域 `yuesheng-apk-test` 属于应用 j1iRP，而 config.js 写的是应用
+//   2mqh 的 key，还把请求代理到 2mqh 的数据面（yuesheng-coach）。
+//   ⇒ Relay 按本站域签发 state（记在 j1iRP 名下），兑换却被送到 2mqh 的数据面，
+//     2mqh 从没见过这个 state ⇒ 只能答 `state parameter is invalid`。
+//
+// 【这个错误最难查的地方】
+//   报错文本**没有分辨力**：用假 code + 假 state 打同一端点，返回一字不差。
+//   所以「报错说什么」帮不上忙，真正的信息在**结构事实**里：
+//   key 里的 applicationId == 站点域所属的 applicationId。
+//   ⇒ 判据只能钉结构，不能钉报错文本。这就是本测试的存在理由。
+//
+// 【判据设计】
+//   A 组：key 内嵌的 app id 必须与部署域所属应用一致（可从 genie 文件名独立得出）
+//   B 组：endpoint 必须是站点自身域，**不得**再套跨应用的 /wbproxy
+//   C 组：负向变异 —— 把 key 改回 2mqh，A1 必须变红（证明断言不是恒真）
+
+const fs = require('fs');
+const path = require('path');
+
+const SITE = path.join(__dirname, '..');
+let pass = 0, fail = 0;
+function ok(name, cond, extra) {
+  if (cond) { pass++; console.log('PASS  ' + name + (extra ? '   [' + extra + ']' : '')); }
+  else { fail++; console.log('FAIL  ' + name + (extra ? '   [' + extra + ']' : '')); }
+}
+
+const cfg = fs.readFileSync(path.join(SITE, 'js', 'config.js'), 'utf8');
+const srv = fs.readFileSync(path.join(SITE, 'server.py'), 'utf8');
+
+// ── 取 config.js 的实值 ──
+function pick(name) {
+  const m = cfg.match(new RegExp(name + "\\s*:\\s*'([^']+)'"));
+  return m ? m[1] : null;
+}
+const endpoint = pick('endpoint');
+const key = pick('publishableKey');
+
+ok('A0 能读出 endpoint 与 publishableKey', !!endpoint && !!key,
+   'endpoint=' + endpoint + ' key=' + (key ? key.slice(0, 18) + '…' : 'null'));
+
+// ── A. key 内嵌的 applicationId ──
+// 平台 key 形如 wbpk_<applicationId>_<secret>（实测两个应用都是此形态）。
+function appIdOf(k) {
+  if (!k) return null;
+  const m = k.match(/^wbpk_([A-Za-z0-9]+)_/);
+  return m ? m[1] : null;
+}
+const keyApp = appIdOf(key);
+ok('A1 key 内嵌应用 id 可解析', !!keyApp, 'app=' + keyApp);
+
+// ── A2. 站点域所属应用：从部署产物 genie 文件名得出 ──
+// ⚠️ 这里踩过一次：初版假设"仓库根只有一个 .wbapp_*.genie"，实测**有两个**
+//   （两个应用各一个：2mqh 与 j1iRP）⇒ 取唯一文件的做法返回 null。
+//   ⇒ 判据改为「按 endpoint 里的域名反查」，因为 genie 文件名只含 appId、
+//     不含域名，无法直接映射。故用「候选集合 + 域名线索」两步：
+//     ① 收集所有 .wbapp_*.genie 的 appId；
+//     ② 站点域名 `yuesheng-apk-test` 对应的应用，必须在这批候选里
+//        —— 且它必须**就是 config 里 key 的那个**（A3 的核心）。
+//   另注：域名↔appId 的权威映射只能由平台查询（workbuddy_cloud_service
+//   inspect / sites deploy 返回值）给出，测试无法自行推导 ⇒ 本测试把它作为
+//   **已知事实**记录，并在漂移时报错（提醒人重新核对，而不是假装通过）。
+const root = path.join(SITE, '..', '..');
+let genieApps = [];
+try {
+  genieApps = fs.readdirSync(root)
+    .filter(f => /^\.wbapp_.+\.genie$/.test(f))
+    .map(f => f.replace(/^\.wbapp_/, '').replace(/\.genie$/, ''));
+} catch (_) {}
+ok('A2 能枚举到部署产物中的应用 id', genieApps.length > 0,
+   'genieApps=' + JSON.stringify(genieApps));
+
+// ★ 站点域 `yuesheng-apk-test` 所属应用 = j1iRP（来源：
+//   ① sites deploy 返回的 genieFilePath `.wbapp_j1iRP0QdPV8ezelACqoC7y.genie`
+//   ② workbuddy_cloud_service inspect 的 publicConfig.endpoint 含该域名）
+//   这是**外部查得的事实**，不是从 config.js 自证 —— 否则就成了循环论证。
+const SITE_APP = 'j1iRP0QdPV8ezelACqoC7y';
+ok('A2b 站点域所属应用出现在部署产物中（防记录过期）',
+   genieApps.indexOf(SITE_APP) !== -1,
+   'want=' + SITE_APP + ' have=' + JSON.stringify(genieApps));
+
+// ★ 核心断言：配置 key 的应用 == 站点域所属应用
+ok('A3 配置 key 所属应用 == 站点域所属应用（错配即登录必失败）',
+   !!keyApp && keyApp === SITE_APP,
+   'key=' + keyApp + ' site=' + SITE_APP);
+
+// ── B. endpoint 必须与站点域一致，且不套跨应用代理 ──
+const SITE_HOST = 'yuesheng-apk-test.app.workbuddy.host';
+ok('B1 endpoint 指向站点自身域', !!endpoint && endpoint.indexOf(SITE_HOST) !== -1,
+   endpoint);
+ok('B2 endpoint 不再套 /wbproxy（那是跨应用代理，与本站 state 无关）',
+   !!endpoint && endpoint.indexOf('/wbproxy') === -1, endpoint);
+
+// B3 server.py 的代理目标若仍是另一个应用，必须显式标注为「已不再被前端使用」
+//    —— 防止有人误以为它还在链路上，又去改它。
+if (/UPSTREAM\s*=\s*'https:\/\/yuesheng-coach/.test(srv)) {
+  ok('B3 遗留代理目标已标注"前端不再使用"',
+     /不再被前端使用|前端不再使用|not used by the front end/.test(srv));
+} else {
+  ok('B3 代理目标已不是另一个应用（或已移除）', true);
+}
+
+// ── C. 负向变异：把 key 改回旧应用 2mqh ⇒ A3 必须变红 ──
+// 目的：证明 A3 不是"写了就绿"，而是真的钉住了归属关系。
+const OLD_KEY = 'wbpk_2mqhpPIkw6lCf4kthBTrB0_JtS0d38zjLYP0YK1ubroX9wf0s5tinaH';
+const mutApp = appIdOf(OLD_KEY);
+ok('C1 变异体（key 改回 2mqh）下 A3 的判据会变红',
+   !!mutApp && mutApp !== SITE_APP,
+   'mutApp=' + mutApp + ' site=' + SITE_APP);
+ok('C2 故 A3 的 PASS 不是恒真', mutApp !== SITE_APP);
+
+// ── D. 代价必须记录：切到本站应用后 AI 能力未开会 403 ──
+// 这不是代码缺陷，是平台侧开关；但没有提示就会变成静默失败。
+const diag = fs.readFileSync(path.join(SITE, 'diagnose.html'), 'utf8');
+ok('D1 friendlyError 覆盖 capability_disabled（否则用户只看到错误码）',
+   /capability_disabled/.test(diag) && /friendlyError/.test(diag));
+ok('D2 该提示指明可执行动作（去平台开启能力）',
+   /云服务/.test(diag) && /开启/.test(diag));
+
+console.log('\n=== PASS ' + pass + ' / FAIL ' + fail + ' ===');
+process.exit(fail ? 1 : 0);
