@@ -435,6 +435,16 @@
     header h1 { font-size: 15px; }
     .nav-dl-ghost { display: none; }
     .side-dl { display: block; }
+    /* ★ 窄屏空间实测不够（2026-11-24 · §4-556）：390px 屏宽下
+       menu(44)+logo(32)+h1「月笙 · 在线诊断」(~135)+官网(~52)+账号(~82)+内边距(~24)
+       ≈ 399px ⇒ **溢出**。
+       取舍：不动功能入口（账号是本轮核心、官网是导航），改**缩短标题**——
+       品牌在侧栏 `.brand` 里已有完整呈现，头部只需可辨识。
+       判据：窄屏下 acctBtn / nav-home 均仍可见可点，且头部不溢出。 */
+    header h1 { font-size: 14px; letter-spacing: 0; }
+    header h1 a { white-space: nowrap; }
+    .acct-btn { padding: 6px 10px; font-size: 13px; }
+    .nav-home { padding: 8px 8px; font-size: 13px; }
     .syn-practice { min-height: 44px; }
     .syn-practice + .syn-practice { margin-top: 8px; }
   }

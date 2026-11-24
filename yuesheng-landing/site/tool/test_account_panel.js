@@ -91,5 +91,17 @@ ok('G1 index 失败分支删除回调键',
 // ── H. 触控可达性（44px，与登录门一致的下限）──
 ok('H1 主按钮 min-height 44px', /acct-act[\s\S]{0,300}min-height:\s*44px/.test(diag));
 
+// ── I. 窄屏可用性（2026-11-24 · §4-556 补）──
+// 390px 实测头部会溢出（menu+logo+h1+官网+账号 ≈ 399px）。
+// 取舍：缩短标题而非砍功能入口 —— 账号入口是本轮核心，官网是导航，
+// 品牌在侧栏 .brand 已有完整呈现。判据：窄屏下不能出现 display:none 把它们藏掉。
+const narrow = diag.slice(diag.indexOf('@media (max-width: 760px)'));
+ok('I1 窄屏不隐藏账号入口（acct-btn 无 display:none）',
+   !/\.acct-btn\s*\{[^}]*display:\s*none/.test(narrow));
+ok('I2 窄屏不隐藏官网入口（nav-home 无 display:none）',
+   !/\.nav-home\s*\{[^}]*display:\s*none/.test(narrow));
+ok('I3 窄屏确实收紧了标题字号（防溢出）',
+   /header h1\s*\{\s*font-size:\s*14px/.test(narrow));
+
 console.log('\n=== PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);
