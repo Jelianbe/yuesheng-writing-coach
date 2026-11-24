@@ -112,5 +112,30 @@ ok('E2 已移除无效的按路径剥除开关（AUTH_STRIP_PREFIXES）',
 ok('F1 注释保留了这次反转的原因（响应头证明不了请求头）',
    /响应头证明不了请求头/.test(src));
 
+// ── G. 探针文件不外发（2026-11-24 · §4-556）──────────────────────────
+// 起因：本地删掉 7 个 `_probe_acct*.html` 后重新部署，**线上仍然 200**。
+// 实测 `Last-Modified` 未变 ⇒ 平台是增量覆盖上传、**不删除**本地已消失的文件。
+// ⇒ 「删本地 + 重部署」清不掉线上残留，必须在服务层挡。
+const blocked = (function () {
+  const m = src.match(/BLOCKED_PREFIXES\s*=\s*\(([^)]*)\)/);
+  if (!m) return null;
+  return m[1].split(',').map(x => x.trim().replace(/['"]/g, '')).filter(Boolean);
+})();
+ok('G1 定义了 BLOCKED_PREFIXES', Array.isArray(blocked) && blocked.length > 0,
+   JSON.stringify(blocked));
+ok('G2 覆盖 _probe_ 前缀', Array.isArray(blocked) && blocked.includes('_probe_'),
+   JSON.stringify(blocked));
+ok('G3 do_GET / do_HEAD 都走了拦截',
+   /def do_GET[\s\S]{0,400}_is_blocked/.test(src) &&
+   /def do_HEAD[\s\S]{0,400}_is_blocked/.test(src));
+ok('G4 _is_blocked 取路径最后一段（防子目录绕过）',
+   /rsplit\('\/', 1\)\[-1\]/.test(src));
+
+// G5 负向变异：把前缀改成不匹配任何真实探针名 ⇒ G2 应变红
+const mutBlocked = Array.isArray(blocked)
+  ? blocked.map(p => p.replace('_probe_', 'zzz_')) : [];
+ok('G5 变异体（改错前缀）下 G2 会变红', !mutBlocked.includes('_probe_'),
+   JSON.stringify(mutBlocked));
+
 console.log('\n=== PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);

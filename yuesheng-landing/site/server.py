@@ -69,6 +69,16 @@ HOP_HEADERS = {'host', 'connection', 'keep-alive', 'transfer-encoding',
                'te', 'trailers', 'authorization', 'cookie'}
 STRIP_PREFIXES = ('x-wb-webapp-access-key',)
 
+# ★ 临时探针文件一律不外发（2026-11-24 · §4-556 实测踩到）。
+#   起因：调试账号面板时建了 7 个 `_probe_acct*.html`，本地删掉后**重新部署
+#   仍然 200**。实测 `Last-Modified` 还是旧值 ⇒ 平台是**增量覆盖上传**，
+#   **不删除**线上已存在但本地已消失的文件。
+#   ⇒ `rm 本地 + 重新部署` 这条路清不掉线上残留，这是平台行为，不是我的误判。
+#   对策：在服务层对 `_probe_` 前缀直接 404。这样即使文件残留在线上磁盘，
+#   也不会被静态服务出去 —— 而且以后任何人加的临时探针都自动被挡。
+#   ⚠️ 副作用为零：正常的页面/资源不以 `_probe_` 开头。
+BLOCKED_PREFIXES = ('_probe_',)
+
 # publishableKey 从同目录 config.js 读入（该 key 设计上随客户端公开，
 # 已在站点静态文件里；服务端读入仅为强制注入，不新增泄露面、不进日志）。
 _KEY = None
@@ -166,14 +176,24 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith(PROXY_PREFIX):
             self._proxy()
+        elif self._is_blocked():
+            self._reject(404)
         else:
             SimpleHTTPRequestHandler.do_GET(self)
 
     def do_HEAD(self):
         if self.path.startswith(PROXY_PREFIX):
             self._proxy()
+        elif self._is_blocked():
+            self._reject(404)
         else:
             SimpleHTTPRequestHandler.do_HEAD(self)
+
+    def _is_blocked(self):
+        """临时探针文件不外发（见 BLOCKED_PREFIXES 注释）。
+        取路径最后一段判断，防 `sub/_probe_x.html` 绕过。"""
+        name = self.path.split('?', 1)[0].rstrip('/').rsplit('/', 1)[-1]
+        return any(name.startswith(p) for p in BLOCKED_PREFIXES)
 
     def do_POST(self):
         if self.path.startswith(PROXY_PREFIX):
