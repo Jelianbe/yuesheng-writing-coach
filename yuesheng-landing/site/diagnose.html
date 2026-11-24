@@ -1790,6 +1790,51 @@
           css: document.querySelector('style').textContent,
           chat: chatEl.outerHTML,
         };
+        // ── 账号入口面板自检（2026-11-24 · §4-556）─────────────────────
+        // 为什么放进 selftest：这是本项目既有的**页内自检通道**（selfreport
+        // 走 /engine_result 回传），比外部截图稳定。账号面板是本轮舰长明确
+        // 要求的入口，必须有可判读数，而不是"我看了一眼觉得对"。
+        // 判据两条：
+        //   ① 未登录态：按钮存在、标签为「未登录」、点开**必须**出现登录动作、
+        //      且**不得**出现退出动作（否则用户会去点一个不存在的会话）
+        //   ② 已登录分支：直接驱动 signedIn + applyGate（renderAccount 是同一
+        //      函数，测它即测真实分支），断言出现退出、输入区解禁
+        try {
+          var acctBtnEl = document.getElementById('acctBtn');
+          var acctPopEl = document.getElementById('acctPop');
+          var acctLabEl = document.getElementById('acctLabel');
+          var acctBodyEl = document.getElementById('acctBody');
+          rep.acct = {};
+          rep.acct.exists = !!(acctBtnEl && acctPopEl && acctLabEl && acctBodyEl);
+          if (rep.acct.exists) {
+            var r0 = acctBtnEl.getBoundingClientRect();
+            // 真实渲染判据：必须有非零尺寸（防"DOM 在但看不见"）
+            rep.acct.visible = r0.width > 0 && r0.height > 0;
+            rep.acct.rect = Math.round(r0.width) + 'x' + Math.round(r0.height);
+            // 头部不得横向溢出（窄屏核心判据，390px 实测曾溢出 9px）
+            var hdEl = document.querySelector('header');
+            rep.acct.headerOverflow = hdEl ? (hdEl.scrollWidth > hdEl.clientWidth + 1) : null;
+
+            // ① 当前登录态的 UI 断言
+            var wasReady = (gate === 'ready');
+            rep.acct.gateNow = gate;
+            rep.acct.labelNow = acctLabEl.textContent;
+            if (acctPopEl.hidden) acctBtnEl.click();
+            var h0 = acctBodyEl.innerHTML || '';
+            rep.acct.openOnClick = (acctPopEl.hidden === false);
+            rep.acct.hasSignInBtn = h0.indexOf('acctSignIn') !== -1;
+            rep.acct.hasSignOutBtn = h0.indexOf('acctSignOut') !== -1;
+            // 两种态互斥：未登录不得有退出，已登录不得有登录
+            rep.acct.mutuallyExclusive = wasReady
+              ? (rep.acct.hasSignOutBtn && !rep.acct.hasSignInBtn)
+              : (!rep.acct.hasSignOutBtn && rep.acct.hasSignInBtn);
+            // Esc 可关（移动端软键盘场景也有用）
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+            rep.acct.escCloses = (acctPopEl.hidden === true);
+          }
+        } catch (e) {
+          rep.acct = { error: String(e && e.message || e) };
+        }
       } catch (e) {
         rep.error = String(e && e.message || e);
       }
