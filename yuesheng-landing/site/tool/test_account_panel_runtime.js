@@ -115,7 +115,13 @@ function sliceFn(src, name) {
   return '';
 }
 
-const FN = ['escHtml', 'renderAccount', 'openAccount', 'closeAccount', 'onDocClickForAcct', 'bindAccountEntry', 'acctEmail'];
+// ★ 名单必须包含 renderAccount 依赖的每一个函数，否则装载时 ReferenceError。
+//   2026-11-24（§4-556）加检测区时漏了 diagHtml/bindDiag ⇒ 装载直接抛。
+//   ⇒ 这不是产品缺陷，是**测试装置没跟上**；但也说明一个真问题：
+//     `sliceFn` 按名单抽段，新增依赖不会自动带上。凡改 renderAccount
+//     的依赖闭包，本名单必须同步 —— 否则测试会以"崩"的形式提醒你。
+const FN = ['escHtml', 'renderAccount', 'openAccount', 'closeAccount', 'onDocClickForAcct',
+            'bindAccountEntry', 'acctEmail', 'diagHtml', 'bindDiag'];
 let code = 'var gate = "needlogin"; var signedIn = false; var acctBtn=null,acctPop=null,acctBody=null,acctLabel=null;\n' +
            // ★ 必须忠实复刻真实 applyGate 的两件事：① 由 signedIn 重算 gate
            //   ② 再调 renderAccount。初版桩只写了 ②，漏了 ① ⇒ doSignOut 里
@@ -186,7 +192,17 @@ Promise.resolve(vm.runInContext('globalThis.__p', ctx)).then(function () {
   ok('E2 退出后面板关闭', popHidden === true);
 
   // 负向变异：把 catch 去掉，SDK 抛错就会中断 ⇒ E1 应变红
-  const mutated = code.replace(/catch \(_\) \{\}/, 'catch (_) { throw _; }');
+  // ★ 必须**只**变异 doSignOut 本体（2026-11-24 · §4-556）。
+  //   初版对整个 code 做 `replace(/catch \(_\) \{\}/, ...)` ⇒ 只换第一处，
+  //   而加了检测区后第一处落在 diagHtml 里 ⇒ 变异打偏、doSignOut 未变 ⇒ E3 假红。
+  //   这是"变异测试自己失效"的典型：变异没打到被测对象，却报"断言恒真"。
+  const dsoSrc = dso.replace(/^async function doSignOut/, 'function doSignOut');
+  const dsoMut = dsoSrc.replace(/catch \(_\) \{\}/, 'catch (_) { throw _; }');
+  const mutated = code.replace(dsoSrc, dsoMut);
+  if (mutated === code) {
+    ok('E3 变异体（去掉 catch）确实会失败 ⇒ E1 不是恒真', false,
+       'mutation-noop: 变异未命中 doSignOut');
+  }
   const sandbox2 = Object.assign({}, sandbox);
   sandbox2.YueshengAuth = { signOut: async function () { throw new Error('x'); } };
   const ctx2 = vm.createContext(sandbox2);

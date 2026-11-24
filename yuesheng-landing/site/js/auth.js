@@ -224,6 +224,57 @@
     // 登录成功后该去哪：优先回用户发起登录的那一页
     nextLocation: function () { return popNext(); },
 
+    // ★ 检测探针（2026-11-24 · §4-556）。面板要「针对做检测」，这是它读的数。
+    //
+    // 为什么查 PKCE verifier：SDK 的 handleWorkBuddyCallback 顺序是
+    //   ① 读 state（由 Relay 签发，服务端校验）
+    //   ② readVerifier() —— 本地 sessionStorage，没有就 fail "no local PKCE verifier"
+    //   ③ 拿 code + state + verifier 去换会话
+    // ⇒ 服务端报 `state invalid` 时，本地唯一能自证的是「verifier 还在不在」。
+    //   若 verifier 已丢，说明回调不是在本标签页发起的（换标签 / 清了存储），
+    //   重试即可；若 verifier 还在而仍报 state 错，则问题在 Relay 侧 state 生命周期，
+    //   本地无从修复 —— 这个区分正是舰长要的「检测」。
+    probe: function () {
+      var out = { sdk: false, cfg: false, verifier: false, session: false, error: _lastError };
+      var c = cfg();
+      out.cfg = !!c;
+      out.sdk = !!(window.WorkBuddyCloud &&
+                   typeof window.WorkBuddyCloud.createWorkBuddyCloud === 'function');
+      // verifier 键名与 SDK 一致：workbuddy-cloud.pkce.workbuddy.<publishableKey>
+      try {
+        if (c && c.publishableKey) {
+          out.verifier = !!sessionStorage.getItem(
+            'workbuddy-cloud.pkce.workbuddy.' + c.publishableKey);
+        }
+      } catch (_) {}
+      try {
+        if (c && c.publishableKey) {
+          out.session = !!localStorage.getItem(
+            'workbuddy-cloud.session.' + c.publishableKey);
+        }
+      } catch (_) {}
+      return out;
+    },
+
+    // 彻底重来：清掉会话 + verifier + 已消费标记，让下一次登录从零开始。
+    // 用途：舰长遇到"怎么试都不行"时，先分清是「状态脏了」还是「链路坏了」。
+    resetLocal: function () {
+      var c = cfg();
+      var keys = ['ys_login_next'];
+      if (c && c.publishableKey) {
+        var k = c.publishableKey;
+        keys.push('workbuddy-cloud.session.' + k);
+        keys.push('workbuddy-cloud.pkce.workbuddy.' + k);
+        keys.push('workbuddy-cloud.pkce-done.workbuddy.' + k);
+      }
+      var i;
+      for (i = 0; i < keys.length; i++) {
+        try { localStorage.removeItem(keys[i]); } catch (_) {}
+        try { sessionStorage.removeItem(keys[i]); } catch (_) {}
+      }
+      _lastError = null;
+    },
+
     _debug: { getCloud: getCloud, buildRedirectTo: buildRedirectTo, cfg: cfg },
   };
 

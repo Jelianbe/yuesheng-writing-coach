@@ -103,5 +103,35 @@ ok('I2 窄屏不隐藏官网入口（nav-home 无 display:none）',
 ok('I3 窄屏确实收紧了标题字号（防溢出）',
    /header h1\s*\{\s*font-size:\s*14px/.test(narrow));
 
+// ── J. 检测区（2026-11-24 · §4-556 舰长要求「针对做检测」）──────────────
+// 舰长两次失败都只有一句平台报错，无法区分"我这边脏了"还是"链路坏了"。
+// 检测区就是把那个区分做出来：四行本地可自证读数 + 一个彻底重置。
+const authJs = fs.readFileSync(path.join(SITE, 'js', 'auth.js'), 'utf8');
+
+ok('J1 面板渲染检测区（两态都要有，不是只在未登录时）',
+   (diag.match(/diagHtml\(\)/g) || []).length >= 2);
+ok('J2 检测区四行读数齐全',
+   ['云服务 SDK', '站点配置', '登录证明', '本地会话']
+     .every(s => diag.indexOf(s) !== -1));
+ok('J3 probe 读的是 SDK 真实键名（PKCE + session）',
+   authJs.indexOf("'workbuddy-cloud.pkce.workbuddy.'") !== -1 &&
+   authJs.indexOf("'workbuddy-cloud.session.'") !== -1);
+ok('J4 resetLocal 清三类键（会话 / 证明 / 已消费标记）',
+   /resetLocal/.test(authJs) &&
+   /workbuddy-cloud\.session\./.test(authJs) &&
+   /workbuddy-cloud\.pkce\.workbuddy\./.test(authJs) &&
+   /workbuddy-cloud\.pkce-done\.workbuddy\./.test(authJs));
+ok('J5 重置入口存在于面板（不只写在 auth.js）',
+   diag.indexOf('acctReset') !== -1 && /id="acctReset"/.test(diag));
+
+// J6 负向变异：把所有 verifier 键名改错 ⇒ J3 的字符串断言必然落空
+// ★ 必须 replaceAll（2026-11-24 踩到）：该键名在 auth.js 出现 2 次
+//   （probe 读 + resetLocal 清），只换第一处时 J3 仍能靠第二处绿 ⇒
+//   变异没覆盖被测断言 ⇒ 报了"变异无效"的假红。
+//   ⇒ 变异测试的判据是「断言真的会红」，不是「我改了某个字符串」。
+const authMut = authJs.split("'workbuddy-cloud.pkce.workbuddy.'").join("'WRONG'");
+ok('J6 变异体（改错全部 verifier 键名）后 J3 会变红',
+   authMut.indexOf("'workbuddy-cloud.pkce.workbuddy.'") === -1 && authMut !== authJs);
+
 console.log('\n=== PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);

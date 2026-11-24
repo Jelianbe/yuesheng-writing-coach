@@ -186,6 +186,39 @@
     font-size: 12px; color: var(--ink-2); line-height: 1.6;
     margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line);
   }
+  /* ══ 检测区（2026-11-24 · §4-556）════════════════════════════════════
+     舰长原话「针对做检测」：面板不能只说"已登录/未登录"，得能读出
+     **是哪一环断了**。四行读数全部来自本地可自证的事实（SDK 是否就绪 /
+     配置是否读到 / PKCE 证明是否还在 / 会话是否落盘），不猜服务端。 */
+  .acct-diag {
+    margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  .acct-diag summary {
+    font-size: 12px; color: var(--ink-2); cursor: pointer;
+    list-style: none; user-select: none; padding: 4px 0;
+  }
+  .acct-diag summary::-webkit-details-marker { display: none; }
+  .acct-diag summary::before { content: '▸ '; }
+  .acct-diag[open] summary::before { content: '▾ '; }
+  .acct-diag ul { margin: 6px 0 0; padding: 0; list-style: none; }
+  .acct-diag li {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 12px; line-height: 1.9; color: var(--ink-2);
+  }
+  .acct-diag li b { font-weight: 600; color: var(--ink); }
+  .acct-diag li b[data-ok="0"] { color: var(--status-danger); }
+  .acct-diag li b[data-ok="1"] { color: var(--bamboo); }
+  .acct-reset {
+    width: 100%; margin-top: 10px; min-height: 40px;
+    font: inherit; font-size: 13px; cursor: pointer;
+    background: transparent; color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 10px;
+  }
+  .acct-reset:hover { border-color: var(--ink-2); color: var(--ink); }
+  .acct-hint {
+    font-size: 11.5px; color: var(--ink-2); line-height: 1.6;
+    margin: 8px 0 0; opacity: .85;
+  }
   /* 侧栏下载入口：桌面隐藏（导航在 header），移动端入抽屉 */
   .side-dl {
     display: none; font: inherit; font-size: 14px; cursor: pointer;
@@ -1351,14 +1384,16 @@
         '<p class="acct-row">当前状态：<strong>已登录</strong>' +
         (who ? '<br>账号：' + escHtml(who) : '') + '</p>' +
         '<button type="button" class="acct-act acct-act--quiet" id="acctSignOut">退出登录</button>' +
-        '<p class="acct-note">退出后本页回到「需登录」状态；你的诊断记录仍保存在本机，不会因退出而删除。</p>';
+        '<p class="acct-note">退出后本页回到「需登录」状态；你的诊断记录仍保存在本机，不会因退出而删除。</p>' +
+        diagHtml();
       var outBtn = document.getElementById('acctSignOut');
       if (outBtn) outBtn.addEventListener('click', doSignOut);
     } else {
       acctBody.innerHTML =
         '<p class="acct-row">当前状态：<strong>未登录</strong></p>' +
         '<button type="button" class="acct-act acct-act--primary" id="acctSignIn">使用 WorkBuddy 登录</button>' +
-        '<p class="acct-note">登录只用于额度统计，不读取你的稿件。</p>';
+        '<p class="acct-note">登录只用于额度统计，不读取你的稿件。</p>' +
+        diagHtml();
       var inBtn = document.getElementById('acctSignIn');
       if (inBtn) inBtn.addEventListener('click', function () {
         // 复用门内那个按钮的同一条链路，避免两处实现漂移
@@ -1367,6 +1402,56 @@
         if (gateBtn) gateBtn.click();
       });
     }
+    bindDiag();
+  }
+
+  // ── 检测区（§4-556）──────────────────────────────────────────────────
+  // 读数一律来自 Auth.probe()，即本地可自证的事实；**不在客户端猜服务端**。
+  // 为什么值得做：舰长两次登录失败都只有一句平台报错，无法判断"是我这边脏了
+  // 还是链路坏了"。这四行正是那个判断依据。
+  function diagHtml() {
+    var p = null;
+    try {
+      if (window.YueshengAuth && window.YueshengAuth.probe) p = window.YueshengAuth.probe();
+    } catch (_) {}
+    if (!p) {
+      return '<details class="acct-diag"><summary>检测</summary>' +
+             '<p class="acct-hint">检测模块未就绪（auth.js 未加载）。</p></details>';
+    }
+    function row(label, ok, why) {
+      return '<li><span>' + label + '</span><b data-ok="' + (ok ? '1' : '0') + '">' +
+             (ok ? '正常' : '缺失') + '</b></li>';
+    }
+    var html = '<details class="acct-diag"><summary>检测</summary><ul>' +
+      row('云服务 SDK', p.sdk) +
+      row('站点配置', p.cfg) +
+      row('登录证明', p.verifier) +
+      row('本地会话', p.session) +
+      '</ul>' +
+      '<p class="acct-hint">' +
+      '「登录证明」缺失 = 这次回调不是在本标签页发起的（换了标签或存储被清），' +
+      '重试即可；若证明在、本地会话空，说明兑换这一步没过。' +
+      (p.error ? '<br>最近错误：<b>' + escHtml(p.error) + '</b>' : '') +
+      '</p>' +
+      '<button type="button" class="acct-reset" id="acctReset">清空登录状态并重试</button>' +
+      '</details>';
+    return html;
+  }
+
+  function bindDiag() {
+    var rst = document.getElementById('acctReset');
+    if (!rst) return;
+    rst.addEventListener('click', function () {
+      try {
+        if (window.YueshengAuth && window.YueshengAuth.resetLocal) {
+          window.YueshengAuth.resetLocal();
+        }
+      } catch (_) {}
+      signedIn = false;
+      applyGate();
+      renderAccount();
+      showLoginError('');
+    });
   }
 
   function escHtml(s) {
@@ -1831,6 +1916,22 @@
             // Esc 可关（移动端软键盘场景也有用）
             document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
             rep.acct.escCloses = (acctPopEl.hidden === true);
+
+            // ② 检测区（§4-556 舰长要求「针对做检测」）：
+            //    必须在，且四行读数可读、重置按钮可点、probe 不抛。
+            var h1 = acctBodyEl.innerHTML || '';
+            rep.acct.hasDiag = h1.indexOf('acct-diag') !== -1;
+            rep.acct.hasReset = h1.indexOf('acctReset') !== -1;
+            rep.acct.diagRows = (h1.match(/data-ok=/g) || []).length;
+            try {
+              var pr = (window.YueshengAuth && window.YueshengAuth.probe)
+                ? window.YueshengAuth.probe() : null;
+              rep.acct.probeOk = !!pr;
+              if (pr) {
+                rep.acct.p_sdk = pr.sdk; rep.acct.p_cfg = pr.cfg;
+                rep.acct.p_verifier = pr.verifier; rep.acct.p_session = pr.session;
+              }
+            } catch (e2) { rep.acct.probeOk = false; rep.acct.probeErr = String(e2); }
           }
         } catch (e) {
           rep.acct = { error: String(e && e.message || e) };
