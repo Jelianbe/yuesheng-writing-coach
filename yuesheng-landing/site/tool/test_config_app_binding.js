@@ -117,8 +117,22 @@ ok('C2 故 A3 的 PASS 不是恒真', mutApp !== SITE_APP);
 const diag = fs.readFileSync(path.join(SITE, 'diagnose.html'), 'utf8');
 ok('D1 friendlyError 覆盖 capability_disabled（否则用户只看到错误码）',
    /capability_disabled/.test(diag) && /friendlyError/.test(diag));
-ok('D2 该提示指明可执行动作（去平台开启能力）',
-   /云服务/.test(diag) && /开启/.test(diag));
+
+// ★★ 2026-11-24 二次订正（§4-558）：判据反转。
+//   原 D2 要求提示里出现「云服务」+「开启」——那等于**把一条未核实的点击路径
+//   钉成了验收条件**，于是文案越错、测试越绿。
+//   实测：官方《云服务》文档列出的能力只有 数据库/身份认证/文件存储/数据统计，
+//   **AI 不在其中** ⇒「去云服务页开启 AI」这条路我并没有证据。
+//   ⇒ 新判据：① 必须出现"开通"（说明这是能力开关问题，不是代码问题）；
+//             ② **不得**再把用户指向那个未核实的路径（出现"数据管理"+“云服务”
+//                的组合即判红）。**测试要能拦住我写第二次同样的错。**
+const dBlock = diag.slice(diag.indexOf("r.code === 'capability_disabled'"),
+                          diag.indexOf("r.code === 'login_required'"));
+ok('D2 提示指明这是「能力未开通」而非代码/额度问题',
+   /开通/.test(dBlock) && !/额度用完）|额度用完就会/.test(dBlock.replace(/不是额度用完/g, '')));
+ok('D2b 不再把用户指向未核实的开启路径（§4-558 订正点）',
+   !/设置\s*→\s*数据管理|设置\s*>\s*数据管理/.test(dBlock),
+   'capability_disabled 文案块长度=' + dBlock.length);
 
 console.log('\n=== PASS ' + pass + ' / FAIL ' + fail + ' ===');
 process.exit(fail ? 1 : 0);
