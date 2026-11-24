@@ -129,6 +129,63 @@
     transition: background .18s, color .18s;
   }
   .nav-dl-ghost:hover { background: var(--bamboo); color: #F7F8F6; }
+
+  /* ══ 账号入口（2026-11-24 · §4-556）══════════════════════════════════
+     为什么需要它：此前**没有任何地方显示登录状态，也没有退出入口**。
+     ⇒ 用户遇到登录异常时既不知道"自己到底登没登"，也无法重置状态重试。
+     这是可用性缺口，不是装饰。入口本身永远可见（不论登没登），
+     点开是一个小面板：未登录给「登录」，已登录给「账号 + 退出」。 */
+  .acct-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: inherit; font-size: 13.5px; cursor: pointer;
+    background: transparent; border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px; color: var(--ink-2);
+    transition: border-color .18s, color .18s;
+  }
+  .acct-btn:hover { border-color: var(--bamboo); color: var(--bamboo); }
+  /* 已登录：实心点 + 品牌色，一眼可辨"当前是登录态" */
+  .acct-btn[data-state="in"] { border-color: var(--bamboo); color: var(--bamboo); }
+  .acct-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex: none;
+    background: var(--ink-2); opacity: .45;
+  }
+  .acct-btn[data-state="in"] .acct-dot { background: var(--bamboo); opacity: 1; }
+
+  .acct-pop {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+    min-width: 240px; max-width: min(88vw, 300px);
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 14px; text-align: left;
+  }
+  .acct-pop[hidden] { display: none; }
+  .acct-pop h3 {
+    margin: 0 0 8px; font-size: 13px; font-weight: 700;
+    color: var(--ink); letter-spacing: .5px;
+  }
+  .acct-row {
+    font-size: 13px; color: var(--ink-2); line-height: 1.7;
+    word-break: break-all; margin: 0 0 10px;
+  }
+  .acct-row strong { color: var(--ink); font-weight: 600; }
+  .acct-act {
+    width: 100%; font: inherit; font-size: 14px; cursor: pointer;
+    border-radius: 10px; padding: 11px 14px; text-align: center;
+    min-height: 44px;   /* 触控目标 ≥44px */
+  }
+  .acct-act--primary {
+    background: var(--bamboo); color: #F7F8F6; border: 1px solid var(--bamboo);
+  }
+  .acct-act--primary:hover { background: var(--bamboo-deep); }
+  .acct-act--quiet {
+    background: transparent; color: var(--status-danger);
+    border: 1px solid var(--line); margin-top: 8px;
+  }
+  .acct-act--quiet:hover { border-color: var(--status-danger); }
+  .acct-note {
+    font-size: 12px; color: var(--ink-2); line-height: 1.6;
+    margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line);
+  }
   /* 侧栏下载入口：桌面隐藏（导航在 header），移动端入抽屉 */
   .side-dl {
     display: none; font: inherit; font-size: 14px; cursor: pointer;
@@ -402,6 +459,19 @@
     <div class="hd-actions">
       <a class="nav-home" href="./index.html">官网</a>
       <a class="nav-dl-ghost" href="./index.html#download">下载</a>
+      <!-- 账号入口（§4-556）：常驻可见。此前登录状态无处可看、也无法退出，
+           用户遇异常只能靠刷新/换浏览器 —— 这是可用性缺口。 -->
+      <div class="acct-wrap" style="position:relative">
+        <button type="button" class="acct-btn" id="acctBtn" data-state="out"
+                aria-haspopup="true" aria-expanded="false" aria-controls="acctPop">
+          <span class="acct-dot" aria-hidden="true"></span>
+          <span id="acctLabel">未登录</span>
+        </button>
+        <div class="acct-pop" id="acctPop" role="dialog" aria-labelledby="acctTitle" hidden>
+          <h3 id="acctTitle">账号</h3>
+          <div id="acctBody"><!-- 由 renderAccount() 按登录态填充 --></div>
+        </div>
+      </div>
     </div>
   </header>
   <main>
@@ -508,6 +578,8 @@
     };
     gate = computeGate();
     root.setAttribute('data-gate', gate);
+    // 账号入口与门同源：gate 变则面板跟着变（防"按钮说已登录、页面说需登录"两套真源）
+    if (typeof renderAccount === 'function') renderAccount();
 
     if (gate === 'ready') {
       if (input) { input.disabled = false; input.removeAttribute('placeholder'); }
@@ -1232,6 +1304,125 @@
     });
   }
 
+  // ══ 账号入口小面板（2026-11-24 · §4-556）═══════════════════════════════
+  // 【为什么要有】此前全站**没有任何地方显示登录状态，也没有退出按钮**：
+  //   用户遇到登录异常时，既看不出自己到底登没登，也无法重置会话重试。
+  //   舰长原话「做一个账号入口的小窗口便于做登陆退出，针对做检测」
+  //   —— 它同时是**诊断工具**：把"当前登录态"变成看得见、可重置的读数。
+  //
+  // 【口径】面板内容完全由 signedIn 派生，不自己维护第二份状态
+  //   （防"按钮说已登录、页面说需登录"这类两套真源打架）。
+  var acctBtn = null, acctPop = null, acctBody = null, acctLabel = null;
+
+  function acctEmail() {
+    // 尽力取一个人类可读标识。取不到不算错：只显示"已登录"。
+    try {
+      var key = null;
+      var cfg = window.WB_CONFIG || {};
+      if (cfg.publishableKey) key = 'workbuddy-cloud.session.' + cfg.publishableKey;
+      if (!key) return '';
+      var raw = localStorage.getItem(key);
+      if (!raw) return '';
+      var s = JSON.parse(raw);
+      var u = (s && s.user) || {};
+      return u.email || u.name || u.phone || '';
+    } catch (_) { return ''; }
+  }
+
+  function renderAccount() {
+    if (!acctBtn || !acctBody) return;
+    var inn = gate === 'ready';
+    acctBtn.setAttribute('data-state', inn ? 'in' : 'out');
+    acctLabel.textContent = inn ? '已登录' : '未登录';
+
+    if (inn) {
+      var who = acctEmail();
+      acctBody.innerHTML =
+        '<p class="acct-row">当前状态：<strong>已登录</strong>' +
+        (who ? '<br>账号：' + escHtml(who) : '') + '</p>' +
+        '<button type="button" class="acct-act acct-act--quiet" id="acctSignOut">退出登录</button>' +
+        '<p class="acct-note">退出后本页回到「需登录」状态；你的诊断记录仍保存在本机，不会因退出而删除。</p>';
+      var outBtn = document.getElementById('acctSignOut');
+      if (outBtn) outBtn.addEventListener('click', doSignOut);
+    } else {
+      acctBody.innerHTML =
+        '<p class="acct-row">当前状态：<strong>未登录</strong></p>' +
+        '<button type="button" class="acct-act acct-act--primary" id="acctSignIn">使用 WorkBuddy 登录</button>' +
+        '<p class="acct-note">登录只用于额度统计，不读取你的稿件。</p>';
+      var inBtn = document.getElementById('acctSignIn');
+      if (inBtn) inBtn.addEventListener('click', function () {
+        // 复用门内那个按钮的同一条链路，避免两处实现漂移
+        var gateBtn = document.getElementById('lgSignIn');
+        closeAccount();
+        if (gateBtn) gateBtn.click();
+      });
+    }
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  function openAccount() {
+    if (!acctPop) return;
+    renderAccount();
+    acctPop.hidden = false;
+    acctBtn.setAttribute('aria-expanded', 'true');
+    // 点面板外关闭：用一次性监听，不常驻（防监听器堆积）
+    setTimeout(function () {
+      document.addEventListener('click', onDocClickForAcct, true);
+    }, 0);
+  }
+  function closeAccount() {
+    if (!acctPop) return;
+    acctPop.hidden = true;
+    if (acctBtn) acctBtn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClickForAcct, true);
+  }
+  function onDocClickForAcct(ev) {
+    if (!acctPop || acctPop.hidden) return;
+    if (acctBtn && acctBtn.contains(ev.target)) return;
+    if (acctPop.contains(ev.target)) return;
+    closeAccount();
+  }
+
+  async function doSignOut() {
+    var b = document.getElementById('acctSignOut');
+    if (b) { b.disabled = true; b.textContent = '正在退出…'; }
+    try {
+      if (window.YueshengAuth && window.YueshengAuth.signOut) {
+        await window.YueshengAuth.signOut();
+      }
+    } catch (_) {}
+    // ★ 就算 SDK 报错也必须就地翻状态：用户要的是"退出去"这个结果，
+    //   而不是一句"取消失败"。本地会话清掉即视为已退出（下次调用会重走登录门）。
+    signedIn = false;
+    try { sessionStorage.removeItem('ys_login_next'); } catch (_) {}
+    applyGate();
+    renderAccount();
+    closeAccount();
+    showLoginError('');
+  }
+
+  function bindAccountEntry() {
+    acctBtn = document.getElementById('acctBtn');
+    acctPop = document.getElementById('acctPop');
+    acctBody = document.getElementById('acctBody');
+    acctLabel = document.getElementById('acctLabel');
+    if (!acctBtn) return;
+    acctBtn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      if (acctPop.hidden) openAccount(); else closeAccount();
+    });
+    // Esc 关闭（桌面可用；移动端软键盘场景亦友好）
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') closeAccount();
+    });
+    renderAccount();
+  }
+
   // 登录态就绪后的收尾：放开输入区 + 换掉问候语（未登录时那句已过时）
   function onSignedIn() {
     signedIn = true;
@@ -1278,6 +1469,11 @@
     // ★★ 第二步：确定登录态（只读，不改状态），然后投影到 DOM。
     //   放在渲染本地会话之前 —— 否则旧会话先画出来，用户会以为能直接接着写。
     signedIn = await resolveSignedIn();
+    // ★ 顺序有讲究：bindAccountEntry 必须在 applyGate **之前**建好 DOM 引用，
+    //   因为 applyGate 内部会调 renderAccount() 同步账号面板。
+    //   若反过来，applyGate 首次执行时 acctLabel 还是 null ⇒ 面板显示"未登录"，
+    //   而实际可能已登录 ⇒ 又一次"两套真源"。实测踩过这个顺序坑。
+    bindAccountEntry();
     applyGate();
     bindLoginButton();
 

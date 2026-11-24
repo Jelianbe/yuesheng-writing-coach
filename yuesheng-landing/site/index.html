@@ -618,6 +618,17 @@
       } else {
         why = (window.YueshengAuth.lastError && window.YueshengAuth.lastError()) || r;
       }
+      // ★ 失败后必须清掉 URL 上的 code/state/error（2026-11-24 · §4-556）。
+      //   否则用户一刷新就会**再兑换一次**同一个已作废的 code ⇒ 又是同一条报错，
+      //   看起来像"怎么试都不行"，实际是页面在重放一个必然失败的请求。
+      //   这也是"看得见的失败"该有的收尾：报错说清楚一次，然后把现场清干净。
+      try {
+        var u2 = new URL(location.href);
+        ['code', 'state', 'provider', 'error', 'error_description'].forEach(function (k) {
+          u2.searchParams.delete(k);
+        });
+        history.replaceState(null, '', u2.pathname + u2.search);
+      } catch (_) {}
       showFail(why);
     }
 

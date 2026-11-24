@@ -174,6 +174,12 @@
         // 官方分支：error → 停在登录视图；session → 进应用；空 → 当作普通访问
         if (r && r.error) {
           _lastError = (r.error.message || 'callback_error');
+          // ★ 兑换失败也必须清 URL（2026-11-24 · §4-556）。
+          //   原实现只在成功/空结果时清理 ⇒ 失败时地址栏挂着已作废的 code，
+          //   用户一刷新就重放同一个必然失败的兑换，症状是"怎么试都不行"。
+          //   舰长真机截图那条 `state ... already consumed` 正是这个形态：
+          //   报错本身是真话（那个 state 确实已被消费），但"反复出现"是重放造成的。
+          cleanCallbackParams();
           return 'callback-error';
         }
         if (r && r.data && r.data.accessToken) {
@@ -185,6 +191,7 @@
         return 'no-callback';
       } catch (e) {
         _lastError = 'exchange_failed:' + (e && e.message ? e.message : String(e));
+        cleanCallbackParams();   // 同上：异常路径也不得留下可重放的 code
         return 'callback-failed';
       }
     },
