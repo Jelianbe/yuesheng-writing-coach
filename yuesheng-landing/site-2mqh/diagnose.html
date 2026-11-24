@@ -1,0 +1,2086 @@
+<!doctype html>
+<html lang="zh-CN" data-gate="needlogin">
+  <!-- ★ data-gate 在**标签上**预置初值（2026-11-24），不是等 JS 来设。
+       理由：CSS 的显隐规则是 `html:not([data-gate="maint"]) .maint-banner{display:none}`，
+       若属性根本不存在，则 maint 规则**不匹配**（不显示，正确）、登录门规则也**不匹配**
+       （也不显示，错误）⇒ 页面在两处都没有提示的空白里等 JS。
+       预置成最保守的 needlogin 后：JS 还没跑时可读、跑完后由 applyGate 覆盖为真值。
+       选 needlogin 而非 maint 作初值：绝大多数情况是新用户未登录，
+       且即使平台真的整体故障（maint），用户看到的也是「登录」而非空白，仍可自救（下载 Android 版）。 -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M68 10a40 40 0 1 0 22 72A44 44 0 0 1 68 10z' fill='%232D5A52'/%3E%3C/svg%3E">
+<title>在线诊断 · 月笙写作教练</title>
+<meta name="description" content="对话式在线诊断：贴出你的段落，得到结构化症候判定与针对性练习。不替你写句子，只帮你看见问题。">
+<!-- ★ OG 传播件（0.6 范围单候选 2 · 2026-11-12 批十三回改）：域 = 部署域。 -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="月笙写作教练">
+<meta property="og:title" content="月笙写作教练 · 在线诊断体验">
+<meta property="og:description" content="对话式在线诊断：贴出你的段落，得到结构化症候判定与针对性练习。不替你写句子，只帮你看见问题。">
+<meta property="og:url" content="https://yuesheng-apk-test.app.workbuddy.host/diagnose.html">
+<meta property="og:image" content="https://yuesheng-apk-test.app.workbuddy.host/assets/og-1200x630.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap">
+<style>
+  :root {
+    /* 统一设计令牌（与 index.html 同源：bamboo 系，2026-11-12 设计师决策单 D1） */
+    --bamboo: #2D5A52;
+    --bamboo-deep: #244A43;
+    --bamboo-soft: #E7EFEC;
+    --bg: #F7F8F6;        /* 页面底（语义唯一：页面背景） */
+    --paper: #FCFCF9;     /* 容器面（语义唯一：卡片/气泡/header 底） */
+    --ink: #22302C;
+    --ink-2: #5C6B66;
+    --line: #DCE4E0;
+    --shadow: 0 1px 2px rgba(34,48,44,.05), 0 8px 24px rgba(34,48,44,.06);
+    --radius: 14px;
+    /* 状态色（独立于品牌轴） */
+    --status-danger: #8A3C34;
+    --status-warn-bg: #FBF6EC;
+    /* 旧名别名（保现有选择器不动，逐步退役） */
+    --brand: var(--bamboo);
+    --brand-deep: var(--bamboo-deep);
+    --brand-soft: var(--bamboo-soft);
+    --ink-soft: var(--ink-2);
+    /* 输入框自增高度上限（唯一真源：CSS 与 JS 同读这一个变量） */
+    --input-max-h: 180px;
+  }
+  * { box-sizing: border-box; }
+  /* ★ 2026-11-19 移动端视口修复：原 `html, body { height: 100% }` 在移动浏览器
+     地址栏收起/展开时会按**固定 initial viewport** 取高 ⇒ footer（含输入框）
+     被顶出可视区或被地址栏压住，用户要滚动才看得到输入框。
+     `100dvh` 是**动态视口**，随地址栏变化实时重算；旧浏览器回退 `100%`。 */
+  html, body { margin: 0; padding: 0; height: 100%; height: 100dvh; }
+  body {
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+  }
+  /* ── 左侧对话列表 ── */
+  #sidebar {
+    width: 232px; flex: none; background: var(--paper);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    padding: 12px 10px; gap: 10px;
+  }
+  #sidebar .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 4px 6px; border-bottom: 1px solid var(--line);
+  }
+  #sidebar .brand .logo {
+    width: 28px; height: 28px; border-radius: 50%; flex: none;
+    background: var(--brand); color: #fff; display: flex; align-items: center;
+    justify-content: center; font-size: 14px;
+  }
+  #sidebar .brand b { font-size: 14.5px; letter-spacing: 1px; }
+  #sidebar .brand a { color: inherit; text-decoration: none; }
+  #newConvo {
+    font: inherit; font-size: 14px; cursor: pointer;
+    background: var(--brand); color: #fff; border: 0; border-radius: 10px;
+    padding: 9px 12px; letter-spacing: 1px; text-align: center;
+  }
+  #convoList { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .convo-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px; border-radius: 10px; cursor: pointer;
+    font-size: 13.5px; line-height: 1.5; border: 1px solid transparent;
+  }
+  .convo-item:hover { background: var(--brand-soft); }
+  .convo-item.on { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-deep); }
+  .convo-item .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .convo-item .del {
+    flex: none; width: 20px; height: 20px; border-radius: 6px; border: 0;
+    background: transparent; color: var(--ink-soft); cursor: pointer;
+    font-size: 13px; line-height: 1; display: none; font-family: sans-serif;
+  }
+  .convo-item:hover .del { display: block; }
+  .convo-item .del:hover { background: #f3e3e0; color: var(--danger); }
+  .list-empty { font-size: 12.5px; color: var(--ink-soft); padding: 8px 10px; }
+  /* ── 右侧主区 ── */
+  #rightCol { flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%; height: 100dvh; min-height: 0; }
+  header {
+    background: var(--paper); border-bottom: 1px solid var(--line);
+    padding: 10px 16px; display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 5;
+    flex: none;
+  }
+  #menuBtn {
+    display: none; font: inherit; font-size: 17px; line-height: 1;
+    background: transparent; border: 1px solid var(--line); border-radius: 8px;
+    padding: 6px 10px; cursor: pointer; color: var(--ink); flex: none;
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 700; letter-spacing: 1px; font-family: "Noto Serif SC", serif; }
+  header h1 a { color: inherit; text-decoration: none; }
+  .hd-logo { width: 32px; height: 32px; border-radius: 8px; flex: none; }
+  .hd-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .nav-home {
+    color: var(--bamboo); font-size: 14px; text-decoration: none;
+    padding: 10px 12px; display: inline-flex; align-items: center;
+  }
+  .nav-home:hover { color: var(--bamboo-deep); }
+  .nav-dl-ghost {
+    color: var(--bamboo); font-size: 13.5px; text-decoration: none;
+    border: 1px solid var(--bamboo); border-radius: 999px;
+    padding: 7px 16px; display: inline-flex; align-items: center;
+    transition: background .18s, color .18s;
+  }
+  .nav-dl-ghost:hover { background: var(--bamboo); color: #F7F8F6; }
+
+  /* ══ 账号入口（2026-11-24 · §4-556）══════════════════════════════════
+     为什么需要它：此前**没有任何地方显示登录状态，也没有退出入口**。
+     ⇒ 用户遇到登录异常时既不知道"自己到底登没登"，也无法重置状态重试。
+     这是可用性缺口，不是装饰。入口本身永远可见（不论登没登），
+     点开是一个小面板：未登录给「登录」，已登录给「账号 + 退出」。 */
+  .acct-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: inherit; font-size: 13.5px; cursor: pointer;
+    background: transparent; border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px; color: var(--ink-2);
+    transition: border-color .18s, color .18s;
+  }
+  .acct-btn:hover { border-color: var(--bamboo); color: var(--bamboo); }
+  /* 已登录：实心点 + 品牌色，一眼可辨"当前是登录态" */
+  .acct-btn[data-state="in"] { border-color: var(--bamboo); color: var(--bamboo); }
+  .acct-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex: none;
+    background: var(--ink-2); opacity: .45;
+  }
+  .acct-btn[data-state="in"] .acct-dot { background: var(--bamboo); opacity: 1; }
+
+  .acct-pop {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+    min-width: 240px; max-width: min(88vw, 300px);
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 14px; text-align: left;
+  }
+  .acct-pop[hidden] { display: none; }
+  .acct-pop h3 {
+    margin: 0 0 8px; font-size: 13px; font-weight: 700;
+    color: var(--ink); letter-spacing: .5px;
+  }
+  .acct-row {
+    font-size: 13px; color: var(--ink-2); line-height: 1.7;
+    word-break: break-all; margin: 0 0 10px;
+  }
+  .acct-row strong { color: var(--ink); font-weight: 600; }
+  .acct-act {
+    width: 100%; font: inherit; font-size: 14px; cursor: pointer;
+    border-radius: 10px; padding: 11px 14px; text-align: center;
+    min-height: 44px;   /* 触控目标 ≥44px */
+  }
+  .acct-act--primary {
+    background: var(--bamboo); color: #F7F8F6; border: 1px solid var(--bamboo);
+  }
+  .acct-act--primary:hover { background: var(--bamboo-deep); }
+  .acct-act--quiet {
+    background: transparent; color: var(--status-danger);
+    border: 1px solid var(--line); margin-top: 8px;
+  }
+  .acct-act--quiet:hover { border-color: var(--status-danger); }
+  .acct-note {
+    font-size: 12px; color: var(--ink-2); line-height: 1.6;
+    margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  /* ══ 检测区（2026-11-24 · §4-556）════════════════════════════════════
+     舰长原话「针对做检测」：面板不能只说"已登录/未登录"，得能读出
+     **是哪一环断了**。四行读数全部来自本地可自证的事实（SDK 是否就绪 /
+     配置是否读到 / PKCE 证明是否还在 / 会话是否落盘），不猜服务端。 */
+  .acct-diag {
+    margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  .acct-diag summary {
+    font-size: 12px; color: var(--ink-2); cursor: pointer;
+    list-style: none; user-select: none; padding: 4px 0;
+  }
+  .acct-diag summary::-webkit-details-marker { display: none; }
+  .acct-diag summary::before { content: '▸ '; }
+  .acct-diag[open] summary::before { content: '▾ '; }
+  .acct-diag ul { margin: 6px 0 0; padding: 0; list-style: none; }
+  .acct-diag li {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 12px; line-height: 1.9; color: var(--ink-2);
+  }
+  .acct-diag li b { font-weight: 600; color: var(--ink); }
+  .acct-diag li b[data-ok="0"] { color: var(--status-danger); }
+  .acct-diag li b[data-ok="1"] { color: var(--bamboo); }
+  .acct-reset {
+    width: 100%; margin-top: 10px; min-height: 40px;
+    font: inherit; font-size: 13px; cursor: pointer;
+    background: transparent; color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 10px;
+  }
+  .acct-reset:hover { border-color: var(--ink-2); color: var(--ink); }
+  .acct-hint {
+    font-size: 11.5px; color: var(--ink-2); line-height: 1.6;
+    margin: 8px 0 0; opacity: .85;
+  }
+  /* 侧栏下载入口：桌面隐藏（导航在 header），移动端入抽屉 */
+  .side-dl {
+    display: none; font: inherit; font-size: 14px; cursor: pointer;
+    text-decoration: none; text-align: center; letter-spacing: 1px;
+    background: var(--bamboo); color: #fff; border-radius: 10px; padding: 12px;
+  }
+  main { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 14px 8px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  /* ===== 维护公告（2026-11-23 · 舰长指令）=====
+     为什么做成**常驻横幅 + 禁用输入区**，而不是只弹一句提示：
+     平台已对 LLM 能力返回 401 login_required（详见 DECISIONS §4-552 三）。
+     若只提示而输入框仍可用，用户会照常粘贴、点「诊断」，再拿到报错 ——
+     那是把「我们已知不可用」变成「用户替你踩一遍坑」。故输入区同时禁用。
+     ⚠️ 输入区**不删除**：保留可见，让用户知道这里曾经/将来会有这个功能，
+        并明确指向替代路径（下载 Android 版，自带密钥）。 */
+  .maint-banner {
+    max-width: 760px; margin: 0 auto 14px;
+    background: var(--status-warn-bg);
+    border: 1px solid #E8D9BC; border-left: 3px solid #C08A2E;
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .maint-banner .mi { flex: none; color: #C08A2E; margin-top: 1px; }
+  .maint-banner .mi svg { width: 20px; height: 20px; }
+  .maint-banner h2 {
+    font-size: 14.5px; font-weight: 600; color: #6B4A12;
+    margin: 0 0 6px; line-height: 1.5;
+  }
+  .maint-banner p {
+    font-size: 13px; color: #7A5C24; line-height: 1.65; margin: 0;
+  }
+  .maint-banner p + p { margin-top: 6px; }
+  .maint-banner a {
+    color: #6B4A12; text-decoration: underline; text-underline-offset: 2px;
+    font-weight: 600;
+  }
+  /* 失效态输入区：视觉上明确"不可用"，但保留位置与说明 */
+  .composer.is-disabled textarea {
+    background: #F1F2F0; color: #9AA39F; cursor: not-allowed;
+  }
+  .composer.is-disabled #send {
+    background: #C3C9C6; cursor: not-allowed;
+  }
+  /* ===== 服务状态单一真源（2026-11-23 立，2026-11-24 扩为三态）=====
+     问题：横幅写死在 HTML、禁用属性写死在 HTML、而状态是 JS 常量
+     ⇒ **三处真源**。实测把常量改 false 后，JS 侧（问候语/placeholder）恢复了，
+        横幅与灰态却仍留着 —— 半恢复状态，比全不恢复更迷惑。
+     解法：用 `html[data-gate="..."]` 作为**唯一开关**，由 JS 在启动时按实测状态设置
+        （computeGate()，见脚本区）。三种状态互斥，CSS 与 JS 永不各说各话：
+          maint     = 平台能力整体不可用（当前不用，留作紧急闸）
+          needlogin = 能力可用但需登录（**当前态**）
+          ready     = 已登录且能力可用
+     ⚠️ 判据不是「常量写没写对」，而是「三态互斥且各自表现完整」——
+        之前正是靠这条抓出半恢复。恢复服务时只需改一处，横幅与禁用态自动跟着走。 */
+  html:not([data-gate="maint"]) .maint-banner { display: none; }
+  html:not([data-gate="needlogin"]) .login-gate { display: none; }
+
+  /* ===== 登录门（2026-11-24）=====
+     为什么不是一个「去登录」小链接：未登录时页面**没有任何可用能力**，
+     用户来这一页只有一个目的 —— 诊断。故把登录做成**唯一主动作**（主按钮，
+     44px 触控高度），而不是让用户在灰掉的输入框旁边自己找出口。 */
+  .login-gate {
+    max-width: 760px; margin: 0 auto 14px;
+    background: var(--paper);
+    border: 1px solid var(--line); border-left: 3px solid var(--brand);
+    border-radius: 12px; padding: 16px;
+  }
+  .login-gate h2 {
+    font-size: 15px; font-weight: 600; color: var(--ink);
+    margin: 0 0 6px; line-height: 1.5;
+  }
+  .login-gate p {
+    font-size: 13px; color: var(--ink-soft); line-height: 1.65; margin: 0;
+  }
+  .login-gate p + p { margin-top: 6px; }
+  .login-gate .lg-actions { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .login-gate button.lg-btn {
+    appearance: none; border: none; cursor: pointer;
+    background: var(--brand); color: #fff;
+    font-family: inherit; font-size: 14.5px; font-weight: 600;
+    padding: 11px 22px; min-height: 44px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: opacity .15s ease;
+  }
+  .login-gate button.lg-btn:active { opacity: .82; }
+  .login-gate button.lg-btn[disabled] { background: #C3C9C6; cursor: not-allowed; }
+  .login-gate .lg-alt {
+    font-size: 13px; color: var(--ink-soft); text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .login-gate .lg-err {
+    margin-top: 10px; font-size: 13px; color: #A23B2A; line-height: 1.6;
+  }
+  .login-gate .lg-err:empty { display: none; }
+  .msg { margin: 0 0 14px; display: flex; gap: 10px; }
+  .msg .avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: var(--brand); color: #fff; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; margin-top: 2px;
+  }
+  .msg.user { flex-direction: row-reverse; }
+  .msg.user .avatar { background: var(--ink-soft); }
+  .bubble {
+    max-width: calc(100% - 56px); background: var(--paper);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px 16px; line-height: 1.75; font-size: 15px;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .msg.user .bubble { background: var(--bamboo-deep); color: #f2f6f4; border-color: var(--bamboo-deep); }
+  .bubble.think { color: var(--ink-soft); font-size: 13.5px; border-style: dashed; }
+  .bubble.err { background: var(--warn-bg); border-color: #e5d6b2; color: #7a5c22; }
+  /* Markdown 渲染气泡 */
+  .bubble.md { white-space: normal; }
+  .bubble.md p { margin: 0 0 .6em; } .bubble.md p:last-child { margin-bottom: 0; }
+  .bubble.md h1, .bubble.md h2, .bubble.md h3, .bubble.md h4 { font-size: 1em; margin: .8em 0 .4em; font-weight: 700; }
+  .bubble.md ul, .bubble.md ol { margin: .4em 0 .6em; padding-left: 1.4em; }
+  .bubble.md li { margin: .15em 0; }
+  .bubble.md code { background: #eef3ef; border-radius: 4px; padding: 1px 5px; font-size: .9em; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .bubble.md pre { background: #eef3ef; border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: .6em 0; }
+  .bubble.md pre code { background: none; padding: 0; }
+  .bubble.md blockquote { border-left: 3px solid var(--line); padding-left: 10px; color: var(--ink-soft); margin: .6em 0; }
+  .bubble.md strong { font-weight: 700; }
+  .bubble.md table { border-collapse: collapse; margin: .6em 0; font-size: .92em; display: block; overflow-x: auto; }
+  .bubble.md th, .bubble.md td { border: 1px solid var(--line); padding: 4px 8px; }
+  .retry-btn {
+    margin-top: 8px; font: inherit; font-size: 13px; cursor: pointer;
+    background: transparent; border: 1px solid #b58a3a; color: #7a5c22;
+    border-radius: 8px; padding: 5px 14px;
+  }
+  .retry-btn:hover { background: #f3e8d2; }
+  /* 诊断卡内逐条练习 / 确认指认 / 排除按钮（动作词汇贴 App 诊断卡） */
+  .syn-practice, .syn-ack, .syn-exclude {
+    font: inherit; font-size: 12.5px; cursor: pointer; margin-top: 6px;
+    background: var(--bamboo-soft); color: var(--bamboo-deep);
+    border: 1px solid var(--bamboo); border-radius: 999px;
+    min-height: 36px; padding: 4px 14px;
+  }
+  .syn-practice:hover, .syn-ack:hover, .syn-exclude:hover { background: var(--brand); color: #fff; }
+  .syn-ack:disabled, .syn-exclude:disabled { opacity: .55; cursor: default; }
+  /* 诊断卡 */
+  .dcard {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px; margin: 0 0 14px; margin-left: 44px; font-size: 14.5px;
+  }
+  .dcard h3 { margin: 0 0 8px; font-size: 14px; color: var(--brand-deep); letter-spacing: 1px; }
+  .sev { font-size: 12px; padding: 1px 8px; border-radius: 999px; margin-right: 6px; }
+  .sev.L1 { background: #eef4ee; color: #3c6e50; }
+  .sev.L2 { background: #fdf3e2; color: #9a6b1a; }
+  .sev.L3 { background: #f9e9e6; color: var(--danger); }
+  .synd { border-top: 1px dashed var(--line); padding: 10px 0; }
+  .synd:first-of-type { border-top: 0; padding-top: 4px; }
+  .synd b { font-size: 15px; }
+  .synd .evid { color: var(--ink-soft); font-size: 13px; margin: 4px 0 2px; }
+  .synd .evid em { background: #f0f5f1; padding: 0 4px; border-radius: 4px; font-style: normal; }
+  .synd .imp { color: var(--brand-deep); font-size: 13px; margin-top: 3px; }
+  .overall { background: var(--brand-soft); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 13.5px; }
+  .dactions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .dactions button {
+    font: inherit; font-size: 13.5px; cursor: pointer;
+    background: var(--brand); color: #fff; border: 0; border-radius: 8px; padding: 7px 14px;
+  }
+  .dactions button.ghost { background: transparent; color: var(--brand-deep); border: 1px solid var(--brand); }
+  footer {
+    border-top: 1px solid var(--line); background: var(--paper);
+    padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+    /* ★ 2026-11-19：footer 不参与收缩。`main` 已给 `min-height: 0` 可与
+       footer 抢空间，若 footer 也允许收缩，hint 展开时会先被压扁而非把
+       main 让出来 —— 表现为「输入框被顶出可视区」。 */
+    flex: none;
+  }
+  .composer { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end; }
+  textarea {
+    flex: 1; font: inherit; font-size: 16px; line-height: 1.6;
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px;
+    background: var(--paper); color: var(--ink); resize: none; min-height: 46px;
+    max-height: var(--input-max-h);
+    outline: none;
+  }
+  textarea:focus { border-color: var(--brand); }
+  #send {
+    font: inherit; font-size: 15px; cursor: pointer; flex: none;
+    background: var(--brand); color: #fff; border: 0; border-radius: 12px;
+    padding: 11px 20px; letter-spacing: 2px;
+  }
+  #send:disabled { opacity: .5; cursor: default; }
+  .hint-wrap { max-width: 760px; margin: 6px auto 0; display: flex; align-items: flex-start; gap: 4px; }
+  .hint { font-size: 12px; color: var(--ink-soft); line-height: 1.5; flex: 1; min-width: 0; }
+  /* 「隐私与数据」等短链不得在词内断行（上一版出现「隐 / 私与数据」竖排裂字）。
+     `word-break: keep-all` 保证中文短语整体换行，不断在词中间。 */
+  .hint a { word-break: keep-all; white-space: nowrap; }
+  /* ★ 2026-11-19 移动端通知栏占位修复：这条 hint 是 4 句连排的合规说明，
+     在 390px 宽屏上折成 4–5 行、固定占掉约 80px，把输入框挤到键盘上方一半
+     的位置。小屏改为 **2 行截断 + 展开**（不是删句）：
+     - 桌面端（>640px）：不截断，**全文照旧显示**，隐私链接与「发送给模型服务
+       处理」的说明一字不少 —— 合规信息不因屏幕变宽而变少。
+     - 移动端：`-webkit-line-clamp: 2` 视觉截断；「更多」按钮放在**被截断
+       元素之外**（上次放在内部被 clamp 一起裁掉了，点不到）。
+     判据：无论截断与否，DOM 里四个合规要素必须始终存在 —— 由
+     `hintCompliance()` 自检，不靠肉眼。 */
+  .hint-more {
+    font: inherit; font-size: 12px; cursor: pointer; color: var(--brand);
+    background: none; border: 0; padding: 0; text-decoration: underline;
+    flex: none; display: none;
+  }
+  @media (max-width: 640px) {
+    :root { --input-max-h: 96px; }
+    /* hint 收到 11.5px / 2 行 ≈ 33px；展开时取消 clamp 显示全文。 */
+    .hint { font-size: 11.5px; line-height: 1.5; }
+    .hint:not(.hint-expanded) {
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hint-more { display: block; font-size: 11.5px; line-height: 1.5; }
+    /* ★ 上一版把这段误删了（只留了 --input-max-h 变量、忘了配套规则），
+       导致「输入框 + ［诊断］」在窄屏挤压、main 边距过大。此处补回。 */
+    .composer { gap: 8px; }
+    textarea { padding: 10px 12px; }
+    /* ★ 2026-11-19 placeholder 溢出修复：原 placeholder 是 33 个汉字
+       （「把要诊断的片段粘贴进来（一段场景、一个开场、一章正文都可以）…」），
+       在 390px 下折 2 行，而 `rows=1` 的 46px 只够 1.5 行 ⇒ **下半行被裁掉**，
+       显示成半个字。小屏改为短句，并给足两行高度（不再靠 46px 硬撑）。 */
+    textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #send { padding: 11px 14px; letter-spacing: 1px; }
+    main { padding: 14px 12px 6px; }
+    footer { padding: 8px 12px calc(10px + env(safe-area-inset-bottom)); }
+  }
+  .typing { display: inline-block; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  /* 移动端：侧栏抽屉 */
+  #scrim { display: none; }
+  @media (max-width: 760px) {
+    #menuBtn { display: block; }
+    #sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; z-index: 20;
+      transform: translateX(-100%); transition: transform .22s ease;
+      box-shadow: 0 0 24px rgba(0,0,0,.12);
+    }
+    body.sidebar-open #sidebar { transform: translateX(0); }
+    #scrim {
+      display: block; position: fixed; inset: 0; z-index: 19;
+      background: rgba(0,0,0,.28); opacity: 0; pointer-events: none; transition: opacity .22s;
+    }
+    body.sidebar-open #scrim { opacity: 1; pointer-events: auto; }
+    .dcard { margin-left: 0; }
+    header h1 { font-size: 15px; }
+    .nav-dl-ghost { display: none; }
+    .side-dl { display: block; }
+    /* ★ 窄屏空间实测不够（2026-11-24 · §4-556）：390px 屏宽下
+       menu(44)+logo(32)+h1「月笙 · 在线诊断」(~135)+官网(~52)+账号(~82)+内边距(~24)
+       ≈ 399px ⇒ **溢出**。
+       取舍：不动功能入口（账号是本轮核心、官网是导航），改**缩短标题**——
+       品牌在侧栏 `.brand` 里已有完整呈现，头部只需可辨识。
+       判据：窄屏下 acctBtn / nav-home 均仍可见可点，且头部不溢出。 */
+    header h1 { font-size: 14px; letter-spacing: 0; }
+    header h1 a { white-space: nowrap; }
+    .acct-btn { padding: 6px 10px; font-size: 13px; }
+    .nav-home { padding: 8px 8px; font-size: 13px; }
+    .syn-practice { min-height: 44px; }
+    .syn-practice + .syn-practice { margin-top: 8px; }
+  }
+</style>
+</head>
+<body>
+<aside id="sidebar">
+  <div class="brand">
+    <img src="./assets/app_icon.png" alt="" style="width:28px;height:28px;border-radius:8px">
+    <b><a href="./index.html">月笙写作教练</a></b>
+  </div>
+  <button id="newConvo">＋ 新对话</button>
+  <a class="side-dl" href="./index.html#download">下载 Android 版</a>
+  <div id="convoList"></div>
+</aside>
+<div id="scrim"></div>
+<div id="rightCol">
+  <header>
+    <button id="menuBtn" title="对话列表">☰</button>
+    <img class="hd-logo" src="./assets/app_icon.png" alt="月笙写作教练图标">
+    <h1><a href="./index.html">月笙 · 在线诊断</a></h1>
+    <div class="hd-actions">
+      <a class="nav-home" href="./index.html">官网</a>
+      <a class="nav-dl-ghost" href="./index.html#download">下载</a>
+      <!-- 账号入口（§4-556）：常驻可见。此前登录状态无处可看、也无法退出，
+           用户遇异常只能靠刷新/换浏览器 —— 这是可用性缺口。 -->
+      <div class="acct-wrap" style="position:relative">
+        <button type="button" class="acct-btn" id="acctBtn" data-state="out"
+                aria-haspopup="true" aria-expanded="false" aria-controls="acctPop">
+          <span class="acct-dot" aria-hidden="true"></span>
+          <span id="acctLabel">未登录</span>
+        </button>
+        <div class="acct-pop" id="acctPop" role="dialog" aria-labelledby="acctTitle" hidden>
+          <h3 id="acctTitle">账号</h3>
+          <div id="acctBody"><!-- 由 renderAccount() 按登录态填充 --></div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main>
+    <!-- ★ 登录门（2026-11-24）：当前态。平台 LLM 能力要求登录，故未登录时
+         本页**没有任何可用能力** —— 登录是唯一主动作，不做成角落小链接。
+         显隐由 html[data-gate] 统一投影，不在 HTML 里写 style/disabled（防三处真源复发）。 -->
+    <div class="login-gate" role="region" aria-labelledby="lgTitle">
+      <h2 id="lgTitle">登录后即可在线诊断</h2>
+      <p>平台侧的模型调用能力现在要求登录。用 WorkBuddy 账号登录一次，之后回到本页直接可用，不用再登录。</p>
+      <p>我们只读取账号标识用于额度统计，<strong>不读取你的稿件用于其他用途</strong>；稿件不落在我们的服务器上。</p>
+      <div class="lg-actions">
+        <button type="button" class="lg-btn" id="lgSignIn">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>
+          </svg>
+          使用 WorkBuddy 登录
+        </button>
+        <a class="lg-alt" href="./index.html#download">或下载 Android 版（自带密钥，无需登录）</a>
+      </div>
+      <div class="lg-err" id="lgErr" role="alert"></div>
+    </div>
+    <!-- 维护公告：2026-11-23 舰长指令，随 §4-552 三 一并登记。
+         移动版维护说明的「更多」折叠见下方 CSS（窄屏 2 行截断不套用于本横幅，
+         避免用户错过「当前不可用」这一最高优先级信息）。
+         2026-11-24 起本横幅**默认不显示**（data-gate 不是 maint），仅作紧急闸保留。 -->
+    <div class="maint-banner" role="status" aria-live="polite">
+      <span class="mi" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4"/><path d="M12 17h.01"/>
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        </svg>
+      </span>
+      <div>
+        <h2>在线诊断暂停服务（维护中）</h2>
+        <p>平台侧的模型调用能力暂时不可用，网页版的在线诊断无法提供。恢复后会在此页直接可用。</p>
+        <p>现在想用完整功能，请<a href="./index.html#download">下载 Android 版</a>——它自带密钥，不依赖本页的在线通道。</p>
+      </div>
+    </div>
+    <div class="wrap" id="chat"></div>
+  </main>
+  <footer>
+    <div class="composer is-disabled">
+      <textarea id="input" rows="1" placeholder="登录后在此粘贴要诊断的片段" disabled></textarea>
+      <button id="send" disabled>诊断</button>
+    </div>
+    <div class="hint-wrap"><div class="hint" id="hint">需登录后使用 · 登录免费用，无需付费 · 稿件仅用于本次对话，不保存到云端 · <a href="./index.html#privacy">隐私与数据</a></div><button type="button" class="hint-more" id="hintMore" aria-expanded="false">更多</button></div>
+  </footer>
+</div>
+
+<script src="./js/vendor/wbcs-sdk.global.js"></script>
+<script src="./js/vendor/wbcs-bridge.js"></script>
+<script src="./js/vendor/marked.min.js"></script>
+<script src="./js/vendor/purify.min.js"></script>
+<script src="./js/config.js?v=561pkce2mqh"></script>
+<script src="./js/auth.js?v=559pkce"></script>
+<script src="./js/corpus.js?v=561pkce2mqh"></script>
+<script src="./js/engine.js?v=561pkce2mqh"></script>
+<script>
+(function () {
+  'use strict';
+  var chatEl = document.getElementById('chat');
+  var inputEl = document.getElementById('input');
+  var sendEl = document.getElementById('send');
+  var listEl = document.getElementById('convoList');
+  var sending = false;
+  var SELFTEST = location.search.indexOf('selftest') !== -1;
+
+  // ★ 服务状态：三态互斥（2026-11-24 由「维护常量」升级而来）
+  // 【为什么不再用常量】常量只能表达「开/关」两态。现在有第三种真实状态：
+  //   **平台能力可用、但要求登录**。它不是维护（能力没坏），也不是就绪（未登录不能用）。
+  //   若硬塞进布尔量，必然二选一失真：写成 true 会把「可登录恢复」误报成「坏掉了」；
+  //   写成 false 会让用户照常输入再吃 401。
+  //   故改为**由实测状态推导**的三态：maint / needlogin / ready。
+  // 【maint 态仍需保留为常量闸门】平台若整体故障（不是登录问题），登录也救不了，
+  //   那时要能一键全关而不用改结构 ⇒ 保留 FORCE_MAINT 作为最高优先级的紧急闸。
+  var FORCE_MAINT = false;                   // 紧急闸：平台整体不可用时置 true
+  var SESSION_TIMEOUT_MS = 6000;             // getSession 上限：宁可误判未登录，不可卡死页面
+  var gate = FORCE_MAINT ? 'maint' : 'needlogin';   // 先用最保守值渲染，避免闪一下可交互
+  var signedIn = false;
+
+  function computeGate() {
+    if (FORCE_MAINT) return 'maint';
+    return signedIn ? 'ready' : 'needlogin';
+  }
+
+  // ★ 状态投影：唯一开关 `html[data-gate]`，一次把四处表现一起推齐
+  //   ① CSS 显隐横幅/登录门 ② input.disabled ③ send.disabled ④ composer 灰态 + hint 文案
+  //   之前半恢复事故的根因就是「一部分写在 HTML、一部分写在 JS」，此后一律走这里。
+  function applyGate() {
+    var root = document.documentElement;
+    var input = document.getElementById('input');
+    var send = document.getElementById('send');
+    var composer = document.querySelector('.composer');
+    var hint = document.getElementById('hint');
+    // 三套 hint 文案，各自只讲**当前为真**的事。
+    // ⚠️ 原「诊断走平台免费额度垫付」的措辞随手改过：额度垫付仍在，但有了登录这件事，
+    //    不提会让人以为「登录 = 付费」。这里只作事实性补充，不改承诺。
+    var HINT = {
+      maint: '本页在线诊断能力维护中 · <a href="./index.html#download">改用 Android 版</a> · <a href="./index.html#privacy">隐私与数据</a>',
+      needlogin: '需登录后使用 · 登录免费用，无需付费 · 稿件仅用于本次对话，不保存到云端 · <a href="./index.html#privacy">隐私与数据</a>',
+      ready: '诊断走平台免费额度垫付 · 稿件仅用于本次对话：会发送给模型服务处理，不保存到云端 · 条目点按会匿名回传统计（不含稿件内容） · <a href="./index.html#privacy">隐私与数据</a>'
+    };
+    gate = computeGate();
+    root.setAttribute('data-gate', gate);
+    // 账号入口与门同源：gate 变则面板跟着变（防"按钮说已登录、页面说需登录"两套真源）
+    if (typeof renderAccount === 'function') renderAccount();
+
+    if (gate === 'ready') {
+      if (input) { input.disabled = false; input.removeAttribute('placeholder'); }
+      if (send) send.disabled = false;
+      if (composer) composer.classList.remove('is-disabled');
+      if (hint) hint.innerHTML = HINT.ready;
+      // 由 needlogin/maint 翻到 ready 时，placeholder 还是旧的禁止语 ⇒ 必须重设。
+      // 函数声明在下方（hoisted），此处可安全调用。
+      initPlaceholder();
+      return;
+    }
+    // maint / needlogin 都是「不可输入」，差别只在文案与横幅（由 CSS 按 data-gate 分流）。
+    // placeholder 必须写实：ready 之外不能出现「粘贴要诊断的片段…」这种邀请语。
+    var ph = gate === 'maint' ? '在线诊断维护中，暂不可用' : '登录后在此粘贴要诊断的片段';
+    if (input) { input.disabled = true; input.setAttribute('placeholder', ph); }
+    if (send) send.disabled = true;
+    if (composer) composer.classList.add('is-disabled');
+    if (hint) hint.innerHTML = HINT[gate];
+  }
+  // ── 2026-11-19：占位文案按屏宽设置 ──────────────────────
+  // 原 placeholder 33 汉字在 390px 折 2 行，而 rows=1 的 46px 只够 1.5 行
+  // ⇒ 下半行被裁掉。改为两套文案：窄屏短句一行放得下，宽屏保留完整引导。
+  // 放在 JS 而非 HTML 属性，是为避免写两份 textarea 或在 CSS 里做内容替换。
+  // ★ 2026-11-24 改成具名函数：登录成功后 gate 会由 needlogin 翻到 ready，
+  //   那时必须**再跑一次**才能把邀请语写上。挂成 IIFE 就只能跑一次，登录后
+  //   placeholder 仍是「登录后在此粘贴…」，与已经可输入的框自相矛盾。
+  function initPlaceholder() {
+    var el = document.getElementById('input');
+    if (!el) return;
+    // 非 ready 态守卫（2026-11-23 立，2026-11-24 随三态扩写）：本函数会**无条件覆盖**
+    //   HTML 里写的 placeholder。若不提前返回，失效态下输入框会重新显示
+    //   「粘贴要诊断的片段…」——一句**邀请用户输入的失效文案**，与「不可用」自相矛盾。
+    //   实测踩到（390px 视口截图），故加此闸。gate 由 applyGate 算好，此处只读。
+    if (gate !== 'ready') return;
+    var isNarrow = window.matchMedia('(max-width: 640px)').matches;
+    el.setAttribute('placeholder', isNarrow
+      ? '粘贴要诊断的片段…'
+      : '把要诊断的片段粘贴进来（一段场景、一个开场、一章正文都可以）…');
+  }
+  initPlaceholder();   // 首帧按「初始 gate（needlogin）」跑一次；ready 时什么也不做
+  function selfreport(data) {
+    if (!SELFTEST) return;
+    try { fetch('/engine_result?d=' + encodeURIComponent(JSON.stringify(data))); } catch (_) {}
+  }
+
+  // ── 2026-11-19：移动端通知栏「2 行截断 + 展开」─────────────
+  // 合规说明在 390px 屏上折 4–5 行、固定吃掉约 80px，把输入框挤走。
+  // 小屏用 CSS line-clamp 视觉截断，点「更多」加 .hint-expanded 展开全文。
+  // ★ 截断只影响**视觉**，DOM 里四个合规要素始终存在（不靠删句省空间）。
+  (function initHintToggle() {
+    var moreBtn = document.getElementById('hintMore');
+    var hintEl = document.getElementById('hint');
+    if (!moreBtn || !hintEl) return;
+    moreBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      hintEl.classList.add('hint-expanded');
+      moreBtn.setAttribute('aria-expanded', 'true');
+      moreBtn.style.display = 'none';
+    });
+  })();
+
+  // 合规要素存在性自检（selftest 与人工核对共用）。
+  // 判据：四条要素任一缺失即返回 false —— 防止「为了塞进小屏把合规信息
+  // 悄悄删掉」这类回退。此函数无副作用，可在控制台直接调用。
+  // ★ 2026-11-24 按 gate 分档（此前只按 ready 态写，needlogin 下会假红）：
+  //   合规披露的是「**实际发生的事**」。未登录时根本没有调用、也没有匿名回传，
+  //   此时仍要求「会发送给模型服务处理 / 匿名回传统计」等于逼我们写不实内容。
+  //   ⇒ 分档后每档各自要求「当前为真的那几条」，缺一条即红。
+  //   注意：ready 档的四条**一字未减**（与原来完全一致），本改动只放宽未登录档。
+  window.hintCompliance = function () {
+    var el = document.getElementById('hint');
+    if (!el) return { ok: false, missing: ['hint 元素不存在'] };
+    var t = el.textContent || '';
+    var need;
+    if (gate === 'ready') {
+      need = ['平台免费额度垫付', '会发送给模型服务处理', '不保存到云端', '匿名回传统计'];
+    } else if (gate === 'needlogin') {
+      // 尚未登录：可承诺的是「免费」与「稿件不落云端」；不得声称已回传统计。
+      need = ['需登录后使用', '无需付费', '不保存到云端'];
+    } else {
+      // maint：只剩「不可用 + 去哪用」。
+      need = ['维护中'];
+    }
+    var missing = need.filter(function (s) { return t.indexOf(s) === -1; });
+    var hasPrivacyLink = !!(el.querySelector('a[href*="privacy"]'));
+    if (!hasPrivacyLink) missing.push('隐私与数据链接');
+    return { ok: missing.length === 0, missing: missing, gate: gate };
+  };
+
+  // ── 多会话存储（全部本地 localStorage）──────────────────
+  var CONVOS_KEY = 'yuesheng_web_convos_v1';        // 索引：[{id,title,createdAt,updatedAt}]
+  var ACTIVE_KEY = 'yuesheng_web_convo_active_v1';  // 当前会话 id
+  var LEGACY_KEY = 'yuesheng_web_trial_state_v1';   // 旧版单会话（迁移用）
+  function convoKey(id) { return 'yuesheng_web_convo_' + id; }
+  function listConvos() {
+    try { var l = JSON.parse(localStorage.getItem(CONVOS_KEY)); return Array.isArray(l) ? l : []; }
+    catch (_) { return []; }
+  }
+  function saveConvos(l) { try { localStorage.setItem(CONVOS_KEY, JSON.stringify(l)); } catch (_) {} }
+  function getActiveId() { return localStorage.getItem(ACTIVE_KEY) || null; }
+  function setActiveId(id) { try { localStorage.setItem(ACTIVE_KEY, id); } catch (_) {} }
+  function loadConvoState(id) {
+    try {
+      var raw = localStorage.getItem(convoKey(id));
+      if (raw) { var s = JSON.parse(raw); if (s && s.phase) return s; }
+    } catch (_) {}
+    return initialState();
+  }
+  function saveConvoState(id, st) {
+    try { localStorage.setItem(convoKey(id), JSON.stringify(st)); } catch (_) {}
+  }
+  function dropConvoState(id) { try { localStorage.removeItem(convoKey(id)); } catch (_) {} }
+
+  // ── 当前会话 ─────────────────────────────────────────────
+  var state = null;       // 当前会话状态
+  var curId = null;       // 当前会话 id
+
+  function findEmptyConvo() {
+    // 已有空白对话（标题未定名且无历史）⇒ 复用，不重复创建
+    var l = listConvos();
+    for (var i = 0; i < l.length; i++) {
+      if (l[i].title === '新对话') {
+        var st = loadConvoState(l[i].id);
+        if (!st.history.length) return l[i].id;
+      }
+    }
+    return null;
+  }
+
+  function newConversation(silent) {
+    // 防重复：已存在空白对话 ⇒ 切过去，不再新建
+    var empty = findEmptyConvo();
+    if (empty) {
+      if (empty === curId) { closeSidebar(); return; }
+      switchConvo(empty);
+      return;
+    }
+    var id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    var l = listConvos();
+    l.unshift({ id: id, title: '新对话', createdAt: Date.now(), updatedAt: Date.now() });
+    saveConvos(l);
+    dropConvoState(id);
+    state = initialState();
+    curId = id;
+    setActiveId(id);
+    renderList();
+    chatEl.innerHTML = '';
+    if (!silent) greet();
+  }
+
+  function touchConvo() {
+    var l = listConvos();
+    for (var i = 0; i < l.length; i++) {
+      if (l[i].id === curId) {
+        l[i].updatedAt = Date.now();
+        // 标题：首条用户消息前 20 字
+        if ((l[i].title === '新对话')) {
+          for (var j = 0; j < state.history.length; j++) {
+            if (state.history[j].role === 'user' && state.history[j].content &&
+                state.history[j].content.indexOf('__') !== 0) {
+              l[i].title = state.history[j].content.replace(/\s+/g, ' ').slice(0, 20);
+              break;
+            }
+          }
+        }
+        break;
+      }
+    }
+    saveConvos(l);
+    renderList();
+  }
+
+  function switchConvo(id) {
+    if (id === curId) { closeSidebar(); return; }
+    saveConvoState(curId, state);
+    curId = id;
+    setActiveId(id);
+    state = loadConvoState(id);
+    chatEl.innerHTML = '';
+    renderHistory();
+    closeSidebar();
+  }
+
+  function deleteConvo(id) {
+    var l = listConvos().filter(function (c) { return c.id !== id; });
+    saveConvos(l);
+    dropConvoState(id);
+    if (id === curId) {
+      if (l.length) { switchConvo(l[0].id); }
+      else { newConversation(false); }
+    } else {
+      renderList();
+    }
+  }
+
+  function renderList() {
+    var l = listConvos();
+    if (!l.length) {
+      listEl.innerHTML = '<div class="list-empty">还没有对话，点上方「＋ 新对话」开始。</div>';
+      return;
+    }
+    var html = '';
+    l.forEach(function (c) {
+      html += '<div class="convo-item' + (c.id === curId ? ' on' : '') + '" data-id="' + esc(c.id) + '" title="' + esc(c.title) + '">' +
+        '<span class="title">' + esc(c.title) + '</span>' +
+        '<button class="del" data-del="' + esc(c.id) + '" title="删除此对话">×</button>' +
+        '</div>';
+    });
+    listEl.innerHTML = html;
+    Array.prototype.forEach.call(listEl.querySelectorAll('.convo-item'), function (el) {
+      el.addEventListener('click', function (e) {
+        if (e.target && e.target.getAttribute('data-del')) return;
+        switchConvo(el.getAttribute('data-id'));
+      });
+    });
+    Array.prototype.forEach.call(listEl.querySelectorAll('.del'), function (el) {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteConvo(el.getAttribute('data-del'));
+      });
+    });
+  }
+
+  // ── 渲染 ────────────────────────────────────────────────
+  function addBubble(role, text, cls) {
+    // 最终防线：assistant 私有标记（__CARD__ / __CARD_PRACTICE__）永不作为气泡显示
+    if (role === 'assistant' && typeof text === 'string' && text.indexOf('__') === 0) return null;
+    var div = document.createElement('div');
+    div.className = 'msg ' + (role === 'user' ? 'user' : 'assistant');
+    var avatar = role === 'user' ? '你' : '月';
+    div.innerHTML = '<div class="avatar">' + avatar + '</div>' +
+      '<div class="bubble ' + (cls || '') + '"></div>';
+    div.querySelector('.bubble').textContent = text;
+    chatEl.appendChild(div);
+    scrollBottom();
+    return div.querySelector('.bubble');
+  }
+
+  // Markdown 安全渲染（marked 解析 + DOMPurify 消毒；异常时退回纯文本 esc）
+  function renderMd(text) {
+    try {
+      var html = window.marked ? window.marked.parse(text || '') : esc(text || '');
+      return window.DOMPurify ? window.DOMPurify.sanitize(html) : esc(text || '');
+    } catch (_) { return esc(text || ''); }
+  }
+
+  // assistant 正文走 Markdown 气泡（模型输出是 md；消毒防注入）
+  function addMdBubble(role, text) {
+    var div = document.createElement('div');
+    div.className = 'msg assistant';
+    div.innerHTML = '<div class="avatar">月</div><div class="bubble md"></div>';
+    div.querySelector('.bubble').innerHTML = renderMd(text);
+    chatEl.appendChild(div);
+    scrollBottom();
+    return div.querySelector('.bubble');
+  }
+
+  function renderHistory() {
+    var shown = false;
+    (state.history || []).forEach(function (m) {
+      if (!m.content) return;
+      if (m.content.indexOf('__CARD_PRACTICE__') === 0) return; // 旧版练习标记，不渲染
+      if (m.content.indexOf('__CARD__') === 0) {                // 诊断卡持久化标记 → 重绘
+        try { renderDiagnosisCard(JSON.parse(m.content.slice(8))); } catch (_) {}
+        shown = true;
+        return;
+      }
+      if (m.role === 'assistant') { addMdBubble(m.role, m.content); }
+      else { addBubble(m.role, m.content); }
+      shown = true;
+    });
+    if (!shown) greet();
+  }
+
+  function scrollBottom() {
+    var m = document.querySelector('main');
+    // ★ 2026-11-24 实测修掉（§4-554）：未登录/维护态**不得**滚到底。
+    //   根因：登录门在 main 的**顶部**，而渲染历史里的旧诊断卡会调本函数把
+    //   main 滚到最底 ⇒ 登录门被顶出视口。线上实测（498×522 视口截图）：
+    //   用户看到一个旧诊断卡 + 灰掉的输入框 + 「登录后使用」，
+    //   **完全看不到「使用 WorkBuddy 登录」按钮**，于是以为"没有登录入口"。
+    //   这不是样式问题，是"把唯一的行动按钮滚没了"。
+    //   ⇒ 非 ready 态把滚动位置复位到顶部，让登录门始终第一眼可见。
+    if (gate !== 'ready') { m.scrollTop = 0; return; }
+    m.scrollTop = m.scrollHeight;
+  }
+
+  // ── 匿名统计埋点（事件词汇贴 App edit_diff_events / 诊断卡动作）────────
+  // 只传结构化标识，不传稿件文本；失败不阻断（对齐 App anchor_ack 埋点先例）。
+  // selftest 跑假流式也会渲染诊断卡 ⇒ 自测下关闭埋点，避免污染统计。
+  // ── 匿名设备标识（§4-516：设备内持久 · 可重置 · 非硬件/非账号 · 服务端不建映射）──
+  var ANON_KEY = 'yuesheng_anon_id_v1';
+  function newAnonId() {
+    try {
+      var b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40;          // version 4
+      b[8] = (b[8] & 0x3f) | 0x80;          // variant 10
+      var h = [];
+      for (var i = 0; i < 16; i++) { h.push(('0' + b[i].toString(16)).slice(-2)); }
+      var s = h.join('');
+      return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' +
+             s.slice(16, 20) + '-' + s.slice(20);
+    } catch (_) { return ''; }
+  }
+  function getAnonId() {
+    try {
+      var v = localStorage.getItem(ANON_KEY);
+      if (v && v.length === 36) return v;
+      v = newAnonId();
+      if (v) localStorage.setItem(ANON_KEY, v);
+      return v;
+    } catch (_) { return ''; }   // 隐私模式等 ⇒ 空串 ⇒ 该行不可归因
+  }
+
+  // ── 材料指纹（§4-516 续 A 路：sha256 前 16 位 hex，对齐 App 既有实现）──
+  // 只在 secure context 下可用（crypto.subtle 需 https / localhost）；否则返空串
+  // ⇒ 调用方不发 text_fp 键 ⇒ 该行「不可判」。UTF-8 编码，与 Dart utf8.encode 同口径。
+  async function sha256Hex16(s) {
+    try {
+      if (!(window.crypto && window.crypto.subtle)) return '';
+      var buf = new TextEncoder().encode(s);
+      var h = await window.crypto.subtle.digest('SHA-256', buf);
+      var a = new Uint8Array(h), out = '';
+      for (var i = 0; i < 8; i++) { out += ('0' + a[i].toString(16)).slice(-2); }
+      return out;
+    } catch (_) { return ''; }
+  }
+
+  function sendEvent(eventType, payload) {
+    if (SELFTEST) return;
+    try {
+      if (!(window.WbcsBridge && window.WbcsBridge.insertEvent)) return;
+      var p = payload || {};
+      var aid = getAnonId();
+      if (aid) { p.anon_id = aid; }
+      var row = {
+        event_type: eventType,
+        payload: p,
+        source: 'web',
+        session_tag: curId || '',
+        client_created_at: new Date().toISOString()
+      };
+      window.WbcsBridge.insertEvent(JSON.stringify({
+        endpoint: WB_CONFIG.endpoint,
+        publishableKey: WB_CONFIG.publishableKey,
+        table: 'interaction_events',
+        row: row
+      }));
+    } catch (_e) { /* 埋点失败不阻断 */ }
+  }
+
+  // 确认指认 / 排除（对齐 App 诊断卡动作；会话级内存态，不跨轮次；二选一后对侧禁用）
+  function ackSyndrome(btn) {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = '✓ 已确认指认';
+    var other = btn.parentElement.querySelector('.syn-exclude');
+    if (other) other.disabled = true;
+    sendEvent('anchor_ack', { syndrome_id: btn.getAttribute('data-syn') });
+  }
+  function excludeSyndrome(btn) {
+    if (btn.disabled) return;
+    btn.disabled = true;
+    btn.textContent = '已排除';
+    var other = btn.parentElement.querySelector('.syn-ack');
+    if (other) other.disabled = true;
+    sendEvent('exclusion', { syndrome_id: btn.getAttribute('data-syn') });
+  }
+
+  // 诊断卡渲染（ParsedDiagnosis 结构 → 卡片；每条症候可单独练）
+  function renderDiagnosisCard(d) {
+    // 空卡壳抑制（§4-509 残留待裁 · 舰长 2026-11-12 22:0x 批）：100 字基线边界下
+    // 模型会输出 syndromes 空的协议块 ⇒ 旧逻辑渲染只剩「换个片段再诊断」按钮的
+    // 纯空壳。判据 = 无症候 ∧ 无排除 ∧ 无整体判定 ⇒ 不渲染；
+    // 带 overall.verdict 的诚实卡（如「无文本，未进入诊断」）有信息量，保留。
+    var hasSyndromes = (d.syndromes || []).length > 0;
+    var hasExcluded = (d.excluded || []).length > 0;
+    var hasOverall = !!(d.overall && d.overall.verdict);
+    if (!hasSyndromes && !hasExcluded && !hasOverall) return;
+    var div = document.createElement('div');
+    div.className = 'dcard';
+    var html = '<h3>结构化诊断</h3>';
+    if (d.overall && d.overall.verdict) {
+      html += '<div class="overall"><b>整体判定：' + esc(d.overall.verdict) + '</b>';
+      if (d.overall.coverage) html += ' · ' + esc(d.overall.coverage);
+      if (d.overall.keep) html += '<br>值得保持：' + esc(d.overall.keep);
+      html += '</div>';
+    }
+    (d.syndromes || []).forEach(function (s) {
+      html += '<div class="synd"><span class="sev ' + esc(s.severity || 'L2') + '">' + esc(s.severity || 'L2') + '</span>' +
+        '<b>' + esc(s.name || '未命名问题') + '</b>';
+      (s.evidence || []).slice(0, 3).forEach(function (ev) {
+        html += '<div class="evid">原文：<em>' + esc(ev) + '</em></div>';
+      });
+      if (s.explanation) html += '<div>' + esc(s.explanation) + '</div>';
+      if (s.reader_impact) html += '<div class="imp">读者影响：' + esc(s.reader_impact) + '</div>';
+      if (s.syndrome_id) {
+        html += '<button class="syn-practice" data-syn="' + esc(s.syndrome_id) + '" data-name="' + esc(s.name || '') + '">就这条开始练</button>' +
+          '<button class="syn-ack" data-syn="' + esc(s.syndrome_id) + '">确认指认</button>' +
+          '<button class="syn-exclude" data-syn="' + esc(s.syndrome_id) + '">排除</button>';
+      }
+      html += '</div>';
+    });
+    html += '<div class="dactions">' +
+      '<button data-act="redone" class="ghost">换个片段再诊断</button>' +
+      '</div>';
+    div.innerHTML = html;
+    Array.prototype.forEach.call(div.querySelectorAll('.syn-practice'), function (btn) {
+      btn.onclick = function () { startPractice(btn.getAttribute('data-syn'), btn.getAttribute('data-name')); };
+    });
+    Array.prototype.forEach.call(div.querySelectorAll('.syn-ack'), function (btn) {
+      btn.onclick = function () { ackSyndrome(btn); };
+    });
+    Array.prototype.forEach.call(div.querySelectorAll('.syn-exclude'), function (btn) {
+      btn.onclick = function () { excludeSyndrome(btn); };
+    });
+    div.querySelector('[data-act="redone"]').onclick = resetForNewFragment;
+    chatEl.appendChild(div);
+    scrollBottom();
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  // ── 流程动作 ────────────────────────────────────────────
+  // 开始练：真模型轮（training 组装链注入技法 L3，模型布置练习任务）
+  // 练习发话文本（纯函数，供 selftest 断言防回归）：
+  // 对齐 App 先例（chat_self_practice taskDescription 只用名称）——
+  // syndrome_id 是内部键，不进学习者可见文本（2026-11-12 舰长指出 P012 泄漏批）。
+  function buildPracticeText(syndromeId, syndromeName) {
+    var label = syndromeName || syndromeId;
+    return '我想针对「' + label + '」这条开始练习，给我布置一个针对性练习任务。';
+  }
+  function startPractice(syndromeId, syndromeName) {
+    if (!syndromeId || sending) return;
+    state.focusId = syndromeId;
+    state.subphase = 'PRACTICE';
+    saveConvoState(curId, state);
+    sendCore(buildPracticeText(syndromeId, syndromeName), { practiceTurn: true });
+  }
+
+  // 换个片段再诊断：清训练态，下一轮强制走诊断（含协议后缀）
+  function resetForNewFragment() {
+    state.activeSyndromes = [];
+    state.focusId = null;
+    state.subphase = null;
+    state.forceSceneFirst = true;
+    saveConvoState(curId, state);
+    addBubble('assistant', '好，把下一段贴过来，我们重新看。', 'think');
+  }
+
+  // ── 发送主链 ────────────────────────────────────────────
+  // opts.practiceTurn：练习任务轮（不切子相，user 消息由本轮统一入历史）
+  // opts.skipUserBubble：重试时不重复画用户气泡
+  async function sendCore(text, opts) {
+    opts = opts || {};
+    // ★ 状态总闸（2026-11-23 立为维护闸，2026-11-24 随三态扩写）。send() 只挡了
+    //   「输入框发送」这一条路，但 sendCore 另有直接调用点：startPractice(:805，症候卡的
+    //   「就这条开始练」) 与自测。前者是真用户可达路径 —— 若不在此拦截，
+    //   用户仍能从旧会话卡片点「开始练习」再拿到 401。
+    //   ⇒ 在**汇聚点**拦，而不是逐个调用点加判断（漏一处就是一个洞）。
+    //   gate 为 'ready' 之外的任何态都不许发请求：maint（能力坏了）与 needlogin（没登录）
+    //   都不该让用户走一遍必失败的流程。
+    if (gate !== 'ready' && !SELFTEST) return;
+    if (sending) return;
+    if (!opts.practiceTurn && !text) return;
+    sending = true; sendEl.disabled = true;
+    if (!opts.skipUserBubble) addBubble('user', text);
+    // 状态机推进：P0 → 首次贴文进 P1；PRACTICE 提交重写 → FEEDBACK
+    if (!opts.practiceTurn) {
+      if (state.phase === 'P0') { state.phase = 'P1'; }
+      else if (state.phase === 'P2' && state.subphase === 'PRACTICE') {
+        state.subphase = 'FEEDBACK';
+      }
+    }
+    var thinkBubble = addBubble('assistant', '月笙正在读', 'think');
+    thinkBubble.innerHTML = '月笙正在读<span class="typing">…</span>';
+    var full = '';
+    var streamOn = false, lastPaint = 0;
+    function paintStream(force) {
+      var now = Date.now();
+      if (!force && now - lastPaint < 120) return;
+      lastPaint = now;
+      // 流式期间只画正文（parseReply 剥掉诊断块，防卡片 JSON 闪现）
+      thinkBubble.innerHTML = renderMd(parseReply(full).prose);
+    }
+    try {
+      var asm = assembleMessages(state, text);
+      state.forceSceneFirst = false;
+      var payload = {
+        endpoint: WB_CONFIG.endpoint,
+        publishableKey: WB_CONFIG.publishableKey,
+        model: WB_CONFIG.model,
+        maxTokens: 4096,
+        messages: asm.messages.map(function (m) { return { role: m.role, content: m.content }; }),
+      };
+      var raw = await window.WbcsBridge.chat(JSON.stringify(payload), function (delta) {
+        if (!delta) return;
+        full += delta;
+        if (!streamOn) { streamOn = true; thinkBubble.className = 'bubble md'; thinkBubble.innerHTML = ''; }
+        paintStream(false);
+      });
+      var r = JSON.parse(raw);
+      if (!r.ok) {
+        thinkBubble.className = 'bubble err';
+        thinkBubble.innerHTML = esc(friendlyError(r));
+        var rbtn = document.createElement('button');
+        rbtn.className = 'retry-btn';
+        rbtn.textContent = '重试';
+        rbtn.onclick = function () {
+          rbtn.closest('.msg').remove();
+          sendCore(text, Object.assign({}, opts, { skipUserBubble: true }));
+        };
+        thinkBubble.appendChild(rbtn);
+        selfreport({ where: 'send', ok: false, code: r.code, phase: state.phase, subphase: state.subphase, practiceTurn: !!opts.practiceTurn });
+      } else {
+        var parsed = parseReply(r.text || '');
+        thinkBubble.className = 'bubble md';
+        thinkBubble.innerHTML = renderMd(parsed.prose || '（模型未返回正文）');
+        selfreport({ where: 'send', ok: true, proseLen: (parsed.prose || '').length,
+                     hasDiag: !!parsed.diagnosis, syndromes: parsed.diagnosis ? (parsed.diagnosis.syndromes || []).map(function (s) { return s.syndrome_id; }) : [],
+                     phase: state.phase, subphase: state.subphase, practiceTurn: !!opts.practiceTurn,
+                     deltasSeen: streamOn, prose: (parsed.prose || '').slice(0, 300) });
+        state.history.push({ role: 'user', content: text });
+        state.history.push({ role: 'assistant', content: parsed.prose || '' });
+        if (parsed.diagnosis) {
+          // 结构化后校验（§4-510 新待裁 · 舰长 2026-11-12 22:09「剩下的都批」）：
+          // 100 字基线的硬保证——材料 = 本会话最长用户消息（含本轮触发消息）。
+          // <100 字且模型仍输出症候 ⇒ 拦截：卡不渲染 / 不入历史 / 不发 diagnosed /
+          // 不推进状态机（prose 保留）。overall-only 诚实卡不受此闸（无症候 ≠ 诊断结论）。
+          // prompt 级边界依从是概率性的（§4-510 观察），此闸为渲染面硬保证。
+          var materialLen = text.length;
+          state.history.forEach(function (m) {
+            if (m.role === 'user' && m.content.length > materialLen) materialLen = m.content.length;
+          });
+          var diagBlocked = materialLen < 100 && (parsed.diagnosis.syndromes || []).length > 0;
+          if (diagBlocked) {
+            selfreport({ where: 'diag_gate', blocked: true, materialLen: materialLen,
+                         syndromes: (parsed.diagnosis.syndromes || []).length, phase: state.phase });
+          } else {
+            state.history.push({ role: 'assistant', content: '__CARD__' + JSON.stringify(parsed.diagnosis) });
+            renderDiagnosisCard(parsed.diagnosis);
+            var d = parsed.diagnosis;
+            state.activeSyndromes = (d.syndromes || []).map(function (s) { return s.syndrome_id; }).filter(Boolean);
+            // §4-516 续 A 路：text_len 恒发；text_fp 仅在 ≥200 字符且算得出时发
+            // （短文本指纹可被字典反推，按裁定不发；缺键即「不可判」，不发空串）。
+            var materialText = state.history.filter(function (m) { return m.role === 'user'; })
+              .map(function (m) { return m.content; }).join('\n');
+            var ev = { syndromes: state.activeSyndromes, text_len: materialText.length };
+            if (materialText.length >= 200) {
+              var fp16 = await sha256Hex16(materialText);
+              if (fp16) { ev.text_fp = fp16; }
+            }
+            sendEvent('diagnosed', ev);
+            var sug = d.suggested_phase;
+            if (sug) {
+              sug = String(sug).trim().toUpperCase().replace('P2_PRACTICE_LOOP', 'P2');
+              sug = PHASE_ORDER.includes(sug) ? sug : null;
+              var res = applyPhaseSuggestion(state.phase, sug);
+              if (res.changed) { state.phase = res.phase; }
+              if (res.note) addBubble('assistant', '（' + res.note + '）', 'think');
+            }
+            if (state.phase === 'P2' && !state.subphase) state.subphase = 'DIAGNOSIS';
+          }
+        } else if (!opts.practiceTurn && state.subphase === 'FEEDBACK') {
+          // 反馈完成 → 下一轮诊断
+          state.subphase = 'DIAGNOSIS';
+          addBubble('assistant', '这一轮练习到此。想继续，就贴下一段原文；想沉淀，可以让我复盘这段的得失。', 'think');
+        }
+        saveConvoState(curId, state);
+        touchConvo();
+      }
+    } catch (e) {
+      thinkBubble.className = 'bubble err';
+      thinkBubble.textContent = '调用失败：' + (e && e.message ? e.message : String(e));
+    }
+    // ★ 收尾时**按状态**决定要不要放开按钮（2026-11-23）。
+    //   `sendCore` 的每条结束路径都会跑这一行；若在此无条件置 false，
+    //   就与 HTML 的 disabled 属性互相打架 —— 用户点一次「重试」后按钮又活了，
+    //   然后拿到 401，形成「能点但必然失败」的最差形态。
+    //   2026-11-24 扩写：未登录时同样不能放开（needlogin ≠ ready）。
+    sending = false;
+    if (gate === 'ready') sendEl.disabled = false;
+  }
+
+  function friendlyError(r) {
+    if (r.code === 'quota_rate_limited') return '平台额度限流了，稍等一两分钟再试。';
+    if (r.code === 'quota_exhausted') return '本月平台免费额度已用完，下月恢复。';
+    if (r.code === 'access_denied') return '当前访问域名未在平台白名单（部署配置问题，与你的内容无关）。';
+    // ★ capability_disabled（2026-11-24 · §4-557 十）：换成站点所属应用 j1iRP 后
+    //   登录链路通了，但该应用的 **AI 能力尚未开通**（数据面实测 403）。
+    //   这条必须给人话 —— 否则用户只看到「调用失败（capability_disabled）」，
+    //   会误以为是自己写错了什么或额度没了。
+    //   ⚠️ 这也不是"额度用完"（那是 quota_*）：语义不同，不能合并成一句。
+    //
+    // ★★ 2026-11-24 三次订正（§4-560）：**补上"能走通的那一句"。**
+    //   二次订正撤掉了错误的点击路径（云服务页四项能力里没有 AI），
+    //   但只留一句"页面这边改不了"——**等于把人留在墙前，只说墙是真的**。
+    //   §4-558⑦ 我自己写的教训：「走不通的路吃掉时间，还让人怀疑自己找错」；
+    //   它的对偶同样成立：**告诉人"这里过不去"却不给出口，等于把问题退回给他。**
+    //
+    //   【查到的开通方式，有出处】
+    //   官方《云服务》文档「云服务能力」一节只列四项（数据库 / 身份认证 /
+    //   文件存储 / 数据统计），**AI 不在其中** ⇒ 没有"能力页上的开关"。
+    //   官方《网页应用开发与发布》教程写明：
+    //     "需要 AI 能力时，不用自己配模型。如果应用需要 AI…**在需求中说明
+    //      「接入大模型」即可**，WorkBuddy 会直接为应用接入 AI 能力。"
+    //   ⇒ AI 能力是**在生成/修改应用时按需求挂上**的，不是页面上的开关。
+    //     本应用（j1iRP）建站时没提 AI 需求 ⇒ 云服务开了、AI 没挂上。
+    //
+    //   【已实测排除的"另一条路"】
+    //   · 幂等 activate(reuse) → reusedExisting:true，**403 一点没变**
+    //   · 管理面 llm/models 返回全部 enabled:true，数据面仍 403
+    //     ⇒ 再次印证「管理面可见 ≠ 数据面已授权」
+    //   两条都试过、都不行，所以下面**只给"申请"这一条真路**，不列无效选项。
+    if (r.code === 'capability_disabled') {
+      return '这个应用的 AI 能力还没开通（不是你的问题，也不是额度用完）。\n\n' +
+             '要开通，需要由应用的创建者在对话里对它提一句 AI 需求，例如：\n' +
+             '「给这个应用接入大模型能力，它需要用 AI 做写作诊断」\n' +
+             '平台会据此为该应用挂上 AI 能力（这一步页面这边做不到）。\n\n' +
+             '想现在就用诊断，可以先下载 Android 版——它自带密钥，不依赖这条在线通道。';
+    }
+    if (r.code === 'login_required' || r.code === 'unauthenticated') {
+      return '这一项需要登录后才能使用。请在右上角账号入口登录一次再试。';
+    }
+    return '调用失败（' + (r.code || r.errorName || '未知') + '）：' + (r.message || '稍后再试。');
+  }
+
+  function greet() {
+    // ★ 2026-11-23 立、2026-11-24 随三态改写的开场话术。
+    //   原句「（无需注册，不用配 API Key；对话内容只存在你自己的浏览器里…）」
+    //   在**未登录**态下已失实 —— 现在必须先登录才能发起调用。
+    //   ⇒ 只做**事实性更正**（删除失效承诺），不新增教练话术、不改人格设定；
+    //     月笙的自我介绍原句原样保留。
+    //   maint 与 needlogin 分开写：前者是「坏了」，后者是「登录即可」——
+    //   用同一句话会把「登录就能用」误导成「功能不可用」。
+    if (gate === 'maint') {
+      addBubble('assistant',
+        '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（在线诊断正在维护，暂时没法在这里接你的稿子。想现在就用，请下载 Android 版——它自带密钥，不依赖这里的在线通道。）');
+      return;
+    }
+    if (gate === 'needlogin') {
+      addBubble('assistant',
+        '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（平台侧现在要求登录后使用在线诊断。登录一次即可，不用配 API Key、不用付费；稿件不保存到云端，但会发送给模型服务处理。）');
+      return;
+    }
+    addBubble('assistant',
+      '我是月笙。把你想改的一段文字贴进来，我先读场景、再给条目式诊断：问题在哪、读者为什么会困惑。写得好在哪，我也会说。\n\n（已登录；不用配 API Key，不用付费。对话内容只存在你自己的浏览器里，不保存到云端，但会发送给模型服务处理。）');
+  }
+
+  // ── 侧栏交互 ────────────────────────────────────────────
+  document.getElementById('newConvo').onclick = function () { newConversation(false); };
+  document.getElementById('menuBtn').onclick = function () {
+    document.body.classList.toggle('sidebar-open');
+  };
+  document.getElementById('scrim').onclick = closeSidebar;
+  function closeSidebar() { document.body.classList.remove('sidebar-open'); }
+
+  sendEl.onclick = send;
+  function send() {
+    // ★ 状态守卫（2026-11-23 立，2026-11-24 随三态扩写）。`disabled` 属性只挡
+    //   「鼠标/触摸点击」，**不挡回车键** —— 下面的 keydown 监听器会直接调 send()。
+    //   且 disabled 的 textarea 在某些浏览器仍可被 JS 聚焦后收到回车。
+    //   ⇒ 必须在函数入口显式拦截，不能只依赖属性。
+    if (gate !== 'ready') return;
+    var text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendCore(text);
+  }
+  inputEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault(); send();
+    }
+  });
+  inputEl.addEventListener('input', function () {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, maxInputHeight()) + 'px';
+  });
+
+  // 输入框自增高度上限（2026-11-19）。
+  //
+  // 原实现把 `180` 写死在 JS 里，与 CSS 的 `max-height: 180px` 是**两个
+  // 各自独立的真源** ⇒ 想在移动端收窄必须同时改两处，漏一处就出现
+  // 「JS 撑到 180、CSS 只给 96 ⇒ 内联高度赢 ⇒ 溢出照旧」。
+  // 现改为读 CSS 自定义属性 `--input-max-h`，移动端媒体查询改一个变量即生效。
+  function maxInputHeight() {
+    var raw = getComputedStyle(document.documentElement)
+      .getPropertyValue('--input-max-h').trim();
+    var n = parseInt(raw, 10);
+    return isNaN(n) ? 180 : n;
+  }
+
+  // ── 登录门（2026-11-24 · §4-553）────────────────────────
+  // 【why】平台对 LLM 能力返回 401 login_required（E1，§4-552 三）。登录是**唯一**
+  //   能恢复本页能力的途径 ⇒ 它决定 gate 态，必须先于 boot 里的任何 UI 判断。
+  //
+  // 【三处易错点，全部按官方 auth 文档处理，理由写在 auth.js】
+  //   ① 回调参数清理只删 code/state/provider —— 本站靠 ?sharecode= 才能访问，
+  //      用 location.pathname 一把清掉会把用户丢到 403 页。
+  //   ② dispatchCallback 必须先跑，且**先于 renderHistory**：否则旧会话渲染完
+  //      才发现要重新登录，页面会闪一下可交互态。
+  //   ③ 登录跳转必须同标签页（PKCE proof 存在 sessionStorage，跨标签拿不到）。
+  //
+  // 【失败关闭】SDK 不存在 / getSession 抛错 / 超时 ⇒ 一律按「未登录」处理并显式告知，
+  //   不静默当成已登录（那会让用户输入后吃 401）。
+  function withTimeout(promise, ms, fallback) {
+    return new Promise(function (resolve) {
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; resolve(fallback); } }, ms);
+      promise.then(function (v) { if (!done) { done = true; clearTimeout(t); resolve(v); } },
+                   function () { if (!done) { done = true; clearTimeout(t); resolve(fallback); } });
+    });
+  }
+
+  function showLoginError(msg) {
+    var el = document.getElementById('lgErr');
+    if (el) el.textContent = msg || '';
+  }
+
+  // 失败时的建议语：**按 PKCE 读数分流**（§4-559）。
+  // ★ 上一版无论什么原因都说「请再点一次登录」。这句话在跨上下文丢 proof 的
+  //   场景里是**做不到的承诺**：每次点，都在同一个作用域写、在另一个作用域读，
+  //   点多少次都一样。⇒ 现在按读数给不同的、能真正走通的动作。
+  function pkceReading() {
+    try {
+      var p = window.YueshengAuth && window.YueshengAuth.probe
+        ? window.YueshengAuth.probe() : null;
+      return p || null;
+    } catch (_) { return null; }
+  }
+
+  function loginFailHint() {
+    var p = pkceReading();
+    var base = '登录没有完成。';
+    if (!p) return base + '可以再点一次，或先下载 Android 版。';
+    if (p.pkceSource === 'restored') {
+      return base + '登录证明原本读不到，已用本地副本补偿，但兑换仍没过。' +
+             '若反复如此，请在**独立标签页**打开本站再登录（预览面板里的登录页与回调页不是同一窗口）。';
+    }
+    if (p.pkceSource === 'none') {
+      return base + '登录证明在发起那一侧就没写进去（两边都空）。' +
+             '请点账号面板里的「清空登录状态并重试」再试一次。';
+    }
+    if (p.pkceSource === 'stale') {
+      return base + '本地副本已过期（超过 10 分钟），已作废。请重新点一次登录。';
+    }
+    return base + '可以再点一次，或先下载 Android 版。';
+  }
+
+  function retryAdvice() {
+    var p = pkceReading();
+    if (p && p.pkceSource === 'restored') {
+      return '已用本地副本补偿过登录证明，建议在独立标签页重新登录。';
+    }
+    if (p && p.pkceSource === 'none') {
+      return '请先「清空登录状态并重试」。';
+    }
+    return '可以再点一次，或先下载 Android 版。';
+  }
+
+  // 判定当前是否已登录。**只认 accessToken 真值**，不认「对象存在」——
+  //   SDK 的 getSession() 在无会话时可能回 { data: null }，也可能回空对象，
+  //   用`!!data` 判断在某些路径上是假绿。这里直接看 accessToken。
+  async function resolveSignedIn() {
+    if (typeof window.YueshengAuth !== 'object' || !window.YueshengAuth) return false;
+    var s = await withTimeout(window.YueshengAuth.getSession(), SESSION_TIMEOUT_MS, null);
+    return !!(s && s.accessToken);
+  }
+
+  // 登录按钮：同一标签页跳转，失败时把原因写到门内（不 alert，不静默）
+  function bindLoginButton() {
+    var btn = document.getElementById('lgSignIn');
+    if (!btn || btn.__bound) return;
+    btn.__bound = true;
+    btn.addEventListener('click', async function () {
+      showLoginError('');
+      btn.disabled = true;
+      var old = btn.innerHTML;
+      btn.textContent = '正在跳转…';
+      try {
+        await window.YueshengAuth.signIn();
+        // 成功即已 location.assign 离开本页；此处只兜底「平台没给地址」的异常路径
+      } catch (e) {
+        btn.disabled = false;
+        btn.innerHTML = old;
+        var why = e && e.message ? e.message : String(e);
+        // 把 SDK 的底层原因也带上（排查时这是唯一线索，不能只给一句"失败"）
+        var detail = (window.YueshengAuth && window.YueshengAuth.lastError)
+          ? window.YueshengAuth.lastError() : '';
+        showLoginError('登录没能发起：' + why + (detail ? '｜' + detail : '') +
+          '。可以先下载 Android 版；或刷新本页重试。');
+      }
+    });
+  }
+
+  // ══ 账号入口小面板（2026-11-24 · §4-556）═══════════════════════════════
+  // 【为什么要有】此前全站**没有任何地方显示登录状态，也没有退出按钮**：
+  //   用户遇到登录异常时，既看不出自己到底登没登，也无法重置会话重试。
+  //   舰长原话「做一个账号入口的小窗口便于做登陆退出，针对做检测」
+  //   —— 它同时是**诊断工具**：把"当前登录态"变成看得见、可重置的读数。
+  //
+  // 【口径】面板内容完全由 signedIn 派生，不自己维护第二份状态
+  //   （防"按钮说已登录、页面说需登录"这类两套真源打架）。
+  var acctBtn = null, acctPop = null, acctBody = null, acctLabel = null;
+
+  function acctEmail() {
+    // 尽力取一个人类可读标识。取不到不算错：只显示"已登录"。
+    try {
+      var key = null;
+      var cfg = window.WB_CONFIG || {};
+      if (cfg.publishableKey) key = 'workbuddy-cloud.session.' + cfg.publishableKey;
+      if (!key) return '';
+      var raw = localStorage.getItem(key);
+      if (!raw) return '';
+      var s = JSON.parse(raw);
+      var u = (s && s.user) || {};
+      return u.email || u.name || u.phone || '';
+    } catch (_) { return ''; }
+  }
+
+  function renderAccount() {
+    if (!acctBtn || !acctBody) return;
+    var inn = gate === 'ready';
+    acctBtn.setAttribute('data-state', inn ? 'in' : 'out');
+    acctLabel.textContent = inn ? '已登录' : '未登录';
+
+    if (inn) {
+      var who = acctEmail();
+      acctBody.innerHTML =
+        '<p class="acct-row">当前状态：<strong>已登录</strong>' +
+        (who ? '<br>账号：' + escHtml(who) : '') + '</p>' +
+        '<button type="button" class="acct-act acct-act--quiet" id="acctSignOut">退出登录</button>' +
+        '<p class="acct-note">退出后本页回到「需登录」状态；你的诊断记录仍保存在本机，不会因退出而删除。</p>' +
+        diagHtml();
+      var outBtn = document.getElementById('acctSignOut');
+      if (outBtn) outBtn.addEventListener('click', doSignOut);
+    } else {
+      acctBody.innerHTML =
+        '<p class="acct-row">当前状态：<strong>未登录</strong></p>' +
+        '<button type="button" class="acct-act acct-act--primary" id="acctSignIn">使用 WorkBuddy 登录</button>' +
+        '<p class="acct-note">登录只用于额度统计，不读取你的稿件。</p>' +
+        diagHtml();
+      var inBtn = document.getElementById('acctSignIn');
+      if (inBtn) inBtn.addEventListener('click', function () {
+        // 复用门内那个按钮的同一条链路，避免两处实现漂移
+        var gateBtn = document.getElementById('lgSignIn');
+        closeAccount();
+        if (gateBtn) gateBtn.click();
+      });
+    }
+    bindDiag();
+  }
+
+  // ── 检测区（§4-556）──────────────────────────────────────────────────
+  // 读数一律来自 Auth.probe()，即本地可自证的事实；**不在客户端猜服务端**。
+  // 为什么值得做：舰长两次登录失败都只有一句平台报错，无法判断"是我这边脏了
+  // 还是链路坏了"。这四行正是那个判断依据。
+  function diagHtml() {
+    var p = null;
+    try {
+      if (window.YueshengAuth && window.YueshengAuth.probe) p = window.YueshengAuth.probe();
+    } catch (_) {}
+    if (!p) {
+      return '<details class="acct-diag"><summary>检测</summary>' +
+             '<p class="acct-hint">检测模块未就绪（auth.js 未加载）。</p></details>';
+    }
+    function row(label, ok, why) {
+      return '<li><span>' + label + '</span><b data-ok="' + (ok ? '1' : '0') + '">' +
+             (ok ? '正常' : '缺失') + '</b></li>';
+    }
+    // ★ §4-562：让截图自己说清"在哪个应用/域"。
+    //   舰长连发截图都看不到域名（包在应用面板里），而我只能靠报错反推，
+    //   浪费了一轮。这里把**当前站点域**直接写进检测区——一行字，零成本自证。
+    var siteHost = '';
+    try { siteHost = (window.location && window.location.hostname) || ''; } catch (_) {}
+    var keyPrefix = '';
+    try {
+      var km = (window.WB_CONFIG && window.WB_CONFIG.publishableKey || '')
+        .match(/^wbpk_([A-Za-z0-9]+)_/);
+      keyPrefix = km ? km[1].slice(0, 4) : '?';
+    } catch (_) {}
+    var siteLine = '<li><span>当前站点</span><b>' +
+      escHtml(siteHost || '(未知域)') + ' · ' + escHtml(keyPrefix) + '</b></li>';
+    var html = '<details class="acct-diag"><summary>检测</summary><ul>' +
+      siteLine +
+      row('云服务 SDK', p.sdk) +
+      row('站点配置', p.cfg) +
+      row('登录证明', p.verifier) +
+      row('本地会话', p.session) +
+      '</ul>' +
+      '<p class="acct-hint">' +
+      diagHint(p) +
+      (p.error ? '<br>最近错误：<b>' + escHtml(p.error) + '</b>' : '') +
+      '</p>' +
+      // ★ 上下文对照（§4-559）：这是"跨窗口丢登录证明"的**直接证据行**。
+      //   只在有对照数据时显示，避免平时给用户一堆看不懂的字段。
+      '<p class="acct-hint">' + contextLine(p) + '</p>' +
+      '<button type="button" class="acct-reset" id="acctReset">清空登录状态并重试</button>' +
+      '</details>';
+    return html;
+  }
+
+  // 上下文对照行：把"写入侧 vs 读取侧是否同一窗口"讲成一句人话
+  function contextLine(p) {
+    if (p.contextSwitched === true) {
+      return '窗口对照：<b>发起登录与回调落地不在同一窗口</b>' +
+        '（' + (p.mirror && p.mirror.inIframe ? '发起时在嵌入页内' : '发起时在独立页') +
+        ' → ' + (p.inIframe ? '回跳在嵌入页内' : '回跳在独立页') +
+        '）。这就是登录证明读不到的成因，本次已自动补偿。';
+    }
+    if (p.contextSwitched === false) {
+      return '窗口对照：发起与回跳在同一窗口，未发生跨窗口丢失。';
+    }
+    return '窗口对照：暂无数据（要在一次登录回跳之后才有对照）。';
+  }
+
+  // 人话解释：**按 pkceSource 分流**（§4-559）。
+  // ★ 上一版这里写的是「登录证明缺失 = 换了标签或存储被清，重试即可」——
+  //   那句话把跨上下文丢 proof 说成"重试就能好"，而实测重试**仍然丢**：
+  //   每次登录都在同一个作用域里写、在另一个作用域里读。
+  //   ⇒ 现在按读数给不同结论，不再一句"重试即可"敷衍。
+  function diagHint(p) {
+    var src = p.pkceSource;
+    if (src === 'restored') {
+      return '这次回调原本读不到登录证明，已用本地副本救回 ⇒ ' +
+        '**发起登录的页面和回调落地的页面不在同一个顶层窗口**（例如在预览面板里登录）。' +
+        '本次已自动补偿；若想彻底避免，请在独立标签页打开本站再登录。';
+    }
+    if (src === 'stale') {
+      return '本地副本已超过 10 分钟，不再使用（防旧凭证复活）。请重新点一次登录。';
+    }
+    if (src === 'none') {
+      return '登录证明两边都没有 ⇒ 是**发起那一侧**就没写进去，或已被清空。' +
+        '请点下面的「清空登录状态并重试」。';
+    }
+    if (src === 'session') {
+      return '登录证明与发起页在同一上下文，属正常路径。' +
+        '若仍失败，问题在兑换这一步（见上方最近错误）。';
+    }
+    // 无回调：单纯看当前状态
+    if (!p.verifier) {
+      return '当前没有进行中的登录（登录证明只在"点了登录、还没回跳"这段时间存在）。' +
+        '已登录时它可以为空，属正常。';
+    }
+    return '登录证明存在但会话未建立 ⇒ 兑换这一步没过，见上方最近错误。';
+  }
+
+  function bindDiag() {
+    var rst = document.getElementById('acctReset');
+    if (!rst) return;
+    rst.addEventListener('click', function () {
+      try {
+        if (window.YueshengAuth && window.YueshengAuth.resetLocal) {
+          window.YueshengAuth.resetLocal();
+        }
+      } catch (_) {}
+      signedIn = false;
+      applyGate();
+      renderAccount();
+      showLoginError('');
+    });
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+
+  function openAccount() {
+    if (!acctPop) return;
+    renderAccount();
+    acctPop.hidden = false;
+    acctBtn.setAttribute('aria-expanded', 'true');
+    // 点面板外关闭：用一次性监听，不常驻（防监听器堆积）
+    setTimeout(function () {
+      document.addEventListener('click', onDocClickForAcct, true);
+    }, 0);
+  }
+  function closeAccount() {
+    if (!acctPop) return;
+    acctPop.hidden = true;
+    if (acctBtn) acctBtn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClickForAcct, true);
+  }
+  function onDocClickForAcct(ev) {
+    if (!acctPop || acctPop.hidden) return;
+    if (acctBtn && acctBtn.contains(ev.target)) return;
+    if (acctPop.contains(ev.target)) return;
+    closeAccount();
+  }
+
+  async function doSignOut() {
+    var b = document.getElementById('acctSignOut');
+    if (b) { b.disabled = true; b.textContent = '正在退出…'; }
+    try {
+      if (window.YueshengAuth && window.YueshengAuth.signOut) {
+        await window.YueshengAuth.signOut();
+      }
+    } catch (_) {}
+    // ★ 就算 SDK 报错也必须就地翻状态：用户要的是"退出去"这个结果，
+    //   而不是一句"取消失败"。本地会话清掉即视为已退出（下次调用会重走登录门）。
+    signedIn = false;
+    try { sessionStorage.removeItem('ys_login_next'); } catch (_) {}
+    applyGate();
+    renderAccount();
+    closeAccount();
+    showLoginError('');
+  }
+
+  function bindAccountEntry() {
+    acctBtn = document.getElementById('acctBtn');
+    acctPop = document.getElementById('acctPop');
+    acctBody = document.getElementById('acctBody');
+    acctLabel = document.getElementById('acctLabel');
+    if (!acctBtn) return;
+    acctBtn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      if (acctPop.hidden) openAccount(); else closeAccount();
+    });
+    // Esc 关闭（桌面可用；移动端软键盘场景亦友好）
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') closeAccount();
+    });
+    renderAccount();
+  }
+
+  // 登录态就绪后的收尾：放开输入区 + 换掉问候语（未登录时那句已过时）
+  function onSignedIn() {
+    signedIn = true;
+    applyGate();
+    // 只有当历史里只有那条「未登录」问候语时才替换，避免冲掉用户已有对话。
+    var h = (state && state.history) || [];
+    var onlyGreeting = h.length === 1 && h[0].role === 'assistant' &&
+                       typeof h[0].content === 'string' &&
+                       h[0].content.indexOf('平台侧现在要求登录后使用在线诊断') !== -1;
+    if (onlyGreeting) {
+      h.length = 0;
+      saveConvoState(curId, state);
+      chatEl.innerHTML = '';
+      greet();
+    }
+    if (inputEl) { try { inputEl.focus(); } catch (_) {} }
+  }
+
+  // ── 启动 ────────────────────────────────────────────────
+  (async function boot() {
+    // selftest 清场参数：全新存储环境跑走查
+    if (SELFTEST && location.search.indexOf('clean=1') !== -1) {
+      try { localStorage.clear(); } catch (_) {}
+    }
+
+    // ★★ 第一步必须是回调分发，且**早于任何 UI 判断**（官方要求）。
+    //   顺序理由：handleWorkBuddyCallback 会把 code 换成会话并落盘；
+    //   若先算 gate 再分发，页面会先渲染成「未登录」再突然跳成「已登录」，
+    //   用户看到一次可疑的闪烁，且若此时用户手快点了按钮就是白点。
+    //   失败不抛：把原因留给登录门上的错误行，页面照常渲染（不能让登录失败=白屏）。
+    var cb = 'no-callback';
+    if (window.YueshengAuth) {
+      cb = await withTimeout(window.YueshengAuth.dispatchCallback(), SESSION_TIMEOUT_MS, 'callback-failed');
+      if (cb === 'callback-failed') {
+        showLoginError(loginFailHint());
+      } else if (cb === 'callback-error') {
+        // 官方三分支之一：带 error 的回调必须停在登录视图并显示原因，
+        // 不能当作"普通访问"继续往下跑（那会让用户以为登录成功了）。
+        var e1 = (window.YueshengAuth.lastError && window.YueshengAuth.lastError()) || '授权未通过';
+        showLoginError('登录未完成：' + e1 + '。' + retryAdvice());
+      }
+    }
+
+    // ★★ 第二步：确定登录态（只读，不改状态），然后投影到 DOM。
+    //   放在渲染本地会话之前 —— 否则旧会话先画出来，用户会以为能直接接着写。
+    signedIn = await resolveSignedIn();
+    // ★ 顺序有讲究：bindAccountEntry 必须在 applyGate **之前**建好 DOM 引用，
+    //   因为 applyGate 内部会调 renderAccount() 同步账号面板。
+    //   若反过来，applyGate 首次执行时 acctLabel 还是 null ⇒ 面板显示"未登录"，
+    //   而实际可能已登录 ⇒ 又一次"两套真源"。实测踩过这个顺序坑。
+    bindAccountEntry();
+    applyGate();
+    bindLoginButton();
+
+    // 旧版单会话迁移（一次性）：有旧状态则转成一条对话
+    var legacy = null;
+    try {
+      var raw = localStorage.getItem(LEGACY_KEY);
+      if (raw) { var s = JSON.parse(raw); if (s && s.phase) legacy = s; }
+    } catch (_) {}
+    if (legacy) {
+      try { localStorage.removeItem(LEGACY_KEY); } catch (_) {}
+      var l = listConvos();
+      if (!l.length) {
+        var id = Date.now().toString(36) + 'legacy';
+        l.unshift({ id: id, title: '上次会话', createdAt: Date.now(), updatedAt: Date.now() });
+        saveConvos(l);
+        try { localStorage.setItem(convoKey(id), JSON.stringify(legacy)); } catch (_) {}
+      }
+    }
+    var l = listConvos();
+    var act = getActiveId();
+    var found = act && l.some(function (c) { return c.id === act; });
+    if (!l.length) {
+      newConversation(true);
+      greet();
+    } else {
+      curId = found ? act : l[0].id;
+      setActiveId(curId);
+      state = loadConvoState(curId);
+      renderList();
+      renderHistory();
+    }
+    // ★ 刚完成登录回调：历史里可能存着上一轮的「未登录」问候语（那句现在已失实）。
+    //   在渲染完后替换，而不是渲染前 —— 因为判定「是否只有那条问候语」要先有 state。
+    if (cb === 'callback-ok' && signedIn) onSignedIn();
+    // ★ 本页自己完成了兑换 ⇒ 用户的意图已经达成（他就是要来诊断页），
+    //   必须把「回跳目标」这个一次性记录清掉。否则：
+    //   先在本页登录成功 → 记录残留 → 之后某次从别处登录，会被上一个陈旧目标劫持。
+    if (cb === 'callback-ok' || cb === 'callback-error') {
+      try { sessionStorage.removeItem('ys_login_next'); } catch (_) {}
+    }
+
+    // ★ 渲染收尾再复位一次滚动（2026-11-24）。renderHistory() 里的 addBubble/addMdBubble
+    //   会逐个调 scrollBottom()；虽然 scrollBottom 已在非 ready 态改成滚到顶，
+    //   但这里显式再确认一次，防将来有人把 scrollBottom 改回去而悄悄丢掉这个保证。
+    //   判据：非 ready 态下用户第一眼必须能看到登录按钮。
+    if (gate !== 'ready') {
+      var mEl = document.querySelector('main');
+      if (mEl) mEl.scrollTop = 0;
+    }
+
+    selfreport({ where: 'boot', selftest: SELFTEST, convos: listConvos().length, active: curId, historyLen: state.history.length });
+    // 0.6.2 外部测量面（T-20261115-02 §closes①）：会话打开 = 漏斗最上游分母。
+    // 现状 M1「还有没有人在用」只能数「有 diagnosed 的会话」⇒ 把「来了但没诊断」算成「没来」。
+    // 本事件 payload 为空：不带任何业务信息，只由 sendEvent 注入 anon_id。
+    sendEvent('session_opened', {});
+    // ── selftest 门控：页内走查对话列表操作（真实触发同一批 onclick）──
+    if (SELFTEST) setTimeout(runSelfTest, 100);
+    async function runSelfTest() {
+      var rep = { where: 'convo_ops' };
+      try {
+        // ⓪ 防重复：连点两次新建，空白对话至多一条
+        var before = listConvos().length;
+        document.getElementById('newConvo').click();
+        document.getElementById('newConvo').click();
+        var empties = listConvos().filter(function (c) {
+          return c.title === '新对话' && !loadConvoState(c.id).history.length;
+        });
+        rep.dupBlocked = empties.length === 1 && listConvos().length <= before + 1;
+        // ① 真新建：先把当前空对话标记为非空
+        if (!state.history.length) {
+          state.history.push({ role: 'user', content: '铺垫消息' });
+          saveConvoState(curId, state);
+          touchConvo();
+        }
+        var n0 = listConvos().length;
+        document.getElementById('newConvo').click();
+        rep.newAdds = listConvos().length - n0;                 // 期望 1
+        rep.newActiveIsCur = getActiveId() === curId;           // 期望 true
+        rep.greetBubbles = chatEl.querySelectorAll('.bubble').length; // 期望 ≥1
+        // ② 首条用户消息 → 标题取前 20 字（重置标题以复验提取）
+        state.history.push({ role: 'user', content: '春风吹过空荡的操场，她把没写完的信折好放进书包。' });
+        var l2 = listConvos();
+        for (var i = 0; i < l2.length; i++) { if (l2[i].id === curId) l2[i].title = '新对话'; }
+        saveConvos(l2);
+        saveConvoState(curId, state);
+        touchConvo();
+        var cur = listConvos().filter(function (c) { return c.id === curId; })[0];
+        rep.titleFromFirstMsg = cur && cur.title.indexOf('春风吹过空荡的操场') === 0; // 期望 true
+        // ③ 切换回上一条对话（真实 click 列表项）
+        var other = listConvos().filter(function (c) { return c.id !== curId; })[0];
+        if (other) {
+          var prevId = curId;
+          var item = listEl.querySelector('.convo-item[data-id="' + other.id + '"]');
+          item.click();
+          rep.switched = curId === other.id && prevId !== curId;             // 期望 true
+          rep.stateRestored = loadConvoState(curId).phase === 'P0';          // 期望 true
+          // ④ 删除旧对话（真实 click ×）
+          var delBtn = listEl.querySelector('.del[data-del="' + prevId + '"]');
+          delBtn.click();
+          rep.deleted = listConvos().length === 1;                            // 期望 true
+          rep.fellBackToRemaining = curId === other.id;                       // 期望 true
+        }
+        // ⑤ 抽屉开关（真实 click）
+        document.getElementById('menuBtn').click();
+        rep.drawerOpens = document.body.classList.contains('sidebar-open');   // 期望 true
+        document.getElementById('scrim').click();
+        rep.drawerCloses = !document.body.classList.contains('sidebar-open'); // 期望 true
+        // ── 伪输出渲染验证（条目信息 mock，不真调用）──
+        var mockDiag = {
+          overall: { verdict: '场景成立，但叙述停在表面动作', coverage: '覆盖全段',
+                     keep: '「折好放进书包」的动作细节有画面感' },
+          suggested_phase: 'P2',
+          syndromes: [
+            { syndrome_id: 'P012', name: '情绪直陈', severity: 'L2',
+              evidence: ['心里涌起一股莫名的悲伤'],
+              explanation: '悲伤被直接说出，读者只能接收结论，</div><script>window.__xss=1<\/script>无法自行体会',
+              reader_impact: '读者被剥夺了自行体会的空间' },
+            { syndrome_id: 'P003', name: '视角漂移', severity: 'L1',
+              evidence: ['他站在教室门口', '看着她的背影远去'],
+              explanation: '一段之内镜头在两个人之间来回切换',
+              reader_impact: '轻微，句子尚连贯' },
+            { syndrome_id: 'P021', name: '目的先行', severity: 'L3',
+              evidence: ['她把没写完的信折好放进书包，转身走向教学楼。', '心里涌起一股莫名的悲伤', '他站在教室门口'],
+              explanation: '所有细节都为「离别」服务，没有一个细节越出作者意图',
+              reader_impact: '读者提前看到作者底牌，悬念全失' },
+          ],
+        };
+        var mockProse = '先说写得好的地方：「折好放进书包」这个动作有画面感。\n\n但整段几乎每句都在替读者把话说尽 —— & < > " 特殊字符也一并验证。';
+        // 清空现场，按真实顺序渲染：prose 气泡 + 诊断卡 + 错误/思考气泡
+        chatEl.innerHTML = '';
+        addBubble('user', '春风吹过空荡的操场……');
+        addMdBubble('assistant', mockProse);
+        renderDiagnosisCard(mockDiag);
+        addBubble('assistant', '（进入针对性练习。围绕「P012」……）', 'think');
+        var errB = addBubble('assistant', 'x', 'err'); errB.textContent = '平台额度限流了，稍等一两分钟再试。';
+        var cards = chatEl.querySelectorAll('.dcard');
+        rep.r = {
+          cardCount: cards.length,                                            // 期望 1
+          syndCount: chatEl.querySelectorAll('.synd').length,                 // 期望 3
+          synBtnCount: chatEl.querySelectorAll('.syn-practice').length,       // 期望 3（逐条可练）
+          sevL1: chatEl.querySelectorAll('.sev.L1').length,                   // 期望 1
+          sevL2: chatEl.querySelectorAll('.sev.L2').length,                   // 期望 1
+          sevL3: chatEl.querySelectorAll('.sev.L3').length,                   // 期望 1
+          evidCount: chatEl.querySelectorAll('.synd .evid').length,           // 期望 6（各条截前 3）
+          scriptInjected: chatEl.querySelectorAll('script').length,           // 期望 0（esc 生效）
+          xssFired: !!window.__xss,                                           // 期望 false
+          escTextOk: cards[0].textContent.indexOf('<script>') !== -1,         // 期望 true（作纯文本可见）
+          bubbleCount: chatEl.querySelectorAll('.msg').length,                // 期望 4（重绘后 user+正文+练习提示 3 气泡；卡片非 .msg）
+          practiceBtn: !!cards[0].querySelector('.syn-practice'),             // 期望 true
+        };
+        // ── Markdown 渲染 + 消毒断言 ──
+        var mdBox = document.createElement('div');
+        mdBox.innerHTML = renderMd('**加粗**标题\n\n- 甲\n- 乙\n\n<script>window.__mdxss=1<\/script><img src=x onerror="window.__mdxss2=1">');
+        rep.r.mdStrong = mdBox.innerHTML.indexOf('<strong>加粗</strong>') !== -1;   // 期望 true
+        rep.r.mdList = mdBox.querySelectorAll('li').length;                         // 期望 2
+        rep.r.mdScriptStripped = mdBox.querySelectorAll('script').length;           // 期望 0
+        rep.r.mdOnerrorStripped = mdBox.querySelectorAll('[onerror]').length;       // 期望 0
+        rep.r.mdXssFired = !window.__mdxss && !window.__mdxss2;                     // 期望 true
+        rep.r.mdBenignKept = renderMd('<b>强调</b>').indexOf('<b>强调</b>') !== -1;  // 期望 true（良性标签保留）
+        // ── 教学环 payload 断言（真 assembleMessages，不调用模型）──
+        var pst = initialState(); pst.phase = 'P2'; pst.subphase = 'PRACTICE'; pst.focusId = 'P001';
+        var pasm = assembleMessages(pst, '我的重写段落。');
+        rep.r.practiceL2Mode = pasm.l2Mode;                                          // 期望 'training'
+        rep.r.practiceTechL3 = pasm.messages.some(function (m) {
+          return m.content.indexOf('聚焦技法详细内容') !== -1; });                     // 期望 true（正则修复后）
+        rep.r.practiceSyndL3 = pasm.messages.some(function (m) {
+          return m.content.indexOf('活跃症候详细定义') !== -1; });                    // 期望 true
+        rep.r.practiceUserClean = pasm.messages[pasm.messages.length - 2]
+          .content.indexOf('[YS_DIAGNOSIS]') === -1;                                 // 期望 true（练习轮无协议后缀）
+        // ── 换片段清态断言 ──
+        state.activeSyndromes = ['P001', 'P003']; state.focusId = 'P001';
+        state.subphase = 'FEEDBACK'; state.forceSceneFirst = false;
+        resetForNewFragment();
+        rep.r.resetClears = state.activeSyndromes.length === 0 && state.focusId === null &&
+                            state.subphase === null && state.forceSceneFirst === true; // 期望 true
+        // ── sendCore 错误→重试→成功 全链（fake bridge，零额度消耗）──
+        var realBridge = window.WbcsBridge;
+        chatEl.innerHTML = '';                       // 清现场：链路断言只看本轮
+        state = initialState(); saveConvoState(curId, state);
+        window.WbcsBridge = { chat: function () {
+          return Promise.resolve(JSON.stringify({ ok: false, code: 'quota_rate_limited' }));
+        } };
+        // 重试链路素材 125 字（≥100）——§4-510 后校验闸放行，保住 retryCardCount=1 判据
+        var retryText = '重试链路测试片段。天黑之后他站在门边，手心全是汗，迟迟没有推开那扇门；直到身后有人轻轻喊了他的名字，他才回头看了一眼，又很快把目光挪开了，像是在害怕什么。他听见自己的呼吸很重，心跳得厉害，可他不想承认这份紧张，只是把双手插进口袋，装作若无其事地等着。';
+        await sendCore(retryText, {});
+        rep.r.errShown = !!chatEl.querySelector('.retry-btn');                       // 期望 true
+        // 用户气泡应恰好一条（错误不入历史）
+        rep.r.userOnce = Array.prototype.filter.call(chatEl.querySelectorAll('.msg.user'), function (el) {
+          return el.textContent.indexOf('重试链路测试片段') !== -1; }).length;        // 期望 1
+        // fake 成功回复（含 md + 诊断块）
+        var fakeOk = '改后的版本读者能看见了。**重点**在这里。\n\n[YS_DIAGNOSIS]\n{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L2","evidence":["他很愤怒"],"explanation":"告知而非展示","reader_impact":"读者被告知情绪"}],"suggested_phase":"P2","overall":{"verdict":"可改"}}\n[/YS_DIAGNOSIS]';
+        window.WbcsBridge = { chat: function (p, cb) { cb('假流式增量'); return Promise.resolve(JSON.stringify({ ok: true, text: fakeOk })); } };
+        chatEl.querySelector('.retry-btn').click();
+        await new Promise(function (res) { setTimeout(res, 300); });
+        rep.r.retryClearedErr = !chatEl.querySelector('.retry-btn');                 // 期望 true
+        rep.r.retryMdStrong = Array.prototype.some.call(chatEl.querySelectorAll('.bubble.md'), function (b) {
+            return b.innerHTML.indexOf('<strong>重点</strong>') !== -1; });           // 期望 true（流式后 md 渲染）
+        rep.r.retryCardCount = chatEl.querySelectorAll('.dcard').length;             // 期望 1（假诊断卡）
+        rep.r.retryHistUser = state.history.filter(function (m) {
+          return m.role === 'user' && m.content === retryText; }).length;             // 期望 1（重试不重复入历史）
+        rep.r.retryHistAsst = state.history.filter(function (m) {
+          return m.role === 'assistant' && m.content.indexOf('改后的版本读者能看见了') === 0; }).length; // 期望 1
+        rep.r.retryCardMark = state.history.filter(function (m) {
+          return m.role === 'assistant' && m.content.indexOf('__CARD__') === 0; }).length; // 期望 1
+        rep.r.retryStateP2 = state.phase === 'P2' && state.subphase === 'DIAGNOSIS';  // 期望 true（P1→P2 推进）
+        window.WbcsBridge = realBridge;
+        // ── 空卡壳抑制断言（§4-509 残留待裁 · 舰长 2026-11-12 22:0x 批）：无症候∧无排除∧
+        //    无整体判定的全空协议块不渲染壳；带 overall.verdict 的诚实卡保留（可变红判据）──
+        chatEl.innerHTML = '';
+        renderDiagnosisCard({ syndromes: [], excluded: [], overall: {} });
+        rep.r.emptyShellSuppressed = chatEl.querySelectorAll('.dcard').length === 0;  // 期望 true
+        renderDiagnosisCard({ syndromes: [], excluded: [], overall: { verdict: '无文本，未进入诊断' } });
+        rep.r.honestCardKept = chatEl.querySelectorAll('.dcard').length === 1;        // 期望 true
+        chatEl.innerHTML = '';
+        // ── 结构化后校验断言（§4-510 后校验 · 舰长 2026-11-12 22:09 批）：
+        //    材料 <100 且模型出症候 ⇒ 卡拦截（不渲染/不入历史）；材料 ≥100 ⇒ 正常出卡。
+        //    可变红判据：拆掉 sendCore 内 diagBlocked 闸即双红。──
+        state = initialState(); saveConvoState(curId, state);
+        var shortDiag = '改后的版本读者能看见了。\n\n[YS_DIAGNOSIS]\n{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L2","evidence":["他很愤怒"],"explanation":"告知而非展示"}],"overall":{"verdict":"可改"}}\n[/YS_DIAGNOSIS]';
+        window.WbcsBridge = { chat: function (p, cb) { cb('增量'); return Promise.resolve(JSON.stringify({ ok: true, text: shortDiag })); } };
+        await sendCore('太短了。', {});
+        rep.r.shortMatGateBlocks = chatEl.querySelectorAll('.dcard').length === 0 &&
+          !state.history.some(function (m) {
+            return m.role === 'assistant' && m.content.indexOf('__CARD__') === 0; });  // 期望 true
+        var longTail = '他站在门边，手心全是汗，迟迟没有推开那扇门；直到身后有人轻轻喊了他的名字，他才回头看了一眼，又很快把目光挪开了，像是在害怕什么。他听见自己的呼吸很重，心跳得厉害，可他不想承认这份紧张，只是把双手插进口袋，装作若无其事地等着，门里的人却始终没有出声。';
+        await sendCore(longTail, {});
+        rep.r.longMatCardOk = chatEl.querySelectorAll('.dcard').length === 1 &&       // 期望 1（长材料放行）
+          state.history.some(function (m) {
+            return m.role === 'assistant' && m.content.indexOf('__CARD__') === 0; });  // 期望 true（入历史）
+        chatEl.innerHTML = '';
+        window.WbcsBridge = realBridge;
+        // ── 私有标记防线断言（练习轮真用户消息入历史，__ 标记不发给模型）──
+        rep.r.markerFiltered = (function () {
+          var st2 = initialState();
+          st2.history = [
+            { role: 'user', content: '片段' },
+            { role: 'assistant', content: '__CARD__{"x":1}' },
+            { role: 'assistant', content: '__CARD_PRACTICE__P001' },
+            { role: 'assistant', content: '正常回复' },
+          ];
+          var a = assembleMessages(st2, '继续');
+          var dump = JSON.stringify(a.messages);
+          return a.messages.filter(function (m) { return m.role === 'user'; }).length === 2 &&
+                 dump.indexOf('__CARD__') === -1 && dump.indexOf('__CARD_PRACTICE__') === -1;
+        })();
+        // ── 伪输出渲染验证持久化重绘：按 send() 同款写入历史 → 切走再切回 → 卡片应重建
+        state.history = [
+          { role: 'user', content: '春风吹过空荡的操场……' },
+          { role: 'assistant', content: mockProse },
+          { role: 'assistant', content: '__CARD__' + JSON.stringify(mockDiag) },
+          { role: 'assistant', content: '进入针对性练习，贴出你的重写段落。' },
+        ];
+        saveConvoState(curId, state);
+        var backId = curId;
+        newConversation(true);   // 建一条可切换目标（此时无空白对话 ⇒ 真新建）
+        switchConvo(backId);
+        rep.r.redrawCards = chatEl.querySelectorAll('.dcard').length;       // 期望 1
+        rep.r.redrawBubbles = chatEl.querySelectorAll('.msg').length;       // 期望 3
+        rep.r.xssStillSafe = !window.__xss && chatEl.querySelectorAll('script').length === 0;
+        // ── 埋点按钮三例（正 / 负 / 防误删；计数假桥捕获 insertEvent，零云写入）──
+        // 现场即上一步重绘后的 mockDiag 卡（P012 / P003 / P021 三症候，各带 ack/exclude）。
+        var evCaptured = [];
+        window.WbcsBridge = { chat: realBridge.chat, insertEvent: function (s) { evCaptured.push(JSON.parse(s)); } };
+        var row1 = chatEl.querySelectorAll('.synd')[0];
+        var row2 = chatEl.querySelectorAll('.synd')[1];
+        var row3 = chatEl.querySelectorAll('.synd')[2];
+        rep.r.ackBtnCount = chatEl.querySelectorAll('.syn-ack').length;      // 期望 3（防误删：渲染面在位）
+        rep.r.exclBtnCount = chatEl.querySelectorAll('.syn-exclude').length; // 期望 3
+        // ① 正例：selftest 门控临时放开 ⇒ 真点按必须走到 insertEvent 且事件形状正确
+        SELFTEST = false;
+        row1.querySelector('.syn-ack').click();
+        row2.querySelector('.syn-exclude').click();
+        SELFTEST = true;
+        var ackRow = evCaptured[0] && evCaptured[0].row, exclRow = evCaptured[1] && evCaptured[1].row;
+        rep.r.ackEventOk = !!(ackRow && evCaptured[0].table === 'interaction_events' &&
+          ackRow.event_type === 'anchor_ack' && ackRow.payload.syndrome_id === row1.querySelector('.syn-ack').getAttribute('data-syn') &&
+          ackRow.source === 'web' && ackRow.session_tag === curId && !!ackRow.client_created_at);
+        rep.r.exclEventOk = !!(exclRow && evCaptured[1].table === 'interaction_events' &&
+          exclRow.event_type === 'exclusion' && exclRow.payload.syndrome_id === row2.querySelector('.syn-exclude').getAttribute('data-syn') &&
+          exclRow.source === 'web' && exclRow.session_tag === curId);
+        // ② 负例：selftest 门控恢复 ⇒ 再点按不得写入（防污染统计）
+        var nEv = evCaptured.length;
+        row3.querySelector('.syn-exclude').click();
+        rep.r.selftestGuardBlocks = evCaptured.length === nEv;               // 期望 true
+        // ③ 互斥与防误删：确认指认后对侧禁用、练习钮不受牵连；排除同理
+        var ack1 = row1.querySelector('.syn-ack'), excl1 = row1.querySelector('.syn-exclude'), prac1 = row1.querySelector('.syn-practice');
+        var excl2 = row2.querySelector('.syn-exclude'), ack2 = row2.querySelector('.syn-ack');
+        rep.r.ackMutex = ack1.disabled && ack1.textContent.indexOf('已确认指认') !== -1 &&
+                         excl1.disabled && !prac1.disabled;                  // 期望 true
+        rep.r.exclMutex = excl2.disabled && excl2.textContent.indexOf('已排除') !== -1 &&
+                          ack2.disabled && row2.querySelector('.syn-practice') &&
+                          !row2.querySelector('.syn-practice').disabled;     // 期望 true
+        window.WbcsBridge = realBridge;
+        // ── 编号防泄漏断言（2026-11-12 舰长指出 P012 暴露批）：syndrome_id 是内部键，
+        //    卡片与练习发话都不得把它带进学习者可见文本（对齐 App diagnosis_card 只渲染 name）
+        rep.r.cardIdHidden = cards[0].textContent.indexOf('P012') === -1 &&
+                             cards[0].textContent.indexOf('情绪直陈') !== -1;   // 期望 true
+        var ptxt = buildPracticeText('P012', '情绪直陈');
+        rep.r.practiceTextClean = ptxt.indexOf('P0') === -1 &&
+                                  ptxt.indexOf('情绪直陈') !== -1;              // 期望 true
+        // 视觉快照：真实渲染 DOM + 样式回传（供离线组装快照页）
+        rep.snapshot = {
+          css: document.querySelector('style').textContent,
+          chat: chatEl.outerHTML,
+        };
+        // ── 账号入口面板自检（2026-11-24 · §4-556）─────────────────────
+        // 为什么放进 selftest：这是本项目既有的**页内自检通道**（selfreport
+        // 走 /engine_result 回传），比外部截图稳定。账号面板是本轮舰长明确
+        // 要求的入口，必须有可判读数，而不是"我看了一眼觉得对"。
+        // 判据两条：
+        //   ① 未登录态：按钮存在、标签为「未登录」、点开**必须**出现登录动作、
+        //      且**不得**出现退出动作（否则用户会去点一个不存在的会话）
+        //   ② 已登录分支：直接驱动 signedIn + applyGate（renderAccount 是同一
+        //      函数，测它即测真实分支），断言出现退出、输入区解禁
+        try {
+          var acctBtnEl = document.getElementById('acctBtn');
+          var acctPopEl = document.getElementById('acctPop');
+          var acctLabEl = document.getElementById('acctLabel');
+          var acctBodyEl = document.getElementById('acctBody');
+          rep.acct = {};
+          rep.acct.exists = !!(acctBtnEl && acctPopEl && acctLabEl && acctBodyEl);
+          if (rep.acct.exists) {
+            var r0 = acctBtnEl.getBoundingClientRect();
+            // 真实渲染判据：必须有非零尺寸（防"DOM 在但看不见"）
+            rep.acct.visible = r0.width > 0 && r0.height > 0;
+            rep.acct.rect = Math.round(r0.width) + 'x' + Math.round(r0.height);
+            // 头部不得横向溢出（窄屏核心判据，390px 实测曾溢出 9px）
+            var hdEl = document.querySelector('header');
+            rep.acct.headerOverflow = hdEl ? (hdEl.scrollWidth > hdEl.clientWidth + 1) : null;
+
+            // ① 当前登录态的 UI 断言
+            var wasReady = (gate === 'ready');
+            rep.acct.gateNow = gate;
+            rep.acct.labelNow = acctLabEl.textContent;
+            if (acctPopEl.hidden) acctBtnEl.click();
+            var h0 = acctBodyEl.innerHTML || '';
+            rep.acct.openOnClick = (acctPopEl.hidden === false);
+            rep.acct.hasSignInBtn = h0.indexOf('acctSignIn') !== -1;
+            rep.acct.hasSignOutBtn = h0.indexOf('acctSignOut') !== -1;
+            // 两种态互斥：未登录不得有退出，已登录不得有登录
+            rep.acct.mutuallyExclusive = wasReady
+              ? (rep.acct.hasSignOutBtn && !rep.acct.hasSignInBtn)
+              : (!rep.acct.hasSignOutBtn && rep.acct.hasSignInBtn);
+            // Esc 可关（移动端软键盘场景也有用）
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+            rep.acct.escCloses = (acctPopEl.hidden === true);
+
+            // ② 检测区（§4-556 舰长要求「针对做检测」）：
+            //    必须在，且四行读数可读、重置按钮可点、probe 不抛。
+            var h1 = acctBodyEl.innerHTML || '';
+            rep.acct.hasDiag = h1.indexOf('acct-diag') !== -1;
+            rep.acct.hasReset = h1.indexOf('acctReset') !== -1;
+            rep.acct.diagRows = (h1.match(/data-ok=/g) || []).length;
+            try {
+              var pr = (window.YueshengAuth && window.YueshengAuth.probe)
+                ? window.YueshengAuth.probe() : null;
+              rep.acct.probeOk = !!pr;
+              if (pr) {
+                rep.acct.p_sdk = pr.sdk; rep.acct.p_cfg = pr.cfg;
+                rep.acct.p_verifier = pr.verifier; rep.acct.p_session = pr.session;
+              }
+            } catch (e2) { rep.acct.probeOk = false; rep.acct.probeErr = String(e2); }
+          }
+        } catch (e) {
+          rep.acct = { error: String(e && e.message || e) };
+        }
+      } catch (e) {
+        rep.error = String(e && e.message || e);
+      }
+      selfreport(rep);
+    }
+  })();
+})();
+</script>
+</body>
+</html>
