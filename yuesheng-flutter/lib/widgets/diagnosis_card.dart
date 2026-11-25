@@ -707,7 +707,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           ),
           const SizedBox(height: 4),
           Text(
-            '按 严重度 × 干预价值 × 跨章复现 加权排序的建议。'
+            '下面几处，是从你的稿子里找到的。'
             '最终练哪个，由你定。',
             style: context.text.caption,
           ),

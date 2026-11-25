@@ -496,13 +496,10 @@ TeachingFocusCandidate _candidateFor(DiagnosisGroup g) {
   // （merge 链产出）原样不动，一次只改一个变量（§4-192 范式）。
   final iv = g.interventionValueMax;
   final int valueScore;
-  final String valueLabel;
   if (iv != null) {
     valueScore = interventionValueRank(iv) + 1;
-    valueLabel = iv;
   } else {
     valueScore = quantityPrior(g.syndromeId) + 1;
-    valueLabel = '注册表先验';
   }
   final recurrenceScore = g.chapterCount.clamp(0, kSystematicChapterThreshold);
   final total = severityScore + valueScore + recurrenceScore;
@@ -516,10 +513,7 @@ TeachingFocusCandidate _candidateFor(DiagnosisGroup g) {
       'recurrence': recurrenceScore,
       'total': total,
     },
-    rationale:
-        '${g.syndromeId}：严重度 ${g.severityMax.value}($severityScore)'
-        ' · 干预价值 $valueLabel($valueScore)'
-        ' · 跨 ${g.chapterCount} 章独立出现($recurrenceScore) ⇒ $total',
+    rationale: '这一项在你的稿子里有具体表现，练它能少出同类问题。',
     status: 'proposed',
   );
 }

@@ -64,15 +64,18 @@ const _kCandidates = [
     syndromeId: 'P001',
     name: '情绪标签化',
     total: 7,
-    rationale: 'P001：严重度 L2(2) · 干预价值 high(3) · 跨 2 章独立出现(2) ⇒ 7',
+    rationale: '这一项在你的稿子里有具体表现，练它能少出同类问题。',
   ),
   FocusCandidateCard(
     syndromeId: 'P003',
     name: '视角漂移',
     total: 5,
-    rationale: 'P003：严重度 L1(1) · 干预价值 未评定(1) · 跨 3 章独立出现(3) ⇒ 5',
+    rationale: '这一项在你的稿子里有具体表现，练它能少出同类问题。',
   ),
 ];
+
+// 说明句定稿（D1′ 主判据逐字 + D2′ 决定权句）。
+const _kCaptionNew = '下面几处，是从你的稿子里找到的。最终练哪个，由你定。';
 
 void main() {
   // ── 渲染面 ──
@@ -83,7 +86,22 @@ void main() {
     // 「情绪标签化」3 处：症候块标题 + 症候详情 + 候选行（阳性对照：候选区在场）
     expect(find.text('情绪标签化'), findsNWidgets(3));
     expect(find.text('视角漂移'), findsOneWidget);
-    expect(find.textContaining('严重度 L2(2)'), findsOneWidget);
+    // G1/G2 同格：rationale 定稿串在场（两条），旧裸编号与评分分解退场。
+    expect(find.text('这一项在你的稿子里有具体表现，练它能少出同类问题。'), findsNWidgets(2));
+    expect(find.textContaining('严重度 L2(2)'), findsNothing);
+    expect(find.textContaining('P001：'), findsNothing);
+    // D1′ 说明句定稿逐字（主判据）：改回「加权排序」必红。
+    expect(find.text(_kCaptionNew), findsOneWidget);
+    // D2′ 决定权句逐字保留（R-009）。
+    expect(find.textContaining('最终练哪个，由你定。'), findsOneWidget);
+    // D3′/D4′ 挂 D1′ 同格：精确取说明句 Text 断言，避免全局 find 误伤症候 chip。
+    final caption = tester.widget<Text>(find.text(_kCaptionNew));
+    final captionText = caption.data ?? '';
+    expect(
+      captionText,
+      isNot(matches(RegExp(r'加权|综合排序|排序|优先|按.{0,12}排|先练|最该|应该'))),
+    );
+    expect(captionText, isNot(matches(RegExp(r'严重度|干预价值|跨章复现'))));
     expect(find.text(_kSwitchLabel), findsNWidgets(2));
   });
 
@@ -99,7 +117,7 @@ void main() {
   });
 
   testWidgets('rationale 超 120 字 ⇒ 截断加省略号（不改写原文）', (tester) async {
-    final long = 'P001：${'x' * 200}';
+    final long = '这一处有具体表现：${'x' * 200}';
     await tester.pumpWidget(
       _wrap(
         _card(

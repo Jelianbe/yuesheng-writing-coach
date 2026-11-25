@@ -44,7 +44,10 @@ void main() {
       final c = buildTeachingFocusCandidates(groups, nowSec: 500).single;
       expect(c.scoreBreakdown['intervention_value'], 3);
       expect(c.scoreBreakdown['total'], 5);
-      expect(c.rationale, contains('注册表先验'));
+      // G1/G2 同格：定稿陈述句在场 + 零编号/评分外泄（旧 rationale 断言退役）。
+      expect(c.rationale, '这一项在你的稿子里有具体表现，练它能少出同类问题。');
+      expect(c.rationale, isNot(matches(RegExp(r'P0\d{2}'))));
+      expect(c.rationale, isNot(contains('⇒')));
     });
 
     test('P032 同 wordChoice（翻译腔，判据同源）', () {
@@ -75,8 +78,12 @@ void main() {
     test('rationale 无「未评定」残留（先验不伪装）', () {
       final groups = buildDiagnosisGroups([_e('P002', Severity.l2)]);
       final c = buildTeachingFocusCandidates(groups, nowSec: 500).single;
-      expect(c.rationale, contains('注册表先验'));
+      // 先验语义由 scoreBreakdown 承担（原「注册表先验」字样退出可见面）。
+      expect(c.scoreBreakdown['intervention_value'], 2);
+      // G1/G2 同格，避免下方 isNot 成为空串恒真假绿。
+      expect(c.rationale, '这一项在你的稿子里有具体表现，练它能少出同类问题。');
       expect(c.rationale, isNot(contains('未评定')));
+      expect(c.rationale, isNot(contains('注册表先验')));
     });
   });
 
@@ -93,7 +100,10 @@ void main() {
           _ => 1,
         };
         expect(c.scoreBreakdown['intervention_value'], expected);
-        expect(c.rationale, contains(iv));
+        // 原 `contains(iv)` 退役：档位由上方 scoreBreakdown 承担；
+        // rationale 恒为定稿串，G1/G2 同格防空串恒真。
+        expect(c.rationale, '这一项在你的稿子里有具体表现，练它能少出同类问题。');
+        expect(c.rationale, isNot(contains(iv)));
         expect(c.rationale, isNot(contains('注册表先验')));
       });
     }

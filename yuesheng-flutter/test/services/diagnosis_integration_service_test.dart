@@ -227,8 +227,14 @@ void main() {
       expect(c.scoreBreakdown['intervention_value'], 3);
       expect(c.scoreBreakdown['recurrence'], 1);
       expect(c.scoreBreakdown['total'], 6);
-      expect(c.rationale, contains('P001'));
-      expect(c.rationale, contains('high'));
+      // G1 主判据：rationale 定稿逐字（改回旧串/置空均红）。
+      expect(c.rationale, '这一项在你的稿子里有具体表现，练它能少出同类问题。');
+      // G2 零泄漏（负向，与 G1 同格——G1 保证串非空，避免空串恒真假绿）。
+      expect(c.rationale, isNot(matches(RegExp(r'P0\d{2}'))));
+      expect(c.rationale, isNot(contains('⇒')));
+      expect(c.rationale, isNot(matches(RegExp(r'\(\d+\)'))));
+      // G3：原 `contains('P001')` 正向断言退役，档位由 :227 scoreBreakdown 承担。
+      expect(c.rationale, isNot(contains('high')));
       expect(c.status, 'proposed'); // 只出候选，不决定
     });
 
@@ -241,7 +247,10 @@ void main() {
       ]);
       final c = buildTeachingFocusCandidates(groups, nowSec: 500).single;
       expect(c.scoreBreakdown['intervention_value'], 2);
-      expect(c.rationale, contains('注册表先验'));
+      // A3「先验不伪装」正向判据迁 scoreBreakdown（:243 已断言 iv=2）；
+      // rationale 侧 A3 语义改挂 G1/G2 同格：定稿串在场 + 零内部术语。
+      expect(c.rationale, '这一项在你的稿子里有具体表现，练它能少出同类问题。');
+      expect(c.rationale, isNot(contains('注册表先验')));
       expect(c.rationale, isNot(contains('未评定')));
     });
 
