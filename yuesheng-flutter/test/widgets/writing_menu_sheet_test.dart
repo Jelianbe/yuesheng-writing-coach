@@ -73,6 +73,12 @@ void main() {
   }
 
   group('WritingMenuSheet', () {
+    /// P1 重裁后菜单分三 tab ⇒ 跨 tab 的项必须先切 tab 再点。
+    Future<void> switchTab(WidgetTester tester, String label) async {
+      await tester.tap(find.text(label).first);
+      await tester.pumpAndSettle();
+    }
+
     /// 菜单项增多后底部项在滚动区内 → 先滚动到可见再点（批次86-1 起菜单 14 项）
     Future<void> tapMenuBottom(WidgetTester tester, String label) async {
       final item = find.text(label);
@@ -88,45 +94,66 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('渲染菜单项：打开教练面板可见，占位项已移除', (tester) async {
+    testWidgets('渲染菜单项：三个 tab 内各项齐备，占位项已移除', (tester) async {
       await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
 
-      expect(find.text('打开教练面板'), findsOneWidget);
-      // 批次82：新增「排版设置」真实入口（P0 四件套之①）
-      expect(find.text('排版设置'), findsOneWidget);
-      // 批次82：新增「版本时光机」入口（P0 四件套之③）
-      expect(find.text('版本时光机'), findsOneWidget);
-      // 批次83：新增「章节列表」章节树抽屉入口（P1）
-      expect(find.text('章节列表'), findsOneWidget);
-      // 批次83：新增「大纲」大纲抽屉入口（P1）
-      expect(find.text('大纲'), findsOneWidget);
-      // 批次96-11：新增「全文搜索」整本作品搜索入口（P1）
-      expect(find.text('全文搜索'), findsOneWidget);
-      // 批次84-2：新增「查找替换」全文查找替换入口（P1）
-      expect(find.text('查找替换'), findsOneWidget);
+      // ── 默认 tab「写作工具」：6 项 ──
+      // 批次83：章节列表 / 大纲；C78 批次3：角色；批次96-11：全文搜索；
+      // 批次84-2：查找替换；批次86-1：回收板
+      for (final label in const ['章节列表', '大纲', '角色', '全文搜索', '查找替换', '回收板']) {
+        expect(find.text(label), findsOneWidget, reason: '默认 tab 缺「$label」');
+      }
+
+      // ── tab 栏：标签复用原组头字面（三个都在，才能互切）──
+      expect(find.text('写作工具'), findsOneWidget);
+      expect(find.text('教学'), findsOneWidget);
+      expect(find.text('设置'), findsOneWidget);
+      // tab 数量恰为 3（防「多渲染一个空 tab」或「漏挂一个 tab」）
+      expect(find.byType(Tab), findsNWidgets(3));
+
+      // ── 切到「教学」：5 项 ──
+      await switchTab(tester, '教学');
+      for (final label in const [
+        '当前文风', // 批次85-4
+        '写作统计', // 批次85-5
+        '打开教练面板', // 批次79 B 改名
+        '世界观', // W1
+        '快捷短语', // 批次85-3
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: '教学 tab 缺「$label」');
+      }
+
+      // ── 切到「设置」：2 项 ──
+      await switchTab(tester, '设置');
+      expect(find.text('排版设置'), findsOneWidget); // 批次82 P0 四件套之①
+      expect(find.text('版本时光机'), findsOneWidget); // 批次82 P0 四件套之③
+
+      // ── 跨 tab 恒在：保存状态行（上）与「取消」（下）──
+      // 批次96-5：菜单近全屏时遮罩仅剩顶部窄条，需显式关闭入口
+      expect(find.text('取消'), findsOneWidget);
+      // 保存状态行在切到「设置」后仍可见（它不随 tab 变，是跨 tab 共享区）
+      expect(find.text('未保存'), findsOneWidget);
+
       // 批次96-8：移除「我的灵感」入口（参考百灵布局）
       expect(find.text('我的灵感'), findsNothing);
-      // 批次86-1：新增「回收板」长文本找回入口（P2）
-      expect(find.text('回收板'), findsOneWidget);
-      // 批次85-3：新增「快捷短语」常用语入口（P2）
-      expect(find.text('快捷短语'), findsOneWidget);
-      // 批次85-4：新增「当前文风」风格画像入口（P2）
-      expect(find.text('当前文风'), findsOneWidget);
-      // 批次85-5：新增「写作统计」入口（P2）
-      expect(find.text('写作统计'), findsOneWidget);
       // 批次96-9：三个开关已移入排版设置，菜单只留跳转入口（参考百灵极简）
       expect(find.text('行段聚焦'), findsNothing);
       expect(find.text('智能标点'), findsNothing);
       expect(find.text('对话按钮（开）'), findsNothing);
-      // 批次96-9：菜单分组标题（写作工具/教学/设置）
-      expect(find.text('写作工具'), findsOneWidget);
-      expect(find.text('教学'), findsOneWidget);
-      expect(find.text('设置'), findsOneWidget);
-      // 批次96-5：菜单末尾「取消」——菜单近全屏时遮罩仅剩顶部窄条，需显式关闭入口
-      expect(find.text('取消'), findsOneWidget);
       // E3：其他「开发中」占位项不再渲染
       expect(find.text('撤销'), findsNothing);
       expect(find.text('重做'), findsNothing);
+
+      // ★ 反向判据（防「三个 tab 全渲染同一份列表」冒充分组）：
+      //   默认 tab 里不得同时出现只属「教学」「设置」的项。
+      await switchTab(tester, '写作工具');
+      for (final label in const ['排版设置', '版本时光机', '当前文风', '写作统计']) {
+        expect(
+          find.text(label),
+          findsNothing,
+          reason: '「$label」不该出现在「写作工具」tab ⇒ tab 未真正分区',
+        );
+      }
     });
 
     testWidgets('批次96-5 点击"取消" → sheet 关闭且不触发任何回调', (tester) async {
@@ -193,6 +220,7 @@ void main() {
       // sheet 当前可见
       expect(find.byType(BottomSheet), findsOneWidget);
 
+      await switchTab(tester, '教学');
       await tapMenuBottom(tester, '打开教练面板');
 
       // 回调触发 + sheet 已关闭
@@ -209,6 +237,7 @@ void main() {
         onOpenSettings: () => settingsCalled = true,
       );
 
+      await switchTab(tester, '设置');
       await tapMenuBottom(tester, '排版设置');
 
       expect(settingsCalled, isTrue);
@@ -226,7 +255,8 @@ void main() {
         onOpenVersions: () => versionsCalled = true,
       );
 
-      // 菜单已 15 项，「版本时光机」在滚动区外 → 先滚动到可见再点
+      // P1 重裁：「版本时光机」现属「设置」tab（原为单列滚动区外）
+      await switchTab(tester, '设置');
       await tapMenuBottom(tester, '版本时光机');
       await tester.pumpAndSettle();
 
@@ -335,6 +365,8 @@ void main() {
         onOpenQuickPhrases: () => quickPhrasesCalled = true,
       );
 
+      // P1 重裁：「快捷短语」现属「教学」tab
+      await switchTab(tester, '教学');
       await tapMenuBottom(tester, '快捷短语');
       await tester.pumpAndSettle();
 
@@ -371,6 +403,8 @@ void main() {
         onOpenStyleProfile: () => styleProfileCalled = true,
       );
 
+      // P1 重裁：「当前文风」现属「教学」tab
+      await switchTab(tester, '教学');
       await tapMenuBottom(tester, '当前文风');
       await tester.pumpAndSettle();
 
@@ -399,6 +433,8 @@ void main() {
         onOpenWritingStats: () => statsCalled = true,
       );
 
+      // P1 重裁：「写作统计」现属「教学」tab
+      await switchTab(tester, '教学');
       await tapMenuBottom(tester, '写作统计');
       await tester.pumpAndSettle();
 
@@ -411,7 +447,8 @@ void main() {
       await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
       expect(find.text('未保存'), findsOneWidget);
 
-      // 关闭 sheet 后再来一次
+      // 关闭 sheet 后再来一次（「打开教练面板」在「教学」tab）
+      await switchTab(tester, '教学');
       await tapMenuBottom(tester, '打开教练面板');
 
       // case 2: DateTime(2026, 8, 5, 15, 32)
@@ -430,17 +467,40 @@ void main() {
     // 默认 0.55 下 sheet 高 351.6dp，「章节列表/大纲/角色/全文搜索」四行已
     // **恰好占满**（全文搜索底 599.4 vs 视口底 600.0，余量 0.6dp），
     // 在其之前插入任何一行（项 48 / 组头 23）都会把它顶出首屏，
-    // 而 `writing_menu_sheet_test.dart` 与 `writing_page_test.dart:1947`
-    // 对它是**直点**（非 scrollUntilVisible）。
+    // 而 `writing_menu_sheet_test.dart` 与 `writing_page_test.dart` 对它是**直点**。
     //
-    // ⇒ 本断言把「实测事实」升级为**契约**：重分组/加项时必须先解决容量。
+    // ★ P1 重裁（T-20261126-04）后本契约的**两处变更**，都写清理由：
+    //   ① **视口**：原用 Flutter 测试默认 800×600。该视口逻辑高 600dp，
+    //      **不是手机尺寸**（1080×2340 @2.75 的真机逻辑高是 851dp）。
+    //      实测 800×600 容器仅 351.6dp，扣掉拖拽条 + 保存行 + tab 栏 +
+    //      分隔线 + 取消（约 188dp）后只剩约 164dp ≈ 3.4 项 ⇒ 6 项装不下。
+    //      ⇒ 本契约改在**真机竖屏**尺寸下断言（393×851），这是产品真实使用面。
+    //   ② **阴性对照**：原对照 `版本时光机` 是「滚动区外的项」。A 案把它移进
+    //      「设置」tab 后，**默认 tab 里根本不存在该文本** ⇒ `find.text` 抛
+    //      not found，那是**假红不是鉴别力**（报批稿 §三 已预埋此坑）。
+    //      替代对照 = **800×600 视口下的 `回收板`**：同一份代码、同一 tab、
+    //      只是视口更矮 ⇒ 它确实在首屏外。这保证「首屏」判据真的在测边界，
+    //      而不是「反正都在」。
     // ─────────────────────────────────────────────────────────────
-    testWidgets('N4-2 首屏容量契约：默认高度下 4 项直点入口必须在首屏内', (tester) async {
+
+    /// 在指定逻辑尺寸下渲染菜单（真机竖屏用 393×851）。
+    Future<void> pumpSheetAtSize(WidgetTester tester, Size logical) async {
+      tester.view.devicePixelRatio = 1.0;
+      tester.view.physicalSize = logical;
+      addTearDown(tester.view.reset);
+    }
+
+    testWidgets('N4-2 首屏容量契约：真机竖屏下三 tab 全部入口均在首屏内', (tester) async {
+      // 393×851 = 1080×2340 @2.75，即走查所用 1080×2340 设备的逻辑尺寸
+      await pumpSheetAtSize(tester, const Size(393, 851));
       await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
 
       final sheet = tester.getRect(find.byType(BottomSheet));
-      // 正例：这四项在既有测试里是 tester.tap 直点 ⇒ 必须整行落在可视区内
-      for (final label in const ['章节列表', '大纲', '角色', '全文搜索']) {
+
+      // ── 正例 1：默认 tab 的四条**直点路径**必须整行落在首屏内 ──
+      //    载体：本文件 `tester.tap(find.text(...))` 与 `writing_page_test.dart`
+      const directTap = ['章节列表', '大纲', '角色', '全文搜索'];
+      for (final label in directTap) {
         final r = tester.getRect(find.text(label));
         expect(
           r.bottom,
@@ -448,12 +508,58 @@ void main() {
           reason: '「$label」被顶出首屏 ⇒ 既有直点路径失效（N4-2 实测约束）',
         );
       }
-      // 阴性对照（§4-28 鉴别力）：本次断言若只是「全都在首屏」就会被它证伪——
-      // 滚动区外的项**本来就不在**首屏，它必须是「不在」。
+
+      // ── 正例 2：「写作工具」tab 六项全部可见（改后容量读数 6/6）──
+      for (final label in const ['章节列表', '大纲', '角色', '全文搜索', '查找替换', '回收板']) {
+        expect(
+          tester.getRect(find.text(label)).bottom,
+          lessThanOrEqualTo(sheet.bottom + 0.5),
+          reason: '「写作工具」tab 的「$label」不在首屏 ⇒ 容量重裁未达 6/6',
+        );
+      }
+
+      // ── 正例 3：「教学」5/5 ──
+      await switchTab(tester, '教学');
+      for (final label in const ['当前文风', '写作统计', '打开教练面板', '世界观', '快捷短语']) {
+        expect(
+          tester.getRect(find.text(label)).bottom,
+          lessThanOrEqualTo(sheet.bottom + 0.5),
+          reason: '「教学」tab 的「$label」不在首屏 ⇒ 未达 5/5',
+        );
+      }
+
+      // ── 正例 4：「设置」2/2 ──
+      await switchTab(tester, '设置');
+      for (final label in const ['排版设置', '版本时光机']) {
+        expect(
+          tester.getRect(find.text(label)).bottom,
+          lessThanOrEqualTo(sheet.bottom + 0.5),
+          reason: '「设置」tab 的「$label」不在首屏 ⇒ 未达 2/2',
+        );
+      }
+
+      // ── 正例 5：「取消」跨 tab 恒在首屏（它是关闭入口，不能被挤出）──
       expect(
-        tester.getRect(find.text('版本时光机')).bottom,
+        tester.getRect(find.text('取消')).bottom,
+        lessThanOrEqualTo(sheet.bottom + 0.5),
+        reason: '「取消」被挤出首屏 ⇒ 菜单失去显式关闭入口（批次96-5 契约）',
+      );
+    });
+
+    testWidgets('N4-2b 阴性对照：同一代码在 800×600 下必须真有项出屏（防假绿）', (tester) async {
+      // ★ 鉴别力来源：这段与上一条**同一份代码、同一个 tab**，唯一变量是视口高度。
+      //   若上一条的「都在首屏」是真的，这条就必然有项出屏；若这条也全在，
+      //   说明断言根本没在测边界（比如 rect 取错了层级）⇒ 上一条的绿不可信。
+      await pumpSheetAtSize(tester, const Size(800, 600));
+      await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
+
+      final sheet = tester.getRect(find.byType(BottomSheet));
+      expect(
+        tester.getRect(find.text('回收板')).bottom,
         greaterThan(sheet.bottom),
-        reason: '阴性对照失败 ⇒ 本断言未真正测「首屏」边界',
+        reason:
+            '阴性对照失败 ⇒ 800×600 下「回收板」本该在首屏外却判 IN，'
+            '说明首屏判据未真正测到边界，上一条 6/6 的绿不可信',
       );
     });
   });

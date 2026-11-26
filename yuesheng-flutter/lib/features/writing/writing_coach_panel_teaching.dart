@@ -76,6 +76,16 @@ class WritingCoachTeachingController {
     // 存在「按钮尚未变灰」的点击空窗 ⇒ 连点会并发进本方法 ⇒ 重复请求 + 重复计费。
     // 在入口即挡（早于任何 await），与流式守卫同理。
     if (_host.isDiagnosing) return;
+    // ★ P2（T-20261126-05 · R-027 批号「2026-11-26 四项全批 A」）：
+    //   校验按「用户能不能立刻自己解决」排序 —— **本地可修的字数先报，
+    //   需要外部配置的 API Key 后报**。
+    //   改前顺序：`:80` nudge → `:85` ensureSession → `:90` 字数校验
+    //   ⇒ 0 字章节点「诊断本章」先被引导去配 Key，填完才发现字数不够。
+    //   改后：字数校验上移到 nudge 之前，字数不足直接返回，
+    //   **不弹 nudge、不创建会话**（附带收益：无效诊断不再写库）。
+    //   两条提示文案逐字未变；再入守卫仍在最前。
+    final input = _resolveDiagnosisInput(selectedText);
+    if (input == null) return;
     // C2：首次发起诊断且未配 API → 弹一次性「配置 API」引导。
     await maybeShowApiConfigNudge(
       _host.context,
@@ -87,8 +97,6 @@ class WritingCoachTeachingController {
 
     // D5-A：诊断中置位（驱动「诊断中…」占位 + 按钮禁用态）
     // 批次49：同时设阶段标签（选段/整章区分文案）
-    final input = _resolveDiagnosisInput(selectedText);
-    if (input == null) return;
     if (_host.isMounted) {
       _host.isDiagnosing = true;
       _host.streamStageLabel = input.isSelection ? '正在诊断选段…' : '正在诊断本章…';

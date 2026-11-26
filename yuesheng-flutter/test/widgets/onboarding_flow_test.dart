@@ -96,13 +96,60 @@ void main() {
     expect(completed, 1);
   });
 
-  testWidgets('#3 右上「跳过」→ onComplete 触发', (tester) async {
+  testWidgets('#3 右上「跳过」→ onComplete 触发（未传 onSkip 时回落）', (tester) async {
     var completed = 0;
     await tester.pumpWidget(buildFlow(onComplete: () => completed++));
 
     await tester.tap(find.text('跳过'));
     await tester.pump();
     expect(completed, 1);
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // P3（T-20261126-06 · R-027 批号「2026-11-26 四项全批 A」）
+  //
+  // 「跳过」与「开始使用」语义不同：跳过 = 我不需要引导 ⇒ 走独立回调，
+  // 由调用方合并写 `api_config_hint_seen`，避免之后首次诊断再弹一次 API 提示。
+  // 判据：传了 onSkip 时，跳过**只**触发 onSkip、**不**触发 onComplete；
+  //       否则两者都会被调用 ⇒ 两标志写入逻辑打架。
+  // ─────────────────────────────────────────────────────────────
+  testWidgets('P3 传 onSkip 时「跳过」只走 onSkip，不触发 onComplete', (tester) async {
+    var completed = 0;
+    var skipped = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnboardingFlow(
+          onComplete: () => completed++,
+          onSkip: () => skipped++,
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('跳过'));
+    await tester.pump();
+
+    expect(skipped, 1, reason: '「跳过」必须走 onSkip（合并写两标志的入口）');
+    expect(completed, 0, reason: '「跳过」不得同时触发 onComplete，否则写入逻辑重复');
+  });
+
+  testWidgets('P3b 末页「开始使用」仍走 onComplete，不走 onSkip', (tester) async {
+    var completed = 0;
+    var skipped = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnboardingFlow(
+          onComplete: () => completed++,
+          onSkip: () => skipped++,
+        ),
+      ),
+    );
+
+    await advanceToLastPage(tester);
+    await tester.tap(find.widgetWithText(FilledButton, '开始使用'));
+    await tester.pump();
+
+    expect(completed, 1, reason: '看完 5 页的人走完整路径，仍应收到 API 提示');
+    expect(skipped, 0, reason: '「开始使用」不得误走跳过通道');
   });
 
   testWidgets('#4 进度点数量 == 5 页，且首点高亮（更宽）', (tester) async {

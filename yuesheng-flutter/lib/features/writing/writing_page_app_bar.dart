@@ -69,6 +69,11 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: 48,
       leading: IconButton(
         icon: Icon(Icons.close, color: foregroundColor),
+        // ★ P4（T-20261126-07 · R-027 批号「2026-11-26 四项全批 A」）：
+        //   补读屏语义标签。改前本键无 tooltip ⇒ uiautomator dump 里
+        //   `content-desc` 为空，读屏无法识别（正式结论 §五 #4）。
+        //   文案与既有「复制全文」「一键排版」同为四字动作名，风格一致。
+        tooltip: '返回',
         onPressed: onBack,
       ),
       // 批次95-4：写作页面包屑（卷名·章名）
@@ -93,6 +98,10 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         IconButton(
           icon: Icon(Icons.more_vert, color: foregroundColor),
+          // ★ P4：同上，本键改前无 tooltip ⇒ 读屏不可识别。
+          //   这两条是写作页 AppBar 4 个 IconButton 中仅有的缺失项，
+          //   补后应满足「IconButton 数 == tooltip 数」。
+          tooltip: '更多',
           onPressed: onOpenMenu,
         ),
       ],

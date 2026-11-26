@@ -358,6 +358,84 @@ void main() {
       expect(find.text('请诊断本章内容'), findsNothing);
     });
 
+    // ─────────────────────────────────────────────────────────────
+    // P2（T-20261126-05 · R-027 批号「2026-11-26 四项全批 A」）
+    //
+    // 改前缺陷：`diagnoseWithText` 里 `maybeShowApiConfigNudge`（原 :80）在
+    // 字数校验（原 :90）之前 ⇒ 0 字章节点「诊断本章」先被引导去配 API Key，
+    // 填完才发现字数不够。根因是**调用顺序**，不是文案。
+    //
+    // 判据：0 字 + 未配 API 时，**只**出现字数 SnackBar，**不得**出现 API 对话框。
+    // 变红条件：出现「还未配置 AI 服务商 API」即红。
+    // ─────────────────────────────────────────────────────────────
+    testWidgets('P2 0 字 + 未配 API → 只报字数不足，不先弹 API 配置对话框', (tester) async {
+      // 反向预置：撤回 setUp 的「已展示」标记（否则 nudge 本就静默，测不出顺序）
+      await AppStateRepository(db).setApiConfigHintSeen(false);
+      final storage = MockSecureStorage()..install();
+      addTearDown(storage.uninstall);
+
+      expect(
+        await AppStateRepository(db).getApiConfigHintSeen(),
+        isFalse,
+        reason: '前置：本用例要求「未看过提示」的初始态',
+      );
+
+      final chRepo = ChapterRepository(db);
+      final emptyChapterId = await chRepo.createChapter(
+        msId,
+        title: '空章节',
+        content: '',
+      );
+      await container
+          .read(writingStoreProvider(emptyChapterId).notifier)
+          .loadChapter();
+
+      await tester.pumpWidget(
+        buildPanel(customChapterId: emptyChapterId, customChapterTitle: '空章节'),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('诊断本章'));
+      await tester.pumpAndSettle();
+
+      // 必达：字数提示出现
+      expect(find.text('请至少输入 100 字后再提交诊断'), findsOneWidget);
+      // ★ 核心判据（P2 的整条价值）：API 对话框不得抢先
+      expect(
+        find.text('还未配置 AI 服务商 API'),
+        findsNothing,
+        reason: '0 字就弹 API 配置 ⇒ 校验顺序回退（P2 缺陷复现）',
+      );
+      // 附带收益：字数不足时 nudge 根本没执行 ⇒ 一次性提示未被消费
+      expect(
+        await AppStateRepository(db).getApiConfigHintSeen(),
+        isFalse,
+        reason: '字数不足时不应消费「已看过 API 提示」（nudge 未执行）',
+      );
+    });
+
+    testWidgets('P2b 100 字 + 未配 API → nudge 仍照原设计弹出（不误伤正常路径）', (tester) async {
+      // 撤预置：模拟「没看过提示」的真实首用态
+      await AppStateRepository(db).setApiConfigHintSeen(false);
+      final storage = MockSecureStorage()..install();
+      addTearDown(storage.uninstall);
+
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('诊断本章'));
+      await tester.pumpAndSettle();
+
+      // 内容足量（setUp 的 chapterId 内容 >100 字）⇒ nudge 必须仍弹
+      expect(
+        find.text('还未配置 AI 服务商 API'),
+        findsOneWidget,
+        reason: '顺序调整不得误伤正常路径：字数够时 nudge 仍须弹',
+      );
+      await tester.tap(find.text('稍后'));
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('#5 错误横幅：setError → 红色横幅 + 可关闭', (tester) async {
       await tester.pumpWidget(buildPanel());
       await tester.pumpAndSettle();

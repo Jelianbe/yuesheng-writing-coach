@@ -265,10 +265,46 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// 批次88-2：菜单已 16 项，底部项在滚动区外 → 打开菜单（若已开则复用）+ 滚动到可见后点击
+  /// P1 重裁（T-20261126-04 · R-027 批号「2026-11-26 四项全批 A」）：
+  /// 菜单由单列 14 项改为 **三 tab**，菜单项按归属落在不同 tab。
+  ///
+  /// 本表是**唯一归属真源**，与 `writing_menu_sheet.dart` 头注释一致；
+  /// 改分组时两处必须同步（否则本文件里跨 tab 的点击会 not found）。
+  /// tab 标签复用原组头字面，故 `写作工具` / `教学` / `设置` 同时是 tab 名。
+  const menuTabOf = <String, String>{
+    // ── 写作工具（默认 tab）──
+    '章节列表': '写作工具',
+    '大纲': '写作工具',
+    '角色': '写作工具',
+    '全文搜索': '写作工具',
+    '查找替换': '写作工具',
+    '回收板': '写作工具',
+    // ── 教学 ──
+    '当前文风': '教学',
+    '写作统计': '教学',
+    '打开教练面板': '教学',
+    '世界观': '教学',
+    '快捷短语': '教学',
+    // ── 设置 ──
+    '排版设置': '设置',
+    '版本时光机': '设置',
+    // 取消跨 tab 恒在
+    '取消': '写作工具',
+  };
+
+  /// 批次88-2：打开菜单（若已开则复用）→ 切到该项所属 tab → 滚动到可见后点击。
+  ///
+  /// P1 重裁新增「切 tab」一步：`menuTabOf` 查不到时**不切**（保持默认 tab 的
+  /// 原行为），这样非菜单项的调用不受影响。
   Future<void> tapMenuScrolled(WidgetTester tester, String label) async {
     if (find.byType(BottomSheet).evaluate().isEmpty) {
       await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+    }
+    final tab = menuTabOf[label];
+    if (tab != null && tab != '写作工具') {
+      // `.first` 是因为该项自身与 tab 标签可能同名（如「教学」组内的项不含同名，但仍防重）
+      await tester.tap(find.text(tab).first);
       await tester.pumpAndSettle();
     }
     final target = find.text(label);
@@ -328,7 +364,10 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
 
-      // E3：占位项已移除，菜单只保留「打开教练面板」（批次79 B 由「诊断本章」改名）
+      // E3：占位项已移除；「打开教练面板」（批次79 B 由「诊断本章」改名）
+      // P1 重裁后它属「教学」tab ⇒ 默认 tab 里不在，需先切 tab
+      await tester.tap(find.text('教学').first);
+      await tester.pumpAndSettle();
       expect(find.text('打开教练面板'), findsOneWidget);
     });
 
@@ -799,10 +838,18 @@ void main() {
       // 打开更多菜单
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
+
+      // P1 重裁后这两项分属不同 tab：
+      //   「排版设置」在「设置」tab，「打开教练面板」在「教学」tab
+      // ⇒ 默认 tab 里两项都不在，必须逐 tab 核实（原断言写在同一屏是旧形态事实）
+      await tester.tap(find.text('设置').first);
+      await tester.pumpAndSettle();
       expect(find.text('排版设置'), findsOneWidget);
+      await tester.tap(find.text('教学').first);
+      await tester.pumpAndSettle();
       expect(find.text('打开教练面板'), findsOneWidget);
 
-      // 进入排版设置（菜单已 16 项，滚动到可见后点击）
+      // 进入排版设置（已切到「设置」tab，项在首屏内）
       await tapMenuScrolled(tester, '排版设置');
 
       expect(find.text('排版设置'), findsOneWidget);
@@ -1059,6 +1106,10 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      // P1 重裁：「版本时光机」现属「设置」tab
+      await tester.tap(find.text('设置').first);
       await tester.pumpAndSettle();
       expect(find.text('版本时光机'), findsOneWidget);
 
@@ -3156,9 +3207,15 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    /// 打开 ⋮ 菜单并点击指定菜单项（先滚动到可见，菜单已 15 项）
+    /// 打开 ⋮ 菜单并点击指定菜单项（先滚到可见）
+    /// P1 重裁：先按 `menuTabOf` 切到该项所属 tab（未登记项保持默认 tab）。
     Future<void> tapMenuText(WidgetTester tester, String text) async {
       await openMenu(tester);
+      final tab = menuTabOf[text];
+      if (tab != null && tab != '写作工具') {
+        await tester.tap(find.text(tab).first);
+        await tester.pumpAndSettle();
+      }
       final target = find.text(text);
       await tester.scrollUntilVisible(
         target,
@@ -3284,9 +3341,15 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    /// 打开 ⋮ 菜单并点击指定菜单项（先滚动到可见，菜单已 16 项）
+    /// 打开 ⋮ 菜单并点击指定菜单项（先滚动到可见）
+    /// P1 重裁：先按 `menuTabOf` 切到该项所属 tab（未登记项保持默认 tab）。
     Future<void> tapMenuText(WidgetTester tester, String text) async {
       await openMenu(tester);
+      final tab = menuTabOf[text];
+      if (tab != null && tab != '写作工具') {
+        await tester.tap(find.text(tab).first);
+        await tester.pumpAndSettle();
+      }
       final target = find.text(text);
       await tester.scrollUntilVisible(
         target,
@@ -4070,6 +4133,109 @@ void main() {
       await tester.tap(find.byIcon(Icons.format_align_left));
       await tester.pumpAndSettle();
       expect(find.text('全文已是当前段落格式'), findsOneWidget);
+    });
+  });
+
+  group('P4：写作页 AppBar 图标语义标签（T-20261126-07）', () {
+    // ─────────────────────────────────────────────────────────────
+    // 来历：硬件加速 AVD 走查（E1）在 `uiautomator dump` 的 `list_clickable`
+    // 里发现写作页两个图标 `content-desc=''` ⇒ 读屏无法识别。
+    // 根因是这两个 `IconButton` 没有 `tooltip`（Flutter 的 Tooltip semantics
+    // 才是 Android `content-desc` 的来源；只加 `Semantics(label:)` 不保证进 dump）。
+    //
+    // 判据分两层，缺一不可：
+    //   ① **源码层**（本组）：4 个 IconButton 全部有 tooltip，且文案逐字等于批准稿
+    //   ② 设备层（AVD）：dump 里无 text/content-desc 双空的可点节点
+    //      —— 源码绿但设备红 = 机制假设错；故设备层不得由本组代替。
+    // ─────────────────────────────────────────────────────────────
+    testWidgets('P4-1 AppBar 每个 IconButton 都有 tooltip（4 == 4）', (tester) async {
+      await tester.pumpWidget(buildWritingPage());
+      await tester.pumpAndSettle();
+
+      final buttons = find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byType(IconButton),
+      );
+      expect(buttons, findsNWidgets(4), reason: 'AppBar 图标数变了 ⇒ 本判据需重核');
+
+      for (final e in buttons.evaluate()) {
+        final w = e.widget as IconButton;
+        expect(
+          w.tooltip,
+          isNotNull,
+          reason: 'AppBar 图标缺 tooltip ⇒ 读屏 content-desc 为空（P4 缺陷）',
+        );
+        expect(w.tooltip!.trim(), isNotEmpty);
+      }
+    });
+
+    testWidgets('P4-2 新增的两条文案逐字等于批准稿：返回 / 更多', (tester) async {
+      await tester.pumpWidget(buildWritingPage());
+      await tester.pumpAndSettle();
+
+      // R-027 批准逐字稿：leading → '返回'；more_vert → '更多'
+      // ★ 逐字节相等，不许改字（改字 = 新的用户可见文本 = 越出本批批号）
+      final leading = tester.widget<IconButton>(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.widgetWithIcon(IconButton, Icons.close),
+        ),
+      );
+      expect(leading.tooltip, '返回');
+
+      final more = tester.widget<IconButton>(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.widgetWithIcon(IconButton, Icons.more_vert),
+        ),
+      );
+      expect(more.tooltip, '更多');
+
+      // 既有两条不许被顺改动
+      expect(
+        tester
+            .widget<IconButton>(
+              find.descendant(
+                of: find.byType(AppBar),
+                matching: find.widgetWithIcon(IconButton, Icons.copy_all),
+              ),
+            )
+            .tooltip,
+        '复制全文',
+      );
+      expect(
+        tester
+            .widget<IconButton>(
+              find.descendant(
+                of: find.byType(AppBar),
+                matching: find.widgetWithIcon(
+                  IconButton,
+                  Icons.format_align_left,
+                ),
+              ),
+            )
+            .tooltip,
+        '一键排版',
+      );
+    });
+
+    testWidgets('P4-3 补标签未改变点击行为：返回键仍触发 onBack', (tester) async {
+      await tester.pumpWidget(buildWritingPage());
+      await tester.pumpAndSettle();
+
+      // 加 tooltip 只是加语义，不得动 onPressed 绑定。
+      // 干净页面点返回 → 直接退出（不弹未保存确认）
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.widgetWithIcon(IconButton, Icons.close),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 未保存确认对话框不应出现（内容未改）
+      expect(find.text('保存并返回'), findsNothing);
+      expect(find.text('放弃修改'), findsNothing);
     });
   });
 

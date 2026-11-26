@@ -3,14 +3,13 @@
 // 真源：yuesheng-android/src/components/onboarding/OnboardingFlow.tsx
 //
 // 结构（对齐 RN）：
-//   - 右上「跳过」（等价 onComplete）
+//   - 右上「跳过」→ onSkip（未传则 onComplete）
 //   - 横滑页（`_pages`，当前 5 页，按标题依次为：我是月笙 / 我能帮你做什么 /
 //     开始使用 / 怎么开始 / 配置 API）—— 页数为数据驱动，增删页只改 `_pages`
 //   - 进度指示点（当前页高亮变宽）
 //   - 底部：非末页「下一步」→ 下一页；末页「开始使用」→ onComplete
 //
-// 显示条件（批次63）：AppStateRepository.getOnboardingCompleted() == false 时
-// 全屏显示；完成后 setOnboardingCompleted(true) 进主壳（启动门在 main.dart）。
+// 显示条件（批次63）：getOnboardingCompleted()==false 时全屏显示，完成后进主壳。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -83,7 +82,8 @@ const List<_OnboardingPage> _pages = [
 
 class OnboardingFlow extends StatefulWidget {
   final VoidCallback onComplete;
-  const OnboardingFlow({super.key, required this.onComplete});
+  final VoidCallback? onSkip; // P3：跳过写 api_config_hint_seen；未传回落 onComplete
+  const OnboardingFlow({super.key, required this.onComplete, this.onSkip});
 
   @override
   State<OnboardingFlow> createState() => _OnboardingFlowState();
@@ -185,7 +185,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(0, AppSpacing.md, AppSpacing.lg, 0),
         child: TextButton(
-          onPressed: widget.onComplete,
+          onPressed: widget.onSkip ?? widget.onComplete,
           child: Text(
             '跳过',
             style: TextStyle(fontSize: 14, color: context.palette.textTertiary),

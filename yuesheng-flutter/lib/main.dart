@@ -205,6 +205,35 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
     await _maybeShowPrivacyNotice();
   }
 
+  /// ★ P3（T-20261126-06 · R-027 批号「2026-11-26 四项全批 A」）：
+  /// 「跳过」的合并完成 —— 一次动作写两个标志。
+  ///
+  /// 改前链路（走查 E1 实测 3 次点击）：
+  ///   冷启动 → onboarding 5 页 → [点1 跳过] → 主壳 → 首次诊断
+  ///   → [点2 nudge 稍后] → [点3 确认] → 稳定主壳
+  ///
+  /// 改后：跳过同时写 `onboarding_completed` + `api_config_hint_seen`
+  /// ⇒ 后续首次诊断不再弹 nudge ⇒ 到达稳定主壳 **1 次点击**。
+  ///
+  /// **代价（已获舰长明示接受）**：跳过的用户不再收到一次性 API 配置提示，
+  /// 改为只靠「设置 → API」入口。onboarding 5 页文案一字未动。
+  ///
+  /// 只挂在「跳过」上；末页「开始使用」仍走 `_completeIntro`（值得看引导的人
+  /// 也可能值得看一眼 Key 提示）。`api_config_hint_seen` 写失败不影响进主壳。
+  Future<void> _completeIntroBySkip() async {
+    try {
+      final db = ref.read(appDatabaseProvider);
+      final repo = AppStateRepository(db);
+      await repo.setOnboardingCompleted(true);
+      await repo.setApiConfigHintSeen(true);
+    } catch (e) {
+      debugPrint('[Intro] 跳过时标志写入失败（不阻断进主壳）: $e');
+    }
+    if (!mounted) return;
+    setState(() => _introDone = true);
+    await _maybeShowPrivacyNotice();
+  }
+
   /// 轮播结束后的一次性隐私与费用告知（与问卷路径共用同一 flag，先到先弹）。
   Future<void> _maybeShowPrivacyNotice() async {
     if (!mounted) return;
@@ -235,7 +264,11 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
         themeMode: ThemeMode.light,
         home: shouldShowLanding()
             ? WebLandingPage(onStart: _completeIntro)
-            : OnboardingFlow(onComplete: _completeIntro),
+            // P3：跳过 → 合并写两标志；末页「开始使用」仍走 _completeIntro
+            : OnboardingFlow(
+                onComplete: _completeIntro,
+                onSkip: _completeIntroBySkip,
+              ),
       );
     }
     if (done == null) {

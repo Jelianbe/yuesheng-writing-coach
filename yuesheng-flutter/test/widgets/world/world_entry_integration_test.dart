@@ -32,6 +32,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   /// 通用 harness：用按钮触发 WritingMenuSheet.show()（对齐 writing_menu_sheet_test）
+  ///
+  /// ★ P1 重裁（T-20261126-04）后菜单改为三 tab：`角色` 在「写作工具」（默认 tab），
+  ///   `世界观` 在「教学」tab ⇒ 断言/点击前必须先切到对应 tab，否则 `find.text`
+  ///   找不到（不是项被删了，是它不在此 tab）。切换用 `switchMenuTab`，**不删断言**。
   Future<void> pumpSheet(
     WidgetTester tester, {
     required VoidCallback onOpenWorlds,
@@ -61,11 +65,23 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// 切到指定 tab（P1 三 tab 后必需；tab 标签即原组头字面）。
+  Future<void> switchMenuTab(WidgetTester tester, String label) async {
+    final tab = find.widgetWithText(Tab, label);
+    if (tab.evaluate().isNotEmpty) {
+      await tester.tap(tab);
+      await tester.pumpAndSettle();
+    }
+  }
+
   group('写作页 ⋮ 菜单「世界观」入口', () {
     testWidgets('新增「世界观」项，且保留既有「角色」项', (tester) async {
       await pumpSheet(tester, onOpenWorlds: () {});
-      expect(find.text('世界观'), findsOneWidget);
+      // `角色` 在默认 tab（写作工具）
       expect(find.text('角色'), findsOneWidget, reason: '不得删除 / 改名既有角色项');
+      // `世界观` 在「教学」tab
+      await switchMenuTab(tester, '教学');
+      expect(find.text('世界观'), findsOneWidget);
     });
 
     testWidgets('点击「世界观」→ onOpenWorlds 触发 + sheet 关闭', (tester) async {
@@ -73,7 +89,8 @@ void main() {
       await pumpSheet(tester, onOpenWorlds: () => called = true);
 
       expect(find.byType(BottomSheet), findsOneWidget);
-      // 「世界观」位于「写作工具」组末位，可能落在首屏外 → 滚动到可见再点
+      // P1 三 tab：「世界观」在「教学」tab；切过去后仍在首屏内，无需滚动。
+      await switchMenuTab(tester, '教学');
       final item = find.text('世界观');
       await tester.scrollUntilVisible(
         item,
