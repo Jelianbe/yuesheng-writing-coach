@@ -18,7 +18,8 @@
 //     （_personaFixture），并打一行 `[降级]` 标记。降级后仍验「文本原样注入 +
 //     态度档被替换」，只是不再证明「文本由 DeepSeek 产出」——那一层由产物本身
 //     的存在性承担。fixture 刻意保留标点 / 换行 / 中文引号形态，不丢注入链覆盖。
-//   ⚠️ 若在主仓（有真实产物）看到 `[降级]`，说明 _readPolished 被改坏了。
+//   ⚠️ 若在主仓（有真实产物）看到 `[降级]`，说明 _readPolished 被改坏了
+//   （`:93` 起的反向哨兵会直接打红）。
 
 import 'dart:io';
 
@@ -87,6 +88,26 @@ void main() {
             '[降级] outputs/polish/persona_$key.txt 缺失 ⇒ '
             '使用内联 fixture（非真实润色产物）',
           );
+        }
+
+        // ★ 反向哨兵（T-20261127-02 补）：产物在盘上 ⇒ 必须走真实文本。
+        // 这三条与 _readPolished 完全独立（自己开 File 读），专门挡三种走偏：
+        //   a) _readPolished 失效恒返回 null ⇒ 静默降级（usingFixture 应为 false）
+        //   b) 读到了但内容被截断 / 改写 ⇒ polished 与磁盘不一致
+        //   c) 交叉错配 key ⇒ 注入的是别人的文本
+        // 干净 clone 无 outputs/polish/ ⇒ 整段不执行（否则就是假红）。
+        final sentinel = File('outputs/polish/persona_$key.txt');
+        if (sentinel.existsSync()) {
+          final onDisk = sentinel.readAsStringSync().trim();
+          expect(onDisk, isNotEmpty, reason: '产物文件存在但为空');
+          expect(
+            usingFixture,
+            isFalse,
+            reason:
+                '真实产物存在（outputs/polish/persona_$key.txt）却走了降级 '
+                '⇒ _readPolished 失效',
+          );
+          expect(polished, onDisk, reason: '注入文本与磁盘产物不一致 ⇒ 读取链被截断或错配');
         }
 
         final persona = CoachPersona(
