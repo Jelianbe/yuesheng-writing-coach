@@ -1,25 +1,29 @@
 // ─────────────────────────────────────────────────────────────
 // WritingMenuBody — ⋮ 菜单的三 tab 主体 + 菜单项呈现组件（P1 重裁，T-20261126-04）
 //
-// 从 `writing_menu_sheet.dart` 拆出（该文件原 339 行，超 R-019 文件级 300 行）。
-// 本拆分是**真分解**：把「菜单内容渲染」这一整个职责搬到自有文件，
-// 而非为过门禁割碎代码。`writing_menu_sheet.dart` 只留「入口 + 可拖拽容器」。
+// 从 `writing_menu_sheet.dart`（原 339 行，超 R-019 文件级 300 行）拆出，是真分解：把
+// 「菜单内容渲染」整条职责搬到自有文件，而非为过门禁割碎。
 //
-// ★ 依赖方向（单向，防循环依赖）：
-//      writing_menu_sheet.dart  ──→  本文件
-//   本文件**不得**反向 import `writing_menu_sheet.dart`——
-//   门禁 3「循环依赖扫描」实测本批曾报
-//   `writing_menu_body -> writing_menu_sheet -> writing_menu_body` 一圈，
-//   根因是主体代码调用 sheet 的 static 组构建函数。修法 = 把组构建函数
-//   搬进本文件（内容渲染本就在这里），sheet 不再被反向依赖。
+// ★ 依赖方向（单向，防循环依赖）：`writing_menu_sheet.dart ──→ 本文件`。
+//   本文件**不得**反向 import —— 门禁 3 曾报 `body -> sheet -> body` 一圈（根因是
+//   主体代码调用 sheet 的 static 组构建函数），已把组构建搬进本文件。
 //
-// 形态：保存状态行（跨 tab 共享）+ 三 tab + 固定「取消」。
-// tab 标签**复用原组头字面**（写作工具/教学/设置）⇒ 零新增用户可见文案。
+// 形态：**固定 TabBar + 滚动区［保存行 + 当前组的项 + 「取消」］**；tab 标签**复用原组头
+// 字面**（写作工具/教学/设置）⇒ 零新增用户可见文案。
 //
-// 为什么不用 `TabBarView`：它要求固定高度或 `Expanded`，而本 sheet 是
-// `SingleChildScrollView` 驱动的可滚动体（`DraggableScrollableSheet` 靠这个
-// controller 才可拖拽扩展）。改为「TabBar 管索引 + 直接渲染当前组」，
-// 拖拽与滚动行为与改前完全一致。
+// ★ R5：TabBar 原在滚动区内 ⇒ 0.30 档滚到底高出容器顶 127.1dp，用户永久看不到
+//   tab 栏（功能级缺陷）。改后提到 `Column` 固定段，滚动区用 Expanded。
+//   **`SaveStatusRow` 留在滚动区**（只 TabBar 有「滚走即功能丧失」，保存行可滚回；
+//   0.30 档可视区仅 192.9dp，再钉 48dp 会压到 3 项）。**钉不钉它都改不掉 R4 的
+//   「取消」裁切** —— 内容减 48 同时视口也减 48，溢出恒等（实测 0.55 档 maxScroll
+//   改前/改后均 34.35）⇒ 卡 §6.3 的「钉住保存行可让裁切自然消失」不成立；
+//   R4 按裁定**只订正读数、不修**（初始态部分可见，滚动即达）。不用 `TabBarView`。
+//
+// ★ R12 可见性声明：**以下符号仅 `features/writing/` 目录内部使用，不得跨 feature
+// `import`**：`WritingMenuItems` / `MenuItem` / `SaveStatusRow` / `menuItem` /
+// `buildWritingToolsGroup` / `buildTeachingGroup` / `buildSettingsGroup`。它们是同一条
+// 渲染职责链，拆出本文件只为消除超长文件与循环依赖，**不是对外契约**；保留 public 是因
+// `writing_menu_sheet.dart` 跨文件调用，Dart 库级私有不可用；要复用应先在本目录内提独立组件。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -96,6 +100,40 @@ class _WritingMenuBodyState extends State<WritingMenuBody>
 
   @override
   Widget build(BuildContext context) {
+    // R5：TabBar 固定在滚动区外（缺陷与依据见类头注释）。
+    return Column(
+      children: [
+        _buildTabBar(context),
+        Expanded(child: _buildScrollBody(context)),
+      ],
+    );
+  }
+
+  /// 固定段：tab 栏。**不得**放回 [_buildScrollBody] 内 —— 一旦随内容滚动，0.30 档
+  /// 滚到底后整条 tab 栏会移出视口（R5 缺陷，E1 实测高出容器顶 127.1dp）。
+  Widget _buildTabBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+      child: TabBar(
+        controller: _tab,
+        labelColor: context.palette.textInk,
+        unselectedLabelColor: context.palette.textSecondary,
+        indicatorColor: context.palette.primary,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: context.palette.border,
+        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 13),
+        tabs: const [
+          Tab(text: '写作工具'),
+          Tab(text: '教学'),
+          Tab(text: '设置'),
+        ],
+      ),
+    );
+  }
+
+  /// 滚动段：保存状态行 + 当前组的项 + 固定「取消」。
+  Widget _buildScrollBody(BuildContext context) {
     return SingleChildScrollView(
       controller: widget.scrollController,
       child: Padding(
@@ -107,24 +145,6 @@ class _WritingMenuBodyState extends State<WritingMenuBody>
           mainAxisSize: MainAxisSize.min,
           children: [
             SaveStatusRow(lastSavedAt: widget.c.lastSavedAt),
-            TabBar(
-              controller: _tab,
-              labelColor: context.palette.textInk,
-              unselectedLabelColor: context.palette.textSecondary,
-              indicatorColor: context.palette.primary,
-              indicatorSize: TabBarIndicatorSize.label,
-              dividerColor: context.palette.border,
-              labelStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-              unselectedLabelStyle: const TextStyle(fontSize: 13),
-              tabs: const [
-                Tab(text: '写作工具'),
-                Tab(text: '教学'),
-                Tab(text: '设置'),
-              ],
-            ),
             ..._itemsFor(context),
             const Divider(height: 20),
             menuItem(
