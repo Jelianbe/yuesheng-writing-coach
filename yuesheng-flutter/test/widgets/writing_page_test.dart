@@ -4220,11 +4220,14 @@ void main() {
     });
 
     testWidgets('P4-3 补标签未改变点击行为：返回键仍触发 onBack', (tester) async {
-      await tester.pumpWidget(buildWritingPage());
+      var backCalled = false;
+      await tester.pumpWidget(
+        buildWritingPage(onBack: () => backCalled = true),
+      );
       await tester.pumpAndSettle();
 
       // 加 tooltip 只是加语义，不得动 onPressed 绑定。
-      // 干净页面点返回 → 直接退出（不弹未保存确认）
+      // 干净页面点返回 → 直接退出（不弹未保存确认），且 onBack 必须被调用。
       await tester.tap(
         find.descendant(
           of: find.byType(AppBar),
@@ -4232,6 +4235,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      // ★ 关键新增：用例名承诺的性质，之前一条断言都没测
+      expect(backCalled, isTrue, reason: '点 ✕ 未触发 onBack ⇒ onPressed 绑定被改坏');
 
       // 未保存确认对话框不应出现（内容未改）
       expect(find.text('保存并返回'), findsNothing);
