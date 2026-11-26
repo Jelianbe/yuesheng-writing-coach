@@ -159,17 +159,80 @@ _ev_write_baseline() { # $1=path $2=count $3=reason [$4="<suite_size> <fingerpri
 #
 # 输出：`<用例数> <sha256 前 16>`；取不到 ⇒ **空串**（调用方必须按「不判」处理，
 # 不许当 PASS —— 与 P2「取不到 +N 不判」同族）。
+#
+# ★★ T-20261127-01（2026-11-26）：抽名必须走 **JSON 解码**，不能用文本正则。
+#   旧实现 `sed -nE 's/.*"test":\{"id":[0-9]+,"name":"([^"]*)".*/\1/p'`
+#   的 `([^"]*)` 遇到用例名**内部的转义双引号 `\"`** 就停住，`.*` 再吞掉余下部分
+#   ⇒ 名字被**静默截断**，不报错、不告警。实测（`test-20261126-174335-1689.json`）：
+#     现判据 5832 / `81c334613f9035f6`  vs  真值 5836 / `0839bf532b2c0eff`（差 4）
+#   后果不是「数字小了 4」，而是 **F1 在她唯一要防的形态上失效**：
+#     名字含双引号的用例共 **59 条**（0.92%），同截断前缀的两条在指纹里**互为替身**
+#     ⇒ 「删 A 补 C（C 与 A 同前缀）」时指纹与例数都不变 ⇒ P2 判 PASS。
+#     实测 4/4 组命中，见 `.ai/tools/audit_suite_fingerprint.py --mutate`。
+#   ⚠️ 边界（别把本条读大）：「删光整组」**不会漏** —— `+N` 降 1，净数判据自己就拦住了。
+#     洞只在「净数完全不变」这一形态，而那正是 F1 存在的全部理由。
+#
+# ★ 为什么用 `PY_BIN` 且自带兜底：
+#   `gate.sh:302` 已有「python3 优先 / python 兜底 / 都无则空」的统一探测。
+#   本库被 `source` 时可能拿不到那个变量（自测就是这种情况）⇒ 自己兜底探测一次，
+#   但**只用局部变量**，不污染调用方的 `PY_BIN`（本库「不许有副作用」）。
+# ★ 取不到时**必须输出空串**，不许输出 `0 <hash>`：后者会被 P2 当成
+#   「例集 0 例」而撞上一切（假红），或被基线 0 例吞掉（假绿）。空串走「不判」。
 _ev_suite_fingerprint() { # $1=json 报告
-  local f="${1:-}" body n fp
+  local f="${1:-}" body n fp py
   [ -f "$f" ] || return 0
-  body="$(grep '"type":"testStart"' "$f" 2>/dev/null \
-    | sed -nE 's/.*"test":\{"id":[0-9]+,"name":"([^"]*)".*/\1/p' \
-    | grep -v '^loading ' || true)"
+  py="${PY_BIN:-}"
+  if [ -z "$py" ]; then
+    if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
+      py=python3
+    elif command -v python >/dev/null 2>&1 && python -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
+      py=python
+    fi
+  fi
+  # 无 python ⇒ 输出空串（调用方走「例集指纹未判」）。这是**有意的**：
+  # 宁可这条判据不出结论，也不许用正则凑一个错的身份。
+  [ -z "$py" ] && return 0
+  # ★ 计数与哈希都必须在 python 内完成，**不能**用 `wc -l` 数行：
+  #   实测（`test-20261126-174335-1689.json`）有 **2 条用例名内含真实换行符**
+  #   （如 `buildStructuredConstraints 字段映射 #7 多字段合并为多行（\n 分隔…）`，
+  #    JSON 里是 `\n` 转义，解码后是真换行）⇒ 一行输出被 `wc -l` 数成两行
+  #   ⇒ 计数虚高 2（5838 而非 5836），而指纹是对的。
+  #   ⚠️ 旧实现没有这个问题，因为正则在行内抽名、根本不可能带回换行 ——
+  #      这是**本改动自己引入**的新失败面，必须在本函数内堵掉。
+  body="$("$py" -c '
+import hashlib, json, sys
+names = []
+try:
+    with open(sys.argv[1], encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            if "\"type\":\"testStart\"" not in line:
+                continue
+            try:
+                o = json.loads(line)
+            except Exception:
+                # 单行解不出就跳过（报告可能被截断），不影响其余行。
+                continue
+            t = o.get("test") or {}
+            n = t.get("name") or ""
+            # 「loading <file>」是 suite 加载事件，不是用例，必须剔除（与旧口径一致）。
+            if n.startswith("loading "):
+                continue
+            names.append(n)
+except OSError:
+    sys.exit(0)
+uniq = sorted(set(names))
+if not uniq:
+    sys.exit(0)
+# ★ 哈希输入必须与旧实现**逐字节同构**（`LC_ALL=C sort -u` 后 join 换行 + 结尾换行），
+#   否则「不含引号的 99% 用例」指纹也会平移 ⇒ 无法证明「只修了坏的那部分」。
+#   ⚠️ 残留歧义（已知、有界、不修）：若某用例名本身含换行，它与「两行同名」在
+#      该输入格式下同形。旧实现不可能产出含换行的名，故这是本改动带来的新的理论面；
+#      实测触发前提是「某名恰好等于另两名以换行拼接」，见自测 S2n 记录。
+payload = "\n".join(uniq) + "\n"
+sys.stdout.write("%d %s" % (len(uniq), hashlib.sha256(payload.encode()).hexdigest()[:16]))
+' "$f" 2>/dev/null || true)"
   [ -z "$body" ] && return 0
-  body="$(printf '%s\n' "$body" | LC_ALL=C sort -u)"
-  n="$(printf '%s\n' "$body" | wc -l | tr -d ' ')"
-  fp="$(printf '%s\n' "$body" | sha256sum | cut -c1-16)"
-  printf '%s %s' "$n" "$fp"
+  printf '%s' "$body"
 }
 
 # 基线陈旧提醒（T-20261027-03 F2 的 C 部分）：

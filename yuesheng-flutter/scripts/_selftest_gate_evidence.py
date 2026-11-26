@@ -70,7 +70,7 @@ VERBOSE = "-v" in sys.argv or "--verbose" in sys.argv
 #   `_probe_can_report_failure()` 里也有一行 `probe("__SANITY__", …)`（且它故意
 #   不计入条数）⇒ 那个 grep 现在回 **36**，与实跑的 35 差 1。用错的判据去核这个
 #   常量，会得出「常量写错了」的假结论 —— 这正是本仓反复踩的那类坑。
-EXPECTED_PROBE_COUNT = 46
+EXPECTED_PROBE_COUNT = 49
 EXPECTED_PROBE_NAMES = (
     "S0-green",
     "S1-no-summary",
@@ -85,6 +85,10 @@ EXPECTED_PROBE_NAMES = (
     "S2e-bad-provenance",
     "S2h-f1-fingerprint-match",
     "S2i-f1-fingerprint-mismatch",
+    # T-20261127-01：抽名从正则换 JSON 解码，三条一起证明「该红的红 / 不该红的不红」
+    "S2j-f1-quoted-collision-gone",
+    "S2k-f1-plain-names-unchanged",
+    "S2l-f1-no-python-empty",
     "S2f-unparseable",
     "S2g-update-env",
     "S3-write-error",
@@ -352,6 +356,65 @@ def main():
     rc, out, _ = run_ev("ev_p2_count", green, bad)
     probe("S2i-f1-fingerprint-mismatch", rc == 1 and "例集变了" in out,
           "★ 例集变了、净数不变（F-2 的形态）⇒ FAIL（rc=%d）" % rc)
+
+    # ---- T-20261127-01：抽名换 JSON 解码（修「用例名含双引号即截断」）----
+    #
+    # 【为什么必须新增这三条】现有 S2h/S2i 的夹具是 `alpha case` / `beta case`，
+    #   **都不含双引号** ⇒ 旧实现（正则 `([^"]*)` 遇转义 `\"` 停住）在它们上面永远不红。
+    #   实测：旧实现对「点击"设置"」/「点击"版本"」两条算出**同一个指纹**
+    #   （都是 `cdd4183e...`），与只保留其中一条时完全相同 —— 两条用例互为替身。
+    #   ⇒ 不补探针，本次修复就只是「换了个数」，没有「修好」的证据（A3c ③）。
+    #
+    # 【三条的分工（双向）】
+    #   S2j = 该红的红：含引号的两条**必须**算出 2 个身份，不能塌成 1 个。
+    #   S2k = 不该红的不红：零转义用例的指纹**必须**与旧实现逐字节一致（不误伤 99%）。
+    #   S2l = 退化防护：无 python 时**必须**输出空串，不许伪造 `0 <hash>`。
+    quoted = os.path.join(d, "quoted.json")
+    write(quoted,
+          '{"test":{"id":1,"name":"点击\\"设置\\" → 触发","suiteID":0},"type":"testStart"}\n'
+          '{"test":{"id":2,"name":"点击\\"版本\\" → 触发","suiteID":0},"type":"testStart"}\n')
+    _, q_out, _ = run_ev("_ev_suite_fingerprint", quoted)
+    q_parts = q_out.split(" ")
+    q_n = q_parts[0] if q_parts else ""
+    q_fp = q_parts[1] if len(q_parts) > 1 else ""
+    # 单条同名对照：只留「设置」那条
+    quoted1 = os.path.join(d, "quoted1.json")
+    write(quoted1,
+          '{"test":{"id":1,"name":"点击\\"设置\\" → 触发","suiteID":0},"type":"testStart"}\n')
+    _, q1_out, _ = run_ev("_ev_suite_fingerprint", quoted1)
+    q1_parts = q1_out.split(" ")
+    q1_n = q1_parts[0] if q1_parts else ""
+    q1_fp = q1_parts[1] if len(q1_parts) > 1 else ""
+    probe("S2j-f1-quoted-collision-gone",
+          q_n == "2" and q_fp != "" and q_fp != q1_fp,
+          "含引号两条 ⇒ 必须算出 2 个身份且指纹异于单条（两条=%s/%s, 单条=%s/%s）"
+          % (q_n, q_fp, q1_n, q1_fp))
+
+    # S2k：零转义用例的指纹必须与「LC_ALL=C sort -u + sha256」逐字节同构。
+    #   这里在 python 侧独立算一遍期望值，**不调用被测函数**，避免自证。
+    plain = os.path.join(d, "plain.json")
+    names = ["普通用例 A", "普通用例 B", "普通用例 C"]
+    write(plain, "".join(
+        '{"test":{"id":%d,"name":"%s","suiteID":0},"type":"testStart"}\n'
+        % (i + 1, n) for i, n in enumerate(names)))
+    import hashlib
+    expect_payload = "\n".join(sorted(set(names))) + "\n"
+    expect_fp = hashlib.sha256(expect_payload.encode()).hexdigest()[:16]
+    _, p_out, _ = run_ev("_ev_suite_fingerprint", plain)
+    probe("S2k-f1-plain-names-unchanged",
+          p_out == "3 " + expect_fp,
+          "零转义用例 ⇒ 指纹必须等于独立算出的 C-sort+sha256（实测 %s，期望 3 %s）"
+          % (p_out, expect_fp))
+
+    # S2l：无 python ⇒ 空串。用 PATH 遮蔽（保留 bash 内建，故 printf/echo 仍可用）。
+    #   ⚠️ 不测「rc 是否为 0」：无 python 时函数已 return 0（不判），rc 不构成区分度；
+    #      唯一要断的就是「不许产出非空指纹」。
+    empty_dir = os.path.join(d, "nopybin")
+    os.makedirs(empty_dir, exist_ok=True)
+    np_out = run_ev("_ev_suite_fingerprint", green_json, env={"PATH": empty_dir})[1]
+    probe("S2l-f1-no-python-empty",
+          np_out == "",
+          "无 python ⇒ 必须输出空串（不判），实测 [%s]" % np_out)
 
     rc, out, _ = run_ev("ev_p2_count", nosum, base100)
     probe("S2f-unparseable", rc == 0 and "归因 P1" in out,
