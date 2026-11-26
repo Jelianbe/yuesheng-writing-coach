@@ -142,6 +142,9 @@ SOURCE_EXIT_LOG="$OUT_DIR/source_exit.txt"
 # 否则「自测跑过」与「自测没跑」在事后看只差一个没人读的 stdout。
 SELFTEST_EVID_LOG="$OUT_DIR/selftest_gate_evidence.txt"
 
+# 记忆准入守卫的日志（WARN 级守卫，不计入二十道）。T-20261127-02。
+MEMORY_ADMISSION_LOG="$OUT_DIR/memory_admission.txt"
+
 # P4b 证据文件：由 scripts/_run_flutter_test.sh 在决定 COV_FLAG 之后写入（T-20261025-04）。
 # 放在 OUT_DIR（已被 .gitignore 忽略）⇒ 不污染 git status。
 # ⚠️ 起跑时**立刻删掉**上一轮留下的那一份，本轮的证据只能由本轮的 wrapper 产生。
@@ -1171,6 +1174,48 @@ else
   fi
 fi
 
+# ---------- 约定层守卫：记忆准入（S6 · 2026-11-26 起接，WARN 级）----------
+#
+# 【为什么必须挂进来】`check_memory_admission.py` 建成后只能**手工跑**。
+#   「有闸」与「闸会在交付前自动落」是两件事 —— 不挂载的判据等于零覆盖。
+#   本项目已实测过一次代价：用户级记忆从 2614 字符长回 22863（+775%），
+#   其中 306 行是过期数字沿革，导致跨会话反复引用失效读数（`DECISIONS §4-580`）。
+#   记忆包是「活文档」，没有机器闸就一定重新膨胀。
+#
+# 【为什么是 WARN 不是 FAIL】与 S5 同理：它守的是**协作者的记忆包**，
+#   不是产品。让它阻断交付，会让「我的记忆写超了」挡住产品上线。
+#   但**必须喊出来且必须进报告**：静默的 WARN 等于没跑。
+#
+# 【为什么可以「不判」】记忆文件在用户目录（仓外），干净 clone / CI 上没有。
+#   ⇒ 读不到就 SKIP，**不许**当成 PASS，也不许 FAIL（那是环境差异不是缺陷）。
+#   这条边界写在判据自己的输出里，不靠读者去猜。
+#
+# 【归因】前缀 `[WARN] 记忆准入` 且不带 `[FAIL] P<n>` ⇒ 不污染门禁 2 的单点归因。
+echo "--> 约定层守卫: 记忆准入（S6，WARN 级，2026-11-26 起接）"
+MEMORY_ADMISSION_VERDICT="SKIP"
+MEM_SCRIPT="$ROOT/../.ai/tools/check_memory_admission.py"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过记忆准入守卫"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$MEMORY_ADMISSION_LOG"
+elif [ ! -f "$MEM_SCRIPT" ]; then
+  echo "  [SKIP] 记忆准入判据不在（$MEM_SCRIPT）——台账仓未挂载时属正常，非漂移"
+  echo "SKIP: (NOT EXECUTED) check_memory_admission.py not found" > "$MEMORY_ADMISSION_LOG"
+else
+  # --strict：有硬伤即 rc=1。判据自身失败（rc=2）也归 WARN，不当 SKIP ——
+  #   空扫等于没检查（与门禁 11 的 G1 同族纪律）。
+  if "$PY_BIN" "$MEM_SCRIPT" --strict > "$MEMORY_ADMISSION_LOG" 2>&1; then
+    MEMORY_ADMISSION_VERDICT="PASS"
+    echo "  [INFO] 记忆准入 rc=0（只证明本次检查无硬伤，不证明记忆内容长期有效）"
+    sed -n 's/^  体量：/         体量：/p' "$MEMORY_ADMISSION_LOG" | head -n 2
+  else
+    MEMORY_ADMISSION_VERDICT="WARN"
+    echo "  [WARN] 记忆准入失败——详见 $MEMORY_ADMISSION_LOG"
+    echo "         处置：按判据逐条修（E1 压缩 / E2 补「去哪跑」/ W1 并列日期改一句结论）"
+    echo "         命令：python .ai/tools/check_memory_admission.py --strict"
+    tail -n 12 "$MEMORY_ADMISSION_LOG"
+  fi
+fi
+
 # ---------- 汇总报告 ----------
 #
 # 判定一律以**退出码**为准（2026-09-03 实证）：旧版对循环依赖用
@@ -1235,6 +1280,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | S1 诊断链字段三级贯通 | ${SURFACE_VERDICT} | outputs/gate/surface_visibility.txt |
 | S4 真源→出口对账 | ${SOURCE_EXIT_VERDICT} | outputs/gate/source_exit.txt |
 | S5 证据链判据自测 | ${SELFTEST_EVID_VERDICT} | outputs/gate/selftest_gate_evidence.txt |
+| S6 记忆准入（用户级记忆包） | ${MEMORY_ADMISSION_VERDICT} | outputs/gate/memory_admission.txt |
 
 > 这 4 项**不是**二十道之一，**不进**上方「汇总」的 pass/fail/SKIP 计数。
 > 「不进道数」不等于「不用看」：任一「WARN」都表示对应守卫当场要处置（补读侧 / 登记豁免 / 查判据是否退化）。
