@@ -5,6 +5,12 @@
 //   - ID 升序连续（P001 起，逐号递增，ID 永不复用）
 //   - 字段非空 / 枚举合法 / 技法与动作 ID 在对应库存在
 // 各库与注册表的渲染一致性断言见 four_libraries_consistency_test。
+//
+// ★ 跨仓依赖：本文件 1 例（C2 取值表对表）读
+//   `../.ai/reports/2026-11-09-39条needsCrossWorkReference取值表.md`。
+//   `.ai/` 是独立 git 仓、不入公仓 ⇒ 只 clone 公仓时该用例会被**显式 skip**
+//   （带缺失路径与补法），不是静默通过。在有 `../.ai/` 的工作区上必须真跑并通过
+//   —— 若在主仓也 skip，说明同步链断了（`DECISIONS §4-579` / `T-20261126-11`）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -398,7 +404,18 @@ void main() {
       final file = File(
         '../.ai/reports/2026-11-09-39条needsCrossWorkReference取值表.md',
       );
-      expect(file.existsSync(), isTrue, reason: '缺取值表 ${file.path}');
+      // ★ 跨仓依赖缺件 ⇒ 显式 skip 后 return（不是 expect 变红、也不是静默 pass）。
+      //   `markTestSkipped` 只置 Result.skipped 并继续执行，之后任何异常都会把
+      //   状态改写成 Result.error ⇒ 必须 return（实测 test_api 0.7.11）。
+      if (!file.existsSync()) {
+        markTestSkipped(
+          '跳过：缺少跨仓依赖 ${file.path}'
+          '（解析为 ${file.absolute.path}）。'
+          '`.ai/` 是独立 git 仓，不入公仓；补齐方式：'
+          '在有权限的工作区执行 `git clone <ai-workspace> ../.ai` 或从主仓同步该目录。',
+        );
+        return;
+      }
       final table = <String, bool>{};
       final row = RegExp(
         r'^\|\s*(P\d{3})\s*\|[^|]*\|\s*\*{0,2}(true|false)\*{0,2}\s*\|',

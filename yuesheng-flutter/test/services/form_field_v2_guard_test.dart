@@ -20,6 +20,11 @@
 // ⚠️ 诚实边界：R3/R4 的标注重放用的是**人工写死的 form 标注**（按组合⑤
 //   人工读原文判定），不是 LLM 产出 —— 层 2 验的是**闸逻辑**，
 //   不是「LLM 会不会照标注输出」（那是层 3 重跑的职责）。
+//
+// ★ 跨仓依赖：本文件 4 例读 `../.ai/research/cross-validation/data/w23/w23_cells.json`。
+//   `.ai/` 是独立 git 仓、不入公仓 ⇒ 只 clone 公仓时这些用例会被**显式 skip**
+//   （带缺失路径与补法），不是静默通过。在有 `../.ai/` 的工作区上必须真跑并通过
+//   —— 若在主仓也 skip，说明同步链断了（`DECISIONS §4-579` / `T-20261126-11`）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -49,11 +54,33 @@ Directory _findPackageRoot() {
 
 final Directory _root = _findPackageRoot();
 
-/// 读仓内文件（W-23 锚点数据在 .ai 仓内，测试按相对路径定位）。
-String _readRepoFile(String relPath) {
+/// 读仓内文件（W-23 锚点数据在 `.ai` 独立仓内，测试按相对路径定位）。
+///
+/// ★ 缺件时 `markTestSkipped` 并返回 `null`（**不是 throw**）：
+///   `.ai/` 是**独立 git 仓**、被公仓 `.gitignore` 排除 ⇒ 只 clone 公仓的人
+///   （新机器 / CI / 协作方）**必然没有 `../.ai/`**。直接抛错会让本文件 4 例
+///   在任何 clean clone 上永久必红，而失败形态「源文件不存在」与「测试真失败」
+///   外观相同 ⇒ 下一个人会去查代码，根因却是环境缺件（`DECISIONS §4-579`）。
+///
+/// ★ 但**不许静默 pass**：skip 消息必须带「缺哪个文件 + 怎么补」，
+///   否则变成「永远绿但没测」，比必红更糟（`T-20261126-11` 判据 1）。
+///
+/// ★ 必须返回 `null` 让调用点 `return`，**不能 `throw`**：
+///   实测 `test_api 0.7.11` 的 `markTestSkipped` 只把状态置 `Result.skipped`
+///   然后**继续执行**；之后任何异常都会被 `_handleError` 改写成 `Result.error`
+///   ⇒ 用例变红（`+0 ~1 -1`）。其文档原文亦为「若整个用例应跳过，标记后
+///   从用例体 `return`」。
+///
+/// ★ 主仓（有 `../.ai/`）上必须**仍真跑**：skip 不是常态，是缺件的显式降级。
+String? _readRepoFile(String relPath) {
   final f = File('${_root.path}/$relPath');
   if (!f.existsSync()) {
-    throw StateError('源文件不存在：$relPath（root=${_root.path}）');
+    markTestSkipped(
+      '跳过：缺少跨仓依赖 $relPath（root=${_root.path}）。'
+      '`.ai/` 是独立 git 仓，不入公仓；补齐方式：'
+      '在有权限的工作区执行 `git clone <ai-workspace> ../.ai` 或从主仓同步该目录。',
+    );
+    return null;
   }
   return f.readAsStringSync();
 }
@@ -168,11 +195,12 @@ void main() {
       // evidence 条数**相同**（3=3）而形态结论相反。
       // 本测试把该事实固化为可执行断言：若未来数据变化导致两格 evidence
       // 不再都是 3 条，说明锚点数据变了 ⇒ 本护栏的推导前提失效 ⇒ 需复核。
-      final doc = json.decode(
-        _readRepoFile(
-          '../.ai/research/cross-validation/data/w23/w23_cells.json',
-        ),
+      final raw = _readRepoFile(
+        '../.ai/research/cross-validation/data/w23/w23_cells.json',
       );
+      // 跨仓依赖缺件 ⇒ 上面已 markTestSkipped，此处必须返回（不可继续 json.decode）。
+      if (raw == null) return;
+      final doc = json.decode(raw);
       final cells = {
         for (final c in (doc['cells'] as List)) c['cell_id'] as String: c,
       };
@@ -624,11 +652,12 @@ void main() {
     }
 
     test('★ 形态标注表覆盖 X01/X22 全部 20 格（防漏标注）', () {
-      final doc = json.decode(
-        _readRepoFile(
-          '../.ai/research/cross-validation/data/w23/w23_cells.json',
-        ),
+      final raw = _readRepoFile(
+        '../.ai/research/cross-validation/data/w23/w23_cells.json',
       );
+      // 跨仓依赖缺件 ⇒ 上面已 markTestSkipped，此处必须返回（不可继续 json.decode）。
+      if (raw == null) return;
+      final doc = json.decode(raw);
       final cells = (doc['cells'] as List).cast<Map<String, dynamic>>();
       final anchorIds = cells
           .map((c) => c['cell_id'] as String)
@@ -646,11 +675,12 @@ void main() {
     });
 
     test('★ R3 · X22 零回退：v2 焦点 P002 格数只增不减（预期 4→8）', () {
-      final doc = json.decode(
-        _readRepoFile(
-          '../.ai/research/cross-validation/data/w23/w23_cells.json',
-        ),
+      final raw = _readRepoFile(
+        '../.ai/research/cross-validation/data/w23/w23_cells.json',
       );
+      // 跨仓依赖缺件 ⇒ 上面已 markTestSkipped，此处必须返回（不可继续 json.decode）。
+      if (raw == null) return;
+      final doc = json.decode(raw);
       final cells = (doc['cells'] as List).cast<Map<String, dynamic>>();
 
       var v1P002 = 0;
@@ -687,11 +717,12 @@ void main() {
     });
 
     test('★ R4 · X01 零放大：v2 焦点 P002 格数不增（陷阱格不得翻）', () {
-      final doc = json.decode(
-        _readRepoFile(
-          '../.ai/research/cross-validation/data/w23/w23_cells.json',
-        ),
+      final raw = _readRepoFile(
+        '../.ai/research/cross-validation/data/w23/w23_cells.json',
       );
+      // 跨仓依赖缺件 ⇒ 上面已 markTestSkipped，此处必须返回（不可继续 json.decode）。
+      if (raw == null) return;
+      final doc = json.decode(raw);
       final cells = (doc['cells'] as List).cast<Map<String, dynamic>>();
 
       var v1P002 = 0;
