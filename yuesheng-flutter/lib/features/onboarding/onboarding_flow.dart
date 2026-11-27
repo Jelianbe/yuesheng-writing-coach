@@ -4,12 +4,16 @@
 //
 // 结构（对齐 RN）：
 //   - 右上「跳过」→ onSkip（未传则 onComplete）
-//   - 横滑页（`_pages`，当前 5 页，按标题依次为：我是月笙 / 我能帮你做什么 /
-//     开始使用 / 怎么开始 / 配置 API）—— 页数为数据驱动，增删页只改 `_pages`
+//   - 横滑页（`onboardingPages`，见 `onboarding_pages.dart`，当前 5 页）——
+//     页数为数据驱动，增删页只改那个文件的清单
 //   - 进度指示点（当前页高亮变宽）
 //   - 底部：非末页「下一步」→ 下一页；末页「开始使用」→ onComplete
 //
 // 显示条件（批次63）：getOnboardingCompleted()==false 时全屏显示，完成后进主壳。
+//
+// ⚠️ 数据层（`OnboardingPage` / `onboardingPages`）已切至
+//    `onboarding_pages.dart`（`T-20261126-08`：本文件撞 300 行硬上限、容差 0）。
+//    那 61 行是**数据清单**，与 `skill_registry` 同型拆法，非伪拆分。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -17,68 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:writingcoach/config/app_motion.dart';
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/config/app_palette.dart';
-
-/// 引导页数据（对齐 RN PAGES）
-class _OnboardingPage {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String? description;
-  final List<({String text, String desc, IconData icon})>? features;
-
-  const _OnboardingPage({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.description,
-    this.features,
-  });
-}
-
-const List<_OnboardingPage> _pages = [
-  _OnboardingPage(
-    icon: Icons.person,
-    title: '我是月笙',
-    subtitle: '你的专属写作教练',
-    description: '陪你一起发现写作问题，拆解练习，持续成长',
-  ),
-  _OnboardingPage(
-    icon: Icons.auto_awesome,
-    title: '我能帮你做什么',
-    subtitle: '三大核心能力',
-    features: [
-      (text: '智能诊断', desc: '发现写作中的问题', icon: Icons.search),
-      (text: '拆解练习', desc: '针对性提升技能', icon: Icons.build),
-      (text: '追踪成长', desc: '记录进步轨迹', icon: Icons.trending_up),
-    ],
-  ),
-  _OnboardingPage(
-    icon: Icons.rocket_launch,
-    title: '开始使用',
-    subtitle: '开启写作之旅',
-    description: '导入你的作品，让我来帮你诊断和提升',
-  ),
-  _OnboardingPage(
-    icon: Icons.explore,
-    title: '怎么开始',
-    subtitle: '三步用起来',
-    features: [
-      (text: '选中文字', desc: '划词即可诊断', icon: Icons.gesture),
-      (text: '导入作品', desc: '带来你的初稿', icon: Icons.upload_file),
-      (text: '问月笙', desc: '随时聊写作', icon: Icons.chat_bubble_outline),
-    ],
-  ),
-  _OnboardingPage(
-    icon: Icons.vpn_key,
-    title: '配置 API',
-    subtitle: '解锁完整功能',
-    description:
-        '本应用需接入你自己的 AI 服务商 API 才能做真实诊断与教学；'
-        '未配置时可用免费测试模式（离线示例）体验。怎么获取：去服务商官网注册'
-        '（DeepSeek 为 platform.deepseek.com）→ 在「设置 → API」填入 '
-        'Key / Base URL / 模型。费用按用量计入你的服务商账户。',
-  ),
-];
+import 'package:writingcoach/features/onboarding/onboarding_pages.dart';
 
 class OnboardingFlow extends StatefulWidget {
   final VoidCallback onComplete;
@@ -110,7 +53,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
-    final isLast = _page == _pages.length - 1;
+    final isLast = _page == onboardingPages.length - 1;
     return Scaffold(
       backgroundColor: context.palette.background,
       body: SafeArea(
@@ -120,9 +63,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: _pages.length,
+                itemCount: onboardingPages.length,
                 onPageChanged: (index) => setState(() => _page = index),
-                itemBuilder: (context, index) => _buildPage(_pages[index]),
+                itemBuilder: (context, index) =>
+                    _buildPage(onboardingPages[index]),
               ),
             ),
             _buildProgressDots(),
@@ -134,7 +78,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     );
   }
 
-  Widget _buildPage(_OnboardingPage page) {
+  Widget _buildPage(OnboardingPage page) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
@@ -198,7 +142,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   Widget _buildProgressDots() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_pages.length, (i) {
+      children: List.generate(onboardingPages.length, (i) {
         final active = i == _page;
         return AnimatedContainer(
           duration: AppMotion.durationStandard,
