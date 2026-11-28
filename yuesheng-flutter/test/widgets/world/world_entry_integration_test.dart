@@ -77,10 +77,10 @@ void main() {
   group('写作页 ⋮ 菜单「世界观」入口', () {
     testWidgets('新增「世界观」项，且保留既有「角色」项', (tester) async {
       await pumpSheet(tester, onOpenWorlds: () {});
-      // `角色` 在默认 tab（写作工具）
-      expect(find.text('角色'), findsOneWidget, reason: '不得删除 / 改名既有角色项');
-      // `世界观` 在「教学」tab
+      // 2026-11-28 戊方案（DECISIONS §4-611）：`角色` 已由「写作工具」移入「教学」
+      // ⇒ 「角色」与「世界观」现在**同在「教学」tab**，必须先切 tab 再断言。
       await switchMenuTab(tester, '教学');
+      expect(find.text('角色'), findsOneWidget, reason: '不得删除 / 改名既有角色项');
       expect(find.text('世界观'), findsOneWidget);
     });
 
@@ -115,7 +115,21 @@ void main() {
         onOpenCharacters: () => characters = true,
       );
 
-      await tester.tap(find.text('角色'));
+      // 2026-11-28 戊方案（DECISIONS §4-611）：`角色` 在「教学」tab 第 5 项
+      // ⇒ 先切 tab，再滚到可见（默认 800×600 下第 5 项超出视口）后点击。
+      await switchMenuTab(tester, '教学');
+      final target = find.text('角色');
+      await tester.scrollUntilVisible(
+        target,
+        60,
+        scrollable: find
+            .descendant(
+              of: find.byType(BottomSheet),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.tap(target);
       await tester.pumpAndSettle();
 
       expect(characters, isTrue);
