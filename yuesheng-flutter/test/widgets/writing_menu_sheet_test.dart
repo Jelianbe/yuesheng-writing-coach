@@ -505,7 +505,7 @@ void main() {
       //
       // ★ 计数口径（易错，务必读完再改本用例）：
       //   卡面的「14」是**单列形态**下的 14 个可点项。A 案分成三 tab 后，
-      //   这些项分布在三个 tab 里（写作工具 6 + 教学 5 + 设置 2 = 13 个功能项，
+      //   这些项分布在三个 tab 里（写作工具 5 + 教学 6 + 设置 2 = 13 个功能项，
       //   外加跨 tab 恒在的「取消」= 14）⇒ 用户一次只看到一个 tab，
       //   **单个 tab 最多 7 项，不可能单 tab 达 12**。
       //   ⇒ 故「≥12」必须在**跨 tab 合计**上判：13 功能项 + 1 取消 = 14 个可点入口。
@@ -543,11 +543,12 @@ void main() {
       var total = 0;
       final report = <String>[];
 
-      // ── tab 1「写作工具」：5 项功能入口 + 取消（戊方案 5/6/2） ──
+      // ── tab 1「写作工具」：5 项功能入口（戊方案 5/6/2） ──
+      // 「取消」不放进任何 tab 的功能项列表，只在回到默认 tab 后计一次。
       const writingTools = ['章节列表', '全文搜索', '查找替换', '快捷短语', '回收板'];
-      final wtVisible = visibleOn('写作工具', [...writingTools, '取消']);
+      final wtVisible = visibleOn('写作工具', writingTools);
       total += wtVisible.length;
-      report.add('写作工具 ${wtVisible.length}/${writingTools.length + 1}');
+      report.add('写作工具 ${wtVisible.length}/${writingTools.length}');
 
       // ── 三 tab 的「取消」读数：**先采集、后断言**（见下方注释） ──
       //
@@ -581,15 +582,15 @@ void main() {
 
       await collectCancel('教学');
       const teaching = ['当前文风', '写作统计', '打开教练面板', '世界观', '角色', '大纲'];
-      final tVisible = visibleOn('教学', [...teaching, '取消']);
+      final tVisible = visibleOn('教学', teaching);
       total += tVisible.length;
-      report.add('教学 ${tVisible.length}/${teaching.length + 1}');
+      report.add('教学 ${tVisible.length}/${teaching.length}');
 
       await collectCancel('设置');
       const settings = ['排版设置', '版本时光机'];
-      final sVisible = visibleOn('设置', [...settings, '取消']);
+      final sVisible = visibleOn('设置', settings);
       total += sVisible.length;
-      report.add('设置 ${sVisible.length}/${settings.length + 1}');
+      report.add('设置 ${sVisible.length}/${settings.length}');
 
       // 默认 tab 必须**最后**采集前先回到它（上面已经切到「设置」）
       await switchTab(tester, '写作工具');
@@ -607,6 +608,12 @@ void main() {
             .state<ScrollableState>(scrollable.first)
             .position
             .maxScrollExtent;
+
+        // 分母 14 = 13 个功能项 + 1 个跨 tab 恒在的「取消」。
+        // 以默认 tab 为唯一计数位；三 tab 的可得性仍在下方逐 tab 验证。
+        final cancelVisible = visibleOn('写作工具', const ['取消']).length;
+        total += cancelVisible;
+        report.add('取消 $cancelVisible/1（只计一次）');
       }
 
       /// 三 tab「取消」读数的单行汇总 —— 挂进**每一条**相关断言的 `reason`。
@@ -622,6 +629,17 @@ void main() {
           '【取消读数】${[
             for (final t in const ['写作工具', '教学', '设置']) cancelLine(t),
           ].join(' | ')}';
+
+      // 计数护栏：分母 14 = 13 个功能项 + 跨 tab 只计一次的「取消」。
+      // 旧实现把「取消」加进三个 tab 的 total，理论可计到 16；393×851 实测
+      // 为 15/14（教学「取消」被裁切未计入）。该 RED 读数已由本断言复现。
+      expect(
+        total,
+        lessThanOrEqualTo(14),
+        reason:
+            '计数口径失守：$total/14（${report.join(' · ')}）；'
+            '「取消」跨 tab 只能计一次，不能随 tab 重复累加',
+      );
 
       // ★ 卡面 V1 的唯一断言：跨 tab 合计 ≥ 12/14
       //

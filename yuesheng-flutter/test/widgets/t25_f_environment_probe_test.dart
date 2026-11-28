@@ -2,93 +2,16 @@
 //
 // F1 用 DefaultTextStyle 合并 Text.style 后由 TextPainter 在无裁切约束下量高；
 // tester.getRect(Text) 只作阳性对照，不承担未裁高度判据。
-// F2 的 48dp 是判据而非现状：compact 下已知短件会量到 40dp，本用例钉住
-// 实测值与判据结果，不把已知短件伪装成达标，也不在本卡擅自修产品。
+// F2 是「当前缺陷特征记录」，不是 ≥48dp 放行门：compact 下四类控件的
+// 真实命中高为 40dp，属于已知债务；meets48=false 钉的是当前特征，不代表
+// 质量门已通过。未来若修到 48dp，应更新这些期望值，并保留裸 40dp 阴性对照。
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/config/app_palette.dart';
-import 'package:writingcoach/features/writing/writing_menu_sheet.dart';
 import 'package:writingcoach/theme/app_theme.dart';
 
-const _writingTools = ['章节列表', '全文搜索', '查找替换', '快捷短语', '回收板'];
-const _teaching = ['当前文风', '写作统计', '打开教练面板', '世界观', '角色', '大纲'];
-const _settings = ['排版设置', '版本时光机'];
-const _openMenuKey = Key('t25-f-open-menu');
-
-class _MenuProbe {
-  _MenuProbe(this.tester);
-
-  final WidgetTester tester;
-
-  Future<void> pump({
-    Size size = const Size(393, 851),
-    ThemeData? theme,
-  }) async {
-    // 先拆掉上一轮 MaterialApp，避免旧 sheet 遮住新一轮打开按钮。
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pumpAndSettle();
-    tester.view.devicePixelRatio = 1.0;
-    tester.view.physicalSize = size;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: theme ?? buildAppTheme(),
-        home: Scaffold(
-          body: Builder(
-            builder: (context) => Center(
-              child: ElevatedButton(
-                key: _openMenuKey,
-                onPressed: () => WritingMenuSheet.show(
-                  context,
-                  lastSavedAt: null,
-                  onDiagnose: () {},
-                ),
-                child: const Text('open'),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.byKey(_openMenuKey));
-    await tester.pumpAndSettle();
-  }
-
-  Future<void> switchTab(String label) async {
-    await tester.tap(find.text(label).first);
-    await tester.pumpAndSettle();
-  }
-
-  Future<List<String>> visibleLabels(String tab, List<String> labels) async {
-    await switchTab(tab);
-    final viewport = tester.getRect(
-      find
-          .descendant(
-            of: find.byType(BottomSheet),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    return [
-      for (final label in labels)
-        if (find.text(label).evaluate().isNotEmpty &&
-            tester.getRect(find.text(label)).top >= viewport.top - 0.5 &&
-            tester.getRect(find.text(label)).bottom <= viewport.bottom + 0.5)
-          label,
-    ];
-  }
-
-  Color menuTextColor(String label) {
-    final text = tester.widget<Text>(find.text(label));
-    return text.style!.color!;
-  }
-
-  AppPalette paletteAt(String label) {
-    final context = tester.element(find.text(label));
-    return Theme.of(context).extension<AppPalette>()!;
-  }
-}
+import '../test_support/t25_f_probe_harness.dart';
 
 double _intactTextHeight(WidgetTester tester, String label) {
   final finder = find.text(label);
@@ -180,26 +103,11 @@ double _hitHeightAtCenter(WidgetTester tester, Finder finder) {
   return bottom - top;
 }
 
-Future<Map<String, int>> _collectVisibleCounts(_MenuProbe probe) async {
-  final counts = <String, int>{};
-  for (final tab in const ['写作工具', '教学', '设置']) {
-    final labels = switch (tab) {
-      '写作工具' => _writingTools,
-      '教学' => _teaching,
-      _ => _settings,
-    };
-    final visible = await probe.visibleLabels(tab, labels);
-    counts[tab] = visible.length;
-    debugPrint('F3 $tab ${visible.length}/${labels.length} $visible');
-  }
-  return counts;
-}
-
 void main() {
   testWidgets('F1 字号 1.0/1.3/2.0/2.4/2.5 的未裁文字高度', (tester) async {
     tester.platformDispatcher.textScaleFactorTestValue = 1.0;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-    final probe = _MenuProbe(tester);
+    final probe = T25FProbeHarness(tester);
     final heights = <double, double>{};
     for (final scale in const [1.0, 1.3, 2.0, 2.4, 2.5]) {
       tester.platformDispatcher.textScaleFactorTestValue = scale;
@@ -223,6 +131,9 @@ void main() {
   });
 
   testWidgets('F2 compact 控件真实命中区与 48dp 判据', (tester) async {
+    // 保留既有测试名；本用例只记录当前缺陷特征，不宣称 48dp 质量门通过。
+    // IconButton/TextButton/Checkbox/Radio 的 40dp 是已知债务；未来修复后
+    // 更新对应期望，并继续用裸 40dp 作阴性对照，证明量法仍能识别不达标。
     final theme = buildAppTheme().copyWith(
       platform: TargetPlatform.android,
       materialTapTargetSize: MaterialTapTargetSize.padded,
@@ -273,16 +184,16 @@ void main() {
     final bareFinder = find.byKey(const Key('f2-bare-40'));
     final bare = _hitHeightAtCenter(tester, bareFinder);
     debugPrint('F2 bare40 hitH=$bare meets48=${bare >= 48}');
-    expect(bare, closeTo(40, 0.01), reason: '阳性对照必须精确量回 40dp');
+    expect(bare, closeTo(40, 0.01), reason: '48dp 判据的阴性对照必须精确量回 40dp');
     expect(bare >= 48, isFalse);
   });
 
   testWidgets('F3 393×851 与 360×800 三 tab 首屏可见数', (tester) async {
-    final probe = _MenuProbe(tester);
+    final probe = T25FProbeHarness(tester);
     for (final size in const [Size(393, 851), Size(360, 800)]) {
       await probe.pump(size: size);
       expect(tester.takeException(), isNull, reason: '$size 不得有横向 overflow');
-      final raw = await _collectVisibleCounts(probe);
+      final raw = await probe.collectVisibleCounts();
       debugPrint('F3 $size raw=$raw');
       expect(raw['写作工具'], 5);
       expect(raw['设置'], 2);
@@ -290,14 +201,36 @@ void main() {
         raw['教学'],
         6,
         reason:
-            '任务文字的 360 档 5/6 未复现：真实 Scrollable 视口到 800dp，'
+            '旧 F 报告的 360 档 5/6 未复现：真实 Scrollable 视口到 800dp，'
             '第 6 项「大纲」文字完整可见；本用例记录真值，不伪造 5/6',
       );
     }
   });
 
+  testWidgets('F3 矮视口阴性对照：visibleLabels 随视口高度减少', (tester) async {
+    final probe = T25FProbeHarness(tester);
+    await probe.pump(size: const Size(360, 800));
+    final baseline = await probe.collectVisibleCounts();
+
+    await probe.pump(size: const Size(360, 640));
+    expect(tester.takeException(), isNull, reason: '矮视口不得有布局异常');
+    final shorter = await probe.collectVisibleCounts();
+    debugPrint('F3 negative baseline=$baseline shorter=$shorter');
+
+    // 只钉「更矮 ⇒ 可见数减少」这一性质，不写死旧 F 报告的 5/6。
+    // 同时要求仍有可见项，避免把「全部出屏」误当作有效阴性对照。
+    for (final tab in const ['写作工具', '教学']) {
+      expect(
+        shorter[tab],
+        lessThan(baseline[tab]!),
+        reason: '$tab 在 360×640 下应有更少标签完整可见',
+      );
+      expect(shorter[tab], greaterThan(0), reason: '$tab 阴性对照不能退化成全部不可见');
+    }
+  });
+
   testWidgets('F4 亮暗 palette 与菜单文字色翻转', (tester) async {
-    final probe = _MenuProbe(tester);
+    final probe = T25FProbeHarness(tester);
     final colors = <Brightness, Color>{};
     for (final theme in [buildAppTheme(), buildDarkTheme()]) {
       await probe.pump(theme: theme);
