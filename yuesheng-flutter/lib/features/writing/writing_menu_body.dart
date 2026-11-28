@@ -188,12 +188,11 @@ Widget menuItem(
 List<Widget> buildWritingToolsGroup(BuildContext ctx, WritingMenuItems c) {
   return [
     menuItem(ctx, '章节列表', onAction: c.onOpenChapterTree),
-    menuItem(ctx, '大纲', onAction: c.onOpenOutline),
-    // C78 批次3：角色档案（列表/详情/断言校正/合并）
-    menuItem(ctx, '角色', onAction: c.onOpenCharacters),
     // 批次96-11：全文搜索（整本作品章节搜索，命中片段+高亮+跳转定位）
     menuItem(ctx, '全文搜索', onAction: c.onOpenFullTextSearch),
     menuItem(ctx, '查找替换', onAction: c.onOpenFindReplace),
+    // 批次85-3：快捷短语（常用语管理 + 光标插入）
+    menuItem(ctx, '快捷短语', onAction: c.onOpenQuickPhrases),
     menuItem(ctx, '回收板', onAction: c.onOpenRecycleBin),
   ];
 }
@@ -211,8 +210,9 @@ List<Widget> buildTeachingGroup(BuildContext ctx, WritingMenuItems c) {
     ),
     // W1 批次：世界观设定（列表/详情/追加/归档）
     menuItem(ctx, '世界观', onAction: c.onOpenWorlds),
-    // 批次85-3：快捷短语（常用语管理 + 光标插入）
-    menuItem(ctx, '快捷短语', onAction: c.onOpenQuickPhrases),
+    // C78 批次3：角色档案（列表/详情/断言校正/合并）
+    menuItem(ctx, '角色', onAction: c.onOpenCharacters),
+    menuItem(ctx, '大纲', onAction: c.onOpenOutline), // 设定族：同表同仓储、参与诊断注入
   ];
 }
 

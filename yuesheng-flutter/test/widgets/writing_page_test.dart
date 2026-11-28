@@ -271,20 +271,23 @@ void main() {
   /// 本表是**唯一归属真源**，与 `writing_menu_sheet.dart` 头注释一致；
   /// 改分组时两处必须同步（否则本文件里跨 tab 的点击会 not found）。
   /// tab 标签复用原组头字面，故 `写作工具` / `教学` / `设置` 同时是 tab 名。
+  ///
+  /// 2026-11-28 戊方案（DECISIONS §4-611）：角色 + 大纲 自「写作工具」移入「教学」，
+  /// 快捷短语 自「教学」移回「写作工具」，分布由 `6/5/2` 变为 `5/6/2`。
   const menuTabOf = <String, String>{
     // ── 写作工具（默认 tab）──
     '章节列表': '写作工具',
-    '大纲': '写作工具',
-    '角色': '写作工具',
     '全文搜索': '写作工具',
     '查找替换': '写作工具',
+    '快捷短语': '写作工具',
     '回收板': '写作工具',
     // ── 教学 ──
     '当前文风': '教学',
     '写作统计': '教学',
     '打开教练面板': '教学',
     '世界观': '教学',
-    '快捷短语': '教学',
+    '角色': '教学',
+    '大纲': '教学',
     // ── 设置 ──
     '排版设置': '设置',
     '版本时光机': '设置',
@@ -1754,11 +1757,11 @@ void main() {
 
   group('批次83：大纲边写边看（P1）', () {
     /// 打开大纲抽屉（⋮ 菜单 →「大纲」）
+    // 2026-11-28 丁方案（DECISIONS §4-610）：「大纲」已移入教学 tab
+    // ⇒ 改为走 `tapMenuScrolled`（按 `menuTabOf` 先切 tab 再滚到可见），
+    //   原先的裸 `tap` 在默认 tab 上已经找不到该项。
     Future<void> openOutline(WidgetTester tester) async {
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('大纲'));
-      await tester.pumpAndSettle();
+      await tapMenuScrolled(tester, '大纲');
     }
 
     testWidgets('#83-6 ⋮ 菜单 →「大纲」→ 抽屉打开 + 空态引导', (tester) async {

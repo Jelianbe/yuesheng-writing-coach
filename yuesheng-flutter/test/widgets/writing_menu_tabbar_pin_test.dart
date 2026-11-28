@@ -167,21 +167,29 @@ void main() {
     //
     //   「TabBar 相对容器顶的偏移量，与滚动内容长度**完全无关**」
     //
-    // 检验方式：取三档（溢出量 0 / 34.35 / 235.1dp）下 TabBar 相对 sheet 顶的
-    // 偏移，断言三者**逐位相同**。0.30 档比「多 1 项(48dp)」多出近 5 倍内容
-    // （235.1dp ≈ 4.9 项）⇒ 覆盖强度严格高于「加 1 项」，且同样能变红：
+    // 检验方式：取三档（溢出量 0 / 82.35 / 283.10dp，教学 tab 7 项）下 TabBar 相对
+    // sheet 顶的偏移，断言三者**逐位相同**。0.30 档比「多 1 项(48dp)」多出近 6 倍内容
+    // （283.10dp ≈ 5.9 项）⇒ 覆盖强度严格高于「加 1 项」，且同样能变红：
     // 只要 TabBar 回到滚动区，0.30 档该偏移会立刻变得与其它两档不同（实测改前
     // 0.30 档滚到底 TabBar 高出容器顶 127.1dp）。
     //
     // 另一条独立判据：**内容溢出量变化时 TabBar 位置不动** —— 直接用
     // `maxScrollExtent` 的差异作为「内容多了多少」的量化证据落进 reason。
     // ─────────────────────────────────────────────────────────────
-    testWidgets('三档溢出量差 235dp，TabBar 相对容器顶偏移逐位相同', (tester) async {
+    testWidgets('三档溢出量差 283dp，TabBar 相对容器顶偏移逐位相同', (tester) async {
       final offsets = <double>[];
       final overflows = <double>[];
 
       for (final h in const [0.30, 0.55, 0.85]) {
         await pumpSheet(tester, initialHeight: h);
+        // ★ 2026-11-28 丁方案（DECISIONS §4-610）：默认 tab 由 6 项降为 **4 项**，
+        //   0.55 档 `content 332 < viewport 393.65` ⇒ 溢出量归 0，三档只剩 2 个互异值
+        //   （实测 `[139.10, 0.00, 0.00]`）⇒ 本组「三档互异」前置**必然红**
+        //   —— 不是判据放松，是**被测物变短了**。改为在「教学」tab（**7 项**）上取三档：
+        //   溢出量 `[283.10, 82.35, 0.00]`，极差 **283.10dp > 48dp**（比原 235.1 更强）。
+        //   判据本体（三档互异 / 极差 > 48 / TabBar 偏移逐位相同）**一字未改**。
+        await tester.tap(find.text('教学').first);
+        await tester.pumpAndSettle();
         await scrollToBottom(tester);
 
         offsets.add(tabBarRect(tester).top - sheetRect(tester).top);

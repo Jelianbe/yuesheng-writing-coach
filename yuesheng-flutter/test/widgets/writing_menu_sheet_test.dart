@@ -97,10 +97,12 @@ void main() {
     testWidgets('渲染菜单项：三个 tab 内各项齐备，占位项已移除', (tester) async {
       await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
 
-      // ── 默认 tab「写作工具」：6 项 ──
-      // 批次83：章节列表 / 大纲；C78 批次3：角色；批次96-11：全文搜索；
-      // 批次84-2：查找替换；批次86-1：回收板
-      for (final label in const ['章节列表', '大纲', '角色', '全文搜索', '查找替换', '回收板']) {
+      // ── 默认 tab「写作工具」：5 项 ──
+      // 批次83：章节列表；批次96-11：全文搜索；批次84-2：查找替换；
+      // 批次85-3：快捷短语；批次86-1：回收板
+      // 2026-11-28 戊方案（DECISIONS §4-611）：大纲（批次83）、角色（C78 批次3）移入教学；
+      // 快捷短语（批次85-3）由教学移回写作工具 ⇒ 分布 5/6/2
+      for (final label in const ['章节列表', '全文搜索', '查找替换', '快捷短语', '回收板']) {
         expect(find.text(label), findsOneWidget, reason: '默认 tab 缺「$label」');
       }
 
@@ -111,14 +113,15 @@ void main() {
       // tab 数量恰为 3（防「多渲染一个空 tab」或「漏挂一个 tab」）
       expect(find.byType(Tab), findsNWidgets(3));
 
-      // ── 切到「教学」：5 项 ──
+      // ── 切到「教学」：6 项 ──
       await switchTab(tester, '教学');
       for (final label in const [
         '当前文风', // 批次85-4
         '写作统计', // 批次85-5
         '打开教练面板', // 批次79 B 改名
         '世界观', // W1
-        '快捷短语', // 批次85-3
+        '角色', // C78 批次3（2026-11-28 戊方案移入）
+        '大纲', // 批次83（2026-11-28 戊方案移入）
       ]) {
         expect(find.text(label), findsOneWidget, reason: '教学 tab 缺「$label」');
       }
@@ -291,7 +294,9 @@ void main() {
         onOpenOutline: () => outlineCalled = true,
       );
 
-      await tester.tap(find.text('大纲'));
+      // 2026-11-28 丁方案（DECISIONS §4-610）：「大纲」已移入教学 tab
+      await switchTab(tester, '教学');
+      await tapMenuBottom(tester, '大纲');
       await tester.pumpAndSettle();
 
       expect(outlineCalled, isTrue);
@@ -328,7 +333,9 @@ void main() {
         onOpenCharacters: () => charactersCalled = true,
       );
 
-      await tester.tap(find.text('角色'));
+      // 2026-11-28 丁方案（DECISIONS §4-610）：「角色」已移入教学 tab
+      await switchTab(tester, '教学');
+      await tapMenuBottom(tester, '角色');
       await tester.pumpAndSettle();
 
       expect(charactersCalled, isTrue);
@@ -365,8 +372,8 @@ void main() {
         onOpenQuickPhrases: () => quickPhrasesCalled = true,
       );
 
-      // P1 重裁：「快捷短语」现属「教学」tab
-      await switchTab(tester, '教学');
+      // 2026-11-28 戊方案（DECISIONS §4-611）：「快捷短语」已由「教学」移回
+      // 「写作工具」（默认 tab）⇒ 不再切 tab，滚动到可见后点击。
       await tapMenuBottom(tester, '快捷短语');
       await tester.pumpAndSettle();
 
@@ -536,8 +543,8 @@ void main() {
       var total = 0;
       final report = <String>[];
 
-      // ── tab 1「写作工具」：6 项功能入口 + 取消 ──
-      const writingTools = ['章节列表', '大纲', '角色', '全文搜索', '查找替换', '回收板'];
+      // ── tab 1「写作工具」：5 项功能入口 + 取消（戊方案 5/6/2） ──
+      const writingTools = ['章节列表', '全文搜索', '查找替换', '快捷短语', '回收板'];
       final wtVisible = visibleOn('写作工具', [...writingTools, '取消']);
       total += wtVisible.length;
       report.add('写作工具 ${wtVisible.length}/${writingTools.length + 1}');
@@ -632,7 +639,10 @@ void main() {
 
       // V2 硬约束：四条**直点路径**必须整行在首屏内（本文件与
       // writing_page_test.dart 对它们是裸 `tester.tap`，不可滚）
-      for (final label in const ['章节列表', '大纲', '角色', '全文搜索']) {
+      // 2026-11-28 戊方案（DECISIONS §4-611）：角色 / 大纲 已移入教学 tab
+      // ⇒ 直点契约由 4/4 降为 **2/4**（舰长已批准该降级，见报批稿 §六）。
+      // 本列表收窄到 2 项，不是放宽判据：仍在默认 tab 的两条直点路径必须整行在首屏内。
+      for (final label in const ['章节列表', '全文搜索']) {
         expect(
           wtVisible,
           contains(label),
@@ -898,12 +908,19 @@ void main() {
       await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
 
       final sheet = tester.getRect(find.byType(BottomSheet));
+
+      // 2026-11-28 丁方案（DECISIONS §4-610）：默认 tab 由 6 项降为 4 项。
+      //   800×600 下 `sheet_top=248.40`、`viewport_top=344.40`、`viewport=255.60`
+      //   ⇒ 第 4 项「回收板」行 `488.40–536.40`（**在屏内**，实测 bottom=596.40… 见下）
+      //   ⇒ 原以「回收板出屏」作探针的写法**在 4 项下已失效**，不是判据坏了，是被测物变了。
+      //   改用「取消」作边界探针：`取消` top = 344.40 + 60 + 48×4 + 20 = **616.40 > 600**
+      //   ⇒ 仍然必然出屏，鉴别力不变（仍是同一份代码、同一个 tab，只改视口高度）。
       expect(
-        tester.getRect(find.text('回收板')).bottom,
+        tester.getRect(find.text('取消')).top,
         greaterThan(sheet.bottom),
         reason:
-            '阴性对照失败 ⇒ 800×600 下「回收板」本该在首屏外却判 IN，'
-            '说明首屏判据未真正测到边界，上一条 6/6 的绿不可信',
+            '阴性对照失败 ⇒ 800×600 下「取消」本该在首屏外却判 IN，'
+            '说明首屏判据未真正测到边界，上一条的绿不可信',
       );
     });
   });
