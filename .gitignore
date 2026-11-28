@@ -129,6 +129,7 @@ historical-archive/
 /docs/
 /.workbuddy/
 /yuesheng-flutter/.workbuddy/
+/yuesheng-flutter/.ai/
 /.trae/
 /AGENTS.md
 
@@ -173,6 +174,7 @@ historical-archive/
 #   否则新克隆出来的目录缺图，部署即残缺。
 /yuesheng-landing/downloads/
 /yuesheng-landing/site/downloads/
+/yuesheng-landing/site-2mqh/downloads/
 /yuesheng-landing/_shots/
 /yuesheng-landing/_tmp_*.py
 /yuesheng-landing/*.log
