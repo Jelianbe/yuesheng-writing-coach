@@ -580,7 +580,7 @@ void main() {
       }
 
       await collectCancel('教学');
-      const teaching = ['当前文风', '写作统计', '打开教练面板', '世界观', '快捷短语'];
+      const teaching = ['当前文风', '写作统计', '打开教练面板', '世界观', '角色', '大纲'];
       final tVisible = visibleOn('教学', [...teaching, '取消']);
       total += tVisible.length;
       report.add('教学 ${tVisible.length}/${teaching.length + 1}');
