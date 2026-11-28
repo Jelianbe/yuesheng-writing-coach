@@ -294,7 +294,7 @@ void main() {
         onOpenOutline: () => outlineCalled = true,
       );
 
-      // 2026-11-28 丁方案（DECISIONS §4-610）：「大纲」已移入教学 tab
+      // 2026-11-28 戊方案（DECISIONS §4-611）：「大纲」已移入教学 tab
       await switchTab(tester, '教学');
       await tapMenuBottom(tester, '大纲');
       await tester.pumpAndSettle();
@@ -333,7 +333,7 @@ void main() {
         onOpenCharacters: () => charactersCalled = true,
       );
 
-      // 2026-11-28 丁方案（DECISIONS §4-610）：「角色」已移入教学 tab
+      // 2026-11-28 戊方案（DECISIONS §4-611）：「角色」已移入教学 tab
       await switchTab(tester, '教学');
       await tapMenuBottom(tester, '角色');
       await tester.pumpAndSettle();
@@ -909,11 +909,11 @@ void main() {
 
       final sheet = tester.getRect(find.byType(BottomSheet));
 
-      // 2026-11-28 丁方案（DECISIONS §4-610）：默认 tab 由 6 项降为 4 项。
+      // 2026-11-28 戊方案（DECISIONS §4-611）：默认 tab 由 6 项降为 5 项。
       //   800×600 下 `sheet_top=248.40`、`viewport_top=344.40`、`viewport=255.60`
-      //   ⇒ 第 4 项「回收板」行 `488.40–536.40`（**在屏内**，实测 bottom=596.40… 见下）
-      //   ⇒ 原以「回收板出屏」作探针的写法**在 4 项下已失效**，不是判据坏了，是被测物变了。
-      //   改用「取消」作边界探针：`取消` top = 344.40 + 60 + 48×4 + 20 = **616.40 > 600**
+      //   ⇒ 按当前布局闭式解，第 5 项「回收板」行 top = 344.40 + 60 + 48×4 = 596.40，
+      //      底 = 644.40 > 600 ⇒ 已不能把「回收板整行可见」当作首屏探针。
+      //   改用「取消」作边界探针：`取消` top = 344.40 + 60 + 48×5 + 20 = **664.40 > 600**
       //   ⇒ 仍然必然出屏，鉴别力不变（仍是同一份代码、同一个 tab，只改视口高度）。
       expect(
         tester.getRect(find.text('取消')).top,
